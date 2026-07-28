@@ -1,0 +1,11 @@
+# OS が生成する一時ファイル
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# エディターが生成する一時ファイル
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
