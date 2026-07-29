@@ -1,0 +1,12 @@
+<%# 主要な移動先。現在位置は表示と読み上げの両方で示す。 %>
+<nav class="navigation" aria-label="<%= t("navigation.label") %>">
+  <ul class="navigation__list">
+    <% navigation_items.each do |item| %>
+      <li>
+        <%= link_to item[:name], item[:path],
+                    class: class_names("navigation__link", "navigation__link--current" => current_navigation_item?(item[:path])),
+                    aria: { current: current_navigation_item?(item[:path]) ? "page" : nil } %>
+      </li>
+    <% end %>
+  </ul>
+</nav>

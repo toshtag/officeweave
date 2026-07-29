@@ -1,0 +1,11 @@
+/*
+ * 複数のまとまりを並べる。
+ * 画面幅に応じて段数が変わるよう、明示的な区切りを設けずに折り返す。
+ */
+@layer components {
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+    gap: var(--space-4);
+  }
+}
