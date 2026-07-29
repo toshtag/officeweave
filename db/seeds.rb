@@ -25,6 +25,13 @@ if email_address.blank? || password.blank?
 elsif User.exists?
   Rails.logger.info("利用者が既に存在するため、初期利用者は作成していません。")
 else
-  User.create!(organization: organization, name: name, email_address: email_address, password: password)
+  User.create!(
+    organization: organization,
+    name: name,
+    email_address: email_address,
+    password: password,
+    # 最初のひとりは、他の利用者を作れる必要がある。
+    role: :administrator
+  )
   Rails.logger.info("初期利用者 #{email_address} を作成しました。")
 end

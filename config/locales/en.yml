@@ -42,6 +42,7 @@ en:
         password: Password
         password_confirmation: Password confirmation
         locale: Language
+        role: Role
       organization:
         name: Name
         code: Code
@@ -64,6 +65,11 @@ en:
     no: "No"
 
   errors:
+    forbidden:
+      title: Not permitted
+      heading: You cannot perform this action
+      description: This action requires administrator permission. Ask an administrator in your organization if you need it.
+      back: Back to home
     summary:
       one: There is 1 problem with your input
       other: There are %{count} problems with your input
@@ -105,3 +111,7 @@ en:
       create: Create %{model}
       update: Update %{model}
       submit: Save %{model}
+
+  roles:
+    member: Member
+    administrator: Administrator

@@ -7,11 +7,12 @@
       <p class="page-heading__note"><%= @department.display_path %></p>
     </div>
 
-    <div class="page-heading__actions">
-      <%= link_to t("common.edit"), edit_department_path(@department), class: "button" %>
-      <%= button_to t("common.destroy"), @department, method: :delete, class: "button",
-                    form: { data: { turbo_confirm: nil } } %>
-    </div>
+    <% if administrator? %>
+      <div class="page-heading__actions">
+        <%= link_to t("common.edit"), edit_department_path(@department), class: "button" %>
+        <%= button_to t("common.destroy"), @department, method: :delete, class: "button" %>
+      </div>
+    <% end %>
   </div>
 
   <div class="panel stack">
@@ -34,9 +35,11 @@
               <td><%= membership.user.email_address %></td>
               <td><%= membership.primary? ? t("common.yes") : t("common.no") %></td>
               <td>
-                <%= button_to t("memberships.remove"),
-                              department_membership_path(@department, membership),
-                              method: :delete, class: "button button--quiet" %>
+                <% if administrator? %>
+                  <%= button_to t("memberships.remove"),
+                                department_membership_path(@department, membership),
+                                method: :delete, class: "button button--quiet" %>
+                <% end %>
               </td>
             </tr>
           <% end %>
@@ -47,8 +50,9 @@
     <% end %>
   </div>
 
-  <div class="panel panel--narrow stack">
-    <h2><%= t("memberships.new.heading") %></h2>
+  <% if administrator? %>
+    <div class="panel panel--narrow stack">
+      <h2><%= t("memberships.new.heading") %></h2>
 
     <% if @assignable_users.any? %>
       <%= form_with model: [ @department, Membership.new ], class: "form stack" do |form| %>
@@ -64,10 +68,11 @@
 
         <%= form.submit t("memberships.new.submit"), class: "button button--primary" %>
       <% end %>
-    <% else %>
-      <p><%= t("memberships.new.no_candidates") %></p>
-    <% end %>
-  </div>
+      <% else %>
+        <p><%= t("memberships.new.no_candidates") %></p>
+      <% end %>
+    </div>
+  <% end %>
 
   <p><%= link_to t("common.back"), departments_path %></p>
 </div>

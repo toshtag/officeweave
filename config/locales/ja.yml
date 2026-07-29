@@ -42,6 +42,7 @@ ja:
         password: パスワード
         password_confirmation: パスワード（確認）
         locale: 表示言語
+        role: 権限
       organization:
         name: 名称
         code: 識別子
@@ -64,6 +65,11 @@ ja:
     no: いいえ
 
   errors:
+    forbidden:
+      title: 権限がありません
+      heading: この操作は実行できません
+      description: この操作には管理者の権限が必要です。必要な場合は組織の管理者へ依頼してください。
+      back: ホームへ戻る
     summary:
       one: 入力内容に 1 件の誤りがあります
       other: 入力内容に %{count} 件の誤りがあります
@@ -105,3 +111,7 @@ ja:
       create: 登録する
       update: 更新する
       submit: 保存する
+
+  roles:
+    member: 一般利用者
+    administrator: 管理者
