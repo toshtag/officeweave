@@ -10,6 +10,9 @@ Rails.application.routes.draw do
   # 表示言語の切り替え。状態を変えるため GET では受け付けない。
   patch "locale" => "locales#update", as: :locale
 
+  # お知らせ。
+  resources :announcements
+
   # 利用者の管理。削除ではなく無効化で利用を止める。
   resources :users, only: %i[index new create edit update] do
     resource :activation, only: %i[create destroy], controller: "user_activations"
