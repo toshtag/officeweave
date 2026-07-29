@@ -1,0 +1,3 @@
+sales_review_sales:
+  event: sales_review
+  department: sales
