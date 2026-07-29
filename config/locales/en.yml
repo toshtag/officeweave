@@ -487,3 +487,8 @@ en:
       request_submitted: "A request was submitted: %{title}"
       request_approved: "Your request was approved: %{title}"
       request_returned: "Your request was returned: %{title}"
+
+  notification_mailer:
+    notify:
+      open: You can review it here.
+      settings_hint: This message was sent automatically by OfficeWeave.

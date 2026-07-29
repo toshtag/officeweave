@@ -23,7 +23,9 @@ class Notification < ApplicationRecord
   def self.deliver(user:, subject:, event:)
     return nil if user.nil? || !user.active?
 
-    create!(user: user, subject: subject, event: event)
+    notification = create!(user: user, subject: subject, event: event)
+    notification.deliver_by_mail
+    notification
   rescue ActiveRecord::RecordNotUnique
     nil
   end
@@ -35,6 +37,12 @@ class Notification < ApplicationRecord
   # 対象の件名。種類ごとに持つ属性が違うため、ここでそろえる。
   def subject_title
     subject.try(:title).to_s
+  end
+
+  # メールでも知らせる。
+  # 送信の失敗で操作そのものが失敗しないよう、要求の外で処理する。
+  def deliver_by_mail
+    NotificationMailer.with(notification: self).notify.deliver_later
   end
 
   def read?
