@@ -134,6 +134,8 @@ docker compose up -d --build
 - [認証方式の差し替え](docs/development/authentication.md) — 外部認証への差し替え手順
 - [品質基盤](docs/development/quality.md) — 書式検査と各種検査の実行方法
 - [アクセシビリティ方針](docs/development/accessibility.md) — 画面が満たすべき最低要件
+- [導入手順](docs/operations/installation.md) — 自組織の環境への導入
+- [運用](docs/operations/operations.md) — 日常的な運用と監視
 - [バックアップと復元](docs/operations/backup.md) — 取得と復元の手順
 - [アップグレード](docs/operations/upgrade.md) — 入れ替えの手順と診断
 - [ライセンス方針](docs/licensing.md) — ライセンスの選定理由と名称の利用範囲
@@ -155,8 +157,8 @@ Copyright (C) 2026 OfficeWeave contributors
 
 ```text
 現在の Phase:        P12 Self-host release
-直近完了 Task:       P12-T1 デモデータを用意する
-次に実行する Task:   P12-T2 導入・運用文書を整備する
+直近完了 Task:       P12-T2 導入・運用文書を整備する
+次に実行する Task:   P12-T3 セルフホスト配布構成を用意する
 ```
 
 進行状況は [実行キュー](docs/execution_queue.md) で管理します。
