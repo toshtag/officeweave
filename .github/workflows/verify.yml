@@ -1,0 +1,96 @@
+name: 検証
+
+# 手元と同じ手順を実行する。
+# 検証の内容は bin/verify に定義してあり、ここでは呼び出すだけにする。
+# 手順をここへ書き写すと、手元と自動実行で結果が食い違う。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    name: bin/verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: ソースを取得する
+        uses: actions/checkout@v4
+
+      - name: 実行環境を組み立てる
+        run: docker compose build
+
+      - name: データベースを起動する
+        run: docker compose up -d db
+
+      - name: 検証を実行する
+        run: docker compose run --rm web bin/verify
+
+      - name: 失敗した場合の記録を出す
+        if: failure()
+        run: docker compose logs
+
+      - name: 後片付け
+        if: always()
+        run: docker compose down -v
+
+  package:
+    name: 配布用の構成
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: ソースを取得する
+        uses: actions/checkout@v4
+
+      - name: 設定を用意する
+        run: |
+          cat > .env <<'SETTINGS'
+          DATABASE_USER=officeweave
+          DATABASE_PASSWORD=verification-only-password
+          DATABASE_NAME=officeweave_production
+          APPLICATION_HOST=localhost
+          APPLICATION_PROTOCOL=http
+          FORCE_SSL=false
+          INITIAL_USER_NAME=検証用の管理者
+          INITIAL_USER_EMAIL=admin@example.invalid
+          INITIAL_USER_PASSWORD=verification-only-user-password
+          WEB_PORT=3000
+          SETTINGS
+          echo "SECRET_KEY_BASE=$(openssl rand -hex 64)" >> .env
+
+      - name: 配布用の構成で起動する
+        run: docker compose -f compose.production.yaml up -d --build
+
+      - name: 応答するまで待つ
+        run: |
+          for _ in $(seq 1 60); do
+            if curl -sf http://localhost:3000/up > /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "起動しませんでした" >&2
+          exit 1
+
+      - name: 依存先まで含めて確認する
+        run: |
+          response="$(curl -sf http://localhost:3000/health)"
+          echo "${response}"
+          echo "${response}" | grep -q '"status":"ok"'
+
+      - name: 初期利用者を作成する
+        run: docker compose -f compose.production.yaml exec -T web bin/rails db:seed
+
+      - name: 構成を診断する
+        run: docker compose -f compose.production.yaml exec -T web bin/diagnose
+
+      - name: 失敗した場合の記録を出す
+        if: failure()
+        run: docker compose -f compose.production.yaml logs
+
+      - name: 後片付け
+        if: always()
+        run: docker compose -f compose.production.yaml down -v
