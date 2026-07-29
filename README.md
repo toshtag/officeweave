@@ -141,9 +141,9 @@ Copyright (C) 2026 OfficeWeave contributors
 ## 現在地と次のタスク
 
 ```text
-現在の Phase:        P7 Requests
-直近完了 Task:       P7-T2 承認と差し戻しを実装する
-次に実行する Task:   P7-T3 申請履歴を実装する
+現在の Phase:        P8 Documents
+直近完了 Task:       P7-T3 申請の一覧と担当分の把握を整える
+次に実行する Task:   P8-T1 文書と分類を実装する
 ```
 
 進行状況は [実行キュー](docs/execution_queue.md) で管理します。
