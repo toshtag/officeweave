@@ -22,6 +22,13 @@
 | `TEST_DATABASE_NAME` | いいえ               | `officeweave_test`        | テスト用のデータベース名           |
 | `RAILS_MAX_THREADS`  | いいえ               | `5`                       | 接続プールの上限               |
 
+### 組織
+
+| 変数                  | 必須  | 既定値           | 内容    |
+| ------------------- | --- | ------------- | ----- |
+| `ORGANIZATION_NAME` | いいえ | `OfficeWeave` | 組織の名称 |
+| `ORGANIZATION_CODE` | いいえ | `default`     | 組織の識別子 |
+
 ### 初期利用者
 
 `bin/rails db:seed` で最初の利用者を作成する際に使用する。
