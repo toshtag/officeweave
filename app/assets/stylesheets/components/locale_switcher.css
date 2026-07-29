@@ -11,19 +11,16 @@
     color: var(--color-text-muted);
   }
 
-  .locale-switcher__options {
+  .locale-switcher__group {
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    margin: 0;
-    padding: 0;
-    list-style: none;
   }
 
   /* 送信ボタンだが、見た目は選択肢としてそろえる。 */
   .locale-switcher__option {
     padding: var(--space-1) var(--space-2);
-    border: var(--border-width) solid var(--color-border);
+    border: var(--border-width) solid var(--color-border-interactive);
     border-radius: var(--radius-sm);
     background-color: var(--color-surface);
     color: var(--color-accent);

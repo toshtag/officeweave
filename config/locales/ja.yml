@@ -1,10 +1,12 @@
 ja:
   application:
     name: OfficeWeave
+    skip_to_content: 本文へ移動
     footer_note: OfficeWeave — 組織向けコラボレーション基盤
 
   locale_switcher:
     label: 表示言語
+    switch_to: "%{language}に切り替える"
     names:
       ja: 日本語
       en: English

@@ -54,4 +54,26 @@
   .stack > * + * {
     margin-block-start: var(--space-4);
   }
+
+  /*
+   * 読み飛ばし用のリンク。
+   * 画面から隠すが、読み上げと焦点移動の対象からは外さない。
+   * display: none や visibility: hidden は対象から外れるため使わない。
+   */
+  .skip-link {
+    position: absolute;
+    inset-inline-start: var(--space-3);
+    inset-block-start: var(--space-3);
+    z-index: 10;
+    padding: var(--space-2) var(--space-3);
+    background-color: var(--color-surface);
+    border: var(--border-width) solid var(--color-border-interactive);
+    border-radius: var(--radius-sm);
+    transform: translateY(-200%);
+  }
+
+  /* 焦点が当たったときだけ画面に現れる。 */
+  .skip-link:focus {
+    transform: translateY(0);
+  }
 }

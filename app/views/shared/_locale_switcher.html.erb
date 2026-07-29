@@ -4,17 +4,21 @@
 %>
 <%= form_with url: locale_path, method: :patch, class: "locale-switcher" do |form| %>
   <%= form.hidden_field :return_to, value: request.fullpath %>
-  <span class="locale-switcher__label" id="locale-switcher-label"><%= t("locale_switcher.label") %></span>
-  <ul class="locale-switcher__options" aria-labelledby="locale-switcher-label">
+
+  <div class="locale-switcher__group" role="group" aria-labelledby="locale-switcher-label">
+    <span class="locale-switcher__label" id="locale-switcher-label"><%= t("locale_switcher.label") %></span>
+
     <% I18n.available_locales.each do |locale| %>
-      <li>
-        <% if locale == I18n.locale %>
-          <span class="locale-switcher__current" aria-current="true"><%= t("locale_switcher.names.#{locale}") %></span>
-        <% else %>
-          <%= form.button t("locale_switcher.names.#{locale}"),
-                          name: :locale, value: locale, class: "locale-switcher__option" %>
+      <% if locale == I18n.locale %>
+        <span class="locale-switcher__current" aria-current="true" lang="<%= locale %>">
+          <%= t("locale_switcher.names.#{locale}") %>
+        </span>
+      <% else %>
+        <%= form.button name: :locale, value: locale, class: "locale-switcher__option",
+                        lang: locale, aria: { label: t("locale_switcher.switch_to", language: t("locale_switcher.names.#{locale}")) } do %>
+          <%= t("locale_switcher.names.#{locale}") %>
         <% end %>
-      </li>
+      <% end %>
     <% end %>
-  </ul>
+  </div>
 <% end %>

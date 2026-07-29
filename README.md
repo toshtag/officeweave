@@ -112,6 +112,7 @@ docker compose up -d --build
 - [設定](docs/development/configuration.md) — 環境変数と稼働確認
 - [テスト方針](docs/development/testing.md) — テストの層と実行方法
 - [品質基盤](docs/development/quality.md) — 書式検査と各種検査の実行方法
+- [アクセシビリティ方針](docs/development/accessibility.md) — 画面が満たすべき最低要件
 - [ライセンス方針](docs/licensing.md) — ライセンスの選定理由と名称の利用範囲
 
 いずれも日本語を正本とします。
@@ -130,9 +131,9 @@ Copyright (C) 2026 OfficeWeave contributors
 ## 現在地と次のタスク
 
 ```text
-現在の Phase:        P3 UI・多言語基盤
-直近完了 Task:       P3-T2 日本語・英語対応と言語切替を実装する
-次に実行する Task:   P3-T3 アクセシビリティの基本要件を満たす
+現在の Phase:        P4 Identity
+直近完了 Task:       P3-T3 アクセシビリティの基本要件を満たす
+次に実行する Task:   P4-T1 利用者とログイン・ログアウトを実装する
 ```
 
 進行状況は [実行キュー](docs/execution_queue.md) で管理します。
