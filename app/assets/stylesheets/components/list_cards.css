@@ -1,0 +1,44 @@
+/* 一覧を面の並びとして示す。 */
+@layer components {
+  .list-cards {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .meta {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+  }
+
+  /* 本文。長い行を読みやすい幅に収める。 */
+  .prose {
+    max-width: var(--content-max);
+  }
+
+  .prose p {
+    margin-block: 0 var(--space-4);
+  }
+
+  .form__fieldset {
+    margin: 0;
+    padding: var(--space-3) var(--space-4);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-sm);
+  }
+}
+
+@layer components {
+  .list-plain {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .list-plain > li + li {
+    margin-block-start: var(--space-2);
+  }
+}

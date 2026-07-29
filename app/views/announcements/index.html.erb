@@ -1,0 +1,41 @@
+<% content_for :title, t("announcements.index.title") %>
+
+<div class="stack">
+  <div class="page-heading">
+    <h1><%= t("announcements.index.heading") %></h1>
+    <% if administrator? %>
+      <%= link_to t("announcements.index.new"), new_announcement_path, class: "button" %>
+    <% end %>
+  </div>
+
+  <% if @announcements.any? %>
+    <ul class="list-cards">
+      <% @announcements.each do |announcement| %>
+        <li class="panel stack">
+          <h2><%= link_to announcement.title, announcement %></h2>
+          <p class="meta">
+            <%= l(announcement.published_at, format: :short) %> ・
+            <%= announcement.author.name %> ・
+            <%= t("announcements.visibilities.#{announcement.visibility}") %>
+          </p>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <p><%= t("announcements.index.empty") %></p>
+  <% end %>
+
+  <% if @drafts.any? %>
+    <section class="stack" aria-labelledby="announcement-drafts">
+      <h2 id="announcement-drafts"><%= t("announcements.index.drafts") %></h2>
+      <ul class="list-cards">
+        <% @drafts.each do |announcement| %>
+          <li class="panel stack">
+            <h3><%= link_to announcement.title, announcement %></h3>
+            <p class="meta"><%= t("announcements.draft") %> ・ <%= announcement.author.name %></p>
+          </li>
+        <% end %>
+      </ul>
+    </section>
+  <% end %>
+</div>
