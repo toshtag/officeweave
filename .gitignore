@@ -9,3 +9,29 @@ desktop.ini
 *~
 .idea/
 .vscode/
+
+# 一時ファイルとログ
+/log/*
+/tmp/*
+!/log/.keep
+!/tmp/.keep
+/tmp/pids/*
+!/tmp/pids/.keep
+
+# アップロードされたファイル
+/storage/*
+!/storage/.keep
+
+# ビルド済みアセット
+/app/assets/builds/*
+!/app/assets/builds/.keep
+/public/assets
+
+# システムテストが出力する画面画像
+/tmp/screenshots/
+
+# 環境ごとの設定と秘密情報。リポジトリへ含めない。
+/.env
+/.env.*
+/config/master.key
+/config/credentials/*.key

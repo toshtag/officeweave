@@ -1,0 +1,23 @@
+# 接続情報は環境変数から読み取る。
+# 秘密情報を設定ファイルへ書き込まないため、既定値は開発用の値だけにとどめる。
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  max_connections: <%= ENV.fetch("RAILS_MAX_THREADS", 5) %>
+  host: <%= ENV.fetch("DATABASE_HOST", "localhost") %>
+  port: <%= ENV.fetch("DATABASE_PORT", 5432) %>
+  username: <%= ENV.fetch("DATABASE_USER", "officeweave") %>
+  password: <%= ENV.fetch("DATABASE_PASSWORD", nil) %>
+
+development:
+  <<: *default
+  database: <%= ENV.fetch("DATABASE_NAME", "officeweave_development") %>
+
+# test は実行のたびに再作成される。development と同じ名前にしてはならない。
+test:
+  <<: *default
+  database: <%= ENV.fetch("TEST_DATABASE_NAME", "officeweave_test") %>
+
+production:
+  <<: *default
+  database: <%= ENV.fetch("DATABASE_NAME", "officeweave_production") %>

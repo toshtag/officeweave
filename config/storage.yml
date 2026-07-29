@@ -1,0 +1,10 @@
+# 保存先はローカルディスクだけを定義する。
+# セルフホストを最初の提供形態とするため、外部のオブジェクトストレージへの接続を
+# 動作の前提にしない。必要になった時点で、用途を明示して追加する。
+test:
+  service: Disk
+  root: <%= Rails.root.join("tmp/storage") %>
+
+local:
+  service: Disk
+  root: <%= Rails.root.join("storage") %>
