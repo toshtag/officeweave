@@ -1,0 +1,26 @@
+meeting_room_a:
+  organization: main
+  name: 会議室 A
+  code: room-a
+  capacity: 8
+  position: 10
+
+meeting_room_b:
+  organization: main
+  name: 会議室 B
+  code: room-b
+  capacity: 4
+  position: 20
+
+retired_projector:
+  organization: main
+  name: 旧型プロジェクター
+  code: projector-old
+  reservable: false
+  position: 90
+
+other_org_room:
+  organization: other
+  name: 別組織の会議室
+  code: room-a
+  position: 10
