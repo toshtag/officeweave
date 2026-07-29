@@ -13,6 +13,9 @@ Rails.application.routes.draw do
   # お知らせ。
   resources :announcements
 
+  # 予定。
+  resources :events
+
   # 利用者の管理。削除ではなく無効化で利用を止める。
   resources :users, only: %i[index new create edit update] do
     resource :activation, only: %i[create destroy], controller: "user_activations"
