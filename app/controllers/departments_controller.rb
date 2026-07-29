@@ -1,6 +1,7 @@
 # 部門の一覧と管理。
-# 操作できる利用者の範囲は P4-T3 で権限を導入した時点で絞る。
+# 参照は所属の確認に使うため全員に開き、変更は管理者へ限定する。
 class DepartmentsController < ApplicationController
+  before_action :require_administrator, only: %i[new create edit update destroy]
   before_action :set_department, only: %i[show edit update destroy]
 
   def index
