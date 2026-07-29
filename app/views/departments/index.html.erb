@@ -3,7 +3,9 @@
 <div class="stack">
   <div class="page-heading">
     <h1><%= t("departments.index.heading") %></h1>
-    <%= link_to t("departments.index.new"), new_department_path, class: "button" %>
+    <% if administrator? %>
+      <%= link_to t("departments.index.new"), new_department_path, class: "button" %>
+    <% end %>
   </div>
 
   <% if @departments.any? %>

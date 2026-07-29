@@ -5,6 +5,7 @@ taro:
   name: 山田 太郎
   email_address: taro@example.com
   password_digest: <%= password_digest %>
+  role: administrator
 
 hanako:
   organization: main

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_29_071341) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_29_072056) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -63,9 +63,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_29_071341) do
     t.string "name", null: false
     t.bigint "organization_id", null: false
     t.string "password_digest", null: false
+    t.string "role", default: "member", null: false
     t.datetime "updated_at", null: false
     t.index ["email_address"], name: "index_users_on_email_address", unique: true
     t.index ["organization_id"], name: "index_users_on_organization_id"
+    t.index ["role"], name: "index_users_on_role"
   end
 
   add_foreign_key "departments", "departments", column: "parent_id"

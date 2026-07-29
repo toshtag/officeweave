@@ -1,6 +1,6 @@
 # 部門への所属の追加と解除。
-# 操作できる利用者の範囲は P4-T3 で権限を導入した時点で絞る。
 class MembershipsController < ApplicationController
+  before_action :require_administrator
   before_action :set_department
 
   def create
