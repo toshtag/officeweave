@@ -1,0 +1,43 @@
+/* 言語の切り替え。送信ボタンを選択肢として並べる。 */
+@layer components {
+  .locale-switcher {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--font-size-sm);
+  }
+
+  .locale-switcher__label {
+    color: var(--color-text-muted);
+  }
+
+  .locale-switcher__options {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* 送信ボタンだが、見た目は選択肢としてそろえる。 */
+  .locale-switcher__option {
+    padding: var(--space-1) var(--space-2);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background-color: var(--color-surface);
+    color: var(--color-accent);
+    cursor: pointer;
+  }
+
+  .locale-switcher__option:hover {
+    border-color: var(--color-border-strong);
+    color: var(--color-accent-hover);
+  }
+
+  .locale-switcher__current {
+    padding: var(--space-1) var(--space-2);
+    border: var(--border-width) solid transparent;
+    color: var(--color-text-muted);
+  }
+}

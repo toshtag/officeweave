@@ -1,0 +1,20 @@
+<%#
+  言語の切り替え。JavaScript を使わず、送信だけで完結する。
+  選択肢は自分自身の言語で表記する。翻訳すると、読めない言語で選ぶことになる。
+%>
+<%= form_with url: locale_path, method: :patch, class: "locale-switcher" do |form| %>
+  <%= form.hidden_field :return_to, value: request.fullpath %>
+  <span class="locale-switcher__label" id="locale-switcher-label"><%= t("locale_switcher.label") %></span>
+  <ul class="locale-switcher__options" aria-labelledby="locale-switcher-label">
+    <% I18n.available_locales.each do |locale| %>
+      <li>
+        <% if locale == I18n.locale %>
+          <span class="locale-switcher__current" aria-current="true"><%= t("locale_switcher.names.#{locale}") %></span>
+        <% else %>
+          <%= form.button t("locale_switcher.names.#{locale}"),
+                          name: :locale, value: locale, class: "locale-switcher__option" %>
+        <% end %>
+      </li>
+    <% end %>
+  </ul>
+<% end %>
