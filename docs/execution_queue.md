@@ -9,8 +9,10 @@
 ## 現在地
 
 ```text
+現在の Phase: R0
 直近完了 Task: F-T2
-次の Task:     なし（P0 から F まで完了）
+進行中:        なし
+次に実行:      R0-T1 Docker 構成・データボリューム・ポートの分離
 ```
 
 ## P0 プロジェクト契約
@@ -129,6 +131,46 @@
 | ---- | ------------------- | ------------- | --------------------------------- | --- |
 | F-T1 | `f/t1-ci`           | CI を導入する      | 既存の検証コマンドが CI で成功する               | 完了  |
 | F-T2 | `f/t2-final-verify` | 総合検証を実施する     | クリーン環境からの起動、バックアップ復元、主要 E2E が成功する | 完了  |
+
+## R0 安定化
+
+F 完了後の静的レビューで確認した不具合を、GitHub Issue として登録した。
+本 Phase では、それらを重大度と依存関係の順に修正する。新しい機能は足さない。
+
+1 Issue につき 1 ブランチ 1 PR とする。Issue が大きい場合は分割してよいが、
+分割した場合は本書へ追記してから実装へ入る。
+
+| Task   | ブランチ                       | 対応 Issue                                                       | 内容                             | 状態  |
+| ------ | -------------------------- | -------------------------------------------------------------- | ------------------------------ | --- |
+| R0-T0  | `r0/t0-stabilization-roadmap` | —                                                            | 不具合 Issue を登録し、安定化フェーズを記録する     | 進行中 |
+| R0-T1  | `r0/t1-compose-isolation`  | [#48](https://github.com/toshtag/OfficeWeave/issues/48)         | Docker 構成・データボリューム・ポートを分離する    | 未着手 |
+| R0-T2  | —                          | [#49](https://github.com/toshtag/OfficeWeave/issues/49)         | バックアップの永続化と復元手順を成立させる          | 未着手 |
+| R0-T3  | —                          | [#50](https://github.com/toshtag/OfficeWeave/issues/50)         | Webhook 送信先を制限し SSRF を塞ぐ       | 未着手 |
+| R0-T4  | —                          | [#51](https://github.com/toshtag/OfficeWeave/issues/51)         | 永続キューとワーカーを導入する                | 未着手 |
+| R0-T5  | —                          | [#52](https://github.com/toshtag/OfficeWeave/issues/52)         | Active Storage 標準ルートを無効化する     | 未着手 |
+| R0-T6  | —                          | [#53](https://github.com/toshtag/OfficeWeave/issues/53)         | 文書更新の失敗時に添付を削除しない              | 未着手 |
+| R0-T7  | —                          | [#54](https://github.com/toshtag/OfficeWeave/issues/54)         | 申請の決裁を行ロックで直列化する               | 未着手 |
+| R0-T8  | —                          | [#55](https://github.com/toshtag/OfficeWeave/issues/55)         | 最後の有効な管理者を失う操作を拒否する            | 未着手 |
+| R0-T9  | —                          | [#56](https://github.com/toshtag/OfficeWeave/issues/56)         | 未知の認証方式を起動時に失敗させる              | 未着手 |
+| R0-T10 | —                          | [#57](https://github.com/toshtag/OfficeWeave/issues/57)         | セッションへ期限を設け、戻り先と Host を制限する    | 未着手 |
+| R0-T11 | —                          | [#60](https://github.com/toshtag/OfficeWeave/issues/60)         | CSV の未知の部門コードを誤りとして扱う          | 未着手 |
+| R0-T12 | —                          | [#61](https://github.com/toshtag/OfficeWeave/issues/61)         | CSV 出力を数式インジェクションから守る          | 未着手 |
+| R0-T13 | —                          | [#66](https://github.com/toshtag/OfficeWeave/issues/66)         | パスワードの最低要件と初期値検査を追加する          | 未着手 |
+| R0-T14 | —                          | [#59](https://github.com/toshtag/OfficeWeave/issues/59)         | 公開待ちのお知らせを表示し、公開時に通知する         | 未着手 |
+| R0-T15 | —                          | [#58](https://github.com/toshtag/OfficeWeave/issues/58)         | 予約の組織整合性を検証する                  | 未着手 |
+| R0-T16 | —                          | [#62](https://github.com/toshtag/OfficeWeave/issues/62)         | 設定更新をひとつのトランザクションにまとめる         | 未着手 |
+| R0-T17 | —                          | [#63](https://github.com/toshtag/OfficeWeave/issues/63)         | API の不正な日時入力を 400 で返す         | 未着手 |
+| R0-T18 | —                          | [#64](https://github.com/toshtag/OfficeWeave/issues/64)         | 初期利用者の存在判定を組織単位にする             | 未着手 |
+| R0-T19 | —                          | [#65](https://github.com/toshtag/OfficeWeave/issues/65)         | 利用者の無効化で API トークンを失効させる        | 未着手 |
+| R0-T20 | —                          | [#67](https://github.com/toshtag/OfficeWeave/issues/67)         | 差し戻し通知の翻訳キーの誤記を修正する            | 未着手 |
+
+### 実行順の根拠
+
+- R0-T1 と R0-T2 を先に置く。データを失う経路を残したまま他の修正を検証すると、検証の失敗と実害の区別が付かない。
+- R0-T3 から R0-T5 は、外部からの到達と情報の持ち出しに関わる。
+- R0-T4 の永続キュー導入は R0-T14 の公開時通知が前提とする定期実行の土台になるため、R0-T14 より前に置く。
+- R0-T6 から R0-T13 は、データの喪失または資格情報の弱さに関わる。
+- R0-T14 以降は、影響範囲が限定的なものを後段へまとめた。
 
 ## 分解の方針
 
