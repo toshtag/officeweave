@@ -41,7 +41,10 @@ class Notification < ApplicationRecord
 
   # メールでも知らせる。
   # 送信の失敗で操作そのものが失敗しないよう、要求の外で処理する。
+  # 画面での通知は設定に関わらず残す。設定はメールの受け取りだけを決める。
   def deliver_by_mail
+    return unless user.mail_notifications_for?(event)
+
     NotificationMailer.with(notification: self).notify.deliver_later
   end
 

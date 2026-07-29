@@ -495,6 +495,39 @@ ALTER SEQUENCE public.memberships_id_seq OWNED BY public.memberships.id;
 
 
 --
+-- Name: notification_preferences; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.notification_preferences (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    event character varying NOT NULL,
+    mail_enabled boolean DEFAULT true NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: notification_preferences_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.notification_preferences_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: notification_preferences_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.notification_preferences_id_seq OWNED BY public.notification_preferences.id;
+
+
+--
 -- Name: notifications; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -915,6 +948,13 @@ ALTER TABLE ONLY public.memberships ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
+-- Name: notification_preferences id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notification_preferences ALTER COLUMN id SET DEFAULT nextval('public.notification_preferences_id_seq'::regclass);
+
+
+--
 -- Name: notifications id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1087,6 +1127,14 @@ ALTER TABLE ONLY public.events
 
 ALTER TABLE ONLY public.memberships
     ADD CONSTRAINT memberships_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: notification_preferences notification_preferences_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notification_preferences
+    ADD CONSTRAINT notification_preferences_pkey PRIMARY KEY (id);
 
 
 --
@@ -1437,6 +1485,20 @@ CREATE UNIQUE INDEX index_memberships_on_user_id_and_department_id ON public.mem
 
 
 --
+-- Name: index_notification_preferences_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_notification_preferences_on_user_id ON public.notification_preferences USING btree (user_id);
+
+
+--
+-- Name: index_notification_preferences_on_user_id_and_event; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_notification_preferences_on_user_id_and_event ON public.notification_preferences USING btree (user_id, event);
+
+
+--
 -- Name: index_notifications_on_subject; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1769,6 +1831,14 @@ ALTER TABLE ONLY public.departments
 
 
 --
+-- Name: notification_preferences fk_rails_9503aade25; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notification_preferences
+    ADD CONSTRAINT fk_rails_9503aade25 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
 -- Name: documents fk_rails_98ed785f39; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1935,6 +2005,7 @@ ALTER TABLE ONLY public.announcement_departments
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260729082553'),
 ('20260729081815'),
 ('20260729081505'),
 ('20260729081128'),
