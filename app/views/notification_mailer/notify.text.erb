@@ -1,0 +1,8 @@
+<%= t("notifications.events.#{@notification.event}", title: @notification.subject_title) %>
+
+<%= t("notification_mailer.notify.open") %>
+<%= notification_url(@notification) %>
+
+--
+<%= t("application.name") %>
+<%= t("notification_mailer.notify.settings_hint") %>

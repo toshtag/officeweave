@@ -503,3 +503,8 @@ ja:
       request_submitted: "申請が提出されました: %{title}"
       request_approved: "申請が承認されました: %{title}"
       request_returned: "申請が差し戻されました: %{title}"
+
+  notification_mailer:
+    notify:
+      open: 次の場所で確認できます。
+      settings_hint: このメールは OfficeWeave からの自動送信です。
