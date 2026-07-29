@@ -1,0 +1,44 @@
+name: officeweave
+
+services:
+  db:
+    image: postgres:18.4-bookworm
+    environment:
+      POSTGRES_USER: ${DATABASE_USER:-officeweave}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-officeweave_development}
+      POSTGRES_DB: officeweave_development
+    volumes:
+      - db_data:/var/lib/postgresql
+    ports:
+      # ホスト側の公開ポート。コンテナ間の接続には影響しない。
+      - "${DATABASE_PUBLISHED_PORT:-5432}:5432"
+    healthcheck:
+      # web の起動前にデータベースが接続を受け付けていることを保証する。
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-officeweave}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  web:
+    build:
+      context: .
+      args:
+        RUBY_VERSION: "3.4.10"
+    environment:
+      DATABASE_HOST: db
+      DATABASE_USER: ${DATABASE_USER:-officeweave}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-officeweave_development}
+      RAILS_ENV: ${RAILS_ENV:-development}
+    volumes:
+      # ソースコードだけを共有する。gem はイメージ内に置き、
+      # 名前付きボリュームで /usr/local/bundle を覆わない。
+      # Gemfile を変更した場合は docker compose build を実行する。
+      - .:/app
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db_data:
