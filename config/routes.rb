@@ -16,6 +16,9 @@ Rails.application.routes.draw do
   # 予定。
   resources :events
 
+  # 自分の設定。
+  resource :settings, only: %i[show update]
+
   # 通知。
   resources :notifications, only: %i[index show]
 

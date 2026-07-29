@@ -13,6 +13,7 @@ class User < ApplicationRecord
   has_many :request_activities, foreign_key: :actor_id, dependent: :restrict_with_error, inverse_of: :actor
   has_many :documents, foreign_key: :author_id, dependent: :restrict_with_error, inverse_of: :author
   has_many :notifications, dependent: :destroy
+  has_many :notification_preferences, dependent: :destroy
 
   # 大文字小文字と前後の空白の違いで別の利用者として扱わない。
   # 権限は 2 段階だけとする。
@@ -50,6 +51,14 @@ class User < ApplicationRecord
 
   def activate!
     update!(deactivated_at: nil)
+  end
+
+  # その種類の通知をメールでも受け取るか。
+  # 設定していない種類は受け取る扱いとする。
+  def mail_notifications_for?(event)
+    preference = notification_preferences.find_by(event: event)
+
+    preference.nil? || preference.mail_enabled?
   end
 
   # 主たる所属。連絡先の表示や既定の絞り込みに使う。

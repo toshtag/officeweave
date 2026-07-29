@@ -508,3 +508,16 @@ ja:
     notify:
       open: 次の場所で確認できます。
       settings_hint: このメールは OfficeWeave からの自動送信です。
+
+  settings:
+    title: 自分の設定
+    heading: 自分の設定
+    submit: 保存する
+    updated: 設定を保存しました。
+    mail_notifications: メールで受け取る通知
+    mail_notifications_hint: 選択を外した種類は、画面には残りますがメールでは届きません。
+    events:
+      announcement_published: お知らせが公開されたとき
+      request_submitted: 申請が提出されたとき
+      request_approved: 自分の申請が承認されたとき
+      request_returned: 自分の申請が差し戻されたとき

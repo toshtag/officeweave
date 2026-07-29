@@ -36,6 +36,7 @@
                   <span class="badge badge--unread"><%= count %></span>
                 <% end %>
               <% end %>
+              <%= link_to t("settings.heading"), settings_path, class: "button button--quiet" %>
               <%= button_to t("sessions.sign_out"), session_path, method: :delete, class: "button button--quiet" %>
             <% end %>
           </div>
