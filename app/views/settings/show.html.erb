@@ -36,5 +36,6 @@
   <% if administrator? %>
     <li><%= link_to t("webhook_endpoints.index.heading"), webhook_endpoints_path %></li>
     <li><%= link_to t("data_transfers.heading"), data_transfers_path %></li>
+    <li><%= link_to t("audit_events.index.heading"), audit_events_path %></li>
   <% end %>
 </ul>

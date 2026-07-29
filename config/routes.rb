@@ -16,6 +16,9 @@ Rails.application.routes.draw do
   # 予定。
   resources :events
 
+  # 監査記録。
+  resources :audit_events, only: %i[index]
+
   # 利用者と部門の入出力。
   get "data_transfers" => "data_transfers#show", as: :data_transfers
   get "data_transfers/users" => "data_transfers#users_export", as: :users_export

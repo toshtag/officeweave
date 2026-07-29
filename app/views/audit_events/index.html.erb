@@ -1,0 +1,69 @@
+<% content_for :title, t("audit_events.index.title") %>
+
+<div class="stack">
+  <h1><%= t("audit_events.index.heading") %></h1>
+
+  <form class="form form--inline" method="get" action="<%= audit_events_path %>">
+    <div class="form__field">
+      <%= label_tag :audit_action, AuditEvent.human_attribute_name(:action), class: "form__label" %>
+      <%= select_tag :audit_action,
+                     options_for_select(AuditEvent::ACTIONS.map { |a| [ t("audit_events.actions.#{a}"), a ] },
+                                        @action_name),
+                     include_blank: t("audit_events.index.all_actions"), class: "form__input" %>
+    </div>
+
+    <div class="form__field">
+      <%= label_tag :actor_id, AuditEvent.human_attribute_name(:actor), class: "form__label" %>
+      <%= select_tag :actor_id, options_from_collection_for_select(@actors, :id, :name, @actor_id),
+                     include_blank: t("audit_events.index.all_actors"), class: "form__input" %>
+    </div>
+
+    <%= submit_tag t("events.index.filter"), class: "button", name: nil %>
+  </form>
+
+  <p role="status"><%= t("audit_events.index.total", count: @total_count) %></p>
+
+  <% if @audit_events.any? %>
+    <div class="panel">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col"><%= AuditEvent.human_attribute_name(:created_at) %></th>
+            <th scope="col"><%= AuditEvent.human_attribute_name(:action) %></th>
+            <th scope="col"><%= AuditEvent.human_attribute_name(:actor) %></th>
+            <th scope="col"><%= AuditEvent.human_attribute_name(:details) %></th>
+            <th scope="col"><%= AuditEvent.human_attribute_name(:ip_address) %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @audit_events.each do |event| %>
+            <tr>
+              <td><%= l(event.created_at, format: :short) %></td>
+              <td><%= t("audit_events.actions.#{event.action}") %></td>
+              <td><%= event.actor&.name || t("audit_events.unknown_actor") %></td>
+              <td><%= event.details.map { |key, value| "#{key}: #{value}" }.join(", ") %></td>
+              <td><%= event.ip_address %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+
+    <nav class="tabs" aria-label="<%= t("audit_events.index.pages") %>">
+      <ul class="tabs__list">
+        <% if @page > 1 %>
+          <li><%= link_to t("audit_events.index.previous"),
+                          audit_events_path(page: @page - 1, audit_action: @action_name, actor_id: @actor_id),
+                          class: "tabs__link" %></li>
+        <% end %>
+        <% if @total_count > @page * AuditEventsController::PER_PAGE %>
+          <li><%= link_to t("audit_events.index.next"),
+                          audit_events_path(page: @page + 1, audit_action: @action_name, actor_id: @actor_id),
+                          class: "tabs__link" %></li>
+        <% end %>
+      </ul>
+    </nav>
+  <% else %>
+    <p><%= t("audit_events.index.empty") %></p>
+  <% end %>
+</div>
