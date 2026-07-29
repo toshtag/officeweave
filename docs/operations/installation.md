@@ -56,11 +56,29 @@ docker compose run --rm web bin/rails secret
 
 ## 4. 起動
 
+運用環境では配布用の構成を使う。
+
+```bash
+docker compose -f compose.production.yaml up -d --build
+```
+
+開発や試用では、開発用の構成を使う。
+
 ```bash
 docker compose up -d --build
 ```
 
 データベースの作成と移行は起動時に自動で実行される。
+
+### 2 つの構成の違い
+
+| 項目          | 開発用（`compose.yaml`）  | 配布用（`compose.production.yaml`） |
+| ----------- | -------------------- | ----------------------------- |
+| ソースコード      | ホストから共有              | イメージへ取り込む                     |
+| 配信物         | 要求のたびに解決             | 事前に組み立て済み                     |
+| 実行利用者       | 管理者                  | 専用の利用者                        |
+| 依存          | 開発と検証の分も含む           | 実行に必要な分のみ                     |
+| 暗号化された通信    | 必須にしない               | 既定で必須（`FORCE_SSL` で切り替え）      |
 
 ## 5. 最初の利用者の作成
 
@@ -74,7 +92,7 @@ docker compose exec web bin/rails db:seed
 ## 6. 確認
 
 ```bash
-docker compose exec web bin/diagnose
+docker compose -f compose.production.yaml exec web bin/diagnose
 ```
 
 失敗が 0 件であることを確認する。
