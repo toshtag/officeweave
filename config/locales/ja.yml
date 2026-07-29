@@ -577,3 +577,22 @@ ja:
     status:
       active: 有効
       inactive: 停止中
+
+  data_transfers:
+    title: 入出力
+    heading: 入出力
+    no_file: ファイルを選んでください。
+    imported: "取り込みました。追加 %{created} 件、更新 %{updated} 件。"
+    export:
+      heading: 書き出し
+      description: 現在の内容を CSV として取得します。
+      users: 利用者を書き出す
+      departments: 部門を書き出す
+    import:
+      heading: 利用者の取り込み
+      description: メールアドレスが一致する利用者は更新し、なければ追加します。パスワードは扱いません。
+      columns_hint: 1 行目に上記の見出しを付けてください。departments は部門の識別子を空白で区切って並べます。
+      file: CSV ファイル
+      submit: 取り込む
+      failed: 取り込めませんでした。1 件でも誤りがあると、何も保存されません。
+      line: "%{line} 行目:"

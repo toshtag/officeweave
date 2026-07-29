@@ -35,5 +35,6 @@
   <li><%= link_to t("api_tokens.index.heading"), api_tokens_path %></li>
   <% if administrator? %>
     <li><%= link_to t("webhook_endpoints.index.heading"), webhook_endpoints_path %></li>
+    <li><%= link_to t("data_transfers.heading"), data_transfers_path %></li>
   <% end %>
 </ul>
