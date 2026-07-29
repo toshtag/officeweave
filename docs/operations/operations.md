@@ -2,6 +2,10 @@
 
 本書は、導入後の日常的な運用を定義する。
 
+本書のコマンドは、すべて配布用の構成に対して実行する。
+Compose を呼び出すコマンドには必ず `-f compose.production.yaml` を付ける。
+付け忘れると、開発用の構成に対して実行される。
+
 ## 1. 利用者の管理
 
 利用者の追加、更新、無効化は、管理者が画面から行う。
@@ -13,7 +17,7 @@
 まとめて登録する場合は CSV の取り込みを使う。
 
 ```bash
-docker compose exec web bin/rails runner "puts UserCsv::HEADERS.join(',')"
+docker compose -f compose.production.yaml exec web bin/rails runner "puts UserCsv::HEADERS.join(',')"
 ```
 
 取り込みは 1 行でも誤りがあると何も保存しない。行番号と理由が画面に出る。
@@ -41,11 +45,11 @@ docker compose exec web bin/rails runner "puts UserCsv::HEADERS.join(',')"
 ### 記録
 
 ```bash
-docker compose logs -f web
+docker compose -f compose.production.yaml logs -f web
 ```
 
 ```bash
-docker compose logs -f db
+docker compose -f compose.production.yaml logs -f db
 ```
 
 記録の保管と回収は、組織の環境にある仕組みへ委ねている。
@@ -72,7 +76,7 @@ docker compose logs -f db
 ### ログインできない
 
 ```bash
-docker compose exec web bin/diagnose
+docker compose -f compose.production.yaml exec web bin/diagnose
 ```
 
 有効な管理者が存在するかを確認する。

@@ -1,0 +1,15 @@
+# 開発用データベースをホストへ公開する追加の構成。
+#
+# ホストの DB クライアントから直接つなぐ場合にだけ重ねて指定する。
+# 通常の起動では公開しない。開発用データベースが LAN から到達できる状態を既定にしない。
+#
+# 使い方:
+#   docker compose -f compose.yaml -f compose.database.yaml up -d
+#
+# 接続先:
+#   127.0.0.1:55432（DATABASE_PUBLISHED_PORT で変更できる）
+services:
+  db:
+    ports:
+      # loopback へ固定する。この override は開発者本人の接続だけを想定している。
+      - "127.0.0.1:${DATABASE_PUBLISHED_PORT:-55432}:5432"

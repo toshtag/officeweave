@@ -2,10 +2,14 @@
 
 本書は、新しい版へ入れ替える手順を定義する。
 
+本書のコマンドは、すべて配布用の構成に対して実行する。
+Compose を呼び出すコマンドには必ず `-f compose.production.yaml` を付ける。
+付け忘れると、開発用の構成に対して実行される。
+
 ## 1. 手順
 
 ```bash
-docker compose exec web bin/backup
+docker compose -f compose.production.yaml exec web bin/backup
 ```
 
 ```bash
@@ -13,11 +17,11 @@ git pull
 ```
 
 ```bash
-docker compose up -d --build
+docker compose -f compose.production.yaml up -d --build
 ```
 
 ```bash
-docker compose exec web bin/diagnose
+docker compose -f compose.production.yaml exec web bin/diagnose
 ```
 
 データベースの移行は起動時に自動で実行される。
@@ -30,7 +34,7 @@ docker compose exec web bin/diagnose
 ## 2. 診断
 
 ```bash
-docker compose exec web bin/diagnose
+docker compose -f compose.production.yaml exec web bin/diagnose
 ```
 
 確認する内容は次のとおり。
@@ -54,7 +58,7 @@ docker compose exec web bin/diagnose
 ## 3. 失敗した場合
 
 ```bash
-docker compose down
+docker compose -f compose.production.yaml down
 ```
 
 ```bash
@@ -62,13 +66,13 @@ git checkout <前の版>
 ```
 
 ```bash
-docker compose up -d --build
+docker compose -f compose.production.yaml up -d --build
 ```
 
 データベースの移行を戻す必要がある場合は、取得しておいたバックアップから復元する。
 
 ```bash
-docker compose exec -e FORCE=1 web bin/restore <書庫のパス>
+docker compose -f compose.production.yaml exec -e FORCE=1 web bin/restore <書庫のパス>
 ```
 
 移行を個別に戻す操作は用意していない。

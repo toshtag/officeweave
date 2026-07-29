@@ -1,4 +1,12 @@
-name: officeweave
+# 開発用の構成。
+#
+# 配布用（compose.production.yaml）とは、project 名もデータボリュームも分ける。
+# 同じ名前を使うと、開発用の `docker compose down -v` が
+# 配布用として運用しているデータベースを削除し得る。
+#
+# 使い方:
+#   docker compose up -d --build
+name: officeweave_development
 
 services:
   db:
@@ -8,10 +16,9 @@ services:
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-officeweave_development}
       POSTGRES_DB: ${DATABASE_NAME:-officeweave_development}
     volumes:
-      - db_data:/var/lib/postgresql
-    ports:
-      # ホスト側の公開ポート。コンテナ間の接続には影響しない。
-      - "${DATABASE_PUBLISHED_PORT:-5432}:5432"
+      - development_db_data:/var/lib/postgresql
+    # ホストへは公開しない。web からは db:5432 で到達できる。
+    # ホストの DB クライアントから直接つなぐ場合だけ、compose.database.yaml を重ねる。
     healthcheck:
       # web の起動前にデータベースが接続を受け付けていることを保証する。
       test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-officeweave}"]
@@ -30,16 +37,20 @@ services:
       DATABASE_PASSWORD: ${DATABASE_PASSWORD:-officeweave_development}
       DATABASE_NAME: ${DATABASE_NAME:-officeweave_development}
       RAILS_ENV: ${RAILS_ENV:-development}
+      # メール本文などの URL は、実際に公開しているポートで組み立てる。
+      WEB_PORT: ${WEB_PORT:-3210}
     volumes:
       # ソースコードだけを共有する。gem はイメージ内に置き、
       # 名前付きボリュームで /usr/local/bundle を覆わない。
       # Gemfile を変更した場合は docker compose build を実行する。
       - .:/app
     ports:
-      - "${WEB_PORT:-3000}:3000"
+      # 既定では loopback にだけ公開する。
+      # 同じ端末で他の開発環境が動いていても衝突しにくい値を選ぶ。
+      - "${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-3210}:3000"
     depends_on:
       db:
         condition: service_healthy
 
 volumes:
-  db_data:
+  development_db_data:

@@ -26,6 +26,19 @@ git clone https://github.com/toshtag/officeweave.git
 cd officeweave
 ```
 
+### 開発用と配布用の使い分け
+
+本書の手順は、すべて配布用の構成に対して実行する。
+そのため、Compose を呼び出すコマンドには必ず `-f compose.production.yaml` を付ける。
+
+```bash
+docker compose -f compose.production.yaml <コマンド>
+```
+
+付け忘れると、開発用の構成に対して実行される。
+両者は project 名もデータボリュームも分けてあるため、
+配布用のデータが壊れることはないが、意図した対象へは届かない。
+
 ## 3. 設定
 
 ```bash
@@ -48,7 +61,7 @@ SECRET_KEY_BASE        署名に使う鍵
 ### 署名に使う鍵
 
 ```bash
-docker compose run --rm web bin/rails secret
+docker compose -f compose.production.yaml run --rm web bin/rails secret
 ```
 
 出力された値を `.env` の `SECRET_KEY_BASE` へ設定する。
@@ -70,6 +83,23 @@ docker compose up -d --build
 
 データベースの作成と移行は起動時に自動で実行される。
 
+### 公開先
+
+既定では loopback にだけ公開する。逆プロキシの背後へ置く構成を前提としている。
+
+```text
+http://127.0.0.1:3210
+```
+
+逆プロキシを使わず、外部から直接接続させる場合に限り `.env` へ次を設定する。
+
+```text
+WEB_BIND_ADDRESS=0.0.0.0
+```
+
+暗号化された通信を終端する仕組みは、このリポジトリに含まれていない。
+`WEB_BIND_ADDRESS=0.0.0.0` のまま公開ネットワークへ置かない。
+
 ### 2 つの構成の違い
 
 | 項目          | 開発用（`compose.yaml`）  | 配布用（`compose.production.yaml`） |
@@ -79,11 +109,13 @@ docker compose up -d --build
 | 実行利用者       | 管理者                  | 専用の利用者                        |
 | 依存          | 開発と検証の分も含む           | 実行に必要な分のみ                     |
 | 暗号化された通信    | 必須にしない               | 既定で必須（`FORCE_SSL` で切り替え）      |
+| project 名     | `officeweave_development` | `officeweave_production`   |
+| データボリューム     | `development_db_data`     | `production_db_data` `production_storage_data` |
 
 ## 5. 最初の利用者の作成
 
 ```bash
-docker compose exec web bin/rails db:seed
+docker compose -f compose.production.yaml exec web bin/rails db:seed
 ```
 
 `.env` に設定した値で、最初の管理者が作られる。
@@ -99,7 +131,7 @@ docker compose -f compose.production.yaml exec web bin/diagnose
 「注意」が残る場合は、内容を読んで対処するか、意図した状態であることを確かめる。
 
 ```bash
-curl -s http://localhost:3000/health
+curl -s http://127.0.0.1:3210/health
 ```
 
 `{"status":"ok",...}` が返れば、依存先まで含めて動作している。
@@ -111,7 +143,7 @@ curl -s http://localhost:3000/health
 一通りの機能を試す場合は、確認用のデータを投入できる。
 
 ```bash
-docker compose exec web bin/rails officeweave:demo_data
+docker compose -f compose.production.yaml exec web bin/rails officeweave:demo_data
 ```
 
 実運用を始める前に、投入した組織ごと削除する。
@@ -123,7 +155,8 @@ docker compose exec web bin/rails officeweave:demo_data
 このリポジトリには、暗号化された通信を終端する仕組みを含めていない。
 組織の環境にある逆プロキシの背後へ置き、そこで終端する。
 
-`WEB_PORT` で公開ポートを変更できる。
+公開先は `WEB_BIND_ADDRESS` と `WEB_PORT` で変更できる。
+既定は `127.0.0.1:3210` である。
 
 ### バックアップ
 
@@ -137,11 +170,14 @@ docker compose exec web bin/rails officeweave:demo_data
 ## 9. 停止と削除
 
 ```bash
-docker compose down
+docker compose -f compose.production.yaml down
 ```
 
-データも含めて削除する場合は次を実行する。取り消せない。
+データも含めて削除する場合は次を実行する。
 
 ```bash
-docker compose down -v
+docker compose -f compose.production.yaml down -v
 ```
+
+この操作は、データベースの内容とアップロードされたファイルを削除する。取り消せない。
+実行前にバックアップを取得し、削除してよい環境であることを確認する。
