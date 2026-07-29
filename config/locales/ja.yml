@@ -33,6 +33,13 @@ ja:
       no_department: 未設定
     announcements:
       more: すべてのお知らせを見る
+    requests:
+      heading: 申請
+      awaiting:
+        one: 自分の承認待ち 1 件
+        other: 自分の承認待ち %{count} 件
+      mine: 進行中の自分の申請
+      empty: 対応が必要な申請はありません。
     departments:
       heading: 所属している部門
       empty: 所属している部門がありません。
@@ -382,6 +389,14 @@ ja:
       new: 申請する
       empty: 表示できる申請がありません。
       all_statuses: すべて
+      scopes:
+        label: 一覧の対象
+        all: すべて
+        mine: 自分の申請
+        awaiting:
+          zero: 自分の担当
+          one: 自分の担当 (1)
+          other: 自分の担当 (%{count})
     new:
       title: 申請の作成
       heading: 申請の作成

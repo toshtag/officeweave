@@ -33,6 +33,13 @@ en:
       no_department: Not set
     announcements:
       more: See all announcements
+    requests:
+      heading: Requests
+      awaiting:
+        one: 1 request waiting for you
+        other: "%{count} requests waiting for you"
+      mine: Your open requests
+      empty: Nothing needs your attention right now.
     departments:
       heading: Your departments
       empty: You do not belong to any department yet.
@@ -366,6 +373,14 @@ en:
       new: Start a request
       empty: There are no requests to show.
       all_statuses: All
+      scopes:
+        label: What to show
+        all: All
+        mine: My requests
+        awaiting:
+          zero: Waiting for me
+          one: Waiting for me (1)
+          other: Waiting for me (%{count})
     new:
       title: Start a request
       heading: Start a request
