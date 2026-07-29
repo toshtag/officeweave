@@ -141,9 +141,9 @@ Copyright (C) 2026 OfficeWeave contributors
 ## 現在地と次のタスク
 
 ```text
-現在の Phase:        P9 Notifications
-直近完了 Task:       P9-T2 メール通知を実装する
-次に実行する Task:   P9-T3 配信設定を実装する
+現在の Phase:        P10 Integrations
+直近完了 Task:       P9-T3 配信設定を実装する
+次に実行する Task:   P10-T1 最小 REST API を実装する
 ```
 
 進行状況は [実行キュー](docs/execution_queue.md) で管理します。
