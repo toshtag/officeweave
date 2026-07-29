@@ -160,9 +160,9 @@ Copyright (C) 2026 OfficeWeave contributors
 ## 現在地と次のタスク
 
 ```text
-現在の Phase:        P12 Self-host release
-直近完了 Task:       P12-T3 セルフホスト配布構成を用意する
-次に実行する Task:   P12-T4 初回リリース準備を行う
+現在の Phase:        F 最終検証と CI
+直近完了 Task:       P12-T4 初回リリース準備を行う
+次に実行する Task:   F-T1 CI を導入する
 ```
 
 進行状況は [実行キュー](docs/execution_queue.md) で管理します。
