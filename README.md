@@ -142,8 +142,8 @@ Copyright (C) 2026 OfficeWeave contributors
 
 ```text
 現在の Phase:        P4 Identity
-直近完了 Task:       P4-T2 組織、部門、所属を実装する
-次に実行する Task:   P4-T3 必要最小限の権限を実装する
+直近完了 Task:       P4-T3 必要最小限の権限を実装する
+次に実行する Task:   P4-T4 管理者向けの利用者管理画面を実装する
 ```
 
 進行状況は [実行キュー](docs/execution_queue.md) で管理します。
