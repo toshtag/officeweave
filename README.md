@@ -42,7 +42,8 @@ pre-alpha
 - [製品ビジョン](docs/product/vision.md) — 解決したい問題、初期範囲、非目標
 - [アーキテクチャ原則](docs/architecture/principles.md) — 設計契約と依存方針
 - [開発規約](docs/development/conventions.md) — 命名、言語、多言語化の取り決め
-- [ロードマップ](docs/roadmap.md) — Phase 一覧と現在地
+- [ロードマップ](docs/roadmap.md) — Phase 一覧と進行規則
+- [実行キュー](docs/execution_queue.md) — タスク分解と現在地
 
 いずれも日本語を正本とします。
 
@@ -51,8 +52,7 @@ pre-alpha
 ```text
 現在の Phase:        P0 プロジェクト契約
 直近完了 Task:       P0-T1 プロジェクト契約とロードマップを文書化する
-進行中 Task:         なし
-次に実行する Task:   P0-T2 code-pact を初期化し、P0 ロードマップを登録する
+進行中 Task:         P0-T2 ロードマップを改訂し、実行キューを記録する
 ```
 
-進行状況は [ロードマップ](docs/roadmap.md) で管理します。
+進行状況は [実行キュー](docs/execution_queue.md) で管理します。
