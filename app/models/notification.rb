@@ -3,6 +3,8 @@
 # 文面は保存せず、表示するときに翻訳ファイルから組み立てる。
 # 保存すると、利用者の表示言語を変えても過去の通知が変わらない。
 class Notification < ApplicationRecord
+  include WebhookPublishable
+
   EVENTS = %w[
     announcement_published
     request_submitted
@@ -32,6 +34,16 @@ class Notification < ApplicationRecord
 
   def self.deliver_to_all(users:, subject:, event:)
     users.each { |user| deliver(user: user, subject: subject, event: event) }
+  end
+
+  # 出来事を外部の宛先へも送る。
+  # 利用者ごとの通知とは独立して、組織につき 1 回だけ送る。
+  def self.publish(organization:, subject:, event:)
+    publish_webhook(
+      organization: organization,
+      event: event,
+      payload: { subject_type: subject.class.name, subject_id: subject.id, title: subject.try(:title).to_s }
+    )
   end
 
   # 対象の件名。種類ごとに持つ属性が違うため、ここでそろえる。
