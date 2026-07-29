@@ -1,0 +1,14 @@
+<%#
+  通知と警告の表示。
+  role を与えて、画面を見ていない利用者にも変化が伝わるようにする。
+%>
+<% if flash.any? %>
+  <div class="flash">
+    <% flash.each do |kind, message| %>
+      <p class="flash__message flash__message--<%= kind %>"
+         role="<%= kind.to_s == "alert" ? "alert" : "status" %>">
+        <%= message %>
+      </p>
+    <% end %>
+  </div>
+<% end %>

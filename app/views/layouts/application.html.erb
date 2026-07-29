@@ -26,12 +26,19 @@
       <header class="page__header" role="banner">
         <div class="container page__masthead">
           <%= link_to t("application.name"), root_path, class: "page__brand" %>
-          <%= render "shared/locale_switcher" %>
+
+          <div class="page__actions">
+            <%= render "shared/locale_switcher" %>
+            <% if authenticated? %>
+              <%= button_to t("sessions.sign_out"), session_path, method: :delete, class: "button button--quiet" %>
+            <% end %>
+          </div>
         </div>
       </header>
 
       <main class="page__main" id="main" tabindex="-1">
-        <div class="container">
+        <div class="container stack">
+          <%= render "shared/flash" %>
           <%= yield %>
         </div>
       </main>

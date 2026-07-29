@@ -1,0 +1,36 @@
+/* 操作の結果の通知。 */
+@layer components {
+  .flash__message {
+    margin: 0;
+    padding: var(--space-3) var(--space-4);
+    border: var(--border-width) solid var(--color-border-interactive);
+    border-radius: var(--radius-sm);
+    background-color: var(--color-surface);
+  }
+
+  .flash__message + .flash__message {
+    margin-block-start: var(--space-2);
+  }
+
+  /*
+   * 色だけで種類を伝えない。
+   * 記号を先頭に添え、色が判別できない場合も区別できるようにする。
+   */
+  .flash__message--notice {
+    border-color: var(--color-success);
+    color: var(--color-success);
+  }
+
+  .flash__message--notice::before {
+    content: "✓ ";
+  }
+
+  .flash__message--alert {
+    border-color: var(--color-danger);
+    color: var(--color-danger);
+  }
+
+  .flash__message--alert::before {
+    content: "! ";
+  }
+}

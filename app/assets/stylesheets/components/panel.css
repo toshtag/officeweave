@@ -1,0 +1,16 @@
+/* 内容のまとまりを面として示す。 */
+@layer components {
+  .panel {
+    padding: var(--space-5);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+    background-color: var(--color-surface);
+    box-shadow: var(--shadow-raised);
+  }
+
+  /* 入力項目が少ない画面で、行が横に伸びすぎないようにする。 */
+  .panel--narrow {
+    max-width: var(--content-max);
+    margin-inline: auto;
+  }
+}
