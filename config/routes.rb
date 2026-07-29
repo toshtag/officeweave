@@ -16,6 +16,12 @@ Rails.application.routes.draw do
   # 予定。
   resources :events
 
+  # 申請。
+  resources :request_types, only: %i[index new create edit update]
+  resources :requests, except: %i[destroy] do
+    resource :submission, only: %i[create destroy], controller: "request_submissions"
+  end
+
   # 設備・備品の予約。
   resources :reservations, only: %i[index new create destroy]
 
