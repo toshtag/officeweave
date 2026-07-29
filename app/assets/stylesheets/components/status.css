@@ -1,0 +1,12 @@
+/* 状態の表示。色だけに頼らず、文字で状態を示す。 */
+@layer components {
+  .status--muted {
+    color: var(--color-text-muted);
+  }
+
+  .table__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+}

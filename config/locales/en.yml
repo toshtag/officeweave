@@ -65,6 +65,9 @@ en:
     no: "No"
 
   errors:
+    messages:
+      cyclic: cannot be this department or one of its descendants
+      different_organization: must belong to the same organization
     forbidden:
       title: Not permitted
       heading: You cannot perform this action
@@ -115,3 +118,30 @@ en:
   roles:
     member: Member
     administrator: Administrator
+
+  users:
+    created: The user has been added.
+    updated: The user has been updated.
+    activated: The user is active again.
+    deactivated: The user has been deactivated.
+    cannot_deactivate_self: You cannot deactivate your own account.
+    activate: Activate
+    deactivate: Deactivate
+    index:
+      title: Users
+      heading: Users
+      new: Add user
+      status: Status
+    new:
+      title: Add user
+      heading: Add user
+    edit:
+      title: Edit user
+      heading: Edit user
+    status:
+      active: Active
+      deactivated: Deactivated
+    form:
+      password_hint: Fill this in only to change the password. Leave it blank to keep the current one.
+      locale_unset: Not set
+      locale_hint: When this is not set, the browser's language setting is used.

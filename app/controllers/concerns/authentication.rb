@@ -26,7 +26,12 @@ module Authentication
     end
 
     def find_session_by_cookie
-      Session.find_by(id: cookies.signed[:session_id]) if cookies.signed[:session_id]
+      return nil if cookies.signed[:session_id].blank?
+
+      session = Session.includes(:user).find_by(id: cookies.signed[:session_id])
+
+      # 無効化された利用者のセッションは、残っていても認証済みとして扱わない。
+      session if session&.user&.active?
     end
 
     def request_authentication

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_29_072056) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_29_072358) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -58,6 +58,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_29_072056) do
 
   create_table "users", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.datetime "deactivated_at"
     t.string "email_address", null: false
     t.string "locale"
     t.string "name", null: false
@@ -65,6 +66,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_29_072056) do
     t.string "password_digest", null: false
     t.string "role", default: "member", null: false
     t.datetime "updated_at", null: false
+    t.index ["deactivated_at"], name: "index_users_on_deactivated_at"
     t.index ["email_address"], name: "index_users_on_email_address", unique: true
     t.index ["organization_id"], name: "index_users_on_organization_id"
     t.index ["role"], name: "index_users_on_role"

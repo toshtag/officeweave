@@ -10,7 +10,11 @@ class SessionsController < ApplicationController
   end
 
   def create
-    if (user = User.authenticate_by(params.permit(:email_address, :password)))
+    user = User.authenticate_by(params.permit(:email_address, :password))
+
+    # 無効化された利用者は、資格情報が正しくてもログインさせない。
+    # 理由は区別して伝えない。無効化されていることを外から確かめる手段になる。
+    if user&.active?
       start_new_session_for user
       redirect_to after_authentication_url, notice: t("sessions.signed_in")
     else

@@ -65,6 +65,25 @@ ja:
     no: いいえ
 
   errors:
+    format: "%{attribute}%{message}"
+    messages:
+      blank: を入力してください
+      present: は入力しないでください
+      taken: はすでに使われています
+      invalid: の形式が正しくありません
+      confirmation: が一致しません
+      inclusion: に選べない値が指定されています
+      exclusion: は使用できません
+      too_long: は %{count} 文字以内で入力してください
+      too_short: は %{count} 文字以上で入力してください
+      not_a_number: は数値で入力してください
+      greater_than: は %{count} より大きい値にしてください
+      greater_than_or_equal_to: は %{count} 以上の値にしてください
+      less_than: は %{count} より小さい値にしてください
+      less_than_or_equal_to: は %{count} 以下の値にしてください
+      required: を指定してください
+      cyclic: に自身または下位の部門は指定できません
+      different_organization: に別の組織の記録は指定できません
     forbidden:
       title: 権限がありません
       heading: この操作は実行できません
@@ -115,3 +134,30 @@ ja:
   roles:
     member: 一般利用者
     administrator: 管理者
+
+  users:
+    created: 利用者を追加しました。
+    updated: 利用者を更新しました。
+    activated: 利用者を有効にしました。
+    deactivated: 利用者を無効にしました。
+    cannot_deactivate_self: 自分自身は無効にできません。
+    activate: 有効にする
+    deactivate: 無効にする
+    index:
+      title: 利用者
+      heading: 利用者
+      new: 利用者を追加
+      status: 状態
+    new:
+      title: 利用者の追加
+      heading: 利用者の追加
+    edit:
+      title: 利用者の編集
+      heading: 利用者の編集
+    status:
+      active: 利用中
+      deactivated: 無効
+    form:
+      password_hint: 変更する場合だけ入力してください。空のままにすると変更されません。
+      locale_unset: 設定しない
+      locale_hint: 設定しない場合、ブラウザーの言語設定に従います。

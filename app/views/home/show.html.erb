@@ -12,5 +12,8 @@
 
   <ul>
     <li><%= link_to t("departments.index.heading"), departments_path %></li>
+    <% if administrator? %>
+      <li><%= link_to t("users.index.heading"), users_path %></li>
+    <% end %>
   </ul>
 </div>
