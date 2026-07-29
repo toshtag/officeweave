@@ -1,0 +1,117 @@
+/*
+ * 要素そのものの既定の見た目を整える。
+ * ここでは class を使わず、素の HTML が読める状態を作る。
+ */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    /* 利用者のブラウザー設定を上書きしないため、ここで font-size を指定しない。 */
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--color-surface-sunken);
+    color: var(--color-text);
+    font-family: var(--font-family-base);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-base);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    margin: 0 0 var(--space-3);
+    line-height: var(--line-height-tight);
+    font-weight: 600;
+  }
+
+  h1 {
+    font-size: var(--font-size-2xl);
+  }
+
+  h2 {
+    font-size: var(--font-size-xl);
+  }
+
+  h3 {
+    font-size: var(--font-size-lg);
+  }
+
+  p,
+  ul,
+  ol,
+  dl,
+  table {
+    margin: 0 0 var(--space-4);
+  }
+
+  a {
+    color: var(--color-accent);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+  }
+
+  a:hover {
+    color: var(--color-accent-hover);
+  }
+
+  /*
+   * 操作対象の位置を常に見えるようにする。
+   * 輪郭を消すと、キーボード操作で現在位置が分からなくなる。
+   */
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  img,
+  svg {
+    max-width: 100%;
+    height: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th,
+  td {
+    padding: var(--space-2) var(--space-3);
+    border-bottom: var(--border-width) solid var(--color-border);
+    text-align: start;
+  }
+
+  th {
+    font-weight: 600;
+  }
+
+  hr {
+    height: 0;
+    margin: var(--space-5) 0;
+    border: 0;
+    border-top: var(--border-width) solid var(--color-border);
+  }
+
+  code,
+  pre {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: var(--font-size-sm);
+  }
+
+  /* 入力欄は既定で親の字体を引き継がないため、明示する。 */
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+}
