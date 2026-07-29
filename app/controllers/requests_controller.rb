@@ -4,12 +4,17 @@ class RequestsController < ApplicationController
   before_action :set_request, only: %i[show edit update]
   before_action :require_editable, only: %i[edit update]
 
+  # 一覧の対象。
+  #   mine     自分が出した申請
+  #   awaiting 自分の処理を待っている申請
+  #   （未指定）参照できる申請すべて
+  SCOPES = %w[mine awaiting].freeze
+
   def index
+    @scope = params[:scope].presence_in(SCOPES)
     @status = params[:status]
-    @requests = Request.visible_to(Current.user)
-                       .with_status(@status)
-                       .recent_first
-                       .includes(:request_type, :applicant)
+    @requests = scoped_requests.with_status(@status).recent_first.includes(:request_type, :applicant)
+    @awaiting_count = Request.awaiting_decision_by(Current.user).count
   end
 
   def show
@@ -44,6 +49,14 @@ class RequestsController < ApplicationController
   end
 
   private
+    def scoped_requests
+      case @scope
+      when "mine" then Request.visible_to(Current.user).applied_by(Current.user)
+      when "awaiting" then Request.awaiting_decision_by(Current.user)
+      else Request.visible_to(Current.user)
+      end
+    end
+
     def set_request
       @request = Request.visible_to(Current.user).find(params[:id])
     end
