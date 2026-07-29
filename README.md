@@ -44,15 +44,27 @@ pre-alpha
 - [開発規約](docs/development/conventions.md) — 命名、言語、多言語化の取り決め
 - [ロードマップ](docs/roadmap.md) — Phase 一覧と進行規則
 - [実行キュー](docs/execution_queue.md) — タスク分解と現在地
+- [ライセンス方針](docs/licensing.md) — ライセンスの選定理由と名称の利用範囲
 
 いずれも日本語を正本とします。
+
+## ライセンス
+
+```text
+GNU Affero General Public License version 3 or later
+Copyright (C) 2026 OfficeWeave contributors
+```
+
+全文は [LICENSE](LICENSE) を参照してください。
+自組織での導入、運用、改変に制限はありません。
+改変版を第三者へ提供する場合は、対応するソースコードの提供が必要です。
 
 ## 現在地と次のタスク
 
 ```text
 現在の Phase:        P0 プロジェクト契約
-直近完了 Task:       P0-T2 ロードマップを改訂し、実行キューを記録する
-次に実行する Task:   P0-T3 OSS ライセンスと商標方針を決定する
+直近完了 Task:       P0-T3 OSS ライセンスと商標方針を決定する
+次に実行する Task:   P0-T4 技術バージョンの選定基準と候補を固定する
 ```
 
 進行状況は [実行キュー](docs/execution_queue.md) で管理します。
