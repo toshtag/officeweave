@@ -312,6 +312,40 @@ ALTER SEQUENCE public.organizations_id_seq OWNED BY public.organizations.id;
 
 
 --
+-- Name: request_activities; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.request_activities (
+    id bigint NOT NULL,
+    request_id bigint NOT NULL,
+    actor_id bigint NOT NULL,
+    action character varying NOT NULL,
+    comment text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: request_activities_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.request_activities_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: request_activities_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.request_activities_id_seq OWNED BY public.request_activities.id;
+
+
+--
 -- Name: request_types; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -596,6 +630,13 @@ ALTER TABLE ONLY public.organizations ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
+-- Name: request_activities id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.request_activities ALTER COLUMN id SET DEFAULT nextval('public.request_activities_id_seq'::regclass);
+
+
+--
 -- Name: request_types id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -707,6 +748,14 @@ ALTER TABLE ONLY public.memberships
 
 ALTER TABLE ONLY public.organizations
     ADD CONSTRAINT organizations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: request_activities request_activities_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.request_activities
+    ADD CONSTRAINT request_activities_pkey PRIMARY KEY (id);
 
 
 --
@@ -935,6 +984,27 @@ CREATE UNIQUE INDEX index_organizations_on_code ON public.organizations USING bt
 
 
 --
+-- Name: index_request_activities_on_actor_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_request_activities_on_actor_id ON public.request_activities USING btree (actor_id);
+
+
+--
+-- Name: index_request_activities_on_request_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_request_activities_on_request_id ON public.request_activities USING btree (request_id);
+
+
+--
+-- Name: index_request_activities_on_request_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_request_activities_on_request_id_and_created_at ON public.request_activities USING btree (request_id, created_at);
+
+
+--
 -- Name: index_request_types_on_approver_department_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1147,6 +1217,14 @@ ALTER TABLE ONLY public.sessions
 
 
 --
+-- Name: request_activities fk_rails_78aa323dc9; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.request_activities
+    ADD CONSTRAINT fk_rails_78aa323dc9 FOREIGN KEY (actor_id) REFERENCES public.users(id);
+
+
+--
 -- Name: announcement_departments fk_rails_7aa82a34b1; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1243,6 +1321,14 @@ ALTER TABLE ONLY public.reservations
 
 
 --
+-- Name: request_activities fk_rails_d0a33336f3; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.request_activities
+    ADD CONSTRAINT fk_rails_d0a33336f3 FOREIGN KEY (request_id) REFERENCES public.requests(id);
+
+
+--
 -- Name: users fk_rails_d7b9ff90af; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1289,6 +1375,7 @@ ALTER TABLE ONLY public.announcement_departments
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260729075745'),
 ('20260729075216'),
 ('20260729075215'),
 ('20260729074307'),
