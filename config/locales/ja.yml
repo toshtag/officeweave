@@ -130,6 +130,8 @@ ja:
         document_category_id: 分類
         author: 作成者
         attachments: 添付ファイル
+        visibility: 参照範囲
+        department_ids: 参照できる部門
       document_category:
         name: 名称
         code: 識別子
@@ -444,9 +446,14 @@ ja:
     updated: 文書を更新しました。
     destroyed: 文書を削除しました。
     no_category: 分類なし
+    limited_to: "参照できる部門: %{names}"
+    visibilities:
+      organization: 組織全体
+      departments: 指定した部門
     attachments:
       heading: 添付ファイル
     form:
+      departments_hint: 参照範囲が「指定した部門」の場合にだけ使われます。
       attachments_hint: 1 件あたり %{size} MB まで、%{count} 件まで添付できます。
       existing_attachments: 添付済みのファイル
       remove_hint: 取り除くファイルを選んでください。

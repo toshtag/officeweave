@@ -130,6 +130,8 @@ en:
         document_category_id: Category
         author: Author
         attachments: Attachments
+        visibility: Visibility
+        department_ids: Departments
       document_category:
         name: Name
         code: Code
@@ -428,9 +430,14 @@ en:
     updated: The document has been updated.
     destroyed: The document has been deleted.
     no_category: Uncategorized
+    limited_to: "Visible to: %{names}"
+    visibilities:
+      organization: Everyone in the organization
+      departments: Selected departments
     attachments:
       heading: Attachments
     form:
+      departments_hint: These are used only when the visibility is set to selected departments.
       attachments_hint: Up to %{count} files, each no larger than %{size} MB.
       existing_attachments: Attached files
       remove_hint: Select the files you want to remove.
