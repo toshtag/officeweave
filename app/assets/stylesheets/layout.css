@@ -30,6 +30,13 @@
     text-decoration: none;
   }
 
+  .page__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
   .page__main {
     flex: 1;
     padding-block: var(--space-6);

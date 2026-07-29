@@ -11,7 +11,30 @@ ja:
       ja: 日本語
       en: English
 
+  sessions:
+    sign_out: ログアウト
+    signed_in: ログインしました。
+    signed_out: ログアウトしました。
+    failed: メールアドレスまたはパスワードが正しくありません。
+    rate_limited: 試行回数が上限に達しました。しばらく待ってから再度お試しください。
+    new:
+      title: ログイン
+      heading: ログイン
+      submit: ログイン
+
   home:
     title: ホーム
     heading: ようこそ
     description: 組織の情報共有と日常の手続きを、ひとつの場所で行えるようにします。
+    greeting: "%{name} さん、こんにちは。"
+
+  activerecord:
+    models:
+      user: 利用者
+    attributes:
+      user:
+        name: 氏名
+        email_address: メールアドレス
+        password: パスワード
+        password_confirmation: パスワード（確認）
+        locale: 表示言語

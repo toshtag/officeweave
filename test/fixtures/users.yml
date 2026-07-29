@@ -1,0 +1,12 @@
+<% password_digest = BCrypt::Password.create("password-for-tests") %>
+
+taro:
+  name: 山田 太郎
+  email_address: taro@example.com
+  password_digest: <%= password_digest %>
+
+hanako:
+  name: 佐藤 花子
+  email_address: hanako@example.com
+  password_digest: <%= password_digest %>
+  locale: en

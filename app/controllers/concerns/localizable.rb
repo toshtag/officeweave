@@ -1,9 +1,10 @@
 # 表示言語を決めて、要求の処理中だけ適用する。
 #
 # 決め方の優先順位は次のとおり。
-#   1. 利用者が画面で選んだ言語（保持している場合）
-#   2. ブラウザーが送る言語の希望
-#   3. 既定の言語
+#   1. 利用者に設定された言語
+#   2. 画面で選んだ言語（保持している場合）
+#   3. ブラウザーが送る言語の希望
+#   4. 既定の言語
 #
 # 対応していない言語が指定された場合は、次の候補へ落とす。
 module Localizable
@@ -19,7 +20,11 @@ module Localizable
     end
 
     def current_locale
-      stored_locale || preferred_locale || I18n.default_locale
+      user_locale || stored_locale || preferred_locale || I18n.default_locale
+    end
+
+    def user_locale
+      available_locale(Current.user&.locale)
     end
 
     def stored_locale

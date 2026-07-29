@@ -1,6 +1,8 @@
 require "application_system_test_case"
 
 class AccessibilityTest < ApplicationSystemTestCase
+  setup { sign_in_as users(:taro) }
+
   test "本文へ移動する読み飛ばし用リンクがある" do
     visit root_path
 

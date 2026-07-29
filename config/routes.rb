@@ -1,5 +1,6 @@
 Rails.application.routes.draw do
-  # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
+  # ログインとログアウト。
+  resource :session, only: %i[new create destroy]
 
   # /up はアプリケーションが起動できたかだけを返す。
   # /health は依存先への到達可否まで含めて返す。用途に応じて使い分ける。

@@ -1,6 +1,8 @@
 require "application_system_test_case"
 
 class LayoutTest < ApplicationSystemTestCase
+  setup { sign_in_as users(:taro) }
+
   test "見出し領域、本文領域、脚注領域がある" do
     visit root_path
 

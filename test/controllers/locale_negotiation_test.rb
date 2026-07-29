@@ -1,6 +1,8 @@
 require "test_helper"
 
 class LocaleNegotiationTest < ActionDispatch::IntegrationTest
+  setup { sign_in_as users(:taro) }
+
   test "指定がなければ既定の言語で表示する" do
     get root_url
 

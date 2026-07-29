@@ -23,8 +23,18 @@ git clone https://github.com/toshtag/officeweave.git
 cd officeweave && cp .env.example .env && docker compose up -d --build
 ```
 
+初回のみ、最初の利用者を作成します。
+
+```bash
+docker compose exec web bin/rails db:seed
+```
+
 起動後、`http://localhost:3000` を開きます。
 データベースの作成と移行は初回起動時に自動で実行されます。
+
+開発環境の既定の資格情報は `admin@officeweave.test` / `officeweave` です。
+`.env` の `INITIAL_USER_EMAIL` と `INITIAL_USER_PASSWORD` で変更できます。
+運用環境では必ず変更してください。
 
 設定を変更する場合は `.env` を編集します。設定可能な項目は [設定](docs/development/configuration.md) を参照してください。
 
@@ -132,8 +142,8 @@ Copyright (C) 2026 OfficeWeave contributors
 
 ```text
 現在の Phase:        P4 Identity
-直近完了 Task:       P3-T3 アクセシビリティの基本要件を満たす
-次に実行する Task:   P4-T1 利用者とログイン・ログアウトを実装する
+直近完了 Task:       P4-T1 利用者とログイン・ログアウトを実装する
+次に実行する Task:   P4-T2 組織、部門、所属を実装する
 ```
 
 進行状況は [実行キュー](docs/execution_queue.md) で管理します。

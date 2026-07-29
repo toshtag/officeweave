@@ -11,4 +11,13 @@ require "test_helper"
 # その画面に限ってブラウザーを使う実行方法を追加する。
 class ApplicationSystemTestCase < ActionDispatch::SystemTestCase
   driven_by :rack_test
+
+  # 画面と同じ経路でログインする。
+  # 内部の仕組みを直接呼ぶと、ログイン画面そのものの退行を検知できない。
+  def sign_in_as(user, password: "password-for-tests")
+    visit new_session_path
+    fill_in "email_address", with: user.email_address
+    fill_in "password", with: password
+    click_button I18n.t("sessions.new.submit")
+  end
 end
