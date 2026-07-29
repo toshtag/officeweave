@@ -36,3 +36,4 @@ desktop.ini
 !/.env.example
 /config/master.key
 /config/credentials/*.key
+backups/
