@@ -1,0 +1,91 @@
+# 配布用のアプリケーションコンテナ。
+#
+# 開発用（Dockerfile）とは別に用意する。
+# 開発用には、実行に不要な道具と依存が含まれる。
+ARG RUBY_VERSION=3.4.10
+
+# ---- 依存の構築 ----
+FROM ruby:${RUBY_VERSION}-slim-bookworm AS build
+
+ARG POSTGRESQL_MAJOR_VERSION=18
+
+RUN apt-get update -qq && \
+    apt-get install -y --no-install-recommends \
+      build-essential \
+      ca-certificates \
+      curl \
+      git \
+      gnupg \
+      libpq-dev \
+      libyaml-dev \
+      pkg-config && \
+    rm -rf /var/lib/apt/lists/*
+
+ENV BUNDLE_PATH=/usr/local/bundle \
+    BUNDLE_JOBS=4 \
+    BUNDLE_WITHOUT=development:test \
+    BUNDLE_DEPLOYMENT=1
+
+WORKDIR /app
+
+COPY Gemfile Gemfile.lock ./
+RUN bundle install && \
+    rm -rf /usr/local/bundle/cache
+
+COPY . .
+
+# 起動のたびに配信物を組み立てない。
+# 署名に使う鍵は、この時点では本物である必要がない。
+RUN SECRET_KEY_BASE=placeholder-for-asset-build \
+    RAILS_ENV=production \
+    bin/rails assets:precompile
+
+# ---- 実行 ----
+FROM ruby:${RUBY_VERSION}-slim-bookworm
+
+ARG POSTGRESQL_MAJOR_VERSION=18
+
+# 実行に必要なものだけを入れる。構築用の道具は含めない。
+# データベースのクライアントは、バックアップの取得と復元に必要。
+RUN apt-get update -qq && \
+    apt-get install -y --no-install-recommends \
+      ca-certificates \
+      curl \
+      gnupg \
+      libpq5 && \
+    install -d /usr/share/postgresql-common/pgdg && \
+    curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+      -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc && \
+    echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc]" \
+      "https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" \
+      > /etc/apt/sources.list.d/pgdg.list && \
+    apt-get update -qq && \
+    apt-get install -y --no-install-recommends \
+      postgresql-client-${POSTGRESQL_MAJOR_VERSION} && \
+    apt-get purge -y --auto-remove gnupg && \
+    rm -rf /var/lib/apt/lists/*
+
+ENV LANG=C.UTF-8 \
+    BUNDLE_PATH=/usr/local/bundle \
+    BUNDLE_WITHOUT=development:test \
+    BUNDLE_DEPLOYMENT=1 \
+    RAILS_ENV=production
+
+WORKDIR /app
+
+COPY --from=build /usr/local/bundle /usr/local/bundle
+COPY --from=build /app /app
+
+# 管理者権限で動かさない。
+# 侵入された場合に、コンテナ内で行えることを狭める。
+RUN groupadd --system --gid 1000 officeweave && \
+    useradd --system --uid 1000 --gid 1000 --create-home officeweave && \
+    mkdir -p log tmp storage && \
+    chown -R officeweave:officeweave db log tmp storage
+
+USER officeweave:officeweave
+
+EXPOSE 3000
+
+ENTRYPOINT ["bin/docker-entrypoint"]
+CMD ["bin/rails", "server", "-b", "0.0.0.0", "-p", "3000"]

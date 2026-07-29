@@ -24,11 +24,17 @@ Rails.application.configure do
   # Store uploaded files on the local file system (see config/storage.yml for options).
   config.active_storage.service = :local
 
+  # 画像の変換は行わない。変換用のライブラリを実行環境へ持ち込まない。
+  config.active_storage.variant_processor = :disabled
+
   # Assume all access to the app is happening through a SSL-terminating reverse proxy.
-  config.assume_ssl = true
+  # 逆プロキシで暗号化を終端する構成を前提とする。
+  # 内部ネットワークだけで運用するなど、暗号化しない構成もあるため切り替えられるようにする。
+  # 既定は有効とし、明示的に無効にした場合だけ平文を許す。
+  config.assume_ssl = ENV.fetch("FORCE_SSL", "true") == "true"
 
   # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
-  config.force_ssl = true
+  config.force_ssl = ENV.fetch("FORCE_SSL", "true") == "true"
 
   # Skip http-to-https redirect for the default health check endpoint.
   # config.ssl_options = { redirect: { exclude: ->(request) { request.path == "/up" } } }

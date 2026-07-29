@@ -1,0 +1,65 @@
+# 配布用の構成。
+#
+# 開発用（compose.yaml）とは別に用意する。
+# 開発用はソースコードをホストから共有するため、配布には使えない。
+#
+# 使い方:
+#   docker compose -f compose.production.yaml up -d --build
+name: officeweave
+
+services:
+  db:
+    image: postgres:18.4-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DATABASE_USER:?DATABASE_USER を設定してください}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?DATABASE_PASSWORD を設定してください}
+      POSTGRES_DB: ${DATABASE_NAME:-officeweave_production}
+    volumes:
+      - db_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+    restart: unless-stopped
+    environment:
+      RAILS_ENV: production
+      DATABASE_HOST: db
+      DATABASE_USER: ${DATABASE_USER:?DATABASE_USER を設定してください}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:?DATABASE_PASSWORD を設定してください}
+      DATABASE_NAME: ${DATABASE_NAME:-officeweave_production}
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:?SECRET_KEY_BASE を設定してください}
+      APPLICATION_HOST: ${APPLICATION_HOST:-localhost}
+      APPLICATION_PROTOCOL: ${APPLICATION_PROTOCOL:-https}
+      MAIL_FROM: ${MAIL_FROM:-officeweave@localhost}
+      SMTP_ADDRESS: ${SMTP_ADDRESS:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER_NAME: ${SMTP_USER_NAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_AUTHENTICATION: ${SMTP_AUTHENTICATION:-}
+      SMTP_ENABLE_STARTTLS: ${SMTP_ENABLE_STARTTLS:-true}
+      INITIAL_USER_NAME: ${INITIAL_USER_NAME:-}
+      INITIAL_USER_EMAIL: ${INITIAL_USER_EMAIL:-}
+      INITIAL_USER_PASSWORD: ${INITIAL_USER_PASSWORD:-}
+      ORGANIZATION_NAME: ${ORGANIZATION_NAME:-OfficeWeave}
+      ORGANIZATION_CODE: ${ORGANIZATION_CODE:-default}
+      AUTHENTICATION_PROVIDER: ${AUTHENTICATION_PROVIDER:-internal}
+      FORCE_SSL: ${FORCE_SSL:-true}
+    volumes:
+      # アップロードされたファイルは、入れ替えても失われないようにする。
+      - storage_data:/app/storage
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db_data:
+  storage_data:
