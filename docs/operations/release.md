@@ -28,8 +28,16 @@ echo "0.2.0" > VERSION
 
 ### 検証
 
+開発用の構成で検証を通す。
+
 ```bash
 docker compose exec web bin/verify
+```
+
+構成そのものの分離は、ホスト側で確かめる。
+
+```bash
+script/check_compose_isolation
 ```
 
 配布用の構成でも起動を確認する。
