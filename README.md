@@ -51,7 +51,7 @@ docker compose exec web bin/rails test:all
 ```
 
 ```bash
-docker compose exec web bin/rubocop
+docker compose exec web bin/verify
 ```
 
 ```bash
@@ -129,9 +129,9 @@ Copyright (C) 2026 OfficeWeave contributors
 ## 現在地と次のタスク
 
 ```text
-現在の Phase:        P2 品質基盤
-直近完了 Task:       P2-T3 セキュリティ検査と依存監査を導入する
-次に実行する Task:   P2-T4 一括検証コマンドを追加する
+現在の Phase:        P3 UI・多言語基盤
+直近完了 Task:       P2-T4 一括検証コマンドを追加する
+次に実行する Task:   P3-T1 基本レイアウトと素の CSS を実装する
 ```
 
 進行状況は [実行キュー](docs/execution_queue.md) で管理します。
