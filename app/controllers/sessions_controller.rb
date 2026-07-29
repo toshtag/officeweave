@@ -7,18 +7,22 @@ class SessionsController < ApplicationController
              with: -> { redirect_to new_session_path, alert: t("sessions.rate_limited") }
 
   def new
+    @password_required = authentication_provider.password_required?
   end
 
   def create
-    user = User.authenticate_by(params.permit(:email_address, :password))
+    # 認証方式は設定で差し替えられる。既定は内部認証。
+    # 無効にされた利用者を認証しない判断は、方式側が持つ。
+    user = authentication_provider.authenticate(
+      email_address: params[:email_address],
+      password: params[:password]
+    )
 
-    # 無効化された利用者は、資格情報が正しくてもログインさせない。
-    # 理由は区別して伝えない。無効化されていることを外から確かめる手段になる。
-    if user&.active?
+    if user
       start_new_session_for user
       redirect_to after_authentication_url, notice: t("sessions.signed_in")
     else
-      # 該当する利用者がいないのか、パスワードが違うのかを区別して伝えない。
+      # 該当する利用者がいないのか、資格情報が違うのかを区別して伝えない。
       # 区別すると、利用者の存在を確かめる手段になる。
       redirect_to new_session_path, alert: t("sessions.failed")
     end
@@ -28,4 +32,9 @@ class SessionsController < ApplicationController
     terminate_session
     redirect_to new_session_path, status: :see_other, notice: t("sessions.signed_out")
   end
+
+  private
+    def authentication_provider
+      Authentication::ProviderRegistry.current
+    end
 end
