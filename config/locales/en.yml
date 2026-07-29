@@ -561,3 +561,22 @@ en:
     status:
       active: Active
       inactive: Disabled
+
+  data_transfers:
+    title: Import and export
+    heading: Import and export
+    no_file: Choose a file first.
+    imported: "Import finished. %{created} added, %{updated} updated."
+    export:
+      heading: Export
+      description: Download the current contents as CSV.
+      users: Export users
+      departments: Export departments
+    import:
+      heading: Import users
+      description: Users are matched by email address, then updated or added. Passwords are not handled.
+      columns_hint: Put these headers on the first line. List department codes in `departments`, separated by spaces.
+      file: CSV file
+      submit: Import
+      failed: Nothing was imported. A single invalid row stops the whole file.
+      line: "Line %{line}:"

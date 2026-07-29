@@ -16,6 +16,12 @@ Rails.application.routes.draw do
   # 予定。
   resources :events
 
+  # 利用者と部門の入出力。
+  get "data_transfers" => "data_transfers#show", as: :data_transfers
+  get "data_transfers/users" => "data_transfers#users_export", as: :users_export
+  get "data_transfers/departments" => "data_transfers#departments_export", as: :departments_export
+  post "data_transfers/users" => "data_transfers#users_import", as: :users_import
+
   # 出来事の送信先。
   resources :webhook_endpoints, only: %i[index show create update destroy]
 
