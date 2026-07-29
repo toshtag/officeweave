@@ -142,8 +142,8 @@ Copyright (C) 2026 OfficeWeave contributors
 
 ```text
 現在の Phase:        P8 Documents
-直近完了 Task:       P8-T1 文書と分類を実装する
-次に実行する Task:   P8-T2 添付ファイルを実装する
+直近完了 Task:       P8-T2 添付ファイルを実装する
+次に実行する Task:   P8-T3 文書のアクセス制御を実装する
 ```
 
 進行状況は [実行キュー](docs/execution_queue.md) で管理します。

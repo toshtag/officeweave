@@ -129,6 +129,7 @@ ja:
         document_category: 分類
         document_category_id: 分類
         author: 作成者
+        attachments: 添付ファイル
       document_category:
         name: 名称
         code: 識別子
@@ -166,6 +167,8 @@ ja:
       less_than_or_equal_to: は %{count} 以下の値にしてください
       required: を指定してください
       overlapping: その時間帯には別の予約があります
+      too_many: は %{count} 件までにしてください
+      too_large: "%{filename} が大きすぎます（%{size} MB まで）"
       not_active: は新しい申請を受け付けていません
       not_reservable: は予約を受け付けていません
       not_after_start: は開始より後にしてください
@@ -441,6 +444,12 @@ ja:
     updated: 文書を更新しました。
     destroyed: 文書を削除しました。
     no_category: 分類なし
+    attachments:
+      heading: 添付ファイル
+    form:
+      attachments_hint: 1 件あたり %{size} MB まで、%{count} 件まで添付できます。
+      existing_attachments: 添付済みのファイル
+      remove_hint: 取り除くファイルを選んでください。
     index:
       title: 文書
       heading: 文書

@@ -23,5 +23,20 @@
     <div class="prose"><%= simple_format @document.body %></div>
   <% end %>
 
+  <% if @document.attachments.attached? %>
+    <section class="stack" aria-labelledby="document-attachments">
+      <h2 id="document-attachments"><%= t("documents.attachments.heading") %></h2>
+      <ul class="list-plain">
+        <% @document.attachments.each do |attachment| %>
+          <li>
+            <%= link_to attachment.filename.to_s,
+                        rails_blob_path(attachment, disposition: "attachment") %>
+            <span class="meta"><%= number_to_human_size(attachment.byte_size) %></span>
+          </li>
+        <% end %>
+      </ul>
+    </section>
+  <% end %>
+
   <p><%= link_to t("common.back"), documents_path %></p>
 </article>
