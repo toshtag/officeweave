@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_29_073024) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_29_073437) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -22,6 +22,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_29_073024) do
     t.index ["announcement_id", "department_id"], name: "index_announcement_departments_on_pair", unique: true
     t.index ["announcement_id"], name: "index_announcement_departments_on_announcement_id"
     t.index ["department_id"], name: "index_announcement_departments_on_department_id"
+  end
+
+  create_table "announcement_reads", force: :cascade do |t|
+    t.bigint "announcement_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "read_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["announcement_id", "user_id"], name: "index_announcement_reads_on_pair", unique: true
+    t.index ["announcement_id"], name: "index_announcement_reads_on_announcement_id"
+    t.index ["user_id"], name: "index_announcement_reads_on_user_id"
   end
 
   create_table "announcements", force: :cascade do |t|
@@ -98,6 +109,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_29_073024) do
 
   add_foreign_key "announcement_departments", "announcements"
   add_foreign_key "announcement_departments", "departments"
+  add_foreign_key "announcement_reads", "announcements"
+  add_foreign_key "announcement_reads", "users"
   add_foreign_key "announcements", "organizations"
   add_foreign_key "announcements", "users", column: "author_id"
   add_foreign_key "departments", "departments", column: "parent_id"
