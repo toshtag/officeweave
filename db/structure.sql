@@ -1,0 +1,1106 @@
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- Name: btree_gist; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS btree_gist WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION btree_gist; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION btree_gist IS 'support for indexing common datatypes in GiST';
+
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- Name: announcement_departments; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.announcement_departments (
+    id bigint NOT NULL,
+    announcement_id bigint NOT NULL,
+    department_id bigint NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: announcement_departments_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.announcement_departments_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: announcement_departments_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.announcement_departments_id_seq OWNED BY public.announcement_departments.id;
+
+
+--
+-- Name: announcement_reads; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.announcement_reads (
+    id bigint NOT NULL,
+    announcement_id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    read_at timestamp(6) without time zone NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: announcement_reads_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.announcement_reads_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: announcement_reads_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.announcement_reads_id_seq OWNED BY public.announcement_reads.id;
+
+
+--
+-- Name: announcements; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.announcements (
+    id bigint NOT NULL,
+    organization_id bigint NOT NULL,
+    author_id bigint NOT NULL,
+    title character varying NOT NULL,
+    body text NOT NULL,
+    visibility character varying DEFAULT 'organization'::character varying NOT NULL,
+    published_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: announcements_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.announcements_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: announcements_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.announcements_id_seq OWNED BY public.announcements.id;
+
+
+--
+-- Name: ar_internal_metadata; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ar_internal_metadata (
+    key character varying NOT NULL,
+    value character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: departments; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.departments (
+    id bigint NOT NULL,
+    organization_id bigint NOT NULL,
+    parent_id bigint,
+    name character varying NOT NULL,
+    code character varying NOT NULL,
+    "position" integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: departments_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.departments_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: departments_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.departments_id_seq OWNED BY public.departments.id;
+
+
+--
+-- Name: event_departments; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.event_departments (
+    id bigint NOT NULL,
+    event_id bigint NOT NULL,
+    department_id bigint NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: event_departments_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.event_departments_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: event_departments_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.event_departments_id_seq OWNED BY public.event_departments.id;
+
+
+--
+-- Name: events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.events (
+    id bigint NOT NULL,
+    organization_id bigint NOT NULL,
+    owner_id bigint NOT NULL,
+    title character varying NOT NULL,
+    description text,
+    starts_at timestamp(6) without time zone NOT NULL,
+    ends_at timestamp(6) without time zone NOT NULL,
+    all_day boolean DEFAULT false NOT NULL,
+    visibility character varying DEFAULT 'organization'::character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: events_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.events_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: events_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.events_id_seq OWNED BY public.events.id;
+
+
+--
+-- Name: memberships; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.memberships (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    department_id bigint NOT NULL,
+    "primary" boolean DEFAULT false NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: memberships_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.memberships_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: memberships_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.memberships_id_seq OWNED BY public.memberships.id;
+
+
+--
+-- Name: organizations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.organizations (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    code character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: organizations_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.organizations_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: organizations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.organizations_id_seq OWNED BY public.organizations.id;
+
+
+--
+-- Name: reservations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.reservations (
+    id bigint NOT NULL,
+    organization_id bigint NOT NULL,
+    resource_id bigint NOT NULL,
+    reserver_id bigint NOT NULL,
+    event_id bigint,
+    starts_at timestamp(6) without time zone NOT NULL,
+    ends_at timestamp(6) without time zone NOT NULL,
+    purpose character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: reservations_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.reservations_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: reservations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.reservations_id_seq OWNED BY public.reservations.id;
+
+
+--
+-- Name: resources; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.resources (
+    id bigint NOT NULL,
+    organization_id bigint NOT NULL,
+    name character varying NOT NULL,
+    code character varying NOT NULL,
+    description text,
+    capacity integer,
+    reservable boolean DEFAULT true NOT NULL,
+    "position" integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: resources_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.resources_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: resources_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.resources_id_seq OWNED BY public.resources.id;
+
+
+--
+-- Name: schema_migrations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.schema_migrations (
+    version character varying NOT NULL
+);
+
+
+--
+-- Name: sessions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sessions (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    ip_address character varying,
+    user_agent character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: sessions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.sessions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: sessions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.sessions_id_seq OWNED BY public.sessions.id;
+
+
+--
+-- Name: users; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.users (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    email_address character varying NOT NULL,
+    password_digest character varying NOT NULL,
+    locale character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    organization_id bigint NOT NULL,
+    role character varying DEFAULT 'member'::character varying NOT NULL,
+    deactivated_at timestamp(6) without time zone
+);
+
+
+--
+-- Name: users_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.users_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
+
+
+--
+-- Name: announcement_departments id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.announcement_departments ALTER COLUMN id SET DEFAULT nextval('public.announcement_departments_id_seq'::regclass);
+
+
+--
+-- Name: announcement_reads id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.announcement_reads ALTER COLUMN id SET DEFAULT nextval('public.announcement_reads_id_seq'::regclass);
+
+
+--
+-- Name: announcements id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.announcements ALTER COLUMN id SET DEFAULT nextval('public.announcements_id_seq'::regclass);
+
+
+--
+-- Name: departments id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.departments ALTER COLUMN id SET DEFAULT nextval('public.departments_id_seq'::regclass);
+
+
+--
+-- Name: event_departments id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_departments ALTER COLUMN id SET DEFAULT nextval('public.event_departments_id_seq'::regclass);
+
+
+--
+-- Name: events id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.events ALTER COLUMN id SET DEFAULT nextval('public.events_id_seq'::regclass);
+
+
+--
+-- Name: memberships id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.memberships ALTER COLUMN id SET DEFAULT nextval('public.memberships_id_seq'::regclass);
+
+
+--
+-- Name: organizations id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.organizations ALTER COLUMN id SET DEFAULT nextval('public.organizations_id_seq'::regclass);
+
+
+--
+-- Name: reservations id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.reservations ALTER COLUMN id SET DEFAULT nextval('public.reservations_id_seq'::regclass);
+
+
+--
+-- Name: resources id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.resources ALTER COLUMN id SET DEFAULT nextval('public.resources_id_seq'::regclass);
+
+
+--
+-- Name: sessions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sessions ALTER COLUMN id SET DEFAULT nextval('public.sessions_id_seq'::regclass);
+
+
+--
+-- Name: users id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass);
+
+
+--
+-- Name: announcement_departments announcement_departments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.announcement_departments
+    ADD CONSTRAINT announcement_departments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: announcement_reads announcement_reads_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.announcement_reads
+    ADD CONSTRAINT announcement_reads_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: announcements announcements_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.announcements
+    ADD CONSTRAINT announcements_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ar_internal_metadata ar_internal_metadata_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ar_internal_metadata
+    ADD CONSTRAINT ar_internal_metadata_pkey PRIMARY KEY (key);
+
+
+--
+-- Name: departments departments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.departments
+    ADD CONSTRAINT departments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: event_departments event_departments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_departments
+    ADD CONSTRAINT event_departments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: events events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.events
+    ADD CONSTRAINT events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: memberships memberships_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.memberships
+    ADD CONSTRAINT memberships_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: organizations organizations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.organizations
+    ADD CONSTRAINT organizations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: reservations reservations_must_not_overlap; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.reservations
+    ADD CONSTRAINT reservations_must_not_overlap EXCLUDE USING gist (resource_id WITH =, tsrange(starts_at, ends_at, '[)'::text) WITH &&);
+
+
+--
+-- Name: reservations reservations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.reservations
+    ADD CONSTRAINT reservations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: resources resources_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.resources
+    ADD CONSTRAINT resources_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: schema_migrations schema_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.schema_migrations
+    ADD CONSTRAINT schema_migrations_pkey PRIMARY KEY (version);
+
+
+--
+-- Name: sessions sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sessions
+    ADD CONSTRAINT sessions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: index_announcement_departments_on_announcement_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_announcement_departments_on_announcement_id ON public.announcement_departments USING btree (announcement_id);
+
+
+--
+-- Name: index_announcement_departments_on_department_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_announcement_departments_on_department_id ON public.announcement_departments USING btree (department_id);
+
+
+--
+-- Name: index_announcement_departments_on_pair; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_announcement_departments_on_pair ON public.announcement_departments USING btree (announcement_id, department_id);
+
+
+--
+-- Name: index_announcement_reads_on_announcement_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_announcement_reads_on_announcement_id ON public.announcement_reads USING btree (announcement_id);
+
+
+--
+-- Name: index_announcement_reads_on_pair; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_announcement_reads_on_pair ON public.announcement_reads USING btree (announcement_id, user_id);
+
+
+--
+-- Name: index_announcement_reads_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_announcement_reads_on_user_id ON public.announcement_reads USING btree (user_id);
+
+
+--
+-- Name: index_announcements_on_author_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_announcements_on_author_id ON public.announcements USING btree (author_id);
+
+
+--
+-- Name: index_announcements_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_announcements_on_organization_id ON public.announcements USING btree (organization_id);
+
+
+--
+-- Name: index_announcements_on_organization_id_and_published_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_announcements_on_organization_id_and_published_at ON public.announcements USING btree (organization_id, published_at);
+
+
+--
+-- Name: index_departments_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_departments_on_organization_id ON public.departments USING btree (organization_id);
+
+
+--
+-- Name: index_departments_on_organization_id_and_code; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_departments_on_organization_id_and_code ON public.departments USING btree (organization_id, code);
+
+
+--
+-- Name: index_departments_on_parent_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_departments_on_parent_id ON public.departments USING btree (parent_id);
+
+
+--
+-- Name: index_event_departments_on_department_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_event_departments_on_department_id ON public.event_departments USING btree (department_id);
+
+
+--
+-- Name: index_event_departments_on_event_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_event_departments_on_event_id ON public.event_departments USING btree (event_id);
+
+
+--
+-- Name: index_event_departments_on_pair; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_event_departments_on_pair ON public.event_departments USING btree (event_id, department_id);
+
+
+--
+-- Name: index_events_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_events_on_organization_id ON public.events USING btree (organization_id);
+
+
+--
+-- Name: index_events_on_organization_id_and_starts_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_events_on_organization_id_and_starts_at ON public.events USING btree (organization_id, starts_at);
+
+
+--
+-- Name: index_events_on_owner_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_events_on_owner_id ON public.events USING btree (owner_id);
+
+
+--
+-- Name: index_memberships_on_department_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_memberships_on_department_id ON public.memberships USING btree (department_id);
+
+
+--
+-- Name: index_memberships_on_primary_user; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_memberships_on_primary_user ON public.memberships USING btree (user_id) WHERE "primary";
+
+
+--
+-- Name: index_memberships_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_memberships_on_user_id ON public.memberships USING btree (user_id);
+
+
+--
+-- Name: index_memberships_on_user_id_and_department_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_memberships_on_user_id_and_department_id ON public.memberships USING btree (user_id, department_id);
+
+
+--
+-- Name: index_organizations_on_code; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_organizations_on_code ON public.organizations USING btree (code);
+
+
+--
+-- Name: index_reservations_on_event_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_reservations_on_event_id ON public.reservations USING btree (event_id);
+
+
+--
+-- Name: index_reservations_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_reservations_on_organization_id ON public.reservations USING btree (organization_id);
+
+
+--
+-- Name: index_reservations_on_reserver_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_reservations_on_reserver_id ON public.reservations USING btree (reserver_id);
+
+
+--
+-- Name: index_reservations_on_resource_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_reservations_on_resource_id ON public.reservations USING btree (resource_id);
+
+
+--
+-- Name: index_reservations_on_resource_id_and_starts_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_reservations_on_resource_id_and_starts_at ON public.reservations USING btree (resource_id, starts_at);
+
+
+--
+-- Name: index_resources_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_resources_on_organization_id ON public.resources USING btree (organization_id);
+
+
+--
+-- Name: index_resources_on_organization_id_and_code; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_resources_on_organization_id_and_code ON public.resources USING btree (organization_id, code);
+
+
+--
+-- Name: index_sessions_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_sessions_on_user_id ON public.sessions USING btree (user_id);
+
+
+--
+-- Name: index_users_on_deactivated_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_users_on_deactivated_at ON public.users USING btree (deactivated_at);
+
+
+--
+-- Name: index_users_on_email_address; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_users_on_email_address ON public.users USING btree (email_address);
+
+
+--
+-- Name: index_users_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_users_on_organization_id ON public.users USING btree (organization_id);
+
+
+--
+-- Name: index_users_on_role; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_users_on_role ON public.users USING btree (role);
+
+
+--
+-- Name: announcements fk_rails_092f822a9d; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.announcements
+    ADD CONSTRAINT fk_rails_092f822a9d FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: reservations fk_rails_13b11538cb; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.reservations
+    ADD CONSTRAINT fk_rails_13b11538cb FOREIGN KEY (resource_id) REFERENCES public.resources(id);
+
+
+--
+-- Name: events fk_rails_163b5130b5; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.events
+    ADD CONSTRAINT fk_rails_163b5130b5 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: announcement_reads fk_rails_3bf795c88f; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.announcement_reads
+    ADD CONSTRAINT fk_rails_3bf795c88f FOREIGN KEY (announcement_id) REFERENCES public.announcements(id);
+
+
+--
+-- Name: sessions fk_rails_758836b4f0; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sessions
+    ADD CONSTRAINT fk_rails_758836b4f0 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: announcement_departments fk_rails_7aa82a34b1; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.announcement_departments
+    ADD CONSTRAINT fk_rails_7aa82a34b1 FOREIGN KEY (department_id) REFERENCES public.departments(id);
+
+
+--
+-- Name: event_departments fk_rails_8c9c119949; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_departments
+    ADD CONSTRAINT fk_rails_8c9c119949 FOREIGN KEY (event_id) REFERENCES public.events(id);
+
+
+--
+-- Name: departments fk_rails_8e1e5764fc; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.departments
+    ADD CONSTRAINT fk_rails_8e1e5764fc FOREIGN KEY (parent_id) REFERENCES public.departments(id);
+
+
+--
+-- Name: departments fk_rails_94440b0e8f; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.departments
+    ADD CONSTRAINT fk_rails_94440b0e8f FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: memberships fk_rails_99326fb65d; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.memberships
+    ADD CONSTRAINT fk_rails_99326fb65d FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: announcements fk_rails_994ada01bd; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.announcements
+    ADD CONSTRAINT fk_rails_994ada01bd FOREIGN KEY (author_id) REFERENCES public.users(id);
+
+
+--
+-- Name: event_departments fk_rails_9a55143380; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_departments
+    ADD CONSTRAINT fk_rails_9a55143380 FOREIGN KEY (department_id) REFERENCES public.departments(id);
+
+
+--
+-- Name: memberships fk_rails_9ce98a6ecb; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.memberships
+    ADD CONSTRAINT fk_rails_9ce98a6ecb FOREIGN KEY (department_id) REFERENCES public.departments(id);
+
+
+--
+-- Name: reservations fk_rails_af7a37539f; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.reservations
+    ADD CONSTRAINT fk_rails_af7a37539f FOREIGN KEY (event_id) REFERENCES public.events(id);
+
+
+--
+-- Name: reservations fk_rails_b79e7e2f37; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.reservations
+    ADD CONSTRAINT fk_rails_b79e7e2f37 FOREIGN KEY (reserver_id) REFERENCES public.users(id);
+
+
+--
+-- Name: resources fk_rails_b7c74d1aaf; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.resources
+    ADD CONSTRAINT fk_rails_b7c74d1aaf FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: reservations fk_rails_bf8a5a02cd; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.reservations
+    ADD CONSTRAINT fk_rails_bf8a5a02cd FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: users fk_rails_d7b9ff90af; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT fk_rails_d7b9ff90af FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: announcement_reads fk_rails_e929ca5a13; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.announcement_reads
+    ADD CONSTRAINT fk_rails_e929ca5a13 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: events fk_rails_f58490957c; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.events
+    ADD CONSTRAINT fk_rails_f58490957c FOREIGN KEY (owner_id) REFERENCES public.users(id);
+
+
+--
+-- Name: announcement_departments fk_rails_f704ebbc74; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.announcement_departments
+    ADD CONSTRAINT fk_rails_f704ebbc74 FOREIGN KEY (announcement_id) REFERENCES public.announcements(id);
+
+
+--
+-- PostgreSQL database dump complete
+--
+
+SET search_path TO "$user", public;
+
+INSERT INTO "schema_migrations" (version) VALUES
+('20260729074307'),
+('20260729074049'),
+('20260729073655'),
+('20260729073654'),
+('20260729073437'),
+('20260729073024'),
+('20260729073023'),
+('20260729072358'),
+('20260729072056'),
+('20260729071341'),
+('20260729071340'),
+('20260729071339'),
+('20260729071338'),
+('20260729070422'),
+('20260729070421');
+
