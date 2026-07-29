@@ -19,3 +19,10 @@ outsider:
   name: 田中 次郎
   email_address: jiro@example.com
   password_digest: <%= password_digest %>
+
+# 部門へ所属していない利用者。公開範囲の確認に使う。
+outsider_free:
+  organization: main
+  name: 高橋 四郎
+  email_address: shiro@example.com
+  password_digest: <%= password_digest %>
