@@ -5,10 +5,11 @@
 ## 現在の状態
 
 ```text
-pre-alpha
+0.1.0
 ```
 
-アプリケーションの基盤ができた段階です。業務機能はこれから実装します。
+組織の日常業務を一巡できる範囲を実装した段階です。
+互換性はまだ保証しません。変更の内容は [変更履歴](CHANGELOG.md) を参照してください。
 
 ## 起動
 
@@ -138,6 +139,9 @@ docker compose up -d --build
 - [運用](docs/operations/operations.md) — 日常的な運用と監視
 - [バックアップと復元](docs/operations/backup.md) — 取得と復元の手順
 - [アップグレード](docs/operations/upgrade.md) — 入れ替えの手順と診断
+- [リリース手順](docs/operations/release.md) — 版数の付け方と公開の手順
+- [変更履歴](CHANGELOG.md) — 版ごとの変更点
+- [脆弱性の報告](SECURITY.md) — 報告の方法と対応の流れ
 - [ライセンス方針](docs/licensing.md) — ライセンスの選定理由と名称の利用範囲
 
 いずれも日本語を正本とします。
