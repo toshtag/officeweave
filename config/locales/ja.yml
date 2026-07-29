@@ -31,6 +31,8 @@ ja:
     profile:
       heading: あなたの情報
       no_department: 未設定
+    announcements:
+      more: すべてのお知らせを見る
     departments:
       heading: 所属している部門
       empty: 所属している部門がありません。
@@ -40,6 +42,7 @@ ja:
       user: 利用者
       organization: 組織
       department: 部門
+      announcement: お知らせ
       membership: 所属
     attributes:
       user:
@@ -57,6 +60,13 @@ ja:
         code: 識別子
         parent: 上位部門
         position: 表示順
+      announcement:
+        title: 件名
+        body: 本文
+        visibility: 公開範囲
+        department_ids: 公開先の部門
+        published_at: 公開日時
+        author: 作成者
       membership:
         user: 利用者
         department: 部門
@@ -170,3 +180,37 @@ ja:
 
   navigation:
     label: 主要な移動先
+
+  announcements:
+    created: お知らせを作成しました。
+    updated: お知らせを更新しました。
+    destroyed: お知らせを削除しました。
+    draft: 下書き
+    limited_to: "公開先: %{names}"
+    visibilities:
+      organization: 組織全体
+      departments: 指定した部門
+    index:
+      title: お知らせ
+      heading: お知らせ
+      new: お知らせを作成
+      empty: 表示できるお知らせがありません。
+      drafts: 下書き
+    new:
+      title: お知らせの作成
+      heading: お知らせの作成
+    edit:
+      title: お知らせの編集
+      heading: お知らせの編集
+    form:
+      departments_hint: 公開範囲が「指定した部門」の場合にだけ使われます。
+      published_at_hint: 空のままにすると下書きになります。未来の日時を指定すると、その時刻まで公開されません。
+
+  time:
+    formats:
+      short: "%Y/%m/%d %H:%M"
+      long: "%Y年%m月%d日 %H:%M"
+  date:
+    formats:
+      short: "%m/%d"
+      long: "%Y年%m月%d日"
