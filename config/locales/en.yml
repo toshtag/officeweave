@@ -492,3 +492,16 @@ en:
     notify:
       open: You can review it here.
       settings_hint: This message was sent automatically by OfficeWeave.
+
+  settings:
+    title: Your settings
+    heading: Your settings
+    submit: Save
+    updated: Your settings have been saved.
+    mail_notifications: Notifications to receive by email
+    mail_notifications_hint: Unchecked types still appear on screen, but no email is sent.
+    events:
+      announcement_published: When an announcement is published
+      request_submitted: When a request is submitted
+      request_approved: When your request is approved
+      request_returned: When your request is returned
