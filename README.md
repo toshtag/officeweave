@@ -26,7 +26,13 @@ cd officeweave && cp .env.example .env && docker compose up -d --build
 起動後、`http://localhost:3000` を開きます。
 データベースの作成と移行は初回起動時に自動で実行されます。
 
-設定を変更する場合は `.env` を編集します。設定可能な項目は [.env.example](.env.example) を参照してください。
+設定を変更する場合は `.env` を編集します。設定可能な項目は [設定](docs/development/configuration.md) を参照してください。
+
+稼働確認は次のとおりです。
+
+```bash
+curl -s http://localhost:3000/health
+```
 
 ### よく使うコマンド
 
@@ -102,6 +108,7 @@ docker compose up -d --build
 - [ロードマップ](docs/roadmap.md) — Phase 一覧と進行規則
 - [実行キュー](docs/execution_queue.md) — タスク分解と現在地
 - [技術構成](docs/development/tech_stack.md) — 採用技術、版数、更新方針
+- [設定](docs/development/configuration.md) — 環境変数と稼働確認
 - [ライセンス方針](docs/licensing.md) — ライセンスの選定理由と名称の利用範囲
 
 いずれも日本語を正本とします。
@@ -120,9 +127,9 @@ Copyright (C) 2026 OfficeWeave contributors
 ## 現在地と次のタスク
 
 ```text
-現在の Phase:        P1 ローカル開発基盤
-直近完了 Task:       P1-T2 標準 bin コマンドと起動手順を整備する
-次に実行する Task:   P1-T3 稼働確認用エンドポイントと環境変数を整理する
+現在の Phase:        P2 品質基盤
+直近完了 Task:       P1-T3 稼働確認用エンドポイントと環境変数を整理する
+次に実行する Task:   P2-T1 テスト基盤を整備する
 ```
 
 進行状況は [実行キュー](docs/execution_queue.md) で管理します。
