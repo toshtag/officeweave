@@ -1,0 +1,34 @@
+<% content_for :title, t("departments.index.title") %>
+
+<div class="stack">
+  <div class="page-heading">
+    <h1><%= t("departments.index.heading") %></h1>
+    <%= link_to t("departments.index.new"), new_department_path, class: "button" %>
+  </div>
+
+  <% if @departments.any? %>
+    <div class="panel">
+      <table>
+        <caption class="visually-hidden"><%= t("departments.index.heading") %></caption>
+        <thead>
+          <tr>
+            <th scope="col"><%= Department.human_attribute_name(:name) %></th>
+            <th scope="col"><%= Department.human_attribute_name(:code) %></th>
+            <th scope="col"><%= Department.human_attribute_name(:parent) %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @departments.each do |department| %>
+            <tr>
+              <td><%= link_to department.name, department %></td>
+              <td><%= department.code %></td>
+              <td><%= department.parent&.name || t("departments.no_parent") %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <p><%= t("departments.index.empty") %></p>
+  <% end %>
+</div>

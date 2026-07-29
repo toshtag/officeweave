@@ -1,0 +1,20 @@
+/*
+ * 単独の目的を持つ補助的な指定。
+ * 数を増やさない。役割を表す名前が付けられる場合は components/ へ置く。
+ */
+@layer utilities {
+  /*
+   * 画面から隠すが、読み上げの対象には残す。
+   * display: none と visibility: hidden は読み上げの対象からも外れる。
+   */
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}

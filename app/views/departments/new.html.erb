@@ -1,0 +1,7 @@
+<% content_for :title, t("departments.new.title") %>
+
+<div class="panel panel--narrow stack">
+  <h1><%= t("departments.new.heading") %></h1>
+  <%= render "form", department: @department, parent_candidates: current_organization.departments.ordered %>
+  <%= link_to t("common.back"), departments_path %>
+</div>
