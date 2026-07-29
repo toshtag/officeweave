@@ -19,21 +19,24 @@
   </head>
 
   <body>
+    <%# 反復する見出し領域を読み飛ばして本文へ移動するためのリンク。 %>
+    <a class="skip-link" href="#main"><%= t("application.skip_to_content") %></a>
+
     <div class="page">
-      <header class="page__header">
+      <header class="page__header" role="banner">
         <div class="container page__masthead">
           <%= link_to t("application.name"), root_path, class: "page__brand" %>
           <%= render "shared/locale_switcher" %>
         </div>
       </header>
 
-      <main class="page__main">
+      <main class="page__main" id="main" tabindex="-1">
         <div class="container">
           <%= yield %>
         </div>
       </main>
 
-      <footer class="page__footer">
+      <footer class="page__footer" role="contentinfo">
         <div class="container">
           <%= t("application.footer_note") %>
         </div>
