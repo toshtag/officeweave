@@ -122,12 +122,17 @@ class Request < ApplicationRecord
         self.decided_at = Time.current
       end
 
-      Notification.deliver(user: applicant, subject: self, event: event) if changed
+      if changed
+        Notification.deliver(user: applicant, subject: self, event: event)
+        Notification.publish(organization: organization, subject: self, event: event)
+      end
+
       changed
     end
 
     def notify_approvers
       Notification.deliver_to_all(users: approvers, subject: self, event: "request_submitted")
+      Notification.publish(organization: organization, subject: self, event: "request_submitted")
     end
 
     # 状態の変更と記録を必ず一緒に行う。

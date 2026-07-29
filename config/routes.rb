@@ -16,6 +16,9 @@ Rails.application.routes.draw do
   # 予定。
   resources :events
 
+  # 出来事の送信先。
+  resources :webhook_endpoints, only: %i[index show create update destroy]
+
   # 外部からの接続に使う token の管理。
   resources :api_tokens, only: %i[index create destroy]
 

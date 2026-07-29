@@ -58,6 +58,8 @@ en:
       document: Document
       document_category: Document category
       api_token: API token
+      webhook_endpoint: Event endpoint
+      webhook_delivery: Delivery
       membership: Membership
     attributes:
       user:
@@ -140,6 +142,14 @@ en:
       api_token:
         name: Name
         last_used_at: Last used
+      webhook_endpoint:
+        name: Name
+        url: Endpoint URL
+        secret: Signing secret
+      webhook_delivery:
+        event: Event
+        response_status: Response
+        created_at: Sent at
       membership:
         user: User
         user_id: User
@@ -529,3 +539,25 @@ en:
     status:
       active: Active
       revoked: Revoked
+
+  webhook_endpoints:
+    created: The endpoint has been added.
+    updated: The endpoint has been updated.
+    destroyed: The endpoint has been deleted.
+    enable: Enable
+    disable: Disable
+    index:
+      title: Event endpoints
+      heading: Event endpoints
+      status: Status
+    new:
+      heading: Add an endpoint
+      submit: Add
+      url_hint: Use a URL starting with http or https. Events can be sent outside your organization, so check the destination.
+    show:
+      deliveries: Delivery log
+      no_deliveries: Nothing has been sent yet.
+      secret_hint: This value signs the payload. Use the same value on the receiving side to verify it.
+    status:
+      active: Active
+      inactive: Disabled
