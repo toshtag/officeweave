@@ -1,0 +1,19 @@
+/* 入力の誤りをまとめて示す。 */
+@layer components {
+  .error-summary {
+    padding: var(--space-3) var(--space-4);
+    border: var(--border-width) solid var(--color-danger);
+    border-radius: var(--radius-sm);
+    color: var(--color-danger);
+  }
+
+  .error-summary__heading {
+    margin-block-end: var(--space-2);
+    font-size: var(--font-size-base);
+  }
+
+  .error-summary ul {
+    margin: 0;
+    padding-inline-start: var(--space-5);
+  }
+}

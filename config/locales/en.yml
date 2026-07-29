@@ -27,10 +27,14 @@ en:
     heading: Welcome
     description: Bring your organization's updates, schedules, and approvals together in one place.
     greeting: "Hello, %{name}."
+    primary_department: "Primary department: %{name}"
 
   activerecord:
     models:
       user: User
+      organization: Organization
+      department: Department
+      membership: Membership
     attributes:
       user:
         name: Name
@@ -38,3 +42,66 @@ en:
         password: Password
         password_confirmation: Password confirmation
         locale: Language
+      organization:
+        name: Name
+        code: Code
+      department:
+        name: Name
+        code: Code
+        parent: Parent department
+        position: Display order
+      membership:
+        user: User
+        department: Department
+        primary: Primary department
+
+  common:
+    back: Back to list
+    edit: Edit
+    destroy: Delete
+    actions: Actions
+    yes: Yes
+    no: "No"
+
+  errors:
+    summary:
+      one: There is 1 problem with your input
+      other: There are %{count} problems with your input
+
+  departments:
+    no_parent: None
+    created: The department has been created.
+    updated: The department has been updated.
+    destroyed: The department has been deleted.
+    index:
+      title: Departments
+      heading: Departments
+      new: Add department
+      empty: No departments have been added yet.
+    new:
+      title: Add department
+      heading: Add department
+    edit:
+      title: Edit department
+      heading: Edit department
+    show:
+      members: Members
+      no_members: No one belongs to this department yet.
+    form:
+      code_hint: Use lowercase letters, digits, hyphens, and underscores. It must be unique within the organization.
+      position_hint: Lower numbers appear first. Departments with the same number are sorted by name.
+
+  memberships:
+    created: The member has been added.
+    destroyed: The member has been removed.
+    remove: Remove
+    new:
+      heading: Add a member
+      submit: Add
+      no_candidates: Everyone in this organization already belongs to this department.
+
+  helpers:
+    submit:
+      create: Create %{model}
+      update: Update %{model}
+      submit: Save %{model}

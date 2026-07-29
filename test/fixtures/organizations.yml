@@ -1,0 +1,7 @@
+main:
+  name: 見本商事
+  code: main
+
+other:
+  name: 別組織
+  code: other

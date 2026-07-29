@@ -3,5 +3,14 @@
 <div class="stack">
   <h1><%= t("home.heading") %></h1>
   <p><%= t("home.greeting", name: Current.user.name) %></p>
+
+  <% if (department = Current.user.primary_department) %>
+    <p><%= t("home.primary_department", name: department.display_path) %></p>
+  <% end %>
+
   <p><%= t("home.description") %></p>
+
+  <ul>
+    <li><%= link_to t("departments.index.heading"), departments_path %></li>
+  </ul>
 </div>

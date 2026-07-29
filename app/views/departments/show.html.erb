@@ -1,0 +1,73 @@
+<% content_for :title, @department.name %>
+
+<div class="stack">
+  <div class="page-heading">
+    <div>
+      <h1><%= @department.name %></h1>
+      <p class="page-heading__note"><%= @department.display_path %></p>
+    </div>
+
+    <div class="page-heading__actions">
+      <%= link_to t("common.edit"), edit_department_path(@department), class: "button" %>
+      <%= button_to t("common.destroy"), @department, method: :delete, class: "button",
+                    form: { data: { turbo_confirm: nil } } %>
+    </div>
+  </div>
+
+  <div class="panel stack">
+    <h2><%= t("departments.show.members") %></h2>
+
+    <% if @memberships.any? %>
+      <table>
+        <thead>
+          <tr>
+            <th scope="col"><%= User.human_attribute_name(:name) %></th>
+            <th scope="col"><%= User.human_attribute_name(:email_address) %></th>
+            <th scope="col"><%= Membership.human_attribute_name(:primary) %></th>
+            <th scope="col"><span class="visually-hidden"><%= t("common.actions") %></span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @memberships.each do |membership| %>
+            <tr>
+              <td><%= membership.user.name %></td>
+              <td><%= membership.user.email_address %></td>
+              <td><%= membership.primary? ? t("common.yes") : t("common.no") %></td>
+              <td>
+                <%= button_to t("memberships.remove"),
+                              department_membership_path(@department, membership),
+                              method: :delete, class: "button button--quiet" %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <p><%= t("departments.show.no_members") %></p>
+    <% end %>
+  </div>
+
+  <div class="panel panel--narrow stack">
+    <h2><%= t("memberships.new.heading") %></h2>
+
+    <% if @assignable_users.any? %>
+      <%= form_with model: [ @department, Membership.new ], class: "form stack" do |form| %>
+        <div class="form__field">
+          <%= form.label :user_id, User.model_name.human, class: "form__label" %>
+          <%= form.collection_select :user_id, @assignable_users, :id, :name, {}, class: "form__input" %>
+        </div>
+
+        <div class="form__field form__field--inline">
+          <%= form.check_box :primary %>
+          <%= form.label :primary, class: "form__label" %>
+        </div>
+
+        <%= form.submit t("memberships.new.submit"), class: "button button--primary" %>
+      <% end %>
+    <% else %>
+      <p><%= t("memberships.new.no_candidates") %></p>
+    <% end %>
+  </div>
+
+  <p><%= link_to t("common.back"), departments_path %></p>
+</div>
