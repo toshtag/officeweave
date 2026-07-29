@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_29_073655) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_29_074049) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -108,6 +108,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_29_073655) do
     t.index ["code"], name: "index_organizations_on_code", unique: true
   end
 
+  create_table "resources", force: :cascade do |t|
+    t.integer "capacity"
+    t.string "code", null: false
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.string "name", null: false
+    t.bigint "organization_id", null: false
+    t.integer "position", default: 0, null: false
+    t.boolean "reservable", default: true, null: false
+    t.datetime "updated_at", null: false
+    t.index ["organization_id", "code"], name: "index_resources_on_organization_id_and_code", unique: true
+    t.index ["organization_id"], name: "index_resources_on_organization_id"
+  end
+
   create_table "sessions", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "ip_address"
@@ -147,6 +161,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_29_073655) do
   add_foreign_key "events", "users", column: "owner_id"
   add_foreign_key "memberships", "departments"
   add_foreign_key "memberships", "users"
+  add_foreign_key "resources", "organizations"
   add_foreign_key "sessions", "users"
   add_foreign_key "users", "organizations"
 end
