@@ -1,0 +1,31 @@
+<% content_for :title, @resource.name %>
+
+<div class="panel stack">
+  <div class="page-heading">
+    <h1><%= @resource.name %></h1>
+    <% if administrator? %>
+      <div class="page-heading__actions">
+        <%= link_to t("common.edit"), edit_resource_path(@resource), class: "button" %>
+      </div>
+    <% end %>
+  </div>
+
+  <dl class="definition">
+    <dt><%= Resource.human_attribute_name(:code) %></dt>
+    <dd><%= @resource.code %></dd>
+
+    <dt><%= Resource.human_attribute_name(:capacity) %></dt>
+    <dd><%= @resource.capacity || t("resources.no_capacity") %></dd>
+
+    <dt><%= t("resources.index.status") %></dt>
+    <dd>
+      <%= @resource.reservable? ? t("resources.status.reservable") : t("resources.status.unavailable") %>
+    </dd>
+  </dl>
+
+  <% if @resource.description.present? %>
+    <div class="prose"><%= simple_format @resource.description %></div>
+  <% end %>
+
+  <p><%= link_to t("common.back"), resources_path %></p>
+</div>

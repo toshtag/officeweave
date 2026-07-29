@@ -16,6 +16,9 @@ Rails.application.routes.draw do
   # 予定。
   resources :events
 
+  # 設備・備品。使えなくなったものは削除せず、予約を受け付けない状態にする。
+  resources :resources, except: %i[destroy]
+
   # 利用者の管理。削除ではなく無効化で利用を止める。
   resources :users, only: %i[index new create edit update] do
     resource :activation, only: %i[create destroy], controller: "user_activations"

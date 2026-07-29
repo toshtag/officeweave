@@ -1,0 +1,7 @@
+<% content_for :title, t("resources.new.title") %>
+
+<div class="panel panel--narrow stack">
+  <h1><%= t("resources.new.heading") %></h1>
+  <%= render "form", resource: @resource %>
+  <%= link_to t("common.back"), resources_path %>
+</div>
