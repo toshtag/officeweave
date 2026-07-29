@@ -7,6 +7,9 @@
 # 認証を導入した後も、このエンドポイントは認証を要求しない。
 # 監視側が資格情報を持たずに到達できる必要がある。
 class HealthController < ApplicationController
+  # 監視側が資格情報を持たずに到達できる必要がある。
+  allow_unauthenticated_access
+
   def show
     checks = { database: database_status }
     healthy = checks.values.all?("ok")

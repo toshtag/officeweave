@@ -3,6 +3,9 @@
 # 選択は session に保持する。
 # 利用者ごとの設定として保存する方法は、利用者情報を扱う P4 で判断する。
 class LocalesController < ApplicationController
+  # ログイン画面でも言語を切り替えられるようにする。
+  allow_unauthenticated_access
+
   def update
     session[:locale] = requested_locale if requested_locale
 
