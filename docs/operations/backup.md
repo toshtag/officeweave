@@ -5,6 +5,10 @@
 セルフホストでは、バックアップの取得と保管は導入した組織の責任になる。
 手順を製品側で用意し、復元まで含めて確認できる状態にする。
 
+本書のコマンドは、すべて配布用の構成に対して実行する。
+Compose を呼び出すコマンドには必ず `-f compose.production.yaml` を付ける。
+付け忘れると、開発用の構成に対して実行される。
+
 ## 1. 取得するもの
 
 バックアップにはひとつの書庫へ次をまとめる。
@@ -21,13 +25,13 @@ metadata.txt   取得日時、対象のデータベース名、スキーマの�
 ## 2. 取得
 
 ```bash
-docker compose exec web bin/backup
+docker compose -f compose.production.yaml exec web bin/backup
 ```
 
 既定では `backups/` へ書き出す。出力先は引数で変更できる。
 
 ```bash
-docker compose exec web bin/backup /var/backups/officeweave
+docker compose -f compose.production.yaml exec web bin/backup /var/backups/officeweave
 ```
 
 書庫の名前には取得日時が入る。上書きされることはない。
@@ -41,14 +45,14 @@ docker compose exec web bin/backup /var/backups/officeweave
 ## 3. 復元
 
 ```bash
-docker compose exec web bin/restore backups/officeweave-20260101T000000Z.tar.gz
+docker compose -f compose.production.yaml exec web bin/restore backups/officeweave-20260101T000000Z.tar.gz
 ```
 
 復元先の内容は失われる。取り違えを防ぐため、実行前に確認を求める。
 自動で実行する場合は確認を省ける。
 
 ```bash
-docker compose exec -e FORCE=1 web bin/restore <書庫のパス>
+docker compose -f compose.production.yaml exec -e FORCE=1 web bin/restore <書庫のパス>
 ```
 
 ### 復元の手順

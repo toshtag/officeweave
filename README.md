@@ -36,8 +36,11 @@ docker compose exec web bin/rails db:seed
 docker compose exec web bin/rails officeweave:demo_data
 ```
 
-起動後、`http://localhost:3000` を開きます。
+起動後、`http://127.0.0.1:3210` を開きます。
 データベースの作成と移行は初回起動時に自動で実行されます。
+
+公開先は既定で loopback だけです。同じ端末の他の開発環境と衝突する場合や、
+別の端末から接続したい場合は `.env` の `WEB_BIND_ADDRESS` と `WEB_PORT` を変更します。
 
 開発環境の既定の資格情報は `admin@officeweave.test` / `officeweave` です。
 `.env` の `INITIAL_USER_EMAIL` と `INITIAL_USER_PASSWORD` で変更できます。
@@ -48,7 +51,7 @@ docker compose exec web bin/rails officeweave:demo_data
 稼働確認は次のとおりです。
 
 ```bash
-curl -s http://localhost:3000/health
+curl -s http://127.0.0.1:3210/health
 ```
 
 ### よく使うコマンド
@@ -79,15 +82,31 @@ docker compose exec web bin/diagnose
 docker compose exec web bin/setup --skip-server
 ```
 
-停止と破棄は次のとおりです。`down -v` はデータベースの内容も削除します。
+ホストのデータベースクライアントから直接つなぐ場合は、追加の構成を重ねます。
+通常の起動では、データベースはホストへ公開しません。
+
+```bash
+docker compose -f compose.yaml -f compose.database.yaml up -d
+```
+
+接続先は `127.0.0.1:55432` です。`.env` の `DATABASE_PUBLISHED_PORT` で変更できます。
+
+停止は次のとおりです。
 
 ```bash
 docker compose down
 ```
 
+次はデータベースの内容も削除します。取り消せません。
+実行前に、開発用の構成に対して実行していることを確認してください。
+
 ```bash
 docker compose down -v
 ```
+
+配布用の構成は project 名もデータボリュームも分けてあるため、
+この操作で配布用のデータが失われることはありません。
+配布用を操作する場合は、必ず `-f compose.production.yaml` を付けます。
 
 `Gemfile` を変更した場合は再ビルドが必要です。
 
@@ -161,9 +180,9 @@ Copyright (C) 2026 OfficeWeave contributors
 ## 現在地と次のタスク
 
 ```text
-現在の Phase:        F 最終検証と CI
-直近完了 Task:       F-T2 総合検証を実施する
-次に実行する Task:   なし（P0 から F まで完了）
+現在の Phase:        R0 安定化
+直近完了 Task:       R0-T1 Docker 構成・データボリューム・ポートの分離
+次に実行する Task:   R0-T2 バックアップの永続化と復元手順の是正
 ```
 
 進行状況は [実行キュー](docs/execution_queue.md) で管理します。

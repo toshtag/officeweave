@@ -13,6 +13,15 @@ docker compose exec web bin/verify
 
 書式、依存の脆弱性、静的解析、テスト（システムテストを含む）、初期データの投入。
 
+コンテナ内では Docker を扱えないため、構成そのものの検査は分けてある。
+ホスト側で実行する。
+
+```bash
+script/check_compose_isolation
+```
+
+開発用と配布用の project 名、データボリューム、公開ポートが分かれていることを確かめる。
+
 ## 2. クリーンな環境からの起動
 
 蓄積した状態ではなく、何も無い状態から起動できることを確かめる。
@@ -26,7 +35,7 @@ docker compose up -d --build
 ```
 
 ```bash
-curl -s http://localhost:3000/health
+curl -s http://127.0.0.1:3210/health
 ```
 
 ```bash
@@ -47,6 +56,22 @@ docker compose -f compose.production.yaml up -d --build
 
 ```bash
 docker compose -f compose.production.yaml exec web bin/diagnose
+```
+
+開発用と配布用を同じホストで同時に起動する場合は、
+どちらかの `WEB_PORT` を変更する。公開ポートだけは共有できない。
+
+```bash
+WEB_PORT=3211 docker compose -f compose.production.yaml up -d
+```
+
+データの分離は、実際に消して確かめる。
+
+```text
+1. 開発用と配布用のそれぞれへ、区別できる記録を入れる
+2. 開発用で down -v を実行する
+3. 配布用の記録が残っていることを確かめる
+4. 逆向きでも同じことを確かめる
 ```
 
 イメージへ鍵と接続情報が含まれていないことも確かめる。
@@ -90,6 +115,10 @@ docker run --rm --entrypoint sh <イメージ名> -c 'ls config/master.key .env'
 `.github/workflows/verify.yml` が、変更のたびに次を実行する。
 
 ```text
+Compose 構成の分離の検査
 bin/verify（開発用の構成）
 配布用の構成での起動、稼働確認、診断
 ```
+
+自動実行では、同じホストで複数の検証が並行しうる。
+衝突を避けるため、実行ごとに一意な project 名を `-p` で指定する。
