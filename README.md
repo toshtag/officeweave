@@ -99,6 +99,7 @@ docker compose up -d --build
 - 英語 (`en`)
 
 初期の既定言語は日本語です。
+ブラウザーの言語設定を反映し、画面上で切り替えることもできます。
 
 ## ドキュメント
 
@@ -130,8 +131,8 @@ Copyright (C) 2026 OfficeWeave contributors
 
 ```text
 現在の Phase:        P3 UI・多言語基盤
-直近完了 Task:       P3-T1 基本レイアウトと素の CSS を実装する
-次に実行する Task:   P3-T2 日本語・英語対応と言語切替を実装する
+直近完了 Task:       P3-T2 日本語・英語対応と言語切替を実装する
+次に実行する Task:   P3-T3 アクセシビリティの基本要件を満たす
 ```
 
 進行状況は [実行キュー](docs/execution_queue.md) で管理します。

@@ -3,6 +3,12 @@ en:
     name: OfficeWeave
     footer_note: OfficeWeave — a collaboration platform for organizations
 
+  locale_switcher:
+    label: Language
+    names:
+      ja: 日本語
+      en: English
+
   home:
     title: Home
     heading: Welcome
