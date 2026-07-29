@@ -148,9 +148,9 @@ Copyright (C) 2026 OfficeWeave contributors
 ## 現在地と次のタスク
 
 ```text
-現在の Phase:        P11 Operations
-直近完了 Task:       P11-T2 バックアップと復元を実装する
-次に実行する Task:   P11-T3 アップグレードと運用診断を整備する
+現在の Phase:        P12 Self-host release
+直近完了 Task:       P11-T3 アップグレードと運用診断を整備する
+次に実行する Task:   P12-T1 デモデータを用意する
 ```
 
 進行状況は [実行キュー](docs/execution_queue.md) で管理します。
