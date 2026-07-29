@@ -47,7 +47,7 @@ docker compose exec web bin/rails console
 ```
 
 ```bash
-docker compose exec web bin/rails test
+docker compose exec web bin/rails test:all
 ```
 
 ```bash
@@ -109,6 +109,7 @@ docker compose up -d --build
 - [実行キュー](docs/execution_queue.md) — タスク分解と現在地
 - [技術構成](docs/development/tech_stack.md) — 採用技術、版数、更新方針
 - [設定](docs/development/configuration.md) — 環境変数と稼働確認
+- [テスト方針](docs/development/testing.md) — テストの層と実行方法
 - [ライセンス方針](docs/licensing.md) — ライセンスの選定理由と名称の利用範囲
 
 いずれも日本語を正本とします。
@@ -128,8 +129,8 @@ Copyright (C) 2026 OfficeWeave contributors
 
 ```text
 現在の Phase:        P2 品質基盤
-直近完了 Task:       P1-T3 稼働確認用エンドポイントと環境変数を整理する
-次に実行する Task:   P2-T1 テスト基盤を整備する
+直近完了 Task:       P2-T1 テスト基盤を整備する
+次に実行する Task:   P2-T2 Lint を導入する
 ```
 
 進行状況は [実行キュー](docs/execution_queue.md) で管理します。
