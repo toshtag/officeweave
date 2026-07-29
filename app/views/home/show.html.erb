@@ -1,19 +1,43 @@
 <% content_for :title, t("home.title") %>
 
 <div class="stack">
-  <h1><%= t("home.heading") %></h1>
-  <p><%= t("home.greeting", name: Current.user.name) %></p>
+  <div class="page-heading">
+    <div>
+      <h1><%= t("home.heading") %></h1>
+      <p class="page-heading__note"><%= t("home.greeting", name: Current.user.name) %></p>
+    </div>
+  </div>
 
-  <% if (department = Current.user.primary_department) %>
-    <p><%= t("home.primary_department", name: department.display_path) %></p>
-  <% end %>
+  <div class="card-grid">
+    <section class="panel stack" aria-labelledby="home-profile">
+      <h2 id="home-profile"><%= t("home.profile.heading") %></h2>
+      <dl class="definition">
+        <dt><%= User.human_attribute_name(:name) %></dt>
+        <dd><%= Current.user.name %></dd>
 
-  <p><%= t("home.description") %></p>
+        <dt><%= Organization.model_name.human %></dt>
+        <dd><%= current_organization.name %></dd>
 
-  <ul>
-    <li><%= link_to t("departments.index.heading"), departments_path %></li>
-    <% if administrator? %>
-      <li><%= link_to t("users.index.heading"), users_path %></li>
-    <% end %>
-  </ul>
+        <dt><%= Membership.human_attribute_name(:primary) %></dt>
+        <dd><%= Current.user.primary_department&.display_path || t("home.profile.no_department") %></dd>
+
+        <dt><%= User.human_attribute_name(:role) %></dt>
+        <dd><%= t("roles.#{Current.user.role}") %></dd>
+      </dl>
+    </section>
+
+    <section class="panel stack" aria-labelledby="home-departments">
+      <h2 id="home-departments"><%= t("home.departments.heading") %></h2>
+
+      <% if Current.user.departments.any? %>
+        <ul>
+          <% Current.user.departments.ordered.each do |department| %>
+            <li><%= link_to department.display_path, department %></li>
+          <% end %>
+        </ul>
+      <% else %>
+        <p><%= t("home.departments.empty") %></p>
+      <% end %>
+    </section>
+  </div>
 </div>

@@ -1,0 +1,30 @@
+/* 主要な移動先の並び。 */
+@layer components {
+  .navigation__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .navigation__link {
+    display: inline-block;
+    padding: var(--space-2) var(--space-3);
+    border-block-end: 2px solid transparent;
+    color: var(--color-text-muted);
+    text-decoration: none;
+  }
+
+  .navigation__link:hover {
+    color: var(--color-text);
+  }
+
+  /* 現在位置は、線と文字の濃さの両方で示す。色だけに頼らない。 */
+  .navigation__link--current {
+    border-block-end-color: var(--color-accent);
+    color: var(--color-text);
+    font-weight: 600;
+  }
+}

@@ -28,6 +28,12 @@ en:
     description: Bring your organization's updates, schedules, and approvals together in one place.
     greeting: "Hello, %{name}."
     primary_department: "Primary department: %{name}"
+    profile:
+      heading: Your details
+      no_department: Not set
+    departments:
+      heading: Your departments
+      empty: You do not belong to any department yet.
 
   activerecord:
     models:
@@ -145,3 +151,6 @@ en:
       password_hint: Fill this in only to change the password. Leave it blank to keep the current one.
       locale_unset: Not set
       locale_hint: When this is not set, the browser's language setting is used.
+
+  navigation:
+    label: Main navigation
