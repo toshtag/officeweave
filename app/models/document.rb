@@ -40,6 +40,19 @@ class Document < ApplicationRecord
   }
   scope :in_category, ->(category_id) { where(document_category_id: category_id) if category_id.present? }
 
+  # 件名と本文の部分一致で探す。
+  #
+  # 語の区切りを空白で判断する検索は、日本語の文章では語を切り出せない。
+  # 部分一致であれば、区切りのない文章でも、英語の単語でも同じ書き方で引ける。
+  # 索引は 3 文字組で作ってあるため、件数が増えても総当たりにはならない。
+  scope :search, ->(query) {
+    term = query.to_s.strip
+    next if term.blank?
+
+    pattern = "%#{sanitize_sql_like(term)}%"
+    where(arel_table[:title].matches(pattern).or(arel_table[:body].matches(pattern)))
+  }
+
   # 作成者と管理者だけが変更できる。
   def editable_by?(user)
     author_id == user.id || user.administrator?

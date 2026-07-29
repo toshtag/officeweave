@@ -24,6 +24,20 @@ CREATE EXTENSION IF NOT EXISTS btree_gist WITH SCHEMA public;
 COMMENT ON EXTENSION btree_gist IS 'support for indexing common datatypes in GiST';
 
 
+--
+-- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION pg_trgm; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pg_trgm IS 'text similarity measurement and index searching based on trigrams';
+
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -1268,6 +1282,13 @@ CREATE INDEX index_documents_on_author_id ON public.documents USING btree (autho
 
 
 --
+-- Name: index_documents_on_body_trigram; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_documents_on_body_trigram ON public.documents USING gin (body public.gin_trgm_ops);
+
+
+--
 -- Name: index_documents_on_document_category_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1286,6 +1307,13 @@ CREATE INDEX index_documents_on_organization_id ON public.documents USING btree 
 --
 
 CREATE INDEX index_documents_on_organization_id_and_updated_at ON public.documents USING btree (organization_id, updated_at);
+
+
+--
+-- Name: index_documents_on_title_trigram; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_documents_on_title_trigram ON public.documents USING gin (title public.gin_trgm_ops);
 
 
 --
@@ -1821,6 +1849,7 @@ ALTER TABLE ONLY public.announcement_departments
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260729081505'),
 ('20260729081128'),
 ('20260729081127'),
 ('20260729080718'),

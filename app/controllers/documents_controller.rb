@@ -5,9 +5,11 @@ class DocumentsController < ApplicationController
   before_action :require_editable, only: %i[edit update destroy]
 
   def index
+    @query = params[:query]
     @category_id = params[:document_category_id]
     @categories = current_organization.document_categories.ordered
     @documents = Document.visible_to(Current.user)
+                         .search(@query)
                          .in_category(@category_id)
                                      .recently_updated
                                      .includes(:author, :document_category, attachments_attachments: :blob)

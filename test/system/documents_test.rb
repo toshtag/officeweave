@@ -24,7 +24,7 @@ class DocumentsTest < ApplicationSystemTestCase
 
     visit documents_path
     select "議事録", from: Document.human_attribute_name(:document_category)
-    click_button I18n.t("events.index.filter")
+    click_button I18n.t("documents.index.search")
 
     assert_text "定例会議の記録"
     assert_no_text documents(:travel_rule).title

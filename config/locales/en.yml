@@ -447,6 +447,13 @@ en:
       new: Write a document
       empty: There are no documents to show.
       all_categories: All categories
+      query: Search
+      search: Search
+      clear: Clear
+      result:
+        zero: No documents match "%{query}"
+        one: 1 document matches "%{query}"
+        other: "%{count} documents match \"%{query}\""
       updated_at: Updated
     new:
       title: Write a document
