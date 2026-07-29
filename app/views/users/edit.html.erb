@@ -1,0 +1,7 @@
+<% content_for :title, t("users.edit.title") %>
+
+<div class="panel panel--narrow stack">
+  <h1><%= t("users.edit.heading") %></h1>
+  <%= render "form", user: @user %>
+  <%= link_to t("common.back"), users_path %>
+</div>

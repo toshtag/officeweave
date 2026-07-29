@@ -1,0 +1,50 @@
+<% content_for :title, t("users.index.title") %>
+
+<div class="stack">
+  <div class="page-heading">
+    <h1><%= t("users.index.heading") %></h1>
+    <%= link_to t("users.index.new"), new_user_path, class: "button" %>
+  </div>
+
+  <div class="panel">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col"><%= User.human_attribute_name(:name) %></th>
+          <th scope="col"><%= User.human_attribute_name(:email_address) %></th>
+          <th scope="col"><%= User.human_attribute_name(:role) %></th>
+          <th scope="col"><%= Membership.human_attribute_name(:primary) %></th>
+          <th scope="col"><%= t("users.index.status") %></th>
+          <th scope="col"><span class="visually-hidden"><%= t("common.actions") %></span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @users.each do |user| %>
+          <tr>
+            <td><%= user.name %></td>
+            <td><%= user.email_address %></td>
+            <td><%= t("roles.#{user.role}") %></td>
+            <td><%= user.primary_department&.name || t("departments.no_parent") %></td>
+            <td>
+              <% if user.active? %>
+                <%= t("users.status.active") %>
+              <% else %>
+                <span class="status status--muted"><%= t("users.status.deactivated") %></span>
+              <% end %>
+            </td>
+            <td class="table__actions">
+              <%= link_to t("common.edit"), edit_user_path(user), class: "button button--quiet" %>
+              <% if user.active? %>
+                <%= button_to t("users.deactivate"), user_activation_path(user),
+                              method: :delete, class: "button button--quiet" %>
+              <% else %>
+                <%= button_to t("users.activate"), user_activation_path(user),
+                              method: :post, class: "button button--quiet" %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
