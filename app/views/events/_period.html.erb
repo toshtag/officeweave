@@ -1,0 +1,15 @@
+<%#
+  予定の期間の表示。
+  終日の予定は時刻を出さない。日をまたぐ場合は終了日も出す。
+%>
+<% if event.all_day %>
+  <% if event.starts_at.to_date == event.ends_at.to_date %>
+    <%= t("events.all_day") %>
+  <% else %>
+    <%= t("events.all_day") %>（<%= l(event.starts_at.to_date, format: :short) %> – <%= l(event.ends_at.to_date, format: :short) %>）
+  <% end %>
+<% elsif event.starts_at.to_date == event.ends_at.to_date %>
+  <%= l(event.starts_at, format: :time_only) %> – <%= l(event.ends_at, format: :time_only) %>
+<% else %>
+  <%= l(event.starts_at, format: :short) %> – <%= l(event.ends_at, format: :short) %>
+<% end %>

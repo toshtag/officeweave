@@ -74,3 +74,13 @@
     color: var(--color-text);
   }
 }
+
+@layer components {
+  /* 絞り込みなど、入力欄とボタンを横に並べる場合。 */
+  .form--inline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--space-3);
+  }
+}

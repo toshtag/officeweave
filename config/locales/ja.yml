@@ -43,6 +43,7 @@ ja:
       organization: 組織
       department: 部門
       announcement: お知らせ
+      event: 予定
       membership: 所属
     attributes:
       user:
@@ -67,6 +68,15 @@ ja:
         department_ids: 公開先の部門
         published_at: 公開日時
         author: 作成者
+      event:
+        title: 件名
+        description: 内容
+        starts_at: 開始
+        ends_at: 終了
+        all_day: 終日
+        visibility: 公開範囲
+        department_ids: 公開先の部門
+        owner: 登録者
       membership:
         user: 利用者
         department: 部門
@@ -98,6 +108,7 @@ ja:
       less_than: は %{count} より小さい値にしてください
       less_than_or_equal_to: は %{count} 以下の値にしてください
       required: を指定してください
+      not_after_start: は開始より後にしてください
       cyclic: に自身または下位の部門は指定できません
       different_organization: に別の組織の記録は指定できません
     forbidden:
@@ -213,8 +224,34 @@ ja:
   time:
     formats:
       short: "%Y/%m/%d %H:%M"
+      time_only: "%H:%M"
       long: "%Y年%m月%d日 %H:%M"
   date:
     formats:
       short: "%m/%d"
       long: "%Y年%m月%d日"
+
+  events:
+    created: 予定を作成しました。
+    updated: 予定を更新しました。
+    destroyed: 予定を削除しました。
+    all_day: 終日
+    visibilities:
+      private: 自分のみ
+      organization: 組織全体
+      departments: 指定した部門
+    index:
+      title: 予定
+      heading: 予定
+      new: 予定を作成
+      empty: 表示できる予定がありません。
+      from: 表示開始日
+      filter: 絞り込む
+    new:
+      title: 予定の作成
+      heading: 予定の作成
+    edit:
+      title: 予定の編集
+      heading: 予定の編集
+    form:
+      departments_hint: 公開範囲が「指定した部門」の場合にだけ使われます。

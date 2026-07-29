@@ -1,0 +1,39 @@
+company_meeting:
+  organization: main
+  owner: taro
+  title: 全社会議
+  starts_at: <%= 1.day.from_now.change(hour: 10).to_fs(:db) %>
+  ends_at: <%= 1.day.from_now.change(hour: 11).to_fs(:db) %>
+  visibility: organization
+
+sales_review:
+  organization: main
+  owner: taro
+  title: 営業部の振り返り
+  starts_at: <%= 2.days.from_now.change(hour: 14).to_fs(:db) %>
+  ends_at: <%= 2.days.from_now.change(hour: 15).to_fs(:db) %>
+  visibility: departments
+
+taro_private:
+  organization: main
+  owner: taro
+  title: 個人の予定
+  starts_at: <%= 3.days.from_now.change(hour: 9).to_fs(:db) %>
+  ends_at: <%= 3.days.from_now.change(hour: 10).to_fs(:db) %>
+  visibility: private
+
+past_event:
+  organization: main
+  owner: taro
+  title: 過ぎた予定
+  starts_at: <%= 5.days.ago.change(hour: 9).to_fs(:db) %>
+  ends_at: <%= 5.days.ago.change(hour: 10).to_fs(:db) %>
+  visibility: organization
+
+other_org_event:
+  organization: other
+  owner: outsider
+  title: 別組織の予定
+  starts_at: <%= 1.day.from_now.change(hour: 10).to_fs(:db) %>
+  ends_at: <%= 1.day.from_now.change(hour: 11).to_fs(:db) %>
+  visibility: organization

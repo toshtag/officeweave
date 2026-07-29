@@ -1,0 +1,7 @@
+<% content_for :title, t("events.edit.title") %>
+
+<div class="panel panel--narrow stack">
+  <h1><%= t("events.edit.heading") %></h1>
+  <%= render "form", event: @event %>
+  <%= link_to t("common.back"), @event %>
+</div>

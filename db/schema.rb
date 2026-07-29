@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_29_073437) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_29_073655) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -60,6 +60,32 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_29_073437) do
     t.index ["organization_id", "code"], name: "index_departments_on_organization_id_and_code", unique: true
     t.index ["organization_id"], name: "index_departments_on_organization_id"
     t.index ["parent_id"], name: "index_departments_on_parent_id"
+  end
+
+  create_table "event_departments", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "department_id", null: false
+    t.bigint "event_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["department_id"], name: "index_event_departments_on_department_id"
+    t.index ["event_id", "department_id"], name: "index_event_departments_on_pair", unique: true
+    t.index ["event_id"], name: "index_event_departments_on_event_id"
+  end
+
+  create_table "events", force: :cascade do |t|
+    t.boolean "all_day", default: false, null: false
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.datetime "ends_at", null: false
+    t.bigint "organization_id", null: false
+    t.bigint "owner_id", null: false
+    t.datetime "starts_at", null: false
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.string "visibility", default: "organization", null: false
+    t.index ["organization_id", "starts_at"], name: "index_events_on_organization_id_and_starts_at"
+    t.index ["organization_id"], name: "index_events_on_organization_id"
+    t.index ["owner_id"], name: "index_events_on_owner_id"
   end
 
   create_table "memberships", force: :cascade do |t|
@@ -115,6 +141,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_29_073437) do
   add_foreign_key "announcements", "users", column: "author_id"
   add_foreign_key "departments", "departments", column: "parent_id"
   add_foreign_key "departments", "organizations"
+  add_foreign_key "event_departments", "departments"
+  add_foreign_key "event_departments", "events"
+  add_foreign_key "events", "organizations"
+  add_foreign_key "events", "users", column: "owner_id"
   add_foreign_key "memberships", "departments"
   add_foreign_key "memberships", "users"
   add_foreign_key "sessions", "users"

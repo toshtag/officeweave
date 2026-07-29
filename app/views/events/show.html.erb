@@ -1,0 +1,37 @@
+<% content_for :title, @event.title %>
+
+<article class="panel stack">
+  <div class="page-heading">
+    <div>
+      <h1><%= @event.title %></h1>
+      <p class="meta">
+        <%= l(@event.starts_at.to_date, format: :long) %> ・
+        <%= render "events/period", event: @event %> ・
+        <%= @event.owner.name %>
+      </p>
+    </div>
+
+    <% if @event.editable_by?(Current.user) %>
+      <div class="page-heading__actions">
+        <%= link_to t("common.edit"), edit_event_path(@event), class: "button" %>
+        <%= button_to t("common.destroy"), @event, method: :delete, class: "button" %>
+      </div>
+    <% end %>
+  </div>
+
+  <dl class="definition">
+    <dt><%= Event.human_attribute_name(:visibility) %></dt>
+    <dd>
+      <%= t("events.visibilities.#{@event.visibility}") %>
+      <% if @event.limited_to_departments? %>
+        （<%= @event.departments.ordered.map(&:display_path).to_sentence %>）
+      <% end %>
+    </dd>
+  </dl>
+
+  <% if @event.description.present? %>
+    <div class="prose"><%= simple_format @event.description %></div>
+  <% end %>
+
+  <p><%= link_to t("common.back"), events_path %></p>
+</article>

@@ -1,0 +1,42 @@
+<% content_for :title, t("events.index.title") %>
+
+<div class="stack">
+  <div class="page-heading">
+    <h1><%= t("events.index.heading") %></h1>
+    <%= link_to t("events.index.new"), new_event_path, class: "button" %>
+  </div>
+
+  <form class="form form--inline" method="get" action="<%= events_path %>">
+    <div class="form__field">
+      <%= label_tag :from, t("events.index.from"), class: "form__label" %>
+      <%= date_field_tag :from, @from, class: "form__input" %>
+    </div>
+    <%= submit_tag t("events.index.filter"), class: "button", name: nil %>
+  </form>
+
+  <% if @events.any? %>
+    <ul class="list-cards">
+      <% @events.group_by { |event| event.starts_at.to_date }.each do |date, events| %>
+        <li>
+          <section class="panel stack" aria-labelledby="events-<%= date.iso8601 %>">
+            <h2 id="events-<%= date.iso8601 %>"><%= l(date, format: :long) %></h2>
+            <ul class="list-plain">
+              <% events.each do |event| %>
+                <li>
+                  <%= link_to event.title, event %>
+                  <span class="meta">
+                    <%= render "events/period", event: event %> ・
+                    <%= event.owner.name %> ・
+                    <%= t("events.visibilities.#{event.visibility}") %>
+                  </span>
+                </li>
+              <% end %>
+            </ul>
+          </section>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <p><%= t("events.index.empty") %></p>
+  <% end %>
+</div>

@@ -1,0 +1,56 @@
+<%= form_with model: event, class: "form stack" do |form| %>
+  <%= render "shared/error_messages", record: event %>
+
+  <div class="form__field">
+    <%= form.label :title, class: "form__label" %>
+    <%= form.text_field :title, required: true, class: "form__input" %>
+  </div>
+
+  <div class="form__field">
+    <%= form.label :starts_at, class: "form__label" %>
+    <%= form.datetime_field :starts_at, required: true, class: "form__input" %>
+  </div>
+
+  <div class="form__field">
+    <%= form.label :ends_at, class: "form__label" %>
+    <%= form.datetime_field :ends_at, required: true, class: "form__input" %>
+  </div>
+
+  <div class="form__field form__field--inline">
+    <%= form.check_box :all_day %>
+    <%= form.label :all_day, class: "form__label" %>
+  </div>
+
+  <div class="form__field">
+    <%= form.label :description, class: "form__label" %>
+    <%= form.text_area :description, rows: 6, class: "form__input" %>
+  </div>
+
+  <fieldset class="form__fieldset">
+    <legend class="form__label"><%= Event.human_attribute_name(:visibility) %></legend>
+
+    <% Event::VISIBILITIES.each do |visibility| %>
+      <div class="form__field form__field--inline">
+        <%= form.radio_button :visibility, visibility %>
+        <%= form.label :"visibility_#{visibility}", t("events.visibilities.#{visibility}") %>
+      </div>
+    <% end %>
+  </fieldset>
+
+  <fieldset class="form__fieldset">
+    <legend class="form__label"><%= Event.human_attribute_name(:department_ids) %></legend>
+    <p class="form__hint"><%= t("events.form.departments_hint") %></p>
+
+    <% current_organization.departments.ordered.each do |department| %>
+      <div class="form__field form__field--inline">
+        <%= check_box_tag "event[department_ids][]", department.id,
+                          event.department_ids.include?(department.id),
+                          id: "event_department_#{department.id}" %>
+        <%= label_tag "event_department_#{department.id}", department.display_path %>
+      </div>
+    <% end %>
+    <%= hidden_field_tag "event[department_ids][]", "", id: nil %>
+  </fieldset>
+
+  <%= form.submit class: "button button--primary" %>
+<% end %>

@@ -142,8 +142,8 @@ Copyright (C) 2026 OfficeWeave contributors
 
 ```text
 現在の Phase:        P6 Calendar
-直近完了 Task:       P5-T3 既読管理を実装する
-次に実行する Task:   P6-T1 個人予定と共有予定を実装する
+直近完了 Task:       P6-T1 個人予定と共有予定を実装する
+次に実行する Task:   P6-T2 設備・備品を実装する
 ```
 
 進行状況は [実行キュー](docs/execution_queue.md) で管理します。

@@ -43,6 +43,7 @@ en:
       organization: Organization
       department: Department
       announcement: Announcement
+      event: Event
       membership: Membership
     attributes:
       user:
@@ -67,6 +68,15 @@ en:
         department_ids: Departments
         published_at: Published at
         author: Author
+      event:
+        title: Subject
+        description: Description
+        starts_at: Starts at
+        ends_at: Ends at
+        all_day: All day
+        visibility: Visibility
+        department_ids: Departments
+        owner: Owner
       membership:
         user: User
         department: Department
@@ -82,6 +92,7 @@ en:
 
   errors:
     messages:
+      not_after_start: must be after the start time
       cyclic: cannot be this department or one of its descendants
       different_organization: must belong to the same organization
     forbidden:
@@ -197,8 +208,34 @@ en:
   time:
     formats:
       short: "%b %-d, %Y %H:%M"
+      time_only: "%H:%M"
       long: "%B %-d, %Y at %H:%M"
   date:
     formats:
       short: "%b %-d"
       long: "%B %-d, %Y"
+
+  events:
+    created: The event has been created.
+    updated: The event has been updated.
+    destroyed: The event has been deleted.
+    all_day: All day
+    visibilities:
+      private: Only me
+      organization: Everyone in the organization
+      departments: Selected departments
+    index:
+      title: Events
+      heading: Events
+      new: Add event
+      empty: There are no events to show.
+      from: Showing from
+      filter: Apply
+    new:
+      title: Add event
+      heading: Add event
+    edit:
+      title: Edit event
+      heading: Edit event
+    form:
+      departments_hint: These are used only when the visibility is set to selected departments.
