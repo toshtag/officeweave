@@ -27,13 +27,19 @@
     </section>
 
     <section class="panel stack" aria-labelledby="home-announcements">
-      <h2 id="home-announcements"><%= t("announcements.index.heading") %></h2>
+      <h2 id="home-announcements">
+        <%= t("announcements.index.heading") %>
+        <% if @unread_count.positive? %>
+          <span class="badge badge--unread"><%= t("announcements.unread_count", count: @unread_count) %></span>
+        <% end %>
+      </h2>
 
       <% if @announcements.any? %>
         <ul class="list-plain">
           <% @announcements.each do |announcement| %>
             <li>
               <%= link_to announcement.title, announcement %>
+              <%= render "shared/unread_badge" if @unread_ids.include?(announcement.id) %>
               <span class="meta"><%= l(announcement.published_at, format: :short) %></span>
             </li>
           <% end %>

@@ -6,6 +6,7 @@ class User < ApplicationRecord
   has_many :memberships, dependent: :destroy
   has_many :departments, through: :memberships
   has_many :announcements, foreign_key: :author_id, dependent: :restrict_with_error, inverse_of: :author
+  has_many :announcement_reads, dependent: :destroy
 
   # 大文字小文字と前後の空白の違いで別の利用者として扱わない。
   # 権限は 2 段階だけとする。

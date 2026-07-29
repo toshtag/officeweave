@@ -10,6 +10,8 @@ class Announcement < ApplicationRecord
 
   has_many :announcement_departments, dependent: :destroy
   has_many :departments, through: :announcement_departments
+  has_many :announcement_reads, dependent: :destroy
+  has_many :readers, through: :announcement_reads, source: :user
 
   validates :title, presence: true, length: { maximum: 200 }
   validates :body, presence: true, length: { maximum: 10_000 }
@@ -35,6 +37,23 @@ class Announcement < ApplicationRecord
         )
       )
   }
+
+  # まだ読まれていないお知らせ。
+  scope :unread_for, ->(user) {
+    where.not(id: AnnouncementRead.where(user_id: user.id).select(:announcement_id))
+  }
+
+  # 読んだ記録を残す。同じ利用者が何度開いても 1 件にとどめる。
+  # 記録の有無だけを扱い、読み直した日時では上書きしない。
+  def mark_as_read_by(user)
+    announcement_reads.create!(user: user, read_at: Time.current)
+  rescue ActiveRecord::RecordNotUnique, ActiveRecord::RecordInvalid
+    nil
+  end
+
+  def read_by?(user)
+    announcement_reads.exists?(user_id: user.id)
+  end
 
   def published?
     published_at.present? && published_at <= Time.current
