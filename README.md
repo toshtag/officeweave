@@ -141,9 +141,9 @@ Copyright (C) 2026 OfficeWeave contributors
 ## 現在地と次のタスク
 
 ```text
-現在の Phase:        P6 Calendar
-直近完了 Task:       P6-T2 設備・備品を実装する
-次に実行する Task:   P6-T3 予約と重複防止を実装する
+現在の Phase:        P7 Requests
+直近完了 Task:       P6-T3 予約と重複防止を実装する
+次に実行する Task:   P7-T1 申請種別と申請を実装する
 ```
 
 進行状況は [実行キュー](docs/execution_queue.md) で管理します。
