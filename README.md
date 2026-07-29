@@ -139,6 +139,7 @@ docker compose up -d --build
 - [運用](docs/operations/operations.md) — 日常的な運用と監視
 - [バックアップと復元](docs/operations/backup.md) — 取得と復元の手順
 - [アップグレード](docs/operations/upgrade.md) — 入れ替えの手順と診断
+- [総合検証](docs/operations/verification.md) — 公開前に通す確認
 - [リリース手順](docs/operations/release.md) — 版数の付け方と公開の手順
 - [変更履歴](CHANGELOG.md) — 版ごとの変更点
 - [脆弱性の報告](SECURITY.md) — 報告の方法と対応の流れ
@@ -161,8 +162,8 @@ Copyright (C) 2026 OfficeWeave contributors
 
 ```text
 現在の Phase:        F 最終検証と CI
-直近完了 Task:       F-T1 CI を導入する
-次に実行する Task:   F-T2 総合検証を実施する
+直近完了 Task:       F-T2 総合検証を実施する
+次に実行する Task:   なし（P0 から F まで完了）
 ```
 
 進行状況は [実行キュー](docs/execution_queue.md) で管理します。
