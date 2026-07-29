@@ -177,6 +177,75 @@ ALTER SEQUENCE public.departments_id_seq OWNED BY public.departments.id;
 
 
 --
+-- Name: document_categories; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.document_categories (
+    id bigint NOT NULL,
+    organization_id bigint NOT NULL,
+    name character varying NOT NULL,
+    code character varying NOT NULL,
+    "position" integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: document_categories_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.document_categories_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: document_categories_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.document_categories_id_seq OWNED BY public.document_categories.id;
+
+
+--
+-- Name: documents; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.documents (
+    id bigint NOT NULL,
+    organization_id bigint NOT NULL,
+    document_category_id bigint,
+    author_id bigint NOT NULL,
+    title character varying NOT NULL,
+    body text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: documents_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.documents_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: documents_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.documents_id_seq OWNED BY public.documents.id;
+
+
+--
 -- Name: event_departments; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -602,6 +671,20 @@ ALTER TABLE ONLY public.departments ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
+-- Name: document_categories id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_categories ALTER COLUMN id SET DEFAULT nextval('public.document_categories_id_seq'::regclass);
+
+
+--
+-- Name: documents id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.documents ALTER COLUMN id SET DEFAULT nextval('public.documents_id_seq'::regclass);
+
+
+--
 -- Name: event_departments id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -716,6 +799,22 @@ ALTER TABLE ONLY public.ar_internal_metadata
 
 ALTER TABLE ONLY public.departments
     ADD CONSTRAINT departments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: document_categories document_categories_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_categories
+    ADD CONSTRAINT document_categories_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: documents documents_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.documents
+    ADD CONSTRAINT documents_pkey PRIMARY KEY (id);
 
 
 --
@@ -904,6 +1003,48 @@ CREATE UNIQUE INDEX index_departments_on_organization_id_and_code ON public.depa
 --
 
 CREATE INDEX index_departments_on_parent_id ON public.departments USING btree (parent_id);
+
+
+--
+-- Name: index_document_categories_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_document_categories_on_organization_id ON public.document_categories USING btree (organization_id);
+
+
+--
+-- Name: index_document_categories_on_organization_id_and_code; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_document_categories_on_organization_id_and_code ON public.document_categories USING btree (organization_id, code);
+
+
+--
+-- Name: index_documents_on_author_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_documents_on_author_id ON public.documents USING btree (author_id);
+
+
+--
+-- Name: index_documents_on_document_category_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_documents_on_document_category_id ON public.documents USING btree (document_category_id);
+
+
+--
+-- Name: index_documents_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_documents_on_organization_id ON public.documents USING btree (organization_id);
+
+
+--
+-- Name: index_documents_on_organization_id_and_updated_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_documents_on_organization_id_and_updated_at ON public.documents USING btree (organization_id, updated_at);
 
 
 --
@@ -1185,6 +1326,14 @@ ALTER TABLE ONLY public.request_types
 
 
 --
+-- Name: documents fk_rails_38b1cebf1f; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.documents
+    ADD CONSTRAINT fk_rails_38b1cebf1f FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: announcement_reads fk_rails_3bf795c88f; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1233,6 +1382,14 @@ ALTER TABLE ONLY public.announcement_departments
 
 
 --
+-- Name: document_categories fk_rails_8442905ffc; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_categories
+    ADD CONSTRAINT fk_rails_8442905ffc FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: event_departments fk_rails_8c9c119949; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1254,6 +1411,14 @@ ALTER TABLE ONLY public.departments
 
 ALTER TABLE ONLY public.departments
     ADD CONSTRAINT fk_rails_94440b0e8f FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: documents fk_rails_98ed785f39; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.documents
+    ADD CONSTRAINT fk_rails_98ed785f39 FOREIGN KEY (author_id) REFERENCES public.users(id);
 
 
 --
@@ -1353,6 +1518,14 @@ ALTER TABLE ONLY public.announcement_reads
 
 
 --
+-- Name: documents fk_rails_f078ae7115; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.documents
+    ADD CONSTRAINT fk_rails_f078ae7115 FOREIGN KEY (document_category_id) REFERENCES public.document_categories(id);
+
+
+--
 -- Name: events fk_rails_f58490957c; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1375,6 +1548,8 @@ ALTER TABLE ONLY public.announcement_departments
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260729080438'),
+('20260729080437'),
 ('20260729075745'),
 ('20260729075216'),
 ('20260729075215'),
