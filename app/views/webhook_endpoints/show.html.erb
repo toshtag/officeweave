@@ -1,0 +1,46 @@
+<% content_for :title, @webhook_endpoint.name %>
+
+<div class="stack">
+  <h1><%= @webhook_endpoint.name %></h1>
+
+  <div class="panel stack">
+    <dl class="definition">
+      <dt><%= WebhookEndpoint.human_attribute_name(:url) %></dt>
+      <dd><%= @webhook_endpoint.url %></dd>
+
+      <dt><%= WebhookEndpoint.human_attribute_name(:secret) %></dt>
+      <dd><pre class="token"><%= @webhook_endpoint.secret %></pre></dd>
+    </dl>
+
+    <p class="form__hint"><%= t("webhook_endpoints.show.secret_hint") %></p>
+  </div>
+
+  <section class="panel stack" aria-labelledby="webhook-deliveries">
+    <h2 id="webhook-deliveries"><%= t("webhook_endpoints.show.deliveries") %></h2>
+
+    <% if @deliveries.any? %>
+      <table>
+        <thead>
+          <tr>
+            <th scope="col"><%= WebhookDelivery.human_attribute_name(:event) %></th>
+            <th scope="col"><%= WebhookDelivery.human_attribute_name(:response_status) %></th>
+            <th scope="col"><%= WebhookDelivery.human_attribute_name(:created_at) %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @deliveries.each do |delivery| %>
+            <tr>
+              <td><%= t("notifications.events.#{delivery.event}", title: "") %></td>
+              <td><%= delivery.response_status || delivery.error_message %></td>
+              <td><%= l(delivery.created_at, format: :short) %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <p><%= t("webhook_endpoints.show.no_deliveries") %></p>
+    <% end %>
+  </section>
+
+  <p><%= link_to t("common.back"), webhook_endpoints_path %></p>
+</div>

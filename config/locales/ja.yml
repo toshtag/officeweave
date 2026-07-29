@@ -58,6 +58,8 @@ ja:
       document: 文書
       document_category: 文書の分類
       api_token: 外部接続用の token
+      webhook_endpoint: 出来事の送信先
+      webhook_delivery: 送信の記録
       membership: 所属
     attributes:
       user:
@@ -140,6 +142,14 @@ ja:
       api_token:
         name: 名前
         last_used_at: 最終利用
+      webhook_endpoint:
+        name: 名前
+        url: 送信先 URL
+        secret: 署名に使う値
+      webhook_delivery:
+        event: 出来事
+        response_status: 応答
+        created_at: 送信日時
       membership:
         user: 利用者
         user_id: 利用者
@@ -545,3 +555,25 @@ ja:
     status:
       active: 有効
       revoked: 無効
+
+  webhook_endpoints:
+    created: 送信先を登録しました。
+    updated: 送信先を更新しました。
+    destroyed: 送信先を削除しました。
+    enable: 有効にする
+    disable: 停止する
+    index:
+      title: 出来事の送信先
+      heading: 出来事の送信先
+      status: 状態
+    new:
+      heading: 送信先の登録
+      submit: 登録する
+      url_hint: http または https で始まる URL を指定してください。組織の外へも送信できるため、宛先を確認してください。
+    show:
+      deliveries: 送信の記録
+      no_deliveries: まだ送信していません。
+      secret_hint: 送信内容の署名に使う値です。受け取る側で同じ値を使って検証してください。
+    status:
+      active: 有効
+      inactive: 停止中

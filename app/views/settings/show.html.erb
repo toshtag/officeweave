@@ -31,4 +31,9 @@
   <% end %>
 </div>
 
-<p class="stack"><%= link_to t("api_tokens.index.heading"), api_tokens_path %></p>
+<ul class="list-plain">
+  <li><%= link_to t("api_tokens.index.heading"), api_tokens_path %></li>
+  <% if administrator? %>
+    <li><%= link_to t("webhook_endpoints.index.heading"), webhook_endpoints_path %></li>
+  <% end %>
+</ul>

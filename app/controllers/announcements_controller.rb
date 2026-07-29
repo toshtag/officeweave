@@ -61,6 +61,12 @@ class AnnouncementsController < ApplicationController
         subject: @announcement,
         event: "announcement_published"
       )
+
+      Notification.publish(
+        organization: current_organization,
+        subject: @announcement,
+        event: "announcement_published"
+      )
     end
 
     # 管理者は下書きも参照できる。それ以外は公開範囲に入るものだけを扱う。
