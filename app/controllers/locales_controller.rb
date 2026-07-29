@@ -1,0 +1,28 @@
+# 表示言語の切り替えを受け付ける。
+#
+# 選択は session に保持する。
+# 利用者ごとの設定として保存する方法は、利用者情報を扱う P4 で判断する。
+class LocalesController < ApplicationController
+  def update
+    session[:locale] = requested_locale if requested_locale
+
+    redirect_to return_path
+  end
+
+  private
+    def requested_locale
+      available_locale(params[:locale])
+    end
+
+    # 外部サイトへの誘導に使われないよう、自サイト内の絶対パスだけを許可する。
+    # //example.com は上位プロトコル相対の URL として解釈されるため除外する。
+    def return_path
+      candidate = params[:return_to].to_s
+
+      if candidate.start_with?("/") && !candidate.start_with?("//")
+        candidate
+      else
+        root_path
+      end
+    end
+end
