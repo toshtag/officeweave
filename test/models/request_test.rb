@@ -36,13 +36,13 @@ class RequestTest < ActiveSupport::TestCase
   test "下書きは提出できる" do
     request = requests(:hanako_leave_draft)
 
-    assert request.submit
+    assert request.submit(actor: users(:hanako))
     assert_equal "pending", request.reload.status
     assert_not_nil request.submitted_at
   end
 
   test "承認待ちのものは再び提出できない" do
-    assert_not requests(:hanako_expense_pending).submit
+    assert_not requests(:hanako_expense_pending).submit(actor: users(:hanako))
   end
 
   test "許可されていない状態の移動は受け付けない" do

@@ -1,0 +1,11 @@
+hanako_expense_created:
+  request: hanako_expense_pending
+  actor: hanako
+  action: created
+  created_at: <%= 2.days.ago.to_fs(:db) %>
+
+hanako_expense_submitted:
+  request: hanako_expense_pending
+  actor: hanako
+  action: submitted
+  created_at: <%= 1.day.ago.to_fs(:db) %>
