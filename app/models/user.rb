@@ -7,6 +7,10 @@ class User < ApplicationRecord
   has_many :departments, through: :memberships
 
   # 大文字小文字と前後の空白の違いで別の利用者として扱わない。
+  # 権限は 2 段階だけとする。
+  # 役割を細かく分けるのは、実際に区別が必要な操作が現れてからにする。
+  enum :role, { member: "member", administrator: "administrator" }, validate: true
+
   normalizes :email_address, with: ->(value) { value.strip.downcase }
 
   validates :name, presence: true, length: { maximum: 100 }
