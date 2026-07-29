@@ -4,6 +4,7 @@
 # 削除すると、過去の予約から何を使ったのかをたどれなくなる。
 class Resource < ApplicationRecord
   belongs_to :organization
+  has_many :reservations, dependent: :restrict_with_error
 
   normalizes :code, with: ->(value) { value.strip.downcase }
 
