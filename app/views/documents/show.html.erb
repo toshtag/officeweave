@@ -1,0 +1,27 @@
+<% content_for :title, @document.title %>
+
+<article class="panel stack">
+  <div class="page-heading">
+    <div>
+      <h1><%= @document.title %></h1>
+      <p class="meta">
+        <%= @document.document_category&.name || t("documents.no_category") %> ・
+        <%= @document.author.name %> ・
+        <%= l(@document.updated_at, format: :short) %>
+      </p>
+    </div>
+
+    <% if @document.editable_by?(Current.user) %>
+      <div class="page-heading__actions">
+        <%= link_to t("common.edit"), edit_document_path(@document), class: "button" %>
+        <%= button_to t("common.destroy"), @document, method: :delete, class: "button" %>
+      </div>
+    <% end %>
+  </div>
+
+  <% if @document.body.present? %>
+    <div class="prose"><%= simple_format @document.body %></div>
+  <% end %>
+
+  <p><%= link_to t("common.back"), documents_path %></p>
+</article>

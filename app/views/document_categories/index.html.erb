@@ -1,0 +1,35 @@
+<% content_for :title, t("document_categories.index.title") %>
+
+<div class="stack">
+  <div class="page-heading">
+    <h1><%= t("document_categories.index.heading") %></h1>
+    <%= link_to t("document_categories.index.new"), new_document_category_path, class: "button" %>
+  </div>
+
+  <% if @document_categories.any? %>
+    <div class="panel">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col"><%= DocumentCategory.human_attribute_name(:name) %></th>
+            <th scope="col"><%= DocumentCategory.human_attribute_name(:code) %></th>
+            <th scope="col"><span class="visually-hidden"><%= t("common.actions") %></span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @document_categories.each do |category| %>
+            <tr>
+              <td><%= category.name %></td>
+              <td><%= category.code %></td>
+              <td><%= link_to t("common.edit"), edit_document_category_path(category), class: "button button--quiet" %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <p><%= t("document_categories.index.empty") %></p>
+  <% end %>
+
+  <p><%= link_to t("common.back"), documents_path %></p>
+</div>

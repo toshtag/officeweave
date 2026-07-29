@@ -1,0 +1,7 @@
+<% content_for :title, t("document_categories.edit.title") %>
+
+<div class="panel panel--narrow stack">
+  <h1><%= t("document_categories.edit.heading") %></h1>
+  <%= render "form", document_category: @document_category %>
+  <%= link_to t("common.back"), document_categories_path %>
+</div>

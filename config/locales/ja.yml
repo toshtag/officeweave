@@ -55,6 +55,8 @@ ja:
       reservation: 予約
       request_type: 申請種別
       request: 申請
+      document: 文書
+      document_category: 文書の分類
       membership: 所属
     attributes:
       user:
@@ -121,6 +123,16 @@ ja:
         status: 状態
         applicant: 申請者
         submitted_at: 提出日時
+      document:
+        title: 件名
+        body: 本文
+        document_category: 分類
+        document_category_id: 分類
+        author: 作成者
+      document_category:
+        name: 名称
+        code: 識別子
+        position: 表示順
       membership:
         user: 利用者
         user_id: 利用者
@@ -423,3 +435,37 @@ ja:
       approved: "%{name} が承認しました"
       returned: "%{name} が差し戻しました"
       withdrawn: "%{name} が取り下げました"
+
+  documents:
+    created: 文書を作成しました。
+    updated: 文書を更新しました。
+    destroyed: 文書を削除しました。
+    no_category: 分類なし
+    index:
+      title: 文書
+      heading: 文書
+      new: 文書を作成
+      empty: 表示できる文書がありません。
+      all_categories: すべての分類
+      updated_at: 更新
+    new:
+      title: 文書の作成
+      heading: 文書の作成
+    edit:
+      title: 文書の編集
+      heading: 文書の編集
+
+  document_categories:
+    created: 分類を登録しました。
+    updated: 分類を更新しました。
+    index:
+      title: 文書の分類
+      heading: 文書の分類
+      new: 分類を登録
+      empty: 登録されている分類がありません。
+    new:
+      title: 分類の登録
+      heading: 分類の登録
+    edit:
+      title: 分類の編集
+      heading: 分類の編集

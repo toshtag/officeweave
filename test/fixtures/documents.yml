@@ -1,0 +1,23 @@
+travel_rule:
+  organization: main
+  document_category: rules
+  author: taro
+  title: 出張旅費規程
+  body: 出張に関する旅費の取り扱いを定める。
+
+onboarding:
+  organization: main
+  document_category: manuals
+  author: hanako
+  title: 入社時の手続き
+  body: 入社日までに準備するもの。
+
+uncategorized:
+  organization: main
+  author: taro
+  title: 分類のない文書
+
+other_org_document:
+  organization: other
+  author: outsider
+  title: 別組織の文書

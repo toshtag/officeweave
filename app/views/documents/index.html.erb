@@ -1,0 +1,50 @@
+<% content_for :title, t("documents.index.title") %>
+
+<div class="stack">
+  <div class="page-heading">
+    <h1><%= t("documents.index.heading") %></h1>
+    <div class="page-heading__actions">
+      <% if administrator? %>
+        <%= link_to t("document_categories.index.heading"), document_categories_path, class: "button" %>
+      <% end %>
+      <%= link_to t("documents.index.new"), new_document_path, class: "button" %>
+    </div>
+  </div>
+
+  <form class="form form--inline" method="get" action="<%= documents_path %>">
+    <div class="form__field">
+      <%= label_tag :document_category_id, Document.human_attribute_name(:document_category), class: "form__label" %>
+      <%= select_tag :document_category_id,
+                     options_from_collection_for_select(@categories, :id, :name, @category_id),
+                     include_blank: t("documents.index.all_categories"), class: "form__input" %>
+    </div>
+    <%= submit_tag t("events.index.filter"), class: "button", name: nil %>
+  </form>
+
+  <% if @documents.any? %>
+    <div class="panel">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col"><%= Document.human_attribute_name(:title) %></th>
+            <th scope="col"><%= Document.human_attribute_name(:document_category) %></th>
+            <th scope="col"><%= Document.human_attribute_name(:author) %></th>
+            <th scope="col"><%= t("documents.index.updated_at") %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @documents.each do |document| %>
+            <tr>
+              <td><%= link_to document.title, document %></td>
+              <td><%= document.document_category&.name || t("documents.no_category") %></td>
+              <td><%= document.author.name %></td>
+              <td><%= l(document.updated_at, format: :short) %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <p><%= t("documents.index.empty") %></p>
+  <% end %>
+</div>
