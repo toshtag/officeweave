@@ -310,6 +310,38 @@ ALTER SEQUENCE public.document_categories_id_seq OWNED BY public.document_catego
 
 
 --
+-- Name: document_departments; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.document_departments (
+    id bigint NOT NULL,
+    document_id bigint NOT NULL,
+    department_id bigint NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: document_departments_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.document_departments_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: document_departments_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.document_departments_id_seq OWNED BY public.document_departments.id;
+
+
+--
 -- Name: documents; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -321,7 +353,8 @@ CREATE TABLE public.documents (
     title character varying NOT NULL,
     body text,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    visibility character varying DEFAULT 'organization'::character varying NOT NULL
 );
 
 
@@ -798,6 +831,13 @@ ALTER TABLE ONLY public.document_categories ALTER COLUMN id SET DEFAULT nextval(
 
 
 --
+-- Name: document_departments id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_departments ALTER COLUMN id SET DEFAULT nextval('public.document_departments_id_seq'::regclass);
+
+
+--
 -- Name: documents id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -951,6 +991,14 @@ ALTER TABLE ONLY public.departments
 
 ALTER TABLE ONLY public.document_categories
     ADD CONSTRAINT document_categories_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: document_departments document_departments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_departments
+    ADD CONSTRAINT document_departments_pkey PRIMARY KEY (id);
 
 
 --
@@ -1189,6 +1237,27 @@ CREATE INDEX index_document_categories_on_organization_id ON public.document_cat
 --
 
 CREATE UNIQUE INDEX index_document_categories_on_organization_id_and_code ON public.document_categories USING btree (organization_id, code);
+
+
+--
+-- Name: index_document_departments_on_department_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_document_departments_on_department_id ON public.document_departments USING btree (department_id);
+
+
+--
+-- Name: index_document_departments_on_document_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_document_departments_on_document_id ON public.document_departments USING btree (document_id);
+
+
+--
+-- Name: index_document_departments_on_pair; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_document_departments_on_pair ON public.document_departments USING btree (document_id, department_id);
 
 
 --
@@ -1530,6 +1599,14 @@ ALTER TABLE ONLY public.requests
 
 
 --
+-- Name: document_departments fk_rails_6323f47c20; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_departments
+    ADD CONSTRAINT fk_rails_6323f47c20 FOREIGN KEY (document_id) REFERENCES public.documents(id);
+
+
+--
 -- Name: sessions fk_rails_758836b4f0; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1698,6 +1775,14 @@ ALTER TABLE ONLY public.requests
 
 
 --
+-- Name: document_departments fk_rails_e676903eef; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_departments
+    ADD CONSTRAINT fk_rails_e676903eef FOREIGN KEY (department_id) REFERENCES public.departments(id);
+
+
+--
 -- Name: announcement_reads fk_rails_e929ca5a13; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1736,6 +1821,8 @@ ALTER TABLE ONLY public.announcement_departments
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260729081128'),
+('20260729081127'),
 ('20260729080718'),
 ('20260729080438'),
 ('20260729080437'),

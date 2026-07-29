@@ -4,6 +4,7 @@ travel_rule:
   author: taro
   title: 出張旅費規程
   body: 出張に関する旅費の取り扱いを定める。
+  visibility: organization
 
 onboarding:
   organization: main
@@ -11,13 +12,23 @@ onboarding:
   author: hanako
   title: 入社時の手続き
   body: 入社日までに準備するもの。
+  visibility: organization
+
+sales_only_document:
+  organization: main
+  author: taro
+  title: 営業部だけの手引き
+  body: 営業部の担当者向け。
+  visibility: departments
 
 uncategorized:
   organization: main
   author: taro
   title: 分類のない文書
+  visibility: organization
 
 other_org_document:
   organization: other
   author: outsider
   title: 別組織の文書
+  visibility: organization

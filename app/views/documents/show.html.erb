@@ -7,7 +7,8 @@
       <p class="meta">
         <%= @document.document_category&.name || t("documents.no_category") %> ・
         <%= @document.author.name %> ・
-        <%= l(@document.updated_at, format: :short) %>
+        <%= l(@document.updated_at, format: :short) %> ・
+        <%= t("documents.visibilities.#{@document.visibility}") %>
       </p>
     </div>
 
@@ -18,6 +19,12 @@
       </div>
     <% end %>
   </div>
+
+  <% if @document.limited_to_departments? %>
+    <p class="meta">
+      <%= t("documents.limited_to", names: @document.departments.ordered.map(&:display_path).to_sentence) %>
+    </p>
+  <% end %>
 
   <% if @document.body.present? %>
     <div class="prose"><%= simple_format @document.body %></div>
@@ -30,7 +37,7 @@
         <% @document.attachments.each do |attachment| %>
           <li>
             <%= link_to attachment.filename.to_s,
-                        rails_blob_path(attachment, disposition: "attachment") %>
+                        document_attachment_path(@document, attachment) %>
             <span class="meta"><%= number_to_human_size(attachment.byte_size) %></span>
           </li>
         <% end %>

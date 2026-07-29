@@ -7,8 +7,8 @@ class DocumentsController < ApplicationController
   def index
     @category_id = params[:document_category_id]
     @categories = current_organization.document_categories.ordered
-    @documents = current_organization.documents
-                                     .in_category(@category_id)
+    @documents = Document.visible_to(Current.user)
+                         .in_category(@category_id)
                                      .recently_updated
                                      .includes(:author, :document_category, attachments_attachments: :blob)
   end
@@ -61,7 +61,7 @@ class DocumentsController < ApplicationController
     end
 
     def set_document
-      @document = current_organization.documents.find(params[:id])
+      @document = Document.visible_to(Current.user).find(params[:id])
     end
 
     def require_editable
@@ -71,6 +71,12 @@ class DocumentsController < ApplicationController
     end
 
     def document_params
-      params.expect(document: [ :title, :body, :document_category_id, { attachments: [] } ])
+      attributes = params.expect(
+        document: [ :title, :body, :document_category_id, :visibility,
+                    { attachments: [], department_ids: [] } ]
+      )
+
+      attributes[:department_ids] = [] unless attributes[:visibility] == "departments"
+      attributes
     end
 end

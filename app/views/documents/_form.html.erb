@@ -17,6 +17,32 @@
     <%= form.text_area :body, rows: 16, class: "form__input" %>
   </div>
 
+  <fieldset class="form__fieldset">
+    <legend class="form__label"><%= Document.human_attribute_name(:visibility) %></legend>
+
+    <% Document::VISIBILITIES.each do |visibility| %>
+      <div class="form__field form__field--inline">
+        <%= form.radio_button :visibility, visibility %>
+        <%= form.label :"visibility_#{visibility}", t("documents.visibilities.#{visibility}") %>
+      </div>
+    <% end %>
+  </fieldset>
+
+  <fieldset class="form__fieldset">
+    <legend class="form__label"><%= Document.human_attribute_name(:department_ids) %></legend>
+    <p class="form__hint"><%= t("documents.form.departments_hint") %></p>
+
+    <% current_organization.departments.ordered.each do |department| %>
+      <div class="form__field form__field--inline">
+        <%= check_box_tag "document[department_ids][]", department.id,
+                          document.department_ids.include?(department.id),
+                          id: "document_department_#{department.id}" %>
+        <%= label_tag "document_department_#{department.id}", department.display_path %>
+      </div>
+    <% end %>
+    <%= hidden_field_tag "document[department_ids][]", "", id: nil %>
+  </fieldset>
+
   <div class="form__field">
     <%= form.label :attachments, class: "form__label" %>
     <%= form.file_field :attachments, multiple: true, class: "form__input" %>

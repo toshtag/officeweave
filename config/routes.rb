@@ -17,7 +17,10 @@ Rails.application.routes.draw do
   resources :events
 
   # 文書。
-  resources :documents
+  resources :documents do
+    # 添付の取得も文書の参照範囲に従わせるため、独自の経路を通す。
+    resources :attachments, only: %i[show], controller: "document_attachments"
+  end
   resources :document_categories, only: %i[index new create edit update]
 
   # 申請。
