@@ -12,6 +12,7 @@ class User < ApplicationRecord
   has_many :requests, foreign_key: :applicant_id, dependent: :restrict_with_error, inverse_of: :applicant
   has_many :request_activities, foreign_key: :actor_id, dependent: :restrict_with_error, inverse_of: :actor
   has_many :documents, foreign_key: :author_id, dependent: :restrict_with_error, inverse_of: :author
+  has_many :notifications, dependent: :destroy
 
   # 大文字小文字と前後の空白の違いで別の利用者として扱わない。
   # 権限は 2 段階だけとする。

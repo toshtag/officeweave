@@ -9,6 +9,7 @@ class Announcement < ApplicationRecord
   belongs_to :author, class_name: "User"
 
   has_many :announcement_departments, dependent: :destroy
+  has_many :notifications, as: :subject, dependent: :destroy
   has_many :departments, through: :announcement_departments
   has_many :announcement_reads, dependent: :destroy
   has_many :readers, through: :announcement_reads, source: :user
@@ -53,6 +54,13 @@ class Announcement < ApplicationRecord
 
   def read_by?(user)
     announcement_reads.exists?(user_id: user.id)
+  end
+
+  # 公開範囲に入る利用者。
+  def recipients
+    return organization.users.active if visibility == "organization"
+
+    organization.users.active.where(id: Membership.where(department_id: department_ids).select(:user_id))
   end
 
   def published?

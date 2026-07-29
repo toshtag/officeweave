@@ -30,6 +30,12 @@
           <div class="page__actions">
             <%= render "shared/locale_switcher" %>
             <% if authenticated? %>
+              <%= link_to notifications_path, class: "button button--quiet" do %>
+                <%= t("notifications.index.heading") %>
+                <% if (count = unread_notification_count).positive? %>
+                  <span class="badge badge--unread"><%= count %></span>
+                <% end %>
+              <% end %>
               <%= button_to t("sessions.sign_out"), session_path, method: :delete, class: "button button--quiet" %>
             <% end %>
           </div>

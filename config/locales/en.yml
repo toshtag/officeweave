@@ -476,3 +476,14 @@ en:
     edit:
       title: Edit category
       heading: Edit category
+
+  notifications:
+    index:
+      title: Notifications
+      heading: Notifications
+      empty: You have no notifications.
+    events:
+      announcement_published: "New announcement: %{title}"
+      request_submitted: "A request was submitted: %{title}"
+      request_approved: "Your request was approved: %{title}"
+      request_returned: "Your request was returned: %{title}"

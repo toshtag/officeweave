@@ -16,6 +16,9 @@ Rails.application.routes.draw do
   # 予定。
   resources :events
 
+  # 通知。
+  resources :notifications, only: %i[index show]
+
   # 文書。
   resources :documents do
     # 添付の取得も文書の参照範囲に従わせるため、独自の経路を通す。

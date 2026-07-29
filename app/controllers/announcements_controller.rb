@@ -28,6 +28,7 @@ class AnnouncementsController < ApplicationController
     @announcement.author = Current.user
 
     if @announcement.save
+      notify_recipients
       redirect_to @announcement, notice: t("announcements.created")
     else
       render :new, status: :unprocessable_content
@@ -36,6 +37,7 @@ class AnnouncementsController < ApplicationController
 
   def update
     if @announcement.update(announcement_params)
+      notify_recipients
       redirect_to @announcement, notice: t("announcements.updated")
     else
       render :edit, status: :unprocessable_content
@@ -49,6 +51,18 @@ class AnnouncementsController < ApplicationController
   end
 
   private
+    # 公開済みになった時点で知らせる。
+    # 二重の通知は模型側で抑えるため、更新のたびに呼んでよい。
+    def notify_recipients
+      return unless @announcement.published?
+
+      Notification.deliver_to_all(
+        users: @announcement.recipients.where.not(id: @announcement.author_id),
+        subject: @announcement,
+        event: "announcement_published"
+      )
+    end
+
     # 管理者は下書きも参照できる。それ以外は公開範囲に入るものだけを扱う。
     def set_announcement
       scope = administrator? ? current_organization.announcements : Announcement.visible_to(Current.user)

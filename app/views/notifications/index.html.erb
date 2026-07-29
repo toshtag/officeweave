@@ -1,0 +1,23 @@
+<% content_for :title, t("notifications.index.title") %>
+
+<div class="stack">
+  <h1><%= t("notifications.index.heading") %></h1>
+
+  <% if @notifications.any? %>
+    <ul class="list-cards">
+      <% @notifications.each do |notification| %>
+        <li class="panel stack">
+          <p class="timeline__summary">
+            <%= link_to notification_path(notification) do %>
+              <%= t("notifications.events.#{notification.event}", title: notification.subject_title) %>
+            <% end %>
+            <%= render "shared/unread_badge" unless notification.read? %>
+          </p>
+          <p class="meta"><%= l(notification.created_at, format: :short) %></p>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <p><%= t("notifications.index.empty") %></p>
+  <% end %>
+</div>
