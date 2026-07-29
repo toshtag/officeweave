@@ -1,0 +1,17 @@
+rules:
+  organization: main
+  name: 規程
+  code: rules
+  position: 10
+
+manuals:
+  organization: main
+  name: 手順書
+  code: manuals
+  position: 20
+
+other_org_category:
+  organization: other
+  name: 別組織の分類
+  code: rules
+  position: 10
