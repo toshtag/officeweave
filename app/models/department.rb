@@ -6,6 +6,7 @@ class Department < ApplicationRecord
   has_many :children, class_name: "Department", foreign_key: :parent_id, dependent: :restrict_with_error
   has_many :memberships, dependent: :destroy
   has_many :announcement_departments, dependent: :destroy
+  has_many :event_departments, dependent: :destroy
   has_many :users, through: :memberships
 
   normalizes :code, with: ->(value) { value.strip.downcase }
