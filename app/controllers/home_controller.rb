@@ -4,6 +4,10 @@ class HomeController < ApplicationController
   RECENT_ANNOUNCEMENT_COUNT = 5
 
   def show
-    @announcements = Announcement.visible_to(Current.user).recent_first.limit(RECENT_ANNOUNCEMENT_COUNT)
+    visible = Announcement.visible_to(Current.user)
+
+    @announcements = visible.recent_first.limit(RECENT_ANNOUNCEMENT_COUNT)
+    @unread_ids = visible.unread_for(Current.user).pluck(:id).to_set
+    @unread_count = @unread_ids.size
   end
 end

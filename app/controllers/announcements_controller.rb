@@ -6,10 +6,14 @@ class AnnouncementsController < ApplicationController
 
   def index
     @announcements = Announcement.visible_to(Current.user).recent_first.includes(:author)
+    @unread_ids = Announcement.visible_to(Current.user).unread_for(Current.user).pluck(:id).to_set
     @drafts = administrator? ? current_organization.announcements.where(published_at: nil).recent_first : []
   end
 
   def show
+    # 参照した時点で既読とする。
+    # 読んだかどうかを利用者に申告させると、記録が実態と合わなくなる。
+    @announcement.mark_as_read_by(Current.user) if @announcement.published?
   end
 
   def new

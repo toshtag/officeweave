@@ -169,6 +169,10 @@ en:
     created: The announcement has been created.
     updated: The announcement has been updated.
     destroyed: The announcement has been deleted.
+    unread: Unread
+    unread_count:
+      one: 1 unread
+      other: "%{count} unread"
     draft: Draft
     limited_to: "Shared with: %{names}"
     visibilities:

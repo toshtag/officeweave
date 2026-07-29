@@ -185,6 +185,10 @@ ja:
     created: お知らせを作成しました。
     updated: お知らせを更新しました。
     destroyed: お知らせを削除しました。
+    unread: 未読
+    unread_count:
+      one: 未読 1 件
+      other: 未読 %{count} 件
     draft: 下書き
     limited_to: "公開先: %{names}"
     visibilities:
