@@ -19,6 +19,7 @@ class Request < ApplicationRecord
   belongs_to :applicant, class_name: "User"
 
   has_many :request_activities, dependent: :destroy
+  has_many :notifications, as: :subject, dependent: :destroy
 
   validates :title, presence: true, length: { maximum: 200 }
   validates :body, length: { maximum: 10_000 }
@@ -75,9 +76,12 @@ class Request < ApplicationRecord
   end
 
   def submit(actor:)
-    change_status(to: "pending", actor: actor, action: "submitted") do
+    changed = change_status(to: "pending", actor: actor, action: "submitted") do
       self.submitted_at = Time.current
     end
+
+    notify_approvers if changed
+    changed
   end
 
   def withdraw(actor:)
@@ -85,15 +89,21 @@ class Request < ApplicationRecord
   end
 
   def approve(actor:, comment: nil)
-    change_status(to: "approved", actor: actor, action: "approved", comment: comment) do
-      self.decided_at = Time.current
-    end
+    decide(to: "approved", action: "approved", actor: actor, comment: comment, event: "request_approved")
   end
 
   def return_to_applicant(actor:, comment: nil)
-    change_status(to: "returned", actor: actor, action: "returned", comment: comment) do
-      self.decided_at = Time.current
-    end
+    decide(to: "returned", action: "returned", actor: actor, comment: comment, event: "request_returned")
+  end
+
+  # 承認を担当する利用者。
+  def approvers
+    department_id = request_type.approver_department_id
+
+    scope = organization.users.active
+    scope = department_id ? scope.where(id: Membership.where(department_id: department_id).select(:user_id))
+                          : scope.where(role: "administrator")
+    scope.where.not(id: applicant_id)
   end
 
   def record_creation(actor:)
@@ -107,6 +117,19 @@ class Request < ApplicationRecord
   end
 
   private
+    def decide(to:, action:, actor:, comment:, event:)
+      changed = change_status(to: to, actor: actor, action: action, comment: comment) do
+        self.decided_at = Time.current
+      end
+
+      Notification.deliver(user: applicant, subject: self, event: event) if changed
+      changed
+    end
+
+    def notify_approvers
+      Notification.deliver_to_all(users: approvers, subject: self, event: "request_submitted")
+    end
+
     # 状態の変更と記録を必ず一緒に行う。
     # 別々に書くと、記録の漏れた変更が生まれる。
     def change_status(to:, actor:, action:, comment: nil)
