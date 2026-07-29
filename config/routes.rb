@@ -16,6 +16,19 @@ Rails.application.routes.draw do
   # 予定。
   resources :events
 
+  # 外部からの接続に使う token の管理。
+  resources :api_tokens, only: %i[index create destroy]
+
+  # 外部からの接続。
+  namespace :api do
+    namespace :v1 do
+      resources :announcements, only: %i[index]
+      resources :events, only: %i[index]
+      resources :departments, only: %i[index]
+      resources :users, only: %i[index]
+    end
+  end
+
   # 自分の設定。
   resource :settings, only: %i[show update]
 

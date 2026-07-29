@@ -1,0 +1,65 @@
+<% content_for :title, t("api_tokens.index.title") %>
+
+<div class="stack">
+  <h1><%= t("api_tokens.index.heading") %></h1>
+
+  <% if flash[:issued_token].present? %>
+    <div class="panel stack" role="alert">
+      <h2><%= t("api_tokens.issued.heading") %></h2>
+      <p><%= t("api_tokens.issued.description") %></p>
+      <pre class="token"><%= flash[:issued_token] %></pre>
+    </div>
+  <% end %>
+
+  <div class="panel panel--narrow stack">
+    <h2><%= t("api_tokens.new.heading") %></h2>
+
+    <%= form_with model: @api_token, url: api_tokens_path, class: "form stack" do |form| %>
+      <%= render "shared/error_messages", record: @api_token %>
+
+      <div class="form__field">
+        <%= form.label :name, class: "form__label" %>
+        <%= form.text_field :name, required: true, class: "form__input" %>
+        <p class="form__hint"><%= t("api_tokens.new.name_hint") %></p>
+      </div>
+
+      <%= form.submit t("api_tokens.new.submit"), class: "button button--primary" %>
+    <% end %>
+  </div>
+
+  <% if @api_tokens.any? %>
+    <div class="panel">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col"><%= ApiToken.human_attribute_name(:name) %></th>
+            <th scope="col"><%= ApiToken.human_attribute_name(:last_used_at) %></th>
+            <th scope="col"><%= t("api_tokens.index.status") %></th>
+            <th scope="col"><span class="visually-hidden"><%= t("common.actions") %></span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @api_tokens.each do |api_token| %>
+            <tr>
+              <td><%= api_token.name %></td>
+              <td><%= api_token.last_used_at ? l(api_token.last_used_at, format: :short) : t("api_tokens.never_used") %></td>
+              <td>
+                <% if api_token.revoked? %>
+                  <span class="status status--muted"><%= t("api_tokens.status.revoked") %></span>
+                <% else %>
+                  <%= t("api_tokens.status.active") %>
+                <% end %>
+              </td>
+              <td>
+                <% unless api_token.revoked? %>
+                  <%= button_to t("api_tokens.revoke"), api_token_path(api_token), method: :delete,
+                                class: "button button--quiet" %>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
+</div>

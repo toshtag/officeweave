@@ -14,3 +14,16 @@
     margin-inline: auto;
   }
 }
+
+@layer components {
+  /* 発行された値をそのまま示す。折り返して全体が読めるようにする。 */
+  .token {
+    margin: 0;
+    padding: var(--space-3);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background-color: var(--color-surface-sunken);
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+  }
+}

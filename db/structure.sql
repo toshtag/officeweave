@@ -243,6 +243,42 @@ ALTER SEQUENCE public.announcements_id_seq OWNED BY public.announcements.id;
 
 
 --
+-- Name: api_tokens; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.api_tokens (
+    id bigint NOT NULL,
+    organization_id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    name character varying NOT NULL,
+    token_digest character varying NOT NULL,
+    last_used_at timestamp(6) without time zone,
+    revoked_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: api_tokens_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.api_tokens_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: api_tokens_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.api_tokens_id_seq OWNED BY public.api_tokens.id;
+
+
+--
 -- Name: ar_internal_metadata; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -899,6 +935,13 @@ ALTER TABLE ONLY public.announcements ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
+-- Name: api_tokens id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.api_tokens ALTER COLUMN id SET DEFAULT nextval('public.api_tokens_id_seq'::regclass);
+
+
+--
 -- Name: departments id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1063,6 +1106,14 @@ ALTER TABLE ONLY public.announcement_reads
 
 ALTER TABLE ONLY public.announcements
     ADD CONSTRAINT announcements_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: api_tokens api_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.api_tokens
+    ADD CONSTRAINT api_tokens_pkey PRIMARY KEY (id);
 
 
 --
@@ -1314,6 +1365,27 @@ CREATE INDEX index_announcements_on_organization_id ON public.announcements USIN
 --
 
 CREATE INDEX index_announcements_on_organization_id_and_published_at ON public.announcements USING btree (organization_id, published_at);
+
+
+--
+-- Name: index_api_tokens_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_api_tokens_on_organization_id ON public.api_tokens USING btree (organization_id);
+
+
+--
+-- Name: index_api_tokens_on_token_digest; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_api_tokens_on_token_digest ON public.api_tokens USING btree (token_digest);
+
+
+--
+-- Name: index_api_tokens_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_api_tokens_on_user_id ON public.api_tokens USING btree (user_id);
 
 
 --
@@ -1775,6 +1847,14 @@ ALTER TABLE ONLY public.document_departments
 
 
 --
+-- Name: api_tokens fk_rails_701d89e8df; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.api_tokens
+    ADD CONSTRAINT fk_rails_701d89e8df FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: sessions fk_rails_758836b4f0; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1983,6 +2063,14 @@ ALTER TABLE ONLY public.documents
 
 
 --
+-- Name: api_tokens fk_rails_f16b5e0447; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.api_tokens
+    ADD CONSTRAINT fk_rails_f16b5e0447 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
 -- Name: events fk_rails_f58490957c; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2005,6 +2093,7 @@ ALTER TABLE ONLY public.announcement_departments
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260729082901'),
 ('20260729082553'),
 ('20260729081815'),
 ('20260729081505'),
