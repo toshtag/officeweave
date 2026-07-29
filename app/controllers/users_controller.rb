@@ -18,6 +18,7 @@ class UsersController < ApplicationController
     @user = current_organization.users.new(user_params)
 
     if @user.save
+      record_audit_event("user_created", target: @user, details: { email_address: @user.email_address })
       redirect_to users_path, notice: t("users.created")
     else
       render :new, status: :unprocessable_content
@@ -26,6 +27,7 @@ class UsersController < ApplicationController
 
   def update
     if @user.update(user_params_for_update)
+      record_audit_event("user_updated", target: @user, details: { email_address: @user.email_address })
       redirect_to users_path, notice: t("users.updated")
     else
       render :edit, status: :unprocessable_content

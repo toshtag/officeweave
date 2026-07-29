@@ -11,6 +11,7 @@ class RequestDecisionsController < ApplicationController
       end
 
     if result
+      record_audit_event("request_#{@request.status}", target: @request, details: { title: @request.title })
       redirect_to @request, notice: t("request_decisions.#{params[:decision]}d")
     else
       redirect_to @request, alert: t("request_decisions.failed")

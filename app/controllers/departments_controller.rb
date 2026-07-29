@@ -24,6 +24,7 @@ class DepartmentsController < ApplicationController
     @department = current_organization.departments.new(department_params)
 
     if @department.save
+      record_audit_event("department_created", target: @department, details: { code: @department.code })
       redirect_to @department, notice: t("departments.created")
     else
       render :new, status: :unprocessable_content
@@ -32,6 +33,7 @@ class DepartmentsController < ApplicationController
 
   def update
     if @department.update(department_params)
+      record_audit_event("department_updated", target: @department, details: { code: @department.code })
       redirect_to @department, notice: t("departments.updated")
     else
       render :edit, status: :unprocessable_content
@@ -40,6 +42,7 @@ class DepartmentsController < ApplicationController
 
   def destroy
     if @department.destroy
+      record_audit_event("department_deleted", details: { code: @department.code, name: @department.name })
       redirect_to departments_path, notice: t("departments.destroyed"), status: :see_other
     else
       redirect_to @department, alert: @department.errors.full_messages.to_sentence, status: :see_other
