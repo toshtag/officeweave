@@ -121,6 +121,7 @@ docker compose up -d --build
 - [技術構成](docs/development/tech_stack.md) — 採用技術、版数、更新方針
 - [設定](docs/development/configuration.md) — 環境変数と稼働確認
 - [テスト方針](docs/development/testing.md) — テストの層と実行方法
+- [認証方式の差し替え](docs/development/authentication.md) — 外部認証への差し替え手順
 - [品質基盤](docs/development/quality.md) — 書式検査と各種検査の実行方法
 - [アクセシビリティ方針](docs/development/accessibility.md) — 画面が満たすべき最低要件
 - [ライセンス方針](docs/licensing.md) — ライセンスの選定理由と名称の利用範囲
@@ -142,8 +143,8 @@ Copyright (C) 2026 OfficeWeave contributors
 
 ```text
 現在の Phase:        P10 Integrations
-直近完了 Task:       P10-T2 Webhook を実装する
-次に実行する Task:   P10-T3 外部認証の拡張境界を用意する
+直近完了 Task:       P10-T3 外部認証の拡張境界を用意する
+次に実行する Task:   P10-T4 CSV 入出力を実装する
 ```
 
 進行状況は [実行キュー](docs/execution_queue.md) で管理します。

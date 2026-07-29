@@ -10,12 +10,14 @@
                            autocomplete: "username", class: "form__input" %>
     </div>
 
-    <div class="form__field">
-      <%= form.label :password, t("activerecord.attributes.user.password"), class: "form__label" %>
-      <%# パスワードの最大長は保存方式の上限に合わせる。 %>
-      <%= form.password_field :password, required: true, autocomplete: "current-password",
-                              maxlength: 72, class: "form__input" %>
-    </div>
+    <% if @password_required %>
+      <div class="form__field">
+        <%= form.label :password, t("activerecord.attributes.user.password"), class: "form__label" %>
+        <%# パスワードの最大長は保存方式の上限に合わせる。 %>
+        <%= form.password_field :password, required: true, autocomplete: "current-password",
+                                maxlength: 72, class: "form__input" %>
+      </div>
+    <% end %>
 
     <%= form.submit t("sessions.new.submit"), class: "button button--primary" %>
   <% end %>
