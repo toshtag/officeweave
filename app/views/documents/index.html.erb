@@ -11,15 +11,29 @@
     </div>
   </div>
 
-  <form class="form form--inline" method="get" action="<%= documents_path %>">
+  <form class="form form--inline" method="get" action="<%= documents_path %>" role="search">
+    <div class="form__field">
+      <%= label_tag :query, t("documents.index.query"), class: "form__label" %>
+      <%= search_field_tag :query, @query, class: "form__input" %>
+    </div>
+
     <div class="form__field">
       <%= label_tag :document_category_id, Document.human_attribute_name(:document_category), class: "form__label" %>
       <%= select_tag :document_category_id,
                      options_from_collection_for_select(@categories, :id, :name, @category_id),
                      include_blank: t("documents.index.all_categories"), class: "form__input" %>
     </div>
-    <%= submit_tag t("events.index.filter"), class: "button", name: nil %>
+    <%= submit_tag t("documents.index.search"), class: "button", name: nil %>
+    <% if @query.present? || @category_id.present? %>
+      <%= link_to t("documents.index.clear"), documents_path, class: "button button--quiet" %>
+    <% end %>
   </form>
+
+  <% if @query.present? %>
+    <p role="status">
+      <%= t("documents.index.result", query: @query, count: @documents.size) %>
+    </p>
+  <% end %>
 
   <% if @documents.any? %>
     <div class="panel">

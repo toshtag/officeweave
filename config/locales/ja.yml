@@ -463,6 +463,13 @@ ja:
       new: 文書を作成
       empty: 表示できる文書がありません。
       all_categories: すべての分類
+      query: 検索
+      search: 検索する
+      clear: 条件を消す
+      result:
+        zero: "「%{query}」に一致する文書はありません"
+        one: "「%{query}」に一致する文書が 1 件あります"
+        other: "「%{query}」に一致する文書が %{count} 件あります"
       updated_at: 更新
     new:
       title: 文書の作成
