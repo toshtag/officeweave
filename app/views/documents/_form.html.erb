@@ -1,0 +1,21 @@
+<%= form_with model: document, class: "form stack" do |form| %>
+  <%= render "shared/error_messages", record: document %>
+
+  <div class="form__field">
+    <%= form.label :title, class: "form__label" %>
+    <%= form.text_field :title, required: true, class: "form__input" %>
+  </div>
+
+  <div class="form__field">
+    <%= form.label :document_category_id, class: "form__label" %>
+    <%= form.collection_select :document_category_id, current_organization.document_categories.ordered,
+                               :id, :name, { include_blank: t("documents.no_category") }, class: "form__input" %>
+  </div>
+
+  <div class="form__field">
+    <%= form.label :body, class: "form__label" %>
+    <%= form.text_area :body, rows: 16, class: "form__input" %>
+  </div>
+
+  <%= form.submit class: "button button--primary" %>
+<% end %>

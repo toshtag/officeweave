@@ -55,6 +55,8 @@ en:
       reservation: Booking
       request_type: Request type
       request: Request
+      document: Document
+      document_category: Document category
       membership: Membership
     attributes:
       user:
@@ -121,6 +123,16 @@ en:
         status: Status
         applicant: Applicant
         submitted_at: Submitted at
+      document:
+        title: Title
+        body: Body
+        document_category: Category
+        document_category_id: Category
+        author: Author
+      document_category:
+        name: Name
+        code: Code
+        position: Display order
       membership:
         user: User
         user_id: User
@@ -407,3 +419,37 @@ en:
       approved: "%{name} approved it"
       returned: "%{name} returned it"
       withdrawn: "%{name} withdrew it"
+
+  documents:
+    created: The document has been created.
+    updated: The document has been updated.
+    destroyed: The document has been deleted.
+    no_category: Uncategorized
+    index:
+      title: Documents
+      heading: Documents
+      new: Write a document
+      empty: There are no documents to show.
+      all_categories: All categories
+      updated_at: Updated
+    new:
+      title: Write a document
+      heading: Write a document
+    edit:
+      title: Edit document
+      heading: Edit document
+
+  document_categories:
+    created: The category has been added.
+    updated: The category has been updated.
+    index:
+      title: Document categories
+      heading: Document categories
+      new: Add a category
+      empty: No categories have been added yet.
+    new:
+      title: Add a category
+      heading: Add a category
+    edit:
+      title: Edit category
+      heading: Edit category

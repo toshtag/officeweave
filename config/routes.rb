@@ -16,6 +16,10 @@ Rails.application.routes.draw do
   # 予定。
   resources :events
 
+  # 文書。
+  resources :documents
+  resources :document_categories, only: %i[index new create edit update]
+
   # 申請。
   resources :request_types, only: %i[index new create edit update]
   resources :requests, except: %i[destroy] do
