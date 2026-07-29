@@ -36,7 +36,7 @@ class RequestSubmissionsControllerTest < ActionDispatch::IntegrationTest
 
   test "取り下げたものは再び取り下げられない" do
     sign_in_as users(:hanako)
-    requests(:hanako_leave_draft).withdraw
+    requests(:hanako_leave_draft).withdraw(actor: users(:hanako))
 
     delete request_submission_url(requests(:hanako_leave_draft))
 

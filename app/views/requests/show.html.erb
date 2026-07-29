@@ -41,5 +41,30 @@
     <% end %>
   </div>
 
+  <% if @request.decidable_by?(Current.user) %>
+    <section class="panel panel--narrow stack" aria-labelledby="request-decision">
+      <h2 id="request-decision"><%= t("request_decisions.heading") %></h2>
+
+      <%= form_with url: request_decision_path(@request), class: "form stack" do |form| %>
+        <div class="form__field">
+          <%= label_tag :comment, t("request_decisions.comment"), class: "form__label" %>
+          <%= text_area_tag :comment, nil, rows: 4, class: "form__input" %>
+          <p class="form__hint"><%= t("request_decisions.comment_hint") %></p>
+        </div>
+
+        <div class="page-heading__actions">
+          <%= form.button t("request_decisions.approve"), name: :decision, value: "approve",
+                          class: "button button--primary" %>
+          <%= form.button t("request_decisions.return"), name: :decision, value: "return", class: "button" %>
+        </div>
+      <% end %>
+    </section>
+  <% end %>
+
+  <section class="panel stack" aria-labelledby="request-activities">
+    <h2 id="request-activities"><%= t("request_activities.heading") %></h2>
+    <%= render "requests/activities", activities: @activities %>
+  </section>
+
   <p><%= link_to t("common.back"), requests_path %></p>
 </div>

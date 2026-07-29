@@ -1,0 +1,22 @@
+/* 時系列の記録。左の線で並びを示す。 */
+@layer components {
+  .timeline {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .timeline__item {
+    padding-inline-start: var(--space-4);
+    border-inline-start: 2px solid var(--color-border);
+  }
+
+  .timeline__item + .timeline__item {
+    margin-block-start: var(--space-4);
+  }
+
+  .timeline__summary {
+    margin: 0;
+    font-weight: 600;
+  }
+}

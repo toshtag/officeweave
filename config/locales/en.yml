@@ -372,3 +372,23 @@ en:
     edit:
       title: Edit request
       heading: Edit request
+
+  request_decisions:
+    heading: Approve or return
+    approve: Approve
+    return: Return
+    approved: The request has been approved.
+    returnd: The request has been returned.
+    failed: This request cannot be processed in its current state.
+    comment: Comment
+    comment_hint: When returning a request, explain what needs to change.
+
+  request_activities:
+    heading: History
+    empty: Nothing has happened yet.
+    actions:
+      created: "%{name} created this request"
+      submitted: "%{name} submitted it"
+      approved: "%{name} approved it"
+      returned: "%{name} returned it"
+      withdrawn: "%{name} withdrew it"
