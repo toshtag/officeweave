@@ -1,8 +1,18 @@
-# Omakase Ruby styling for Rails
+# 基本の書式は Rails 標準の設定に従う。
+# 独自の追加は、判断が分かれて指摘が繰り返される箇所だけにとどめる。
 inherit_gem: { rubocop-rails-omakase: rubocop.yml }
 
-# Overwrite or add rules to create your own house style
-#
-# # Use `[a, [b, c]]` not `[ a, [ b, c ] ]`
-# Layout/SpaceInsideArrayLiteralBrackets:
-#   Enabled: false
+AllCops:
+  TargetRubyVersion: 3.4
+  # 追加された規則を既定で有効にする。
+  # 無効のままにすると、更新しても検査内容が変わらず、導入した意味が薄れる。
+  NewCops: enable
+  Exclude:
+    - "db/schema.rb"
+    - "vendor/**/*"
+
+# 1 行の長さに上限を設ける。
+# 上限がないと、条件を 1 行へ詰めた読みにくい記述が通ってしまう。
+Layout/LineLength:
+  Enabled: true
+  Max: 120
