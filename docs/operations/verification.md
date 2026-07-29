@@ -1,0 +1,95 @@
+# OfficeWeave 総合検証
+
+本書は、公開する前に一度通す確認の手順を定義する。
+
+個々の機能は自動の検証で確かめている。
+ここで確かめるのは、それらを組み合わせたときに前提が崩れないことである。
+
+## 1. 手元の検証
+
+```bash
+docker compose exec web bin/verify
+```
+
+書式、依存の脆弱性、静的解析、テスト（システムテストを含む）、初期データの投入。
+
+## 2. クリーンな環境からの起動
+
+蓄積した状態ではなく、何も無い状態から起動できることを確かめる。
+
+```bash
+docker compose down -v
+```
+
+```bash
+docker compose up -d --build
+```
+
+```bash
+curl -s http://localhost:3000/health
+```
+
+```bash
+docker compose exec web bin/rails db:seed
+```
+
+```bash
+docker compose exec web bin/diagnose
+```
+
+## 3. 配布用の構成
+
+開発用で通ることと、配布したものが動くことは別である。
+
+```bash
+docker compose -f compose.production.yaml up -d --build
+```
+
+```bash
+docker compose -f compose.production.yaml exec web bin/diagnose
+```
+
+イメージへ鍵と接続情報が含まれていないことも確かめる。
+
+```bash
+docker run --rm --entrypoint sh <イメージ名> -c 'ls config/master.key .env'
+```
+
+いずれも存在しないことが正しい。
+
+## 4. バックアップからの復元
+
+取得できているだけでは、復元できることの確認にならない。
+
+```text
+1. 記録の件数を数える
+2. bin/backup を実行する
+3. 記録を削除する
+4. bin/restore を実行する
+5. 件数が取得前と一致することを確かめる
+6. 添付ファイルの内容が読めることを確かめる
+```
+
+## 5. 主要な業務の流れ
+
+`test/system/end_to_end_test.rb` が、次を画面の操作だけで通す。
+
+```text
+部門の作成と所属の追加
+公開範囲を指定したお知らせと、範囲外からは見えないこと
+予定の登録と、それに結びつく予約
+同じ時間帯の予約が拒否されること
+申請の提出、担当分としての把握、承認
+文書の公開と、日本語の語句での検索
+```
+
+自動で実行されるため、手作業での確認は不要とする。
+
+## 6. 自動実行
+
+`.github/workflows/verify.yml` が、変更のたびに次を実行する。
+
+```text
+bin/verify（開発用の構成）
+配布用の構成での起動、稼働確認、診断
+```
