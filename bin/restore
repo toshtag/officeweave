@@ -1,0 +1,66 @@
+#!/bin/bash
+set -euo pipefail
+
+# bin/backup が作った書庫から復元する。
+#
+# 復元先の内容は失われる。取り違えを防ぐため、実行前に確認を求める。
+# 確認を省く場合は FORCE=1 を指定する。
+#
+# 使い方:
+#   bin/restore <書庫のパス>
+
+if [ "$#" -ne 1 ]; then
+  echo "使い方: bin/restore <書庫のパス>" >&2
+  exit 1
+fi
+
+archive="$1"
+
+if [ ! -f "${archive}" ]; then
+  echo "書庫が見つかりません: ${archive}" >&2
+  exit 1
+fi
+
+database_host="${DATABASE_HOST:-localhost}"
+database_port="${DATABASE_PORT:-5432}"
+database_user="${DATABASE_USER:-officeweave}"
+database_name="${DATABASE_NAME:-officeweave_development}"
+
+if [ "${FORCE:-0}" != "1" ]; then
+  echo "${database_name} の現在の内容は失われます。"
+  read -r -p "続けるには yes と入力してください: " answer
+  if [ "${answer}" != "yes" ]; then
+    echo "中止しました。"
+    exit 1
+  fi
+fi
+
+work_directory="$(mktemp -d)"
+trap 'rm -rf "${work_directory}"' EXIT
+
+tar --extract --gzip --file="${archive}" --directory="${work_directory}"
+
+if [ ! -f "${work_directory}/database.sql" ]; then
+  echo "書庫にデータベースの内容が含まれていません。" >&2
+  exit 1
+fi
+
+echo "既存の内容を取り除いています: ${database_name}"
+PGPASSWORD="${DATABASE_PASSWORD:-}" psql \
+  --host="${database_host}" --port="${database_port}" --username="${database_user}" \
+  --dbname="${database_name}" --quiet \
+  --command="DROP SCHEMA public CASCADE; CREATE SCHEMA public;" >/dev/null
+
+echo "データベースを復元しています"
+PGPASSWORD="${DATABASE_PASSWORD:-}" psql \
+  --host="${database_host}" --port="${database_port}" --username="${database_user}" \
+  --dbname="${database_name}" --quiet --set ON_ERROR_STOP=on \
+  --file="${work_directory}/database.sql" >/dev/null
+
+echo "アップロードされたファイルを戻しています"
+mkdir -p storage
+if [ -d "${work_directory}/storage" ]; then
+  cp -R "${work_directory}/storage/." storage/
+fi
+
+echo "復元しました: ${archive}"

@@ -1,0 +1,55 @@
+#!/bin/bash
+set -euo pipefail
+
+# データベースの内容とアップロードされたファイルを、ひとつの書庫へまとめる。
+#
+# 片方だけを残すと、復元しても添付ファイルが開けない、
+# あるいは実体はあるのに参照する記録がない状態になる。
+#
+# 使い方:
+#   bin/backup [出力先ディレクトリ]
+
+output_directory="${1:-backups}"
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+archive="${output_directory}/officeweave-${timestamp}.tar.gz"
+
+database_host="${DATABASE_HOST:-localhost}"
+database_port="${DATABASE_PORT:-5432}"
+database_user="${DATABASE_USER:-officeweave}"
+database_name="${DATABASE_NAME:-officeweave_development}"
+
+mkdir -p "${output_directory}"
+
+work_directory="$(mktemp -d)"
+trap 'rm -rf "${work_directory}"' EXIT
+
+echo "データベースを書き出しています: ${database_name}"
+PGPASSWORD="${DATABASE_PASSWORD:-}" pg_dump \
+  --host="${database_host}" \
+  --port="${database_port}" \
+  --username="${database_user}" \
+  --no-owner \
+  --no-privileges \
+  --format=plain \
+  --file="${work_directory}/database.sql" \
+  "${database_name}"
+
+echo "アップロードされたファイルを含めています"
+mkdir -p "${work_directory}/storage"
+if [ -d storage ]; then
+  cp -R storage/. "${work_directory}/storage/"
+fi
+
+# 復元する側が、どの版で取得したものかを判断できるようにする。
+cat > "${work_directory}/metadata.txt" <<METADATA
+created_at=${timestamp}
+database_name=${database_name}
+schema_version=$(PGPASSWORD="${DATABASE_PASSWORD:-}" psql \
+  --host="${database_host}" --port="${database_port}" --username="${database_user}" \
+  --dbname="${database_name}" --tuples-only --no-align \
+  --command="SELECT max(version) FROM schema_migrations" 2>/dev/null || echo unknown)
+METADATA
+
+tar --create --gzip --file="${archive}" --directory="${work_directory}" .
+
+echo "作成しました: ${archive}"

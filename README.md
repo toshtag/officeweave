@@ -124,6 +124,7 @@ docker compose up -d --build
 - [認証方式の差し替え](docs/development/authentication.md) — 外部認証への差し替え手順
 - [品質基盤](docs/development/quality.md) — 書式検査と各種検査の実行方法
 - [アクセシビリティ方針](docs/development/accessibility.md) — 画面が満たすべき最低要件
+- [バックアップと復元](docs/operations/backup.md) — 取得と復元の手順
 - [ライセンス方針](docs/licensing.md) — ライセンスの選定理由と名称の利用範囲
 
 いずれも日本語を正本とします。
@@ -143,8 +144,8 @@ Copyright (C) 2026 OfficeWeave contributors
 
 ```text
 現在の Phase:        P11 Operations
-直近完了 Task:       P11-T1 監査イベントを実装する
-次に実行する Task:   P11-T2 バックアップと復元を実装する
+直近完了 Task:       P11-T2 バックアップと復元を実装する
+次に実行する Task:   P11-T3 アップグレードと運用診断を整備する
 ```
 
 進行状況は [実行キュー](docs/execution_queue.md) で管理します。
