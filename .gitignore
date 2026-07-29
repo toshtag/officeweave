@@ -33,5 +33,6 @@ desktop.ini
 # 環境ごとの設定と秘密情報。リポジトリへ含めない。
 /.env
 /.env.*
+!/.env.example
 /config/master.key
 /config/credentials/*.key

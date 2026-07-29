@@ -1,0 +1,11 @@
+#!/bin/bash -e
+
+# サーバーを起動する場合だけ、データベースを利用可能な状態にする。
+# 初回起動時に利用者へ別コマンドの実行を求めないため、ここで吸収する。
+if [ "${1}" = "bin/rails" ] && [ "${2}" = "server" ]; then
+  # 異常終了で残った PID ファイルがあると起動に失敗する。
+  rm -f tmp/pids/server.pid
+  ./bin/rails db:prepare
+fi
+
+exec "${@}"

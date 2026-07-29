@@ -9,7 +9,64 @@ pre-alpha
 ```
 
 アプリケーションの基盤ができた段階です。業務機能はこれから実装します。
-起動手順は P1-T2 で整備します。
+
+## 起動
+
+必要なものは Docker と Docker Compose だけです。
+Ruby と PostgreSQL をホストへ導入する必要はありません。
+
+```bash
+git clone https://github.com/toshtag/officeweave.git
+```
+
+```bash
+cd officeweave && cp .env.example .env && docker compose up -d --build
+```
+
+起動後、`http://localhost:3000` を開きます。
+データベースの作成と移行は初回起動時に自動で実行されます。
+
+設定を変更する場合は `.env` を編集します。設定可能な項目は [.env.example](.env.example) を参照してください。
+
+### よく使うコマンド
+
+いずれもリポジトリのルートで実行します。
+
+```bash
+docker compose logs -f web
+```
+
+```bash
+docker compose exec web bin/rails console
+```
+
+```bash
+docker compose exec web bin/rails test
+```
+
+```bash
+docker compose exec web bin/rubocop
+```
+
+```bash
+docker compose exec web bin/setup --skip-server
+```
+
+停止と破棄は次のとおりです。`down -v` はデータベースの内容も削除します。
+
+```bash
+docker compose down
+```
+
+```bash
+docker compose down -v
+```
+
+`Gemfile` を変更した場合は再ビルドが必要です。
+
+```bash
+docker compose up -d --build
+```
 
 ## 目指す価値
 
@@ -64,8 +121,8 @@ Copyright (C) 2026 OfficeWeave contributors
 
 ```text
 現在の Phase:        P1 ローカル開発基盤
-直近完了 Task:       P1-T1 Rails アプリケーションとコンテナ構成を作成する
-次に実行する Task:   P1-T2 標準 bin コマンドと起動手順を整備する
+直近完了 Task:       P1-T2 標準 bin コマンドと起動手順を整備する
+次に実行する Task:   P1-T3 稼働確認用エンドポイントと環境変数を整理する
 ```
 
 進行状況は [実行キュー](docs/execution_queue.md) で管理します。
