@@ -1,0 +1,38 @@
+company_wide:
+  organization: main
+  author: taro
+  title: 全社への連絡
+  body: 全員に見えるお知らせです。
+  visibility: organization
+  published_at: <%= 2.days.ago.to_fs(:db) %>
+
+sales_only:
+  organization: main
+  author: taro
+  title: 営業部への連絡
+  body: 営業部にだけ見えるお知らせです。
+  visibility: departments
+  published_at: <%= 1.day.ago.to_fs(:db) %>
+
+draft:
+  organization: main
+  author: taro
+  title: 下書きの連絡
+  body: まだ公開していません。
+  visibility: organization
+
+scheduled:
+  organization: main
+  author: taro
+  title: 予約された連絡
+  body: 先の日時に公開されます。
+  visibility: organization
+  published_at: <%= 3.days.from_now.to_fs(:db) %>
+
+other_org:
+  organization: other
+  author: outsider
+  title: 別組織の連絡
+  body: 別の組織のお知らせです。
+  visibility: organization
+  published_at: <%= 1.day.ago.to_fs(:db) %>

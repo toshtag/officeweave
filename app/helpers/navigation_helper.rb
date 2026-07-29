@@ -4,6 +4,7 @@ module NavigationHelper
   def navigation_items
     items = [
       { name: t("home.title"), path: root_path },
+      { name: t("announcements.index.heading"), path: announcements_path },
       { name: t("departments.index.heading"), path: departments_path }
     ]
 

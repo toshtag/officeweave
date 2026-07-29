@@ -10,9 +10,33 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_29_072358) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_29_073024) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "announcement_departments", force: :cascade do |t|
+    t.bigint "announcement_id", null: false
+    t.datetime "created_at", null: false
+    t.bigint "department_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["announcement_id", "department_id"], name: "index_announcement_departments_on_pair", unique: true
+    t.index ["announcement_id"], name: "index_announcement_departments_on_announcement_id"
+    t.index ["department_id"], name: "index_announcement_departments_on_department_id"
+  end
+
+  create_table "announcements", force: :cascade do |t|
+    t.bigint "author_id", null: false
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.bigint "organization_id", null: false
+    t.datetime "published_at"
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.string "visibility", default: "organization", null: false
+    t.index ["author_id"], name: "index_announcements_on_author_id"
+    t.index ["organization_id", "published_at"], name: "index_announcements_on_organization_id_and_published_at"
+    t.index ["organization_id"], name: "index_announcements_on_organization_id"
+  end
 
   create_table "departments", force: :cascade do |t|
     t.string "code", null: false
@@ -72,6 +96,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_29_072358) do
     t.index ["role"], name: "index_users_on_role"
   end
 
+  add_foreign_key "announcement_departments", "announcements"
+  add_foreign_key "announcement_departments", "departments"
+  add_foreign_key "announcements", "organizations"
+  add_foreign_key "announcements", "users", column: "author_id"
   add_foreign_key "departments", "departments", column: "parent_id"
   add_foreign_key "departments", "organizations"
   add_foreign_key "memberships", "departments"

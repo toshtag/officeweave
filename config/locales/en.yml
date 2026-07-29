@@ -31,6 +31,8 @@ en:
     profile:
       heading: Your details
       no_department: Not set
+    announcements:
+      more: See all announcements
     departments:
       heading: Your departments
       empty: You do not belong to any department yet.
@@ -40,6 +42,7 @@ en:
       user: User
       organization: Organization
       department: Department
+      announcement: Announcement
       membership: Membership
     attributes:
       user:
@@ -57,6 +60,13 @@ en:
         code: Code
         parent: Parent department
         position: Display order
+      announcement:
+        title: Subject
+        body: Body
+        visibility: Visibility
+        department_ids: Departments
+        published_at: Published at
+        author: Author
       membership:
         user: User
         department: Department
@@ -154,3 +164,37 @@ en:
 
   navigation:
     label: Main navigation
+
+  announcements:
+    created: The announcement has been created.
+    updated: The announcement has been updated.
+    destroyed: The announcement has been deleted.
+    draft: Draft
+    limited_to: "Shared with: %{names}"
+    visibilities:
+      organization: Everyone in the organization
+      departments: Selected departments
+    index:
+      title: Announcements
+      heading: Announcements
+      new: Write an announcement
+      empty: There are no announcements to show.
+      drafts: Drafts
+    new:
+      title: Write an announcement
+      heading: Write an announcement
+    edit:
+      title: Edit announcement
+      heading: Edit announcement
+    form:
+      departments_hint: These are used only when the visibility is set to selected departments.
+      published_at_hint: Leave this blank to keep it as a draft. A future time keeps it hidden until then.
+
+  time:
+    formats:
+      short: "%b %-d, %Y %H:%M"
+      long: "%B %-d, %Y at %H:%M"
+  date:
+    formats:
+      short: "%b %-d"
+      long: "%B %-d, %Y"

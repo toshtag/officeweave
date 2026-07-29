@@ -26,6 +26,24 @@
       </dl>
     </section>
 
+    <section class="panel stack" aria-labelledby="home-announcements">
+      <h2 id="home-announcements"><%= t("announcements.index.heading") %></h2>
+
+      <% if @announcements.any? %>
+        <ul class="list-plain">
+          <% @announcements.each do |announcement| %>
+            <li>
+              <%= link_to announcement.title, announcement %>
+              <span class="meta"><%= l(announcement.published_at, format: :short) %></span>
+            </li>
+          <% end %>
+        </ul>
+        <p><%= link_to t("home.announcements.more"), announcements_path %></p>
+      <% else %>
+        <p><%= t("announcements.index.empty") %></p>
+      <% end %>
+    </section>
+
     <section class="panel stack" aria-labelledby="home-departments">
       <h2 id="home-departments"><%= t("home.departments.heading") %></h2>
 

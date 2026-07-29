@@ -1,0 +1,35 @@
+<% content_for :title, @announcement.title %>
+
+<article class="panel stack">
+  <div class="page-heading">
+    <div>
+      <h1><%= @announcement.title %></h1>
+      <p class="meta">
+        <% if @announcement.published? %>
+          <%= l(@announcement.published_at, format: :short) %>
+        <% else %>
+          <%= t("announcements.draft") %>
+        <% end %>
+        ・ <%= @announcement.author.name %>
+        ・ <%= t("announcements.visibilities.#{@announcement.visibility}") %>
+      </p>
+    </div>
+
+    <% if administrator? %>
+      <div class="page-heading__actions">
+        <%= link_to t("common.edit"), edit_announcement_path(@announcement), class: "button" %>
+        <%= button_to t("common.destroy"), @announcement, method: :delete, class: "button" %>
+      </div>
+    <% end %>
+  </div>
+
+  <% if @announcement.limited_to_departments? %>
+    <p class="meta">
+      <%= t("announcements.limited_to", names: @announcement.departments.ordered.map(&:display_path).to_sentence) %>
+    </p>
+  <% end %>
+
+  <div class="prose"><%= simple_format @announcement.body %></div>
+
+  <p><%= link_to t("common.back"), announcements_path %></p>
+</article>

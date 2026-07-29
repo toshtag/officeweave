@@ -142,8 +142,8 @@ Copyright (C) 2026 OfficeWeave contributors
 
 ```text
 現在の Phase:        P5 Portal
-直近完了 Task:       P5-T1 ホームとナビゲーションを実装する
-次に実行する Task:   P5-T2 お知らせと公開範囲を実装する
+直近完了 Task:       P5-T2 お知らせと公開範囲を実装する
+次に実行する Task:   P5-T3 既読管理を実装する
 ```
 
 進行状況は [実行キュー](docs/execution_queue.md) で管理します。
