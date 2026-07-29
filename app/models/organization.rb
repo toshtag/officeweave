@@ -12,6 +12,7 @@ class Organization < ApplicationRecord
   has_many :requests, dependent: :restrict_with_error
   has_many :document_categories, dependent: :restrict_with_error
   has_many :documents, dependent: :restrict_with_error
+  has_many :api_tokens, dependent: :destroy
 
   normalizes :code, with: ->(value) { value.strip.downcase }
 
