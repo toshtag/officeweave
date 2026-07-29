@@ -1,0 +1,18 @@
+<%# 申請に対して行われた操作の記録。時系列で並べる。 %>
+<% if activities.any? %>
+  <ol class="timeline">
+    <% activities.each do |activity| %>
+      <li class="timeline__item">
+        <p class="timeline__summary">
+          <%= t("request_activities.actions.#{activity.action}", name: activity.actor.name) %>
+        </p>
+        <p class="meta"><%= l(activity.created_at, format: :short) %></p>
+        <% if activity.comment.present? %>
+          <div class="prose"><%= simple_format activity.comment %></div>
+        <% end %>
+      </li>
+    <% end %>
+  </ol>
+<% else %>
+  <p><%= t("request_activities.empty") %></p>
+<% end %>

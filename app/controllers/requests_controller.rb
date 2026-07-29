@@ -13,6 +13,7 @@ class RequestsController < ApplicationController
   end
 
   def show
+    @activities = @request.request_activities.chronological.includes(:actor)
   end
 
   def new
@@ -27,6 +28,7 @@ class RequestsController < ApplicationController
     @request.applicant = Current.user
 
     if @request.save
+      @request.record_creation(actor: Current.user)
       redirect_to @request, notice: t("requests.created")
     else
       render :new, status: :unprocessable_content

@@ -20,6 +20,7 @@ Rails.application.routes.draw do
   resources :request_types, only: %i[index new create edit update]
   resources :requests, except: %i[destroy] do
     resource :submission, only: %i[create destroy], controller: "request_submissions"
+    resource :decision, only: %i[create], controller: "request_decisions"
   end
 
   # 設備・備品の予約。

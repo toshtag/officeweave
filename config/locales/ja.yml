@@ -388,3 +388,23 @@ ja:
     edit:
       title: 申請の編集
       heading: 申請の編集
+
+  request_decisions:
+    heading: 承認と差し戻し
+    approve: 承認する
+    return: 差し戻す
+    approved: 申請を承認しました。
+    returnd: 申請を差し戻しました。
+    failed: この申請は現在の状態では処理できません。
+    comment: コメント
+    comment_hint: 差し戻す場合は、何を直せばよいかを書いてください。
+
+  request_activities:
+    heading: 履歴
+    empty: 記録がありません。
+    actions:
+      created: "%{name} が申請を作成しました"
+      submitted: "%{name} が提出しました"
+      approved: "%{name} が承認しました"
+      returned: "%{name} が差し戻しました"
+      withdrawn: "%{name} が取り下げました"

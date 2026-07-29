@@ -11,7 +11,7 @@ class RequestSubmissionsController < ApplicationController
       return render "shared/forbidden", status: :forbidden, formats: :html
     end
 
-    if @request.submit
+    if @request.submit(actor: Current.user)
       redirect_to @request, notice: t("requests.submitted")
     else
       redirect_to @request, alert: t("requests.cannot_submit")
@@ -24,7 +24,7 @@ class RequestSubmissionsController < ApplicationController
       return render "shared/forbidden", status: :forbidden, formats: :html
     end
 
-    @request.withdraw
+    @request.withdraw(actor: Current.user)
 
     redirect_to @request, notice: t("requests.withdrawn"), status: :see_other
   end
