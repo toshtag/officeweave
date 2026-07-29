@@ -10,6 +10,8 @@ AllCops:
   Exclude:
     - "db/schema.rb"
     - "vendor/**/*"
+    # 基盤から取り込んだ移行ファイル。手を入れる対象ではない。
+    - "db/migrate/*.active_storage.rb"
 
 # 1 行の長さに上限を設ける。
 # 上限がないと、条件を 1 行へ詰めた読みにくい記述が通ってしまう。
