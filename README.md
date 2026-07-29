@@ -29,6 +29,12 @@ cd officeweave && cp .env.example .env && docker compose up -d --build
 docker compose exec web bin/rails db:seed
 ```
 
+動作を確かめるためのデータを入れる場合は、次を実行します。
+
+```bash
+docker compose exec web bin/rails officeweave:demo_data
+```
+
 起動後、`http://localhost:3000` を開きます。
 データベースの作成と移行は初回起動時に自動で実行されます。
 
@@ -149,8 +155,8 @@ Copyright (C) 2026 OfficeWeave contributors
 
 ```text
 現在の Phase:        P12 Self-host release
-直近完了 Task:       P11-T3 アップグレードと運用診断を整備する
-次に実行する Task:   P12-T1 デモデータを用意する
+直近完了 Task:       P12-T1 デモデータを用意する
+次に実行する Task:   P12-T2 導入・運用文書を整備する
 ```
 
 進行状況は [実行キュー](docs/execution_queue.md) で管理します。
