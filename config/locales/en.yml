@@ -57,6 +57,7 @@ en:
       request: Request
       document: Document
       document_category: Document category
+      api_token: API token
       membership: Membership
     attributes:
       user:
@@ -136,6 +137,9 @@ en:
         name: Name
         code: Code
         position: Display order
+      api_token:
+        name: Name
+        last_used_at: Last used
       membership:
         user: User
         user_id: User
@@ -505,3 +509,23 @@ en:
       request_submitted: When a request is submitted
       request_approved: When your request is approved
       request_returned: When your request is returned
+
+  api_tokens:
+    created: The token has been issued.
+    revoked: The token has been revoked.
+    revoke: Revoke
+    never_used: Never used
+    index:
+      title: API tokens
+      heading: API tokens
+      status: Status
+    new:
+      heading: Issue a token
+      submit: Issue
+      name_hint: Give it a name that explains what it is for.
+    issued:
+      heading: Your new token
+      description: This value is shown only here. It is not stored, so you cannot see it again.
+    status:
+      active: Active
+      revoked: Revoked

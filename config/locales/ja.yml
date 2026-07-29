@@ -57,6 +57,7 @@ ja:
       request: 申請
       document: 文書
       document_category: 文書の分類
+      api_token: 外部接続用の token
       membership: 所属
     attributes:
       user:
@@ -136,6 +137,9 @@ ja:
         name: 名称
         code: 識別子
         position: 表示順
+      api_token:
+        name: 名前
+        last_used_at: 最終利用
       membership:
         user: 利用者
         user_id: 利用者
@@ -521,3 +525,23 @@ ja:
       request_submitted: 申請が提出されたとき
       request_approved: 自分の申請が承認されたとき
       request_returned: 自分の申請が差し戻されたとき
+
+  api_tokens:
+    created: token を発行しました。
+    revoked: token を無効にしました。
+    revoke: 無効にする
+    never_used: 未使用
+    index:
+      title: 外部接続用の token
+      heading: 外部接続用の token
+      status: 状態
+    new:
+      heading: token の発行
+      submit: 発行する
+      name_hint: 用途が分かる名前を付けてください。
+    issued:
+      heading: 発行された token
+      description: この値はここでしか表示されません。保存していないため、閉じると再確認できません。
+    status:
+      active: 有効
+      revoked: 無効
