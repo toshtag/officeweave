@@ -1,0 +1,9 @@
+ja:
+  application:
+    name: OfficeWeave
+    footer_note: OfficeWeave — 組織向けコラボレーション基盤
+
+  home:
+    title: ホーム
+    heading: ようこそ
+    description: 組織の情報共有と日常の手続きを、ひとつの場所で行えるようにします。
