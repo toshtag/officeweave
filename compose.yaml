@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_USER: ${DATABASE_USER:-officeweave}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-officeweave_development}
-      POSTGRES_DB: officeweave_development
+      POSTGRES_DB: ${DATABASE_NAME:-officeweave_development}
     volumes:
       - db_data:/var/lib/postgresql
     ports:
@@ -28,6 +28,7 @@ services:
       DATABASE_HOST: db
       DATABASE_USER: ${DATABASE_USER:-officeweave}
       DATABASE_PASSWORD: ${DATABASE_PASSWORD:-officeweave_development}
+      DATABASE_NAME: ${DATABASE_NAME:-officeweave_development}
       RAILS_ENV: ${RAILS_ENV:-development}
     volumes:
       # ソースコードだけを共有する。gem はイメージ内に置き、
