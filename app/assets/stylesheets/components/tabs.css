@@ -1,0 +1,32 @@
+/* 一覧の対象を切り替える並び。 */
+@layer components {
+  .tabs__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tabs__link {
+    display: inline-block;
+    padding: var(--space-2) var(--space-3);
+    border: var(--border-width) solid transparent;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+    text-decoration: none;
+  }
+
+  .tabs__link:hover {
+    color: var(--color-text);
+  }
+
+  /* 現在の対象は、枠と文字の濃さの両方で示す。 */
+  .tabs__link--current {
+    border-color: var(--color-border-interactive);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    font-weight: 600;
+  }
+}

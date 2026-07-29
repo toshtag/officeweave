@@ -27,24 +27,39 @@ class Request < ApplicationRecord
   validate :request_type_must_be_active, on: :create
 
   scope :recent_first, -> { order(created_at: :desc, id: :desc) }
-  scope :with_status, ->(status) { where(status: status) if status.in?(STATUSES) }
+  scope :applied_by, ->(user) { where(applicant_id: user.id) }
+
+
+  # その利用者が処理を待たれている申請。
+  # 自分の申請は自分で承認できないため、対象から外す。
+  scope :awaiting_decision_by, ->(user) {
+    where(organization_id: user.organization_id, status: "pending")
+      .where.not(applicant_id: user.id)
+      .where(request_type_id: approvable_request_types(user))
+  }
+  # 単一の状態でも、複数の状態の並びでも絞り込める。
+  scope :with_status, ->(status) {
+    values = Array(status) & STATUSES
+    where(status: values) if values.any?
+  }
 
   # 申請者本人と、承認できる利用者だけが参照できる。
   scope :visible_to, ->(user) {
-    where(organization_id: user.organization_id)
-      .where(
-        arel_table[:applicant_id].eq(user.id).or(
-          arel_table[:request_type_id].in(approvable_request_type_ids(user))
-        )
-      )
+    in_organization = where(organization_id: user.organization_id)
+
+    in_organization.applied_by(user).or(
+      in_organization.where(request_type_id: approvable_request_types(user))
+    )
   }
 
-  def self.approvable_request_type_ids(user)
-    return RequestType.where(organization_id: user.organization_id).select(:id).arel if user.administrator?
+  # その利用者が承認を担当する申請種別。
+  # 管理者はすべての種別を担当する。
+  def self.approvable_request_types(user)
+    return RequestType.where(organization_id: user.organization_id).select(:id) if user.administrator?
 
     RequestType
       .where(approver_department_id: Membership.where(user_id: user.id).select(:department_id))
-      .select(:id).arel
+      .select(:id)
   end
 
   def can_transition_to?(next_status)

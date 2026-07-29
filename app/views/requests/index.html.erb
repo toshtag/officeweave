@@ -6,7 +6,22 @@
     <%= link_to t("requests.index.new"), new_request_path, class: "button" %>
   </div>
 
+  <nav class="tabs" aria-label="<%= t("requests.index.scopes.label") %>">
+    <ul class="tabs__list">
+      <% [ [ nil, t("requests.index.scopes.all") ],
+           [ "mine", t("requests.index.scopes.mine") ],
+           [ "awaiting", t("requests.index.scopes.awaiting", count: @awaiting_count) ] ].each do |value, name| %>
+        <li>
+          <%= link_to name, requests_path(scope: value, status: @status),
+                      class: class_names("tabs__link", "tabs__link--current" => @scope == value),
+                      aria: { current: @scope == value ? "page" : nil } %>
+        </li>
+      <% end %>
+    </ul>
+  </nav>
+
   <form class="form form--inline" method="get" action="<%= requests_path %>">
+    <%= hidden_field_tag :scope, @scope %>
     <div class="form__field">
       <%= label_tag :status, Request.human_attribute_name(:status), class: "form__label" %>
       <%= select_tag :status,

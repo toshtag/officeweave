@@ -9,5 +9,13 @@ class HomeController < ApplicationController
     @announcements = visible.recent_first.limit(RECENT_ANNOUNCEMENT_COUNT)
     @unread_ids = visible.unread_for(Current.user).pluck(:id).to_set
     @unread_count = @unread_ids.size
+
+    @awaiting_requests = Request.awaiting_decision_by(Current.user)
+                                .recent_first
+                                .includes(:request_type, :applicant)
+    @open_requests = Request.visible_to(Current.user)
+                            .applied_by(Current.user)
+                            .with_status(%w[draft pending returned])
+                            .recent_first
   end
 end

@@ -50,6 +50,38 @@
       <% end %>
     </section>
 
+    <section class="panel stack" aria-labelledby="home-requests">
+      <h2 id="home-requests"><%= t("home.requests.heading") %></h2>
+
+      <% if @awaiting_requests.any? %>
+        <h3><%= t("home.requests.awaiting", count: @awaiting_requests.size) %></h3>
+        <ul class="list-plain">
+          <% @awaiting_requests.each do |request| %>
+            <li>
+              <%= link_to request.title, request %>
+              <span class="meta"><%= request.applicant.name %></span>
+            </li>
+          <% end %>
+        </ul>
+      <% end %>
+
+      <% if @open_requests.any? %>
+        <h3><%= t("home.requests.mine") %></h3>
+        <ul class="list-plain">
+          <% @open_requests.each do |request| %>
+            <li>
+              <%= link_to request.title, request %>
+              <%= render "requests/status", request: request %>
+            </li>
+          <% end %>
+        </ul>
+      <% end %>
+
+      <% if @awaiting_requests.empty? && @open_requests.empty? %>
+        <p><%= t("home.requests.empty") %></p>
+      <% end %>
+    </section>
+
     <section class="panel stack" aria-labelledby="home-departments">
       <h2 id="home-departments"><%= t("home.departments.heading") %></h2>
 
