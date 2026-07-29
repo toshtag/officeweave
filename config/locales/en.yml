@@ -45,6 +45,7 @@ en:
       announcement: Announcement
       event: Event
       resource: Resource
+      reservation: Booking
       membership: Membership
     attributes:
       user:
@@ -85,6 +86,13 @@ en:
         capacity: Capacity
         reservable: Accept bookings
         position: Display order
+      reservation:
+        resource: Resource
+        starts_at: Starts at
+        ends_at: Ends at
+        purpose: Purpose
+        reserver: Booked by
+        event: Related event
       membership:
         user: User
         department: Department
@@ -100,6 +108,8 @@ en:
 
   errors:
     messages:
+      overlapping: another booking already covers that time
+      not_reservable: is not accepting bookings
       not_after_start: must be after the start time
       cyclic: cannot be this department or one of its descendants
       different_organization: must belong to the same organization
@@ -270,3 +280,19 @@ en:
     form:
       capacity_hint: For example, how many people a room seats. Leave it blank if it does not apply.
       reservable_hint: When something is no longer usable, clear this instead of deleting it so past bookings stay intact.
+
+  reservations:
+    created: The booking has been made.
+    destroyed: The booking has been cancelled.
+    cancel: Cancel
+    index:
+      title: Bookings
+      heading: Bookings
+      new: Book a resource
+      empty: There are no bookings to show.
+    new:
+      title: Book a resource
+      heading: Book a resource
+    form:
+      no_event: Do not link
+      event_hint: Linking a booking to an event makes it clear what the booking is for.

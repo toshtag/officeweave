@@ -45,6 +45,7 @@ ja:
       announcement: お知らせ
       event: 予定
       resource: 設備・備品
+      reservation: 予約
       membership: 所属
     attributes:
       user:
@@ -85,6 +86,13 @@ ja:
         capacity: 定員
         reservable: 予約を受け付ける
         position: 表示順
+      reservation:
+        resource: 設備・備品
+        starts_at: 開始
+        ends_at: 終了
+        purpose: 用途
+        reserver: 予約者
+        event: 関連する予定
       membership:
         user: 利用者
         department: 部門
@@ -116,6 +124,8 @@ ja:
       less_than: は %{count} より小さい値にしてください
       less_than_or_equal_to: は %{count} 以下の値にしてください
       required: を指定してください
+      overlapping: その時間帯には別の予約があります
+      not_reservable: は予約を受け付けていません
       not_after_start: は開始より後にしてください
       cyclic: に自身または下位の部門は指定できません
       different_organization: に別の組織の記録は指定できません
@@ -286,3 +296,19 @@ ja:
     form:
       capacity_hint: 会議室の定員など。ない場合は空のままにしてください。
       reservable_hint: 使えなくなった設備・備品は、削除せずにここを外してください。過去の予約の記録が残ります。
+
+  reservations:
+    created: 予約しました。
+    destroyed: 予約を取り消しました。
+    cancel: 取り消す
+    index:
+      title: 予約
+      heading: 予約
+      new: 予約する
+      empty: 表示できる予約がありません。
+    new:
+      title: 予約
+      heading: 予約
+    form:
+      no_event: 結びつけない
+      event_hint: 予定と結びつけると、何のための予約かが分かりやすくなります。

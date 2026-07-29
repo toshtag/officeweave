@@ -3,17 +3,32 @@
 ARG RUBY_VERSION=3.4.10
 FROM ruby:${RUBY_VERSION}-slim-bookworm
 
+# データベースと同じ系列のクライアントを入れる。
+# 基盤の既定に含まれる版はデータベースより古く、
+# スキーマ定義の書き出しやバックアップの取得が版の不一致で失敗する。
+ARG POSTGRESQL_MAJOR_VERSION=18
+
 # build-essential と libpq-dev は pg gem のネイティブ拡張ビルドに必要。
-# postgresql-client は bin/rails dbconsole と接続確認に必要。
+# postgresql-client は bin/rails dbconsole、スキーマ定義の書き出し、接続確認に必要。
 RUN apt-get update -qq && \
     apt-get install -y --no-install-recommends \
-      build-essential \
+      ca-certificates \
       curl \
+      gnupg && \
+    install -d /usr/share/postgresql-common/pgdg && \
+    curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+      -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc && \
+    echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc]" \
+      "https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" \
+      > /etc/apt/sources.list.d/pgdg.list && \
+    apt-get update -qq && \
+    apt-get install -y --no-install-recommends \
+      build-essential \
       git \
       libpq-dev \
       libyaml-dev \
       pkg-config \
-      postgresql-client && \
+      postgresql-client-${POSTGRESQL_MAJOR_VERSION} && \
     rm -rf /var/lib/apt/lists/*
 
 ENV LANG=C.UTF-8 \

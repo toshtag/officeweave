@@ -36,6 +36,11 @@ module Officeweave
 
     config.time_zone = "Asia/Tokyo"
 
+    # スキーマ定義を SQL 形式で保持する。
+    # 期間の重なりを除外する制約は Ruby 形式では表現できず、
+    # 取りこぼすと、複製した環境で重複が防げなくなる。
+    config.active_record.schema_format = :sql
+
     # Configuration for the application, engines, and railties goes here.
     #
     # These settings can be overridden in specific environments using the files

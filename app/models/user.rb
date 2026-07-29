@@ -8,6 +8,7 @@ class User < ApplicationRecord
   has_many :announcements, foreign_key: :author_id, dependent: :restrict_with_error, inverse_of: :author
   has_many :announcement_reads, dependent: :destroy
   has_many :events, foreign_key: :owner_id, dependent: :restrict_with_error, inverse_of: :owner
+  has_many :reservations, foreign_key: :reserver_id, dependent: :restrict_with_error, inverse_of: :reserver
 
   # 大文字小文字と前後の空白の違いで別の利用者として扱わない。
   # 権限は 2 段階だけとする。

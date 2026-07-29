@@ -1,0 +1,7 @@
+<% content_for :title, t("reservations.new.title") %>
+
+<div class="panel panel--narrow stack">
+  <h1><%= t("reservations.new.heading") %></h1>
+  <%= render "form", reservation: @reservation %>
+  <%= link_to t("common.back"), reservations_path %>
+</div>

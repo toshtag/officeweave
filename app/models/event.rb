@@ -6,6 +6,7 @@ class Event < ApplicationRecord
 
   belongs_to :organization
   belongs_to :owner, class_name: "User"
+  has_many :reservations, dependent: :nullify
 
   has_many :event_departments, dependent: :destroy
   has_many :departments, through: :event_departments
