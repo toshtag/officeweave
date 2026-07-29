@@ -1,0 +1,6 @@
+#!/bin/bash
+set -euo pipefail
+
+# 運用時の構成を確認する。
+# 失敗がある場合は 0 以外で終了する。
+exec bin/rails officeweave:diagnose
