@@ -1,0 +1,7 @@
+<% content_for :title, t("request_types.new.title") %>
+
+<div class="panel panel--narrow stack">
+  <h1><%= t("request_types.new.heading") %></h1>
+  <%= render "form", request_type: @request_type %>
+  <%= link_to t("common.back"), request_types_path %>
+</div>

@@ -1,0 +1,45 @@
+<% content_for :title, t("requests.index.title") %>
+
+<div class="stack">
+  <div class="page-heading">
+    <h1><%= t("requests.index.heading") %></h1>
+    <%= link_to t("requests.index.new"), new_request_path, class: "button" %>
+  </div>
+
+  <form class="form form--inline" method="get" action="<%= requests_path %>">
+    <div class="form__field">
+      <%= label_tag :status, Request.human_attribute_name(:status), class: "form__label" %>
+      <%= select_tag :status,
+                     options_for_select(Request::STATUSES.map { |s| [ t("requests.statuses.#{s}"), s ] }, @status),
+                     include_blank: t("requests.index.all_statuses"), class: "form__input" %>
+    </div>
+    <%= submit_tag t("events.index.filter"), class: "button", name: nil %>
+  </form>
+
+  <% if @requests.any? %>
+    <div class="panel">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col"><%= Request.human_attribute_name(:title) %></th>
+            <th scope="col"><%= Request.human_attribute_name(:request_type) %></th>
+            <th scope="col"><%= Request.human_attribute_name(:applicant) %></th>
+            <th scope="col"><%= Request.human_attribute_name(:status) %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @requests.each do |request| %>
+            <tr>
+              <td><%= link_to request.title, request %></td>
+              <td><%= request.request_type.name %></td>
+              <td><%= request.applicant.name %></td>
+              <td><%= render "requests/status", request: request %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <p><%= t("requests.index.empty") %></p>
+  <% end %>
+</div>

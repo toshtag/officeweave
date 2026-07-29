@@ -6,6 +6,7 @@ module NavigationHelper
       { name: t("home.title"), path: root_path },
       { name: t("announcements.index.heading"), path: announcements_path },
       { name: t("events.index.heading"), path: events_path },
+      { name: t("requests.index.heading"), path: requests_path },
       { name: t("reservations.index.heading"), path: reservations_path },
       { name: t("resources.index.heading"), path: resources_path },
       { name: t("departments.index.heading"), path: departments_path }
