@@ -78,6 +78,16 @@ docker compose exec web bin/verify
 docker compose exec web bin/diagnose
 ```
 
+配布用の構成でバックアップを取得します。書庫はホストの `backups/` へ作られます。
+
+```bash
+script/production_backup
+```
+
+```bash
+script/production_restore backups/<書庫>
+```
+
 ```bash
 docker compose exec web bin/setup --skip-server
 ```

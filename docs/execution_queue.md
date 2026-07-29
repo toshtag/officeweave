@@ -11,8 +11,8 @@
 ```text
 現在の Phase: R0
 直近完了 Task: R0-T1
-進行中:        なし
-次に実行:      R0-T2 バックアップの永続化と復元手順の是正（#49）
+進行中:        R0-T2 バックアップの永続化と復元手順の是正（#49）
+次に実行:      R0-T3 Webhook 送信先を制限し SSRF を塞ぐ（#50）
 ```
 
 ## P0 プロジェクト契約
@@ -144,7 +144,7 @@ F 完了後の静的レビューで確認した不具合を、GitHub Issue と�
 | ------ | -------------------------- | -------------------------------------------------------------- | ------------------------------ | --- |
 | R0-T0  | `r0/t0-stabilization-roadmap` | —                                                            | 不具合 Issue を登録し、安定化フェーズを記録する     | 完了  |
 | R0-T1  | `r0/t1-compose-isolation`  | [#48](https://github.com/toshtag/OfficeWeave/issues/48)         | Docker 構成・データボリューム・ポートを分離する    | 完了  |
-| R0-T2  | —                          | [#49](https://github.com/toshtag/OfficeWeave/issues/49)         | バックアップの永続化と復元手順を成立させる          | 未着手 |
+| R0-T2  | `r0/t2-backup-restore`     | [#49](https://github.com/toshtag/OfficeWeave/issues/49)         | バックアップの永続化と復元手順を成立させる          | 進行中 |
 | R0-T3  | —                          | [#50](https://github.com/toshtag/OfficeWeave/issues/50)         | Webhook 送信先を制限し SSRF を塞ぐ       | 未着手 |
 | R0-T4  | —                          | [#51](https://github.com/toshtag/OfficeWeave/issues/51)         | 永続キューとワーカーを導入する                | 未着手 |
 | R0-T5  | —                          | [#52](https://github.com/toshtag/OfficeWeave/issues/52)         | Active Storage 標準ルートを無効化する     | 未着手 |

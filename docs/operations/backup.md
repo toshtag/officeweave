@@ -5,9 +5,13 @@
 セルフホストでは、バックアップの取得と保管は導入した組織の責任になる。
 手順を製品側で用意し、復元まで含めて確認できる状態にする。
 
-本書のコマンドは、すべて配布用の構成に対して実行する。
-Compose を呼び出すコマンドには必ず `-f compose.production.yaml` を付ける。
-付け忘れると、開発用の構成に対して実行される。
+取得も復元も、リポジトリのルートで次のスクリプトを実行する。
+スクリプトが内部で `-f compose.production.yaml` を指定する。
+
+```bash
+script/production_backup
+script/production_restore <書庫>
+```
 
 ## 1. 取得するもの
 
@@ -16,53 +20,134 @@ Compose を呼び出すコマンドには必ず `-f compose.production.yaml` を
 ```text
 database.sql   データベースの内容
 storage/       アップロードされたファイル
-metadata.txt   取得日時、対象のデータベース名、スキーマの版
+metadata.txt   取得日時、対象のデータベース名、スキーマの版、製品の版
 ```
 
 片方だけを残すと、復元しても添付ファイルが開けない、
 あるいは実体はあるのに参照する記録がない状態になる。
 
+`metadata.txt` に接続情報や鍵は書かない。書庫は組織の外へ持ち出されることがある。
+
 ## 2. 取得
 
 ```bash
-docker compose -f compose.production.yaml exec web bin/backup
+script/production_backup
 ```
 
-既定では `backups/` へ書き出す。出力先は引数で変更できる。
+既定ではホストの `backups/` へ書き出す。出力先は引数で変更できる。
 
 ```bash
-docker compose -f compose.production.yaml exec web bin/backup /var/backups/officeweave
+script/production_backup /var/backups/officeweave
 ```
 
-書庫の名前には取得日時が入る。上書きされることはない。
+書庫の名前には取得日時が入る。同じ名前の書庫があっても上書きしない。
+標準出力へは、作成した書庫の経路だけを出す。
+
+### 書庫がホストに残る理由
+
+書庫をコンテナ内へ書き出さない。コンテナを入れ替えた時点で失われるためである。
+
+ホストのディレクトリをコンテナへマウントする方法も採らない。
+コンテナ内の利用者とホストの利用者で UID が食い違うと書き込めず、
+書けた場合も所有者がホストの利用者と異なる書庫が残る。
+
+代わりに、一時コンテナが書庫を標準出力へ流し、スクリプトがホスト側で受け取る。
+
+```text
+一時コンテナ  bin/backup --stdout
+      ↓  標準出力
+ホスト        backups/officeweave-<取得日時>.tar.gz.partial
+      ↓  書庫として読めることを確認してから改名
+ホスト        backups/officeweave-<取得日時>.tar.gz
+```
+
+途中で失敗した場合、`.partial` は削除され、正式な書庫は作られない。
+
+### 取得のあいだの停止
+
+データベースと添付ファイルの取得時点をそろえるため、取得中は `web` を停止する。
+
+```text
+- 取得のあいだ、利用者は画面を使えない
+- db コンテナは停止しない
+- web を停止したうえで、データベースの書き出しとファイルの取得を行う
+- 取得の前から web が停止していた場合、スクリプトは web を起動しない
+- 取得に失敗しても、元々動いていた web は再開する
+```
+
+外部から直接データベースへ書き込む仕組みを持ち込んでいる場合は、
+その停止を別途行う必要がある。本書の手順は、この製品の `web` だけを止める。
 
 ### 保管
 
 - 書庫はアプリケーションと同じホストに置いたままにしない
 - 定期的な取得は、利用者側の仕組み（時刻起動など）で行う
-- 書庫には組織の全データが含まれる。持ち出しと保管の扱いに注意する
+- 書庫には組織の全データと添付ファイルが含まれる。持ち出しと保管の扱いに注意する
+- `backups/` はリポジトリの追跡対象から除いている
 
 ## 3. 復元
 
 ```bash
-docker compose -f compose.production.yaml exec web bin/restore backups/officeweave-20260101T000000Z.tar.gz
+script/production_restore backups/officeweave-20260101T000000Z.tar.gz
 ```
 
 復元先の内容は失われる。取り違えを防ぐため、実行前に確認を求める。
 自動で実行する場合は確認を省ける。
 
 ```bash
-docker compose -f compose.production.yaml exec -e FORCE=1 web bin/restore <書庫のパス>
+FORCE=1 script/production_restore <書庫のパス>
 ```
 
-### 復元の手順
+### 復元の進み方
 
-1. アプリケーションを停止する
-2. 復元を実行する
-3. アプリケーションを起動する
-4. 画面へログインし、内容を確認する
+```text
+1. ホスト側で、書庫として読めることを確認する
+2. 確認を求める（FORCE=1 なら省く）
+3. web を停止する
+4. 一時コンテナへ書庫を標準入力から渡す
+5. コンテナ内で書庫の中身を検査する
+6. 検査を通った場合だけ、データベースとファイルを置き換える
+7. 成功した場合だけ web を起動する
+8. 稼働確認と診断を実行する
+```
 
-停止せずに復元すると、処理中の要求が途中の状態を読むことがある。
+停止した `web` へ `docker compose exec` はできない。
+そのため、復元は停止した `web` とは別の一時コンテナで実行する。
+
+### 受け付けない書庫
+
+次のいずれかに当てはまる書庫は、データベースにもファイルにも触れずに拒否する。
+
+```text
+- 書庫として読み取れない
+- database.sql が無い、または空
+- storage/ が無い
+- metadata.txt が無い
+- 絶対パスを含む
+- 展開先の外を指す経路を含む
+```
+
+拒否した場合、既存のデータは変更されない。
+
+### ファイルの完全な置き換え
+
+復元では、既存の `storage/` の中身をすべて取り除いてから書庫の内容を戻す。
+隠しファイルも取り除く。`storage` ディレクトリ自体は残す。
+
+上書きだけで済ませると、書庫に含まれない古いファイルが残り、
+削除したはずの添付が復元後に復活する。
+
+### 復元に失敗した場合
+
+`web` は停止したままにする。中途半端なデータで運用を再開させないためである。
+
+```bash
+docker compose -f compose.production.yaml logs web
+```
+
+```bash
+FORCE=1 script/production_restore <別の書庫>
+```
 
 ## 4. 確認
 
@@ -74,6 +159,7 @@ docker compose -f compose.production.yaml exec -e FORCE=1 web bin/restore <書�
 3. 復元する
 4. 削除した記録が戻っていることを確認する
 5. 添付ファイルが開けることを確認する
+6. 取得後に追加したファイルが残っていないことを確認する
 ```
 
 取得できているだけでは、復元できることの確認にならない。
@@ -90,11 +176,25 @@ docker compose -f compose.production.yaml exec -e FORCE=1 web bin/restore <書�
 config/master.key
 ```
 
-## 6. 扱っていないこと
+## 6. 開発環境での取得と復元
+
+開発環境では、コンテナ内で直接実行してよい。ソースコードをホストと共有しているため、
+`backups/` へ書き出せばホスト側にも残る。
+
+```bash
+docker compose exec web bin/backup
+```
+
+```bash
+docker compose exec -e FORCE=1 web bin/restore backups/<書庫>
+```
+
+## 7. 扱っていないこと
 
 - 差分での取得
 - 取得した書庫の暗号化
 - 定期取得の仕組み
+- 別のホストへの自動転送
+- 保持期限の管理
 
-いずれも利用者側の仕組みと組み合わせる前提としている。
-必要が確認された時点で、製品側へ取り込むかを判断する。
+いずれもロードマップの R1 運用信頼性で扱う。

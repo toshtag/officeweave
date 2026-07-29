@@ -9,7 +9,7 @@ Compose を呼び出すコマンドには必ず `-f compose.production.yaml` を
 ## 1. 手順
 
 ```bash
-docker compose -f compose.production.yaml exec web bin/backup
+script/production_backup
 ```
 
 ```bash
@@ -72,8 +72,11 @@ docker compose -f compose.production.yaml up -d --build
 データベースの移行を戻す必要がある場合は、取得しておいたバックアップから復元する。
 
 ```bash
-docker compose -f compose.production.yaml exec -e FORCE=1 web bin/restore <書庫のパス>
+FORCE=1 script/production_restore <書庫のパス>
 ```
+
+復元は停止した web とは別の一時コンテナで実行される。
+復元に失敗した場合、web は停止したままになる。
 
 移行を個別に戻す操作は用意していない。
 版のあいだで移行の内容が変わると、戻す操作そのものが失敗しうる。
