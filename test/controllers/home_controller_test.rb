@@ -1,6 +1,8 @@
 require "test_helper"
 
 class HomeControllerTest < ActionDispatch::IntegrationTest
+  setup { sign_in_as users(:taro) }
+
   test "入口の画面が表示される" do
     get root_url
 

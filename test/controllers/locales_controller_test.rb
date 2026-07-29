@@ -1,6 +1,8 @@
 require "test_helper"
 
 class LocalesControllerTest < ActionDispatch::IntegrationTest
+  setup { sign_in_as users(:taro) }
+
   test "選んだ言語が以降の要求へ引き継がれる" do
     patch locale_url, params: { locale: "en", return_to: root_path }
 

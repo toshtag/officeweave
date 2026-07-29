@@ -1,6 +1,8 @@
 require "application_system_test_case"
 
 class LocaleSwitchingTest < ApplicationSystemTestCase
+  setup { sign_in_as users(:taro) }
+
   test "JavaScript なしで表示言語を切り替えられる" do
     visit root_path
 
