@@ -14,3 +14,22 @@
     color: var(--color-accent);
   }
 }
+
+@layer components {
+  .badge--status-draft,
+  .badge--status-withdrawn {
+    color: var(--color-text-muted);
+  }
+
+  .badge--status-pending {
+    color: var(--color-accent);
+  }
+
+  .badge--status-approved {
+    color: var(--color-success);
+  }
+
+  .badge--status-returned {
+    color: var(--color-danger);
+  }
+}

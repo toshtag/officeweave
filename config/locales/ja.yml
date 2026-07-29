@@ -46,6 +46,8 @@ ja:
       event: 予定
       resource: 設備・備品
       reservation: 予約
+      request_type: 申請種別
+      request: 申請
       membership: 所属
     attributes:
       user:
@@ -62,6 +64,7 @@ ja:
         name: 名称
         code: 識別子
         parent: 上位部門
+        parent_id: 上位部門
         position: 表示順
       announcement:
         title: 件名
@@ -88,13 +91,32 @@ ja:
         position: 表示順
       reservation:
         resource: 設備・備品
+        resource_id: 設備・備品
         starts_at: 開始
         ends_at: 終了
         purpose: 用途
         reserver: 予約者
         event: 関連する予定
+        event_id: 関連する予定
+      request_type:
+        name: 名称
+        code: 識別子
+        description: 説明
+        approver_department: 承認する部門
+        approver_department_id: 承認する部門
+        active: 新しい申請を受け付ける
+        position: 表示順
+      request:
+        request_type: 申請種別
+        request_type_id: 申請種別
+        title: 件名
+        body: 内容
+        status: 状態
+        applicant: 申請者
+        submitted_at: 提出日時
       membership:
         user: 利用者
+        user_id: 利用者
         department: 部門
         primary: 主たる所属
 
@@ -125,6 +147,7 @@ ja:
       less_than_or_equal_to: は %{count} 以下の値にしてください
       required: を指定してください
       overlapping: その時間帯には別の予約があります
+      not_active: は新しい申請を受け付けていません
       not_reservable: は予約を受け付けていません
       not_after_start: は開始より後にしてください
       cyclic: に自身または下位の部門は指定できません
@@ -312,3 +335,56 @@ ja:
     form:
       no_event: 結びつけない
       event_hint: 予定と結びつけると、何のための予約かが分かりやすくなります。
+
+  request_types:
+    created: 申請種別を登録しました。
+    updated: 申請種別を更新しました。
+    approver_administrators: 管理者
+    index:
+      title: 申請種別
+      heading: 申請種別
+      new: 申請種別を登録
+      empty: 登録されている申請種別がありません。
+      status: 受付
+      apply: この種別で申請する
+    new:
+      title: 申請種別の登録
+      heading: 申請種別の登録
+    edit:
+      title: 申請種別の編集
+      heading: 申請種別の編集
+    status:
+      active: 受付中
+      inactive: 受付停止
+    form:
+      approver_unset: 管理者が承認する
+      approver_hint: 指定した部門の所属者が承認できます。未指定の場合は管理者だけが承認します。
+      active_hint: 使わなくなった種別は、削除せずにここを外してください。過去の申請の記録が残ります。
+
+  requests:
+    created: 申請を作成しました。
+    updated: 申請を更新しました。
+    submitted: 申請を提出しました。
+    withdrawn: 申請を取り下げました。
+    cannot_submit: この状態からは提出できません。
+    submit: 提出する
+    withdraw: 取り下げる
+    not_submitted: 未提出
+    statuses:
+      draft: 下書き
+      pending: 承認待ち
+      approved: 承認済み
+      returned: 差し戻し
+      withdrawn: 取り下げ
+    index:
+      title: 申請
+      heading: 申請
+      new: 申請する
+      empty: 表示できる申請がありません。
+      all_statuses: すべて
+    new:
+      title: 申請の作成
+      heading: 申請の作成
+    edit:
+      title: 申請の編集
+      heading: 申請の編集

@@ -7,6 +7,8 @@ class Department < ApplicationRecord
   has_many :memberships, dependent: :destroy
   has_many :announcement_departments, dependent: :destroy
   has_many :event_departments, dependent: :destroy
+  has_many :approvable_request_types, class_name: "RequestType", foreign_key: :approver_department_id,
+           dependent: :restrict_with_error, inverse_of: :approver_department
   has_many :users, through: :memberships
 
   normalizes :code, with: ->(value) { value.strip.downcase }

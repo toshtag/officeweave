@@ -1,0 +1,45 @@
+<% content_for :title, @request.title %>
+
+<div class="stack">
+  <div class="panel stack">
+    <div class="page-heading">
+      <div>
+        <h1><%= @request.title %></h1>
+        <p class="meta">
+          <%= @request.request_type.name %> ・
+          <%= @request.applicant.name %> ・
+          <%= render "requests/status", request: @request %>
+        </p>
+      </div>
+
+      <div class="page-heading__actions">
+        <% if @request.editable_by?(Current.user) %>
+          <%= link_to t("common.edit"), edit_request_path(@request), class: "button" %>
+          <%= button_to t("requests.submit"), request_submission_path(@request), method: :post,
+                        class: "button button--primary" %>
+        <% end %>
+        <% if @request.withdrawable_by?(Current.user) %>
+          <%= button_to t("requests.withdraw"), request_submission_path(@request), method: :delete,
+                        class: "button" %>
+        <% end %>
+      </div>
+    </div>
+
+    <dl class="definition">
+      <dt><%= Request.human_attribute_name(:submitted_at) %></dt>
+      <dd><%= @request.submitted_at ? l(@request.submitted_at, format: :short) : t("requests.not_submitted") %></dd>
+
+      <dt><%= RequestType.human_attribute_name(:approver_department) %></dt>
+      <dd>
+        <%= @request.request_type.approver_department&.display_path ||
+              t("request_types.approver_administrators") %>
+      </dd>
+    </dl>
+
+    <% if @request.body.present? %>
+      <div class="prose"><%= simple_format @request.body %></div>
+    <% end %>
+  </div>
+
+  <p><%= link_to t("common.back"), requests_path %></p>
+</div>

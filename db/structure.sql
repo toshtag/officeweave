@@ -312,6 +312,81 @@ ALTER SEQUENCE public.organizations_id_seq OWNED BY public.organizations.id;
 
 
 --
+-- Name: request_types; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.request_types (
+    id bigint NOT NULL,
+    organization_id bigint NOT NULL,
+    name character varying NOT NULL,
+    code character varying NOT NULL,
+    description text,
+    approver_department_id bigint,
+    active boolean DEFAULT true NOT NULL,
+    "position" integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: request_types_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.request_types_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: request_types_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.request_types_id_seq OWNED BY public.request_types.id;
+
+
+--
+-- Name: requests; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.requests (
+    id bigint NOT NULL,
+    organization_id bigint NOT NULL,
+    request_type_id bigint NOT NULL,
+    applicant_id bigint NOT NULL,
+    title character varying NOT NULL,
+    body text,
+    status character varying DEFAULT 'draft'::character varying NOT NULL,
+    submitted_at timestamp(6) without time zone,
+    decided_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: requests_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.requests_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: requests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.requests_id_seq OWNED BY public.requests.id;
+
+
+--
 -- Name: reservations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -521,6 +596,20 @@ ALTER TABLE ONLY public.organizations ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
+-- Name: request_types id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.request_types ALTER COLUMN id SET DEFAULT nextval('public.request_types_id_seq'::regclass);
+
+
+--
+-- Name: requests id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.requests ALTER COLUMN id SET DEFAULT nextval('public.requests_id_seq'::regclass);
+
+
+--
 -- Name: reservations id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -618,6 +707,22 @@ ALTER TABLE ONLY public.memberships
 
 ALTER TABLE ONLY public.organizations
     ADD CONSTRAINT organizations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: request_types request_types_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.request_types
+    ADD CONSTRAINT request_types_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: requests requests_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.requests
+    ADD CONSTRAINT requests_pkey PRIMARY KEY (id);
 
 
 --
@@ -830,6 +935,62 @@ CREATE UNIQUE INDEX index_organizations_on_code ON public.organizations USING bt
 
 
 --
+-- Name: index_request_types_on_approver_department_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_request_types_on_approver_department_id ON public.request_types USING btree (approver_department_id);
+
+
+--
+-- Name: index_request_types_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_request_types_on_organization_id ON public.request_types USING btree (organization_id);
+
+
+--
+-- Name: index_request_types_on_organization_id_and_code; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_request_types_on_organization_id_and_code ON public.request_types USING btree (organization_id, code);
+
+
+--
+-- Name: index_requests_on_applicant_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_requests_on_applicant_id ON public.requests USING btree (applicant_id);
+
+
+--
+-- Name: index_requests_on_applicant_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_requests_on_applicant_id_and_created_at ON public.requests USING btree (applicant_id, created_at);
+
+
+--
+-- Name: index_requests_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_requests_on_organization_id ON public.requests USING btree (organization_id);
+
+
+--
+-- Name: index_requests_on_organization_id_and_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_requests_on_organization_id_and_status ON public.requests USING btree (organization_id, status);
+
+
+--
+-- Name: index_requests_on_request_type_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_requests_on_request_type_id ON public.requests USING btree (request_type_id);
+
+
+--
 -- Name: index_reservations_on_event_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -938,11 +1099,43 @@ ALTER TABLE ONLY public.events
 
 
 --
+-- Name: request_types fk_rails_1e1169f43a; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.request_types
+    ADD CONSTRAINT fk_rails_1e1169f43a FOREIGN KEY (approver_department_id) REFERENCES public.departments(id);
+
+
+--
+-- Name: request_types fk_rails_22236c1ac1; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.request_types
+    ADD CONSTRAINT fk_rails_22236c1ac1 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: announcement_reads fk_rails_3bf795c88f; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.announcement_reads
     ADD CONSTRAINT fk_rails_3bf795c88f FOREIGN KEY (announcement_id) REFERENCES public.announcements(id);
+
+
+--
+-- Name: requests fk_rails_54d15c43d3; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.requests
+    ADD CONSTRAINT fk_rails_54d15c43d3 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: requests fk_rails_59d5c2771d; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.requests
+    ADD CONSTRAINT fk_rails_59d5c2771d FOREIGN KEY (request_type_id) REFERENCES public.request_types(id);
 
 
 --
@@ -1058,6 +1251,14 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: requests fk_rails_dbfac71f2d; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.requests
+    ADD CONSTRAINT fk_rails_dbfac71f2d FOREIGN KEY (applicant_id) REFERENCES public.users(id);
+
+
+--
 -- Name: announcement_reads fk_rails_e929ca5a13; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1088,6 +1289,8 @@ ALTER TABLE ONLY public.announcement_departments
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260729075216'),
+('20260729075215'),
 ('20260729074307'),
 ('20260729074049'),
 ('20260729073655'),

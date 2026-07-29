@@ -46,6 +46,8 @@ en:
       event: Event
       resource: Resource
       reservation: Booking
+      request_type: Request type
+      request: Request
       membership: Membership
     attributes:
       user:
@@ -62,6 +64,7 @@ en:
         name: Name
         code: Code
         parent: Parent department
+        parent_id: Parent department
         position: Display order
       announcement:
         title: Subject
@@ -88,13 +91,32 @@ en:
         position: Display order
       reservation:
         resource: Resource
+        resource_id: Resource
         starts_at: Starts at
         ends_at: Ends at
         purpose: Purpose
         reserver: Booked by
         event: Related event
+        event_id: Related event
+      request_type:
+        name: Name
+        code: Code
+        description: Description
+        approver_department: Approving department
+        approver_department_id: Approving department
+        active: Accept new requests
+        position: Display order
+      request:
+        request_type: Request type
+        request_type_id: Request type
+        title: Subject
+        body: Details
+        status: Status
+        applicant: Applicant
+        submitted_at: Submitted at
       membership:
         user: User
+        user_id: User
         department: Department
         primary: Primary department
 
@@ -109,6 +131,7 @@ en:
   errors:
     messages:
       overlapping: another booking already covers that time
+      not_active: is not accepting new requests
       not_reservable: is not accepting bookings
       not_after_start: must be after the start time
       cyclic: cannot be this department or one of its descendants
@@ -296,3 +319,56 @@ en:
     form:
       no_event: Do not link
       event_hint: Linking a booking to an event makes it clear what the booking is for.
+
+  request_types:
+    created: The request type has been added.
+    updated: The request type has been updated.
+    approver_administrators: Administrators
+    index:
+      title: Request types
+      heading: Request types
+      new: Add a request type
+      empty: No request types have been added yet.
+      status: Status
+      apply: Start a request
+    new:
+      title: Add a request type
+      heading: Add a request type
+    edit:
+      title: Edit request type
+      heading: Edit request type
+    status:
+      active: Open
+      inactive: Closed
+    form:
+      approver_unset: Administrators approve
+      approver_hint: Members of the department you pick can approve. Leave it blank to let administrators approve.
+      active_hint: When a type is no longer used, clear this instead of deleting it so past requests stay intact.
+
+  requests:
+    created: The request has been created.
+    updated: The request has been updated.
+    submitted: The request has been submitted.
+    withdrawn: The request has been withdrawn.
+    cannot_submit: This request cannot be submitted from its current state.
+    submit: Submit
+    withdraw: Withdraw
+    not_submitted: Not submitted
+    statuses:
+      draft: Draft
+      pending: Awaiting approval
+      approved: Approved
+      returned: Returned
+      withdrawn: Withdrawn
+    index:
+      title: Requests
+      heading: Requests
+      new: Start a request
+      empty: There are no requests to show.
+      all_statuses: All
+    new:
+      title: Start a request
+      heading: Start a request
+    edit:
+      title: Edit request
+      heading: Edit request

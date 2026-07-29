@@ -8,6 +8,8 @@ class Organization < ApplicationRecord
   has_many :events, dependent: :restrict_with_error
   has_many :resources, dependent: :restrict_with_error
   has_many :reservations, dependent: :restrict_with_error
+  has_many :request_types, dependent: :restrict_with_error
+  has_many :requests, dependent: :restrict_with_error
 
   normalizes :code, with: ->(value) { value.strip.downcase }
 

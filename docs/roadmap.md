@@ -61,8 +61,8 @@ Git の履歴と PR 一覧からも同じ状態を復元できる。
 
 ```text
 現在の Phase:      P7
-直近完了 Task:     P6-T3
-次に実行する Task: P7-T1
+直近完了 Task:     P7-T1
+次に実行する Task: P7-T2
 一度に実行する Task: 1 件
 ```
 
