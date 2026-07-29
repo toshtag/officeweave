@@ -44,6 +44,7 @@ pre-alpha
 - [開発規約](docs/development/conventions.md) — 命名、言語、多言語化の取り決め
 - [ロードマップ](docs/roadmap.md) — Phase 一覧と進行規則
 - [実行キュー](docs/execution_queue.md) — タスク分解と現在地
+- [技術構成](docs/development/tech_stack.md) — 採用技術、版数、更新方針
 - [ライセンス方針](docs/licensing.md) — ライセンスの選定理由と名称の利用範囲
 
 いずれも日本語を正本とします。
@@ -62,9 +63,9 @@ Copyright (C) 2026 OfficeWeave contributors
 ## 現在地と次のタスク
 
 ```text
-現在の Phase:        P0 プロジェクト契約
-直近完了 Task:       P0-T3 OSS ライセンスと商標方針を決定する
-次に実行する Task:   P0-T4 技術バージョンの選定基準と候補を固定する
+現在の Phase:        P1 ローカル開発基盤
+直近完了 Task:       P0-T4 技術バージョンの選定基準と候補を固定する
+次に実行する Task:   P1-T1 Rails アプリケーションとコンテナ構成を作成する
 ```
 
 進行状況は [実行キュー](docs/execution_queue.md) で管理します。
