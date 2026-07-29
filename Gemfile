@@ -40,7 +40,6 @@ group :development do
 end
 
 group :test do
-  # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
+  # システムテスト用。実行はブラウザーを使わない rack_test で行う。
   gem "capybara"
-  gem "selenium-webdriver"
 end
