@@ -27,10 +27,14 @@ ja:
     heading: ようこそ
     description: 組織の情報共有と日常の手続きを、ひとつの場所で行えるようにします。
     greeting: "%{name} さん、こんにちは。"
+    primary_department: "主たる所属: %{name}"
 
   activerecord:
     models:
       user: 利用者
+      organization: 組織
+      department: 部門
+      membership: 所属
     attributes:
       user:
         name: 氏名
@@ -38,3 +42,66 @@ ja:
         password: パスワード
         password_confirmation: パスワード（確認）
         locale: 表示言語
+      organization:
+        name: 名称
+        code: 識別子
+      department:
+        name: 名称
+        code: 識別子
+        parent: 上位部門
+        position: 表示順
+      membership:
+        user: 利用者
+        department: 部門
+        primary: 主たる所属
+
+  common:
+    back: 一覧へ戻る
+    edit: 編集
+    destroy: 削除
+    actions: 操作
+    yes: はい
+    no: いいえ
+
+  errors:
+    summary:
+      one: 入力内容に 1 件の誤りがあります
+      other: 入力内容に %{count} 件の誤りがあります
+
+  departments:
+    no_parent: なし
+    created: 部門を作成しました。
+    updated: 部門を更新しました。
+    destroyed: 部門を削除しました。
+    index:
+      title: 部門
+      heading: 部門
+      new: 部門を追加
+      empty: 部門がまだ登録されていません。
+    new:
+      title: 部門の追加
+      heading: 部門の追加
+    edit:
+      title: 部門の編集
+      heading: 部門の編集
+    show:
+      members: 所属者
+      no_members: 所属者がいません。
+    form:
+      code_hint: 英小文字、数字、ハイフン、アンダースコアが使えます。組織内で重複しない値にしてください。
+      position_hint: 小さい値ほど先に表示されます。同じ値の場合は名称順になります。
+
+  memberships:
+    created: 所属を追加しました。
+    destroyed: 所属を解除しました。
+    remove: 解除
+    new:
+      heading: 所属者の追加
+      submit: 追加する
+      no_candidates: 追加できる利用者がいません。
+
+  helpers:
+    submit:
+      create: 登録する
+      update: 更新する
+      submit: 保存する
