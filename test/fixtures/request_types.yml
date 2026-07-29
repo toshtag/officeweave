@@ -1,0 +1,25 @@
+leave:
+  organization: main
+  name: 休暇届
+  code: leave
+  approver_department: sales
+  position: 10
+
+expense:
+  organization: main
+  name: 経費精算
+  code: expense
+  position: 20
+
+retired_type:
+  organization: main
+  name: 旧様式の届出
+  code: legacy
+  active: false
+  position: 90
+
+other_org_type:
+  organization: other
+  name: 別組織の申請
+  code: leave
+  position: 10

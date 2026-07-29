@@ -1,0 +1,23 @@
+hanako_leave_draft:
+  organization: main
+  request_type: leave
+  applicant: hanako
+  title: 夏季休暇の申請
+  body: 8月10日から3日間
+  status: draft
+
+hanako_expense_pending:
+  organization: main
+  request_type: expense
+  applicant: hanako
+  title: 交通費の精算
+  status: pending
+  submitted_at: <%= 1.day.ago.to_fs(:db) %>
+
+taro_leave_pending:
+  organization: main
+  request_type: leave
+  applicant: taro
+  title: 私用のための休暇
+  status: pending
+  submitted_at: <%= 2.days.ago.to_fs(:db) %>
