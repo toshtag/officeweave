@@ -121,8 +121,8 @@ Copyright (C) 2026 OfficeWeave contributors
 
 ```text
 現在の Phase:        P1 ローカル開発基盤
-直近完了 Task:       P1-T1 Rails アプリケーションとコンテナ構成を作成する
-次に実行する Task:   P1-T2 標準 bin コマンドと起動手順を整備する
+直近完了 Task:       P1-T2 標準 bin コマンドと起動手順を整備する
+次に実行する Task:   P1-T3 稼働確認用エンドポイントと環境変数を整理する
 ```
 
 進行状況は [実行キュー](docs/execution_queue.md) で管理します。
