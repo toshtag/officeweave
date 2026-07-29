@@ -1,0 +1,156 @@
+#!/usr/bin/env bash
+#
+# 開発用と配布用の Compose 構成が分離されていることを検査する。
+#
+# ホスト側で実行する。Docker を必要とするため、コンテナ内のテストへは含めない。
+# 検査するのは、破ると気付かないまま被害が出る不変条件だけとする。
+#
+#   1. project 名が開発用と配布用で異なる
+#   2. データベースのボリューム名が開発用と配布用で異なる
+#   3. 開発用データベースは通常構成でホストへ公開しない
+#   4. web の既定の公開ポートが 3210
+#   5. web の既定の公開アドレスが 127.0.0.1
+#   6. override を重ねたときだけ、開発用データベースが 127.0.0.1:55432 へ公開される
+#
+# 使い方:
+#   script/check_compose_isolation
+
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+failures=0
+
+report() {
+  if [ "$1" = "ok" ]; then
+    printf '  OK   %s\n' "$2"
+  else
+    printf '  NG   %s\n' "$2" >&2
+    failures=$((failures + 1))
+  fi
+}
+
+# 配布用の構成は必須の環境変数を要求する。検査のためだけの値を与える。
+# .env の内容へ依存させると、手元と自動実行で結果が食い違う。
+production_config() {
+  env -i PATH="$PATH" HOME="$HOME" \
+    DATABASE_USER=check \
+    DATABASE_PASSWORD=check \
+    SECRET_KEY_BASE=check \
+    docker compose -f compose.production.yaml --env-file /dev/null config --format json
+}
+
+development_config() {
+  env -i PATH="$PATH" HOME="$HOME" \
+    docker compose -f compose.yaml --env-file /dev/null config --format json
+}
+
+development_with_database_config() {
+  env -i PATH="$PATH" HOME="$HOME" \
+    docker compose -f compose.yaml -f compose.database.yaml --env-file /dev/null config --format json
+}
+
+echo "Compose 構成の分離を検査します"
+
+development="$(development_config)"
+production="$(production_config)"
+development_with_database="$(development_with_database_config)"
+
+query() {
+  python3 -c '
+import json, sys
+document = json.loads(sys.argv[1])
+path = sys.argv[2].split(".")
+for key in path:
+    if document is None:
+        break
+    document = document.get(key) if isinstance(document, dict) else None
+print(json.dumps(document))
+' "$1" "$2"
+}
+
+development_name="$(query "$development" name | tr -d '"')"
+production_name="$(query "$production" name | tr -d '"')"
+
+if [ "$development_name" != "$production_name" ]; then
+  report ok "project 名が異なる（開発 ${development_name} / 配布 ${production_name}）"
+else
+  report ng "project 名が同じ（${development_name}）。片方の down -v がもう片方を消し得る"
+fi
+
+development_volumes="$(query "$development" volumes)"
+production_volumes="$(query "$production" volumes)"
+
+shared_volumes="$(python3 -c '
+import json, sys
+left = set(json.loads(sys.argv[1]) or {})
+right = set(json.loads(sys.argv[2]) or {})
+print(" ".join(sorted(left & right)))
+' "$development_volumes" "$production_volumes")"
+
+if [ -z "$shared_volumes" ]; then
+  report ok "データボリュームのキーが重複しない"
+else
+  report ng "データボリュームのキーが重複する（${shared_volumes}）"
+fi
+
+development_db_ports="$(query "$development" services.db.ports)"
+
+if [ "$development_db_ports" = "null" ]; then
+  report ok "開発用データベースを通常構成でホストへ公開しない"
+else
+  report ng "開発用データベースがホストへ公開されている（${development_db_ports}）"
+fi
+
+web_published="$(python3 -c '
+import json, sys
+ports = json.loads(sys.argv[1]) or []
+for port in ports:
+    if str(port.get("target")) == "3000":
+        print("{}:{}".format(port.get("host_ip", ""), port.get("published", "")))
+        break
+' "$(query "$development" services.web.ports)")"
+
+if [ "$web_published" = "127.0.0.1:3210" ]; then
+  report ok "web の既定の公開先が 127.0.0.1:3210"
+else
+  report ng "web の既定の公開先が 127.0.0.1:3210 ではない（${web_published}）"
+fi
+
+production_web_published="$(python3 -c '
+import json, sys
+ports = json.loads(sys.argv[1]) or []
+for port in ports:
+    if str(port.get("target")) == "3000":
+        print("{}:{}".format(port.get("host_ip", ""), port.get("published", "")))
+        break
+' "$(query "$production" services.web.ports)")"
+
+if [ "$production_web_published" = "127.0.0.1:3210" ]; then
+  report ok "配布用 web の既定の公開先が 127.0.0.1:3210"
+else
+  report ng "配布用 web の既定の公開先が 127.0.0.1:3210 ではない（${production_web_published}）"
+fi
+
+override_db_published="$(python3 -c '
+import json, sys
+ports = json.loads(sys.argv[1]) or []
+for port in ports:
+    if str(port.get("target")) == "5432":
+        print("{}:{}".format(port.get("host_ip", ""), port.get("published", "")))
+        break
+' "$(query "$development_with_database" services.db.ports)")"
+
+if [ "$override_db_published" = "127.0.0.1:55432" ]; then
+  report ok "override 指定時だけ 127.0.0.1:55432 へ公開される"
+else
+  report ng "override 指定時の公開先が 127.0.0.1:55432 ではない（${override_db_published}）"
+fi
+
+if [ "$failures" -eq 0 ]; then
+  echo "分離の条件をすべて満たしています"
+  exit 0
+fi
+
+echo "${failures} 件の条件を満たしていません" >&2
+exit 1

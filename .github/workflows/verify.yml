@@ -10,10 +10,27 @@ on:
   pull_request:
 
 jobs:
+  compose:
+    name: 構成の分離
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: ソースを取得する
+        uses: actions/checkout@v4
+
+      - name: 分離の条件を検査する
+        run: script/check_compose_isolation
+
   verify:
     name: bin/verify
     runs-on: ubuntu-latest
     timeout-minutes: 20
+
+    # 同じホストで複数の検証が並行しうる。
+    # 構成ファイルの name をそのまま使うと、互いのコンテナとボリュームを掴む。
+    env:
+      COMPOSE_PROJECT_NAME: officeweave_ci_${{ github.run_id }}_verify
 
     steps:
       - name: ソースを取得する
@@ -41,6 +58,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
+    env:
+      COMPOSE_PROJECT_NAME: officeweave_ci_${{ github.run_id }}_package
+
     steps:
       - name: ソースを取得する
         uses: actions/checkout@v4
@@ -57,7 +77,7 @@ jobs:
           INITIAL_USER_NAME=検証用の管理者
           INITIAL_USER_EMAIL=admin@example.invalid
           INITIAL_USER_PASSWORD=verification-only-user-password
-          WEB_PORT=3000
+          WEB_PORT=3210
           SETTINGS
           echo "SECRET_KEY_BASE=$(openssl rand -hex 64)" >> .env
 
@@ -67,7 +87,7 @@ jobs:
       - name: 応答するまで待つ
         run: |
           for _ in $(seq 1 60); do
-            if curl -sf http://localhost:3000/up > /dev/null; then
+            if curl -sf http://127.0.0.1:3210/up > /dev/null; then
               exit 0
             fi
             sleep 2
@@ -77,7 +97,7 @@ jobs:
 
       - name: 依存先まで含めて確認する
         run: |
-          response="$(curl -sf http://localhost:3000/health)"
+          response="$(curl -sf http://127.0.0.1:3210/health)"
           echo "${response}"
           echo "${response}" | grep -q '"status":"ok"'
 
