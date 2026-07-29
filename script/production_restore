@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+#
+# 配布環境をホスト側の書庫から復元する。
+#
+# 停止したコンテナへは exec できない。
+# web を停止したうえで、別の一時コンテナへ書庫を標準入力から渡す。
+#
+# 復元先の内容は失われる。実行前に確認を求める。
+# 自動で実行する場合は FORCE=1 を指定する。
+#
+# 使い方:
+#   script/production_restore <ホスト側の書庫>
+#   FORCE=1 script/production_restore <ホスト側の書庫>
+
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+compose() {
+  docker compose -f compose.production.yaml "$@"
+}
+
+fail() {
+  echo "$@" >&2
+  exit 1
+}
+
+# 稼働中のサービスを一度だけ読み、変数の上で判定する。
+# `compose ps | grep -q` の形にすると、grep が最初の一致で終了した時点で
+# compose 側が SIGPIPE で死に、pipefail によってパイプライン全体が失敗する。
+running_services=""
+
+read_running_services() {
+  running_services="$(compose ps --status running --services 2>/dev/null || true)"
+}
+
+service_running() {
+  case "
+${running_services}
+" in
+    *"
+$1
+"*) return 0 ;;
+  esac
+
+  return 1
+}
+
+if [ "$#" -ne 1 ]; then
+  fail "使い方: script/production_restore <ホスト側の書庫>"
+fi
+
+archive="$1"
+
+[ -f "${archive}" ] || fail "書庫が見つかりません: ${archive}"
+
+# 壊れた書庫でアプリケーションを止めないよう、ホスト側でも先に読めるか確かめる。
+tar --list --gzip --file="${archive}" >/dev/null 2>&1 ||
+  fail "書庫として読み取れません: ${archive}"
+
+if [ "${FORCE:-0}" != "1" ]; then
+  echo "配布環境のデータベースとアップロードされたファイルは失われます。"
+  echo "書庫: ${archive}"
+  read -r -p "続けるには yes と入力してください: " answer
+  if [ "${answer}" != "yes" ]; then
+    echo "中止しました。"
+    exit 1
+  fi
+fi
+
+read_running_services
+
+if ! service_running db; then
+  fail "データベースが起動していません。先に docker compose -f compose.production.yaml up -d db を実行してください。"
+fi
+
+echo "web を停止しています" >&2
+compose stop web >/dev/null
+
+# 復元に失敗した状態のまま画面を開けない。
+# 中途半端なデータで運用を再開させないため、web は停止したままにする。
+if ! compose run --rm --no-deps -T -e FORCE=1 web bin/restore --stdin < "${archive}"; then
+  echo "" >&2
+  echo "復元に失敗しました。" >&2
+  echo "web は停止したままにしています。中途半端なデータで運用を再開させないためです。" >&2
+  echo "" >&2
+  echo "記録を確認する:" >&2
+  echo "  docker compose -f compose.production.yaml logs web" >&2
+  echo "" >&2
+  echo "別の書庫でやり直す:" >&2
+  echo "  FORCE=1 script/production_restore <別の書庫>" >&2
+  exit 1
+fi
+
+echo "web を起動しています" >&2
+compose start web >/dev/null
+
+echo "web の回復を確認しています" >&2
+recovered=0
+for _ in $(seq 1 60); do
+  if compose exec -T web curl -sf http://127.0.0.1:3000/health >/dev/null 2>&1; then
+    recovered=1
+    break
+  fi
+  sleep 2
+done
+
+[ "${recovered}" -eq 1 ] ||
+  fail "復元は完了しましたが、web が応答しません。docker compose -f compose.production.yaml logs web を確認してください。"
+
+echo "構成を診断しています" >&2
+compose exec -T web bin/diagnose
+
+echo "復元しました: ${archive}" >&2

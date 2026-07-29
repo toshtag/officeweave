@@ -7,24 +7,112 @@ set -euo pipefail
 # 確認を省く場合は FORCE=1 を指定する。
 #
 # 使い方:
-#   bin/restore <書庫のパス>
+#   bin/restore <書庫のパス>   ファイルから復元する
+#   bin/restore --stdin        標準入力から受け取って復元する
+#
+# 配布環境では --stdin を使い、停止した web とは別の一時コンテナで実行する。
+# 停止したコンテナへは exec できないため、exec を前提にした手順は成立しない。
+# ホスト側の手順は script/production_restore にある。
 
-if [ "$#" -ne 1 ]; then
-  echo "使い方: bin/restore <書庫のパス>" >&2
-  exit 1
-fi
+from_stdin=0
+archive=""
 
-archive="$1"
-
-if [ ! -f "${archive}" ]; then
-  echo "書庫が見つかりません: ${archive}" >&2
-  exit 1
-fi
+case "${1:-}" in
+  --stdin)
+    from_stdin=1
+    if [ "$#" -ne 1 ]; then
+      echo "使い方: bin/restore --stdin" >&2
+      exit 1
+    fi
+    ;;
+  --*)
+    echo "知らない指定です: $1" >&2
+    echo "使い方: bin/restore <書庫のパス> | bin/restore --stdin" >&2
+    exit 1
+    ;;
+  "")
+    echo "使い方: bin/restore <書庫のパス> | bin/restore --stdin" >&2
+    exit 1
+    ;;
+  *)
+    if [ "$#" -ne 1 ]; then
+      echo "使い方: bin/restore <書庫のパス>" >&2
+      exit 1
+    fi
+    archive="$1"
+    if [ ! -f "${archive}" ]; then
+      echo "書庫が見つかりません: ${archive}" >&2
+      exit 1
+    fi
+    ;;
+esac
 
 database_host="${DATABASE_HOST:-localhost}"
 database_port="${DATABASE_PORT:-5432}"
 database_user="${DATABASE_USER:-officeweave}"
 database_name="${DATABASE_NAME:-officeweave_development}"
+
+work_directory="$(mktemp -d)"
+trap 'rm -rf "${work_directory}"' EXIT
+
+# 標準入力は一度しか読めない。先に書庫として保存し、
+# 検査が終わるまでデータベースにもファイルにも触れない。
+if [ "${from_stdin}" -eq 1 ]; then
+  archive="${work_directory}/incoming.tar.gz"
+  cat > "${archive}"
+fi
+
+contents="${work_directory}/contents"
+mkdir -p "${contents}"
+
+reject() {
+  echo "書庫を受け付けられません: $1" >&2
+  echo "データベースとファイルの保存領域は変更していません。" >&2
+  exit 1
+}
+
+# ---- 破壊する前の検査 ----
+#
+# 展開そのものが書庫の外へ書き込みうるため、
+# 中身の一覧を先に確かめてから展開する。
+
+entries="${work_directory}/entries.txt"
+
+if ! tar --list --gzip --file="${archive}" > "${entries}" 2>/dev/null; then
+  reject "書庫として読み取れません"
+fi
+
+while IFS= read -r entry; do
+  case "${entry}" in
+    /*)
+      reject "絶対パスを含んでいます: ${entry}"
+      ;;
+    ..|../*|*/../*|*/..)
+      reject "展開先の外を指す経路を含んでいます: ${entry}"
+      ;;
+  esac
+done < "${entries}"
+
+tar --extract --gzip --file="${archive}" --directory="${contents}" ||
+  reject "書庫を展開できません"
+
+if [ ! -f "${contents}/database.sql" ]; then
+  reject "データベースの内容が含まれていません"
+fi
+
+if [ ! -s "${contents}/database.sql" ]; then
+  reject "データベースの内容が空です"
+fi
+
+if [ ! -d "${contents}/storage" ]; then
+  reject "ファイルの保存領域が含まれていません"
+fi
+
+if [ ! -f "${contents}/metadata.txt" ]; then
+  reject "取得時の情報が含まれていません"
+fi
+
+# ---- 確認 ----
 
 if [ "${FORCE:-0}" != "1" ]; then
   echo "${database_name} の現在の内容は失われます。"
@@ -35,32 +123,40 @@ if [ "${FORCE:-0}" != "1" ]; then
   fi
 fi
 
-work_directory="$(mktemp -d)"
-trap 'rm -rf "${work_directory}"' EXIT
+# ---- ここから先は既存データを変更する ----
 
-tar --extract --gzip --file="${archive}" --directory="${work_directory}"
-
-if [ ! -f "${work_directory}/database.sql" ]; then
-  echo "書庫にデータベースの内容が含まれていません。" >&2
+failed() {
+  echo "$1" >&2
+  echo "復元は途中で失敗しました。データベースとファイルの保存領域は中途半端な状態です。" >&2
+  echo "別の正常な書庫で復元をやり直してください。" >&2
   exit 1
-fi
+}
 
 echo "既存の内容を取り除いています: ${database_name}"
 PGPASSWORD="${DATABASE_PASSWORD:-}" psql \
   --host="${database_host}" --port="${database_port}" --username="${database_user}" \
   --dbname="${database_name}" --quiet \
-  --command="DROP SCHEMA public CASCADE; CREATE SCHEMA public;" >/dev/null
+  --command="DROP SCHEMA public CASCADE; CREATE SCHEMA public;" >/dev/null ||
+  failed "データベースの内容を取り除けませんでした。"
 
 echo "データベースを復元しています"
 PGPASSWORD="${DATABASE_PASSWORD:-}" psql \
   --host="${database_host}" --port="${database_port}" --username="${database_user}" \
   --dbname="${database_name}" --quiet --set ON_ERROR_STOP=on \
-  --file="${work_directory}/database.sql" >/dev/null
+  --file="${contents}/database.sql" >/dev/null ||
+  failed "データベースを復元できませんでした。"
 
+# 書庫の内容へ置き換える。上書きだけで済ませると、
+# 書庫に含まれない古いファイルが残り、削除済みの添付が復活する。
 echo "アップロードされたファイルを戻しています"
 mkdir -p storage
-if [ -d "${work_directory}/storage" ]; then
-  cp -R "${work_directory}/storage/." storage/
-fi
+find storage -mindepth 1 -maxdepth 1 -exec rm -rf -- {} + ||
+  failed "ファイルの保存領域を空にできませんでした。"
+cp -R "${contents}/storage/." storage/ ||
+  failed "ファイルの保存領域を戻せませんでした。"
 
-echo "復元しました: ${archive}"
+if [ "${from_stdin}" -eq 1 ]; then
+  echo "復元しました: 標準入力から受け取った書庫"
+else
+  echo "復元しました: ${archive}"
+fi

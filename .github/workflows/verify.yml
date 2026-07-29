@@ -114,3 +114,133 @@ jobs:
       - name: 後片付け
         if: always()
         run: docker compose -f compose.production.yaml down -v
+
+  backup:
+    name: バックアップと復元
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    env:
+      COMPOSE_PROJECT_NAME: officeweave_ci_${{ github.run_id }}_backup
+
+    steps:
+      - name: ソースを取得する
+        uses: actions/checkout@v4
+
+      - name: 設定を用意する
+        run: |
+          cat > .env <<'SETTINGS'
+          DATABASE_USER=officeweave
+          DATABASE_PASSWORD=verification-only-password
+          DATABASE_NAME=officeweave_production
+          APPLICATION_HOST=localhost
+          APPLICATION_PROTOCOL=http
+          FORCE_SSL=false
+          INITIAL_USER_NAME=検証用の管理者
+          INITIAL_USER_EMAIL=admin@example.invalid
+          INITIAL_USER_PASSWORD=verification-only-user-password
+          WEB_PORT=3212
+          SETTINGS
+          echo "SECRET_KEY_BASE=$(openssl rand -hex 64)" >> .env
+
+      - name: 配布用の構成で起動する
+        run: docker compose -f compose.production.yaml up -d --build
+
+      - name: 応答するまで待つ
+        run: |
+          for _ in $(seq 1 90); do
+            if curl -sf http://127.0.0.1:3212/up > /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "起動しませんでした" >&2
+          exit 1
+
+      - name: 初期利用者を作成する
+        run: docker compose -f compose.production.yaml exec -T web bin/rails db:seed
+
+      - name: 取得前の状態を作る
+        run: |
+          docker compose -f compose.production.yaml exec -T web \
+            bin/rails runner 'Organization.create!(code: "backup-check", name: "取得前の組織")'
+          docker compose -f compose.production.yaml exec -T web \
+            sh -c 'echo "取得前のファイル" > storage/before-backup.txt'
+
+      - name: バックアップを取得する
+        run: script/production_backup
+
+      - name: ホストへ書庫があることを確かめる
+        run: |
+          test -f "$(ls -1 backups/officeweave-*.tar.gz | head -1)"
+          tar --list --gzip --file="$(ls -1 backups/officeweave-*.tar.gz | head -1)" | head
+
+      - name: web を作り直しても書庫が残ることを確かめる
+        run: |
+          docker compose -f compose.production.yaml up -d --force-recreate web
+          for _ in $(seq 1 90); do
+            curl -sf http://127.0.0.1:3212/up > /dev/null && break
+            sleep 2
+          done
+          test -f "$(ls -1 backups/officeweave-*.tar.gz | head -1)"
+
+      - name: 取得後に状態を変える
+        run: |
+          docker compose -f compose.production.yaml exec -T web \
+            bin/rails runner 'Organization.find_by!(code: "backup-check").destroy!'
+          docker compose -f compose.production.yaml exec -T web \
+            bin/rails runner 'Organization.create!(code: "after-backup", name: "取得後の組織")'
+          docker compose -f compose.production.yaml exec -T web \
+            sh -c 'echo "取得後のファイル" > storage/after-backup.txt; rm -f storage/before-backup.txt'
+
+      - name: 欠けた書庫では何も壊さないことを確かめる
+        run: |
+          printf 'これは書庫ではない' > backups/broken.tar.gz
+          if FORCE=1 script/production_restore backups/broken.tar.gz; then
+            echo "壊れた書庫で復元が成功してしまった" >&2
+            exit 1
+          fi
+          docker compose -f compose.production.yaml up -d web
+          for _ in $(seq 1 90); do
+            curl -sf http://127.0.0.1:3212/up > /dev/null && break
+            sleep 2
+          done
+          docker compose -f compose.production.yaml exec -T web \
+            bin/rails runner 'raise "取得後のデータが失われた" unless Organization.exists?(code: "after-backup")'
+
+      - name: 復元する
+        run: FORCE=1 script/production_restore "$(ls -1 backups/officeweave-*.tar.gz | head -1)"
+
+      - name: データが取得時点へ戻ることを確かめる
+        run: |
+          docker compose -f compose.production.yaml exec -T web bin/rails runner '
+            raise "取得時点のデータが戻っていない" unless Organization.exists?(code: "backup-check")
+            raise "取得後のデータが残っている" if Organization.exists?(code: "after-backup")
+          '
+
+      - name: ファイルが置き換わることを確かめる
+        run: |
+          docker compose -f compose.production.yaml exec -T web sh -c '
+            test -f storage/before-backup.txt || { echo "取得時点のファイルが戻っていない" >&2; exit 1; }
+            test ! -f storage/after-backup.txt || { echo "書庫にない古いファイルが残っている" >&2; exit 1; }
+          '
+
+      - name: 依存先まで含めて確認する
+        run: |
+          response="$(curl -sf http://127.0.0.1:3212/health)"
+          echo "${response}"
+          echo "${response}" | grep -q '"status":"ok"'
+
+      - name: 構成を診断する
+        run: docker compose -f compose.production.yaml exec -T web bin/diagnose
+
+      - name: 失敗した場合の記録を出す
+        if: failure()
+        run: docker compose -f compose.production.yaml logs
+
+      - name: 後片付け
+        if: always()
+        run: |
+          docker compose -f compose.production.yaml down -v
+          # 書庫には検証用とはいえ組織のデータが入る。成果物として残さない。
+          rm -rf backups

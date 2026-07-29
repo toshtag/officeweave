@@ -1,0 +1,150 @@
+#!/usr/bin/env bash
+#
+# 配布環境のバックアップをホストへ取得する。
+#
+# 書庫はコンテナ内へ置かない。コンテナを入れ替えた時点で失われるためである。
+# 一時コンテナが書庫を標準出力へ流し、このスクリプトがホスト側で受け取る。
+#
+# ホストのディレクトリをコンテナへマウントする方法は採らない。
+# コンテナ内の利用者とホストの利用者で UID が食い違うと書き込めず、
+# 書けた場合も root 所有の書庫が残るためである。
+#
+# データベースと添付ファイルの取得時点をそろえるため、取得中は web を停止する。
+# 取得のあいだ、利用者は画面を使えない。
+#
+# 使い方:
+#   script/production_backup [ホスト側の出力ディレクトリ]
+#
+# 既定の出力先:
+#   ./backups
+
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+# 書庫には組織の全データが入る。最初から所有者だけが読める状態にする。
+umask 077
+
+output_directory="${1:-backups}"
+
+compose() {
+  docker compose -f compose.production.yaml "$@"
+}
+
+fail() {
+  echo "$@" >&2
+  exit 1
+}
+
+# 稼働中のサービスを一度だけ読み、変数の上で判定する。
+# `compose ps | grep -q` の形にすると、grep が最初の一致で終了した時点で
+# compose 側が SIGPIPE で死に、pipefail によってパイプライン全体が失敗する。
+running_services=""
+
+read_running_services() {
+  running_services="$(compose ps --status running --services 2>/dev/null || true)"
+}
+
+service_running() {
+  case "
+${running_services}
+" in
+    *"
+$1
+"*) return 0 ;;
+  esac
+
+  return 1
+}
+
+read_running_services
+
+if ! service_running db; then
+  fail "データベースが起動していません。先に docker compose -f compose.production.yaml up -d を実行してください。"
+fi
+
+# 元々停止していた web を、この処理の副作用で起動しない。
+web_was_running=0
+if service_running web; then
+  web_was_running=1
+fi
+
+restart_web() {
+  [ "${web_was_running}" -eq 1 ] || return 0
+
+  echo "web を再開しています" >&2
+  if ! compose start web >/dev/null 2>&1; then
+    fail "web を再開できませんでした。docker compose -f compose.production.yaml logs web を確認してください。"
+  fi
+}
+
+if [ "${web_was_running}" -eq 1 ]; then
+  echo "取得のあいだ web を停止します。画面は一時的に使えなくなります。" >&2
+  compose stop web >/dev/null
+fi
+
+mkdir -p "${output_directory}"
+
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+archive="${output_directory}/officeweave-${timestamp}.tar.gz"
+
+if [ -e "${archive}" ]; then
+  suffix=1
+  while [ -e "${output_directory}/officeweave-${timestamp}-${suffix}.tar.gz" ]; do
+    suffix=$((suffix + 1))
+  done
+  archive="${output_directory}/officeweave-${timestamp}-${suffix}.tar.gz"
+fi
+
+# 完成するまでは正式な名前を使わない。
+# 途中で失敗した書庫が、使える書庫として残らないようにする。
+partial="${archive}.partial"
+
+cleanup_partial() {
+  rm -f "${partial}"
+}
+
+echo "書庫を取得しています" >&2
+
+# --no-deps を付け、db を巻き込んで作り直さないようにする。
+# -T を付け、標準出力へ端末の制御文字が混ざらないようにする。
+if ! compose run --rm --no-deps -T web bin/backup --stdout > "${partial}"; then
+  cleanup_partial
+  restart_web
+  fail "バックアップの取得に失敗しました。"
+fi
+
+if ! gzip --test "${partial}" 2>/dev/null; then
+  cleanup_partial
+  restart_web
+  fail "取得した書庫を読み取れません。"
+fi
+
+if ! tar --list --gzip --file="${partial}" >/dev/null 2>&1; then
+  cleanup_partial
+  restart_web
+  fail "取得した書庫を書庫として読み取れません。"
+fi
+
+mv "${partial}" "${archive}"
+
+restart_web
+
+if [ "${web_was_running}" -eq 1 ]; then
+  echo "web の回復を確認しています" >&2
+  recovered=0
+  for _ in $(seq 1 60); do
+    if compose exec -T web curl -sf http://127.0.0.1:3000/up >/dev/null 2>&1; then
+      recovered=1
+      break
+    fi
+    sleep 2
+  done
+
+  if [ "${recovered}" -ne 1 ]; then
+    fail "書庫は ${archive} へ取得しましたが、web が応答しません。docker compose -f compose.production.yaml logs web を確認してください。"
+  fi
+fi
+
+echo "取得しました: ${archive}" >&2
+echo "${archive}"

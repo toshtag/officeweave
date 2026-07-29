@@ -1,10 +1,10 @@
 require "application_system_test_case"
 
-# 取得と復元の手順そのものは、実行環境に依存するためここでは扱わない。
-# 手順書が存在し、README から到達できることだけを確認する。
+# 手順が実行できる形で置かれていることを確認する。
+# 個々の振る舞いは backup_script_test.rb と restore_script_test.rb で扱う。
 class BackupScriptsTest < ActiveSupport::TestCase
   test "取得と復元の手順が実行できる形で置かれている" do
-    %w[bin/backup bin/restore].each do |path|
+    %w[bin/backup bin/restore script/production_backup script/production_restore].each do |path|
       full_path = Rails.root.join(path)
 
       assert File.exist?(full_path), "#{path} が存在しない"

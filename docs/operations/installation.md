@@ -160,7 +160,19 @@ docker compose -f compose.production.yaml exec web bin/rails officeweave:demo_da
 
 ### バックアップ
 
-[バックアップと復元](backup.md) の手順に従い、定期的な取得を用意する。
+```bash
+script/production_backup
+```
+
+書庫はホストの `backups/` へ作られる。取得のあいだ `web` は停止し、画面は使えない。
+
+復元は次による。
+
+```bash
+script/production_restore backups/<書庫>
+```
+
+詳しくは [バックアップと復元](backup.md) を参照する。
 取得しているだけでは復元できることの確認にならない。復元まで一度試す。
 
 ### 更新
