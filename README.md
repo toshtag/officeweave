@@ -65,6 +65,10 @@ docker compose exec web bin/verify
 ```
 
 ```bash
+docker compose exec web bin/diagnose
+```
+
+```bash
 docker compose exec web bin/setup --skip-server
 ```
 
@@ -125,6 +129,7 @@ docker compose up -d --build
 - [品質基盤](docs/development/quality.md) — 書式検査と各種検査の実行方法
 - [アクセシビリティ方針](docs/development/accessibility.md) — 画面が満たすべき最低要件
 - [バックアップと復元](docs/operations/backup.md) — 取得と復元の手順
+- [アップグレード](docs/operations/upgrade.md) — 入れ替えの手順と診断
 - [ライセンス方針](docs/licensing.md) — ライセンスの選定理由と名称の利用範囲
 
 いずれも日本語を正本とします。
