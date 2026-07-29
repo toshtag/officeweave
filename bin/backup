@@ -7,23 +7,57 @@ set -euo pipefail
 # あるいは実体はあるのに参照する記録がない状態になる。
 #
 # 使い方:
-#   bin/backup [出力先ディレクトリ]
+#   bin/backup [出力先ディレクトリ]   書庫をファイルとして書き出す
+#   bin/backup --stdout               書庫を標準出力へ流す
+#
+# 配布環境では --stdout を使い、ホスト側で受け取る。
+# コンテナ内へ書き出すと、コンテナを入れ替えた時点で失われる。
+# ホスト側の手順は script/production_backup にある。
 
-output_directory="${1:-backups}"
+to_stdout=0
+output_directory="backups"
+
+case "${1:-}" in
+  --stdout)
+    to_stdout=1
+    if [ "$#" -gt 1 ]; then
+      echo "使い方: bin/backup --stdout" >&2
+      exit 1
+    fi
+    ;;
+  --*)
+    echo "知らない指定です: $1" >&2
+    echo "使い方: bin/backup [出力先ディレクトリ] | bin/backup --stdout" >&2
+    exit 1
+    ;;
+  "")
+    ;;
+  *)
+    output_directory="$1"
+    if [ "$#" -gt 1 ]; then
+      echo "使い方: bin/backup [出力先ディレクトリ]" >&2
+      exit 1
+    fi
+    ;;
+esac
+
+# 標準出力には書庫だけを流す。
+# 進捗を混ぜると、受け取った書庫がそのままでは展開できなくなる。
+log() {
+  echo "$@" >&2
+}
+
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
-archive="${output_directory}/officeweave-${timestamp}.tar.gz"
 
 database_host="${DATABASE_HOST:-localhost}"
 database_port="${DATABASE_PORT:-5432}"
 database_user="${DATABASE_USER:-officeweave}"
 database_name="${DATABASE_NAME:-officeweave_development}"
 
-mkdir -p "${output_directory}"
-
 work_directory="$(mktemp -d)"
 trap 'rm -rf "${work_directory}"' EXIT
 
-echo "データベースを書き出しています: ${database_name}"
+log "データベースを書き出しています: ${database_name}"
 PGPASSWORD="${DATABASE_PASSWORD:-}" pg_dump \
   --host="${database_host}" \
   --port="${database_port}" \
@@ -34,22 +68,57 @@ PGPASSWORD="${DATABASE_PASSWORD:-}" pg_dump \
   --file="${work_directory}/database.sql" \
   "${database_name}"
 
-echo "アップロードされたファイルを含めています"
+log "アップロードされたファイルを含めています"
 mkdir -p "${work_directory}/storage"
 if [ -d storage ]; then
   cp -R storage/. "${work_directory}/storage/"
 fi
 
+schema_version="$(PGPASSWORD="${DATABASE_PASSWORD:-}" psql \
+  --host="${database_host}" --port="${database_port}" --username="${database_user}" \
+  --dbname="${database_name}" --tuples-only --no-align \
+  --command="SELECT max(version) FROM schema_migrations" 2>/dev/null || echo unknown)"
+
+application_version="unknown"
+if [ -r VERSION ]; then
+  application_version="$(tr -d '[:space:]' < VERSION)"
+fi
+
 # 復元する側が、どの版で取得したものかを判断できるようにする。
+# 接続情報や鍵は書かない。書庫は組織の外へ持ち出されることがある。
 cat > "${work_directory}/metadata.txt" <<METADATA
 created_at=${timestamp}
 database_name=${database_name}
-schema_version=$(PGPASSWORD="${DATABASE_PASSWORD:-}" psql \
-  --host="${database_host}" --port="${database_port}" --username="${database_user}" \
-  --dbname="${database_name}" --tuples-only --no-align \
-  --command="SELECT max(version) FROM schema_migrations" 2>/dev/null || echo unknown)
+schema_version=${schema_version}
+application_version=${application_version}
 METADATA
 
-tar --create --gzip --file="${archive}" --directory="${work_directory}" .
+if [ "${to_stdout}" -eq 1 ]; then
+  tar --create --gzip --directory="${work_directory}" .
+  log "書庫を標準出力へ流しました"
+  exit 0
+fi
 
-echo "作成しました: ${archive}"
+mkdir -p "${output_directory}"
+
+archive="${output_directory}/officeweave-${timestamp}.tar.gz"
+
+# 秒単位で同時に実行された場合に、既にある書庫を壊さない。
+# 上書きは、取得の失敗より気付きにくい形でデータを失わせる。
+if [ -e "${archive}" ]; then
+  suffix=1
+  while [ -e "${output_directory}/officeweave-${timestamp}-${suffix}.tar.gz" ]; do
+    suffix=$((suffix + 1))
+  done
+  archive="${output_directory}/officeweave-${timestamp}-${suffix}.tar.gz"
+fi
+
+# 途中で失敗した書庫を、正常な成果物として残さない。
+partial="${archive}.partial"
+trap 'rm -rf "${work_directory}"; rm -f "${partial}"' EXIT
+
+tar --create --gzip --file="${partial}" --directory="${work_directory}" .
+mv "${partial}" "${archive}"
+
+log "作成しました: ${archive}"
+echo "${archive}"
