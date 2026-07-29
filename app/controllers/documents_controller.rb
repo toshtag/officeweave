@@ -10,7 +10,7 @@ class DocumentsController < ApplicationController
     @documents = current_organization.documents
                                      .in_category(@category_id)
                                      .recently_updated
-                                     .includes(:author, :document_category)
+                                     .includes(:author, :document_category, attachments_attachments: :blob)
   end
 
   def show
@@ -35,6 +35,8 @@ class DocumentsController < ApplicationController
   end
 
   def update
+    remove_selected_attachments
+
     if @document.update(document_params)
       redirect_to @document, notice: t("documents.updated")
     else
@@ -49,6 +51,15 @@ class DocumentsController < ApplicationController
   end
 
   private
+    # 取り除く添付は、追加とは別に扱う。
+    # 同じ入力欄で表すと、置き換えなのか追加なのかが判別できない。
+    def remove_selected_attachments
+      ids = params.dig(:document, :remove_attachment_ids)
+      return if ids.blank?
+
+      @document.attachments.where(id: ids).each(&:purge)
+    end
+
     def set_document
       @document = current_organization.documents.find(params[:id])
     end
@@ -60,6 +71,6 @@ class DocumentsController < ApplicationController
     end
 
     def document_params
-      params.expect(document: %i[title body document_category_id])
+      params.expect(document: [ :title, :body, :document_category_id, { attachments: [] } ])
     end
 end

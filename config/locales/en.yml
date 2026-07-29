@@ -129,6 +129,7 @@ en:
         document_category: Category
         document_category_id: Category
         author: Author
+        attachments: Attachments
       document_category:
         name: Name
         code: Code
@@ -150,6 +151,8 @@ en:
   errors:
     messages:
       overlapping: another booking already covers that time
+      too_many: cannot be more than %{count} files
+      too_large: "%{filename} is too large (up to %{size} MB)"
       not_active: is not accepting new requests
       not_reservable: is not accepting bookings
       not_after_start: must be after the start time
@@ -425,6 +428,12 @@ en:
     updated: The document has been updated.
     destroyed: The document has been deleted.
     no_category: Uncategorized
+    attachments:
+      heading: Attachments
+    form:
+      attachments_hint: Up to %{count} files, each no larger than %{size} MB.
+      existing_attachments: Attached files
+      remove_hint: Select the files you want to remove.
     index:
       title: Documents
       heading: Documents

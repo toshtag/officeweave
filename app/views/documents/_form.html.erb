@@ -17,5 +17,30 @@
     <%= form.text_area :body, rows: 16, class: "form__input" %>
   </div>
 
+  <div class="form__field">
+    <%= form.label :attachments, class: "form__label" %>
+    <%= form.file_field :attachments, multiple: true, class: "form__input" %>
+    <p class="form__hint">
+      <%= t("documents.form.attachments_hint",
+            count: Document::MAX_ATTACHMENT_COUNT,
+            size: Document::MAX_ATTACHMENT_SIZE / 1.megabyte) %>
+    </p>
+  </div>
+
+  <% if document.attachments.attached? %>
+    <fieldset class="form__fieldset">
+      <legend class="form__label"><%= t("documents.form.existing_attachments") %></legend>
+      <p class="form__hint"><%= t("documents.form.remove_hint") %></p>
+
+      <% document.attachments.each do |attachment| %>
+        <div class="form__field form__field--inline">
+          <%= check_box_tag "document[remove_attachment_ids][]", attachment.id, false,
+                            id: "document_remove_attachment_#{attachment.id}" %>
+          <%= label_tag "document_remove_attachment_#{attachment.id}", attachment.filename.to_s %>
+        </div>
+      <% end %>
+    </fieldset>
+  <% end %>
+
   <%= form.submit class: "button button--primary" %>
 <% end %>
