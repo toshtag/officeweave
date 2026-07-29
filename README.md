@@ -143,8 +143,8 @@ Copyright (C) 2026 OfficeWeave contributors
 
 ```text
 現在の Phase:        P11 Operations
-直近完了 Task:       P10-T4 CSV 入出力を実装する
-次に実行する Task:   P11-T1 監査イベントを実装する
+直近完了 Task:       P11-T1 監査イベントを実装する
+次に実行する Task:   P11-T2 バックアップと復元を実装する
 ```
 
 進行状況は [実行キュー](docs/execution_queue.md) で管理します。
