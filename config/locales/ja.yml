@@ -44,6 +44,7 @@ ja:
       department: 部門
       announcement: お知らせ
       event: 予定
+      resource: 設備・備品
       membership: 所属
     attributes:
       user:
@@ -77,6 +78,13 @@ ja:
         visibility: 公開範囲
         department_ids: 公開先の部門
         owner: 登録者
+      resource:
+        name: 名称
+        code: 識別子
+        description: 説明
+        capacity: 定員
+        reservable: 予約を受け付ける
+        position: 表示順
       membership:
         user: 利用者
         department: 部門
@@ -255,3 +263,26 @@ ja:
       heading: 予定の編集
     form:
       departments_hint: 公開範囲が「指定した部門」の場合にだけ使われます。
+
+  resources:
+    created: 設備・備品を登録しました。
+    updated: 設備・備品を更新しました。
+    no_capacity: 指定なし
+    index:
+      title: 設備・備品
+      heading: 設備・備品
+      new: 設備・備品を登録
+      empty: 登録されている設備・備品がありません。
+      status: 予約
+    new:
+      title: 設備・備品の登録
+      heading: 設備・備品の登録
+    edit:
+      title: 設備・備品の編集
+      heading: 設備・備品の編集
+    status:
+      reservable: 受付中
+      unavailable: 受付停止
+    form:
+      capacity_hint: 会議室の定員など。ない場合は空のままにしてください。
+      reservable_hint: 使えなくなった設備・備品は、削除せずにここを外してください。過去の予約の記録が残ります。

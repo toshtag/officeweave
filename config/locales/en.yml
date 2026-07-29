@@ -44,6 +44,7 @@ en:
       department: Department
       announcement: Announcement
       event: Event
+      resource: Resource
       membership: Membership
     attributes:
       user:
@@ -77,6 +78,13 @@ en:
         visibility: Visibility
         department_ids: Departments
         owner: Owner
+      resource:
+        name: Name
+        code: Code
+        description: Description
+        capacity: Capacity
+        reservable: Accept bookings
+        position: Display order
       membership:
         user: User
         department: Department
@@ -239,3 +247,26 @@ en:
       heading: Edit event
     form:
       departments_hint: These are used only when the visibility is set to selected departments.
+
+  resources:
+    created: The resource has been added.
+    updated: The resource has been updated.
+    no_capacity: Not specified
+    index:
+      title: Rooms and equipment
+      heading: Rooms and equipment
+      new: Add a resource
+      empty: No rooms or equipment have been added yet.
+      status: Booking
+    new:
+      title: Add a resource
+      heading: Add a resource
+    edit:
+      title: Edit resource
+      heading: Edit resource
+    status:
+      reservable: Open
+      unavailable: Closed
+    form:
+      capacity_hint: For example, how many people a room seats. Leave it blank if it does not apply.
+      reservable_hint: When something is no longer usable, clear this instead of deleting it so past bookings stay intact.

@@ -1,0 +1,43 @@
+<% content_for :title, t("resources.index.title") %>
+
+<div class="stack">
+  <div class="page-heading">
+    <h1><%= t("resources.index.heading") %></h1>
+    <% if administrator? %>
+      <%= link_to t("resources.index.new"), new_resource_path, class: "button" %>
+    <% end %>
+  </div>
+
+  <% if @resources.any? %>
+    <div class="panel">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col"><%= Resource.human_attribute_name(:name) %></th>
+            <th scope="col"><%= Resource.human_attribute_name(:code) %></th>
+            <th scope="col"><%= Resource.human_attribute_name(:capacity) %></th>
+            <th scope="col"><%= t("resources.index.status") %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @resources.each do |resource| %>
+            <tr>
+              <td><%= link_to resource.name, resource %></td>
+              <td><%= resource.code %></td>
+              <td><%= resource.capacity || "—" %></td>
+              <td>
+                <% if resource.reservable? %>
+                  <%= t("resources.status.reservable") %>
+                <% else %>
+                  <span class="status status--muted"><%= t("resources.status.unavailable") %></span>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <p><%= t("resources.index.empty") %></p>
+  <% end %>
+</div>

@@ -1,0 +1,37 @@
+<%= form_with model: resource, class: "form stack" do |form| %>
+  <%= render "shared/error_messages", record: resource %>
+
+  <div class="form__field">
+    <%= form.label :name, class: "form__label" %>
+    <%= form.text_field :name, required: true, class: "form__input" %>
+  </div>
+
+  <div class="form__field">
+    <%= form.label :code, class: "form__label" %>
+    <%= form.text_field :code, required: true, class: "form__input" %>
+  </div>
+
+  <div class="form__field">
+    <%= form.label :capacity, class: "form__label" %>
+    <%= form.number_field :capacity, min: 1, class: "form__input" %>
+    <p class="form__hint"><%= t("resources.form.capacity_hint") %></p>
+  </div>
+
+  <div class="form__field">
+    <%= form.label :description, class: "form__label" %>
+    <%= form.text_area :description, rows: 4, class: "form__input" %>
+  </div>
+
+  <div class="form__field">
+    <%= form.label :position, class: "form__label" %>
+    <%= form.number_field :position, class: "form__input" %>
+  </div>
+
+  <div class="form__field form__field--inline">
+    <%= form.check_box :reservable %>
+    <%= form.label :reservable, class: "form__label" %>
+  </div>
+  <p class="form__hint"><%= t("resources.form.reservable_hint") %></p>
+
+  <%= form.submit class: "button button--primary" %>
+<% end %>
