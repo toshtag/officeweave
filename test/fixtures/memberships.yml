@@ -1,0 +1,4 @@
+taro_sales:
+  user: taro
+  department: sales
+  primary: true

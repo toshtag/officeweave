@@ -1,0 +1,24 @@
+sales:
+  organization: main
+  name: 営業部
+  code: sales
+  position: 10
+
+sales_east:
+  organization: main
+  parent: sales
+  name: 営業部 東日本課
+  code: sales-east
+  position: 20
+
+development:
+  organization: main
+  name: 開発部
+  code: development
+  position: 30
+
+other_general:
+  organization: other
+  name: 総務部
+  code: general
+  position: 10
