@@ -114,4 +114,19 @@
     font: inherit;
     color: inherit;
   }
+
+  /*
+   * 動きを減らす設定を尊重する。
+   * 動きが引き金になる利用者がいるため、設定を上書きしない。
+   */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
