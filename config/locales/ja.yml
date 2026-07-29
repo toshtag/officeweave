@@ -60,6 +60,7 @@ ja:
       api_token: 外部接続用の token
       webhook_endpoint: 出来事の送信先
       webhook_delivery: 送信の記録
+      audit_event: 監査記録
       membership: 所属
     attributes:
       user:
@@ -150,6 +151,12 @@ ja:
         event: 出来事
         response_status: 応答
         created_at: 送信日時
+      audit_event:
+        action: 操作
+        actor: 操作した利用者
+        details: 内容
+        ip_address: 接続元
+        created_at: 日時
       membership:
         user: 利用者
         user_id: 利用者
@@ -596,3 +603,40 @@ ja:
       submit: 取り込む
       failed: 取り込めませんでした。1 件でも誤りがあると、何も保存されません。
       line: "%{line} 行目:"
+
+  audit_events:
+    unknown_actor: 不明
+    index:
+      title: 監査記録
+      heading: 監査記録
+      all_actions: すべての操作
+      all_actors: すべての利用者
+      empty: 記録がありません。
+      pages: ページ
+      previous: 前へ
+      next: 次へ
+      total:
+        zero: 記録は 0 件です
+        one: 記録は 1 件です
+        other: 記録は %{count} 件です
+    actions:
+      signed_in: ログイン
+      sign_in_failed: ログイン失敗
+      signed_out: ログアウト
+      user_created: 利用者の追加
+      user_updated: 利用者の更新
+      user_deactivated: 利用者の無効化
+      user_activated: 利用者の有効化
+      department_created: 部門の追加
+      department_updated: 部門の更新
+      department_deleted: 部門の削除
+      membership_created: 所属の追加
+      membership_deleted: 所属の解除
+      request_approved: 申請の承認
+      request_returned: 申請の差し戻し
+      api_token_issued: token の発行
+      api_token_revoked: token の無効化
+      webhook_endpoint_created: 送信先の登録
+      webhook_endpoint_deleted: 送信先の削除
+      users_imported: 利用者の取り込み
+      users_exported: 利用者の書き出し

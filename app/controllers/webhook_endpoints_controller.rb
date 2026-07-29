@@ -18,6 +18,8 @@ class WebhookEndpointsController < ApplicationController
     @webhook_endpoint = current_organization.webhook_endpoints.new(webhook_endpoint_params)
 
     if @webhook_endpoint.save
+      record_audit_event("webhook_endpoint_created", target: @webhook_endpoint,
+                                                     details: { url: @webhook_endpoint.url })
       redirect_to webhook_endpoints_path, notice: t("webhook_endpoints.created")
     else
       @webhook_endpoints = current_organization.webhook_endpoints.ordered
@@ -35,6 +37,7 @@ class WebhookEndpointsController < ApplicationController
 
   def destroy
     @webhook_endpoint.destroy
+    record_audit_event("webhook_endpoint_deleted", details: { url: @webhook_endpoint.url })
 
     redirect_to webhook_endpoints_path, notice: t("webhook_endpoints.destroyed"), status: :see_other
   end

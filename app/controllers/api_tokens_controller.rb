@@ -17,6 +17,7 @@ class ApiTokensController < ApplicationController
     if @api_token.save
       # 値はこの一度だけ表示する。保存していないため、後から確認できない。
       flash[:issued_token] = @api_token.token
+      record_audit_event("api_token_issued", target: @api_token, details: { name: @api_token.name })
       redirect_to api_tokens_path, notice: t("api_tokens.created")
     else
       @api_tokens = Current.user.api_tokens.recent_first
@@ -26,6 +27,7 @@ class ApiTokensController < ApplicationController
 
   def destroy
     @api_token.revoke!
+    record_audit_event("api_token_revoked", target: @api_token, details: { name: @api_token.name })
 
     redirect_to api_tokens_path, notice: t("api_tokens.revoked"), status: :see_other
   end

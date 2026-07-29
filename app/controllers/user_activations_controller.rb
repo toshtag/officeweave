@@ -8,6 +8,7 @@ class UserActivationsController < ApplicationController
 
   def create
     @user.activate!
+    record_audit_event("user_activated", target: @user, details: { email_address: @user.email_address })
 
     redirect_to users_path, notice: t("users.activated")
   end
@@ -19,6 +20,7 @@ class UserActivationsController < ApplicationController
     end
 
     @user.deactivate!
+    record_audit_event("user_deactivated", target: @user, details: { email_address: @user.email_address })
 
     redirect_to users_path, notice: t("users.deactivated"), status: :see_other
   end

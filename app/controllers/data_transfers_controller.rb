@@ -8,6 +8,8 @@ class DataTransfersController < ApplicationController
   end
 
   def users_export
+    record_audit_event("users_exported")
+
     send_data UserCsv.new(current_organization).export,
               filename: "users-#{Date.current.iso8601}.csv",
               type: "text/csv; charset=utf-8"
@@ -29,6 +31,8 @@ class DataTransfersController < ApplicationController
     @result = UserCsv.new(current_organization).import(file.read)
 
     if @result.success?
+      record_audit_event("users_imported",
+                         details: { created: @result.created_count, updated: @result.updated_count })
       redirect_to data_transfers_path,
                   notice: t("data_transfers.imported", created: @result.created_count,
                                                        updated: @result.updated_count)

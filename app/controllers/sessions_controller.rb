@@ -20,8 +20,10 @@ class SessionsController < ApplicationController
 
     if user
       start_new_session_for user
+      record_audit_event("signed_in", target: user, organization: user.organization, actor: user)
       redirect_to after_authentication_url, notice: t("sessions.signed_in")
     else
+      record_sign_in_failure
       # 該当する利用者がいないのか、資格情報が違うのかを区別して伝えない。
       # 区別すると、利用者の存在を確かめる手段になる。
       redirect_to new_session_path, alert: t("sessions.failed")
@@ -29,11 +31,22 @@ class SessionsController < ApplicationController
   end
 
   def destroy
+    record_audit_event("signed_out", target: Current.user)
     terminate_session
     redirect_to new_session_path, status: :see_other, notice: t("sessions.signed_out")
   end
 
   private
+    # 失敗も記録する。組織が特定できない場合は残さない。
+    # 誰の組織かが分からない記録は、後から追えない。
+    def record_sign_in_failure
+      user = User.find_by(email_address: params[:email_address].to_s.strip.downcase)
+      return if user.nil?
+
+      record_audit_event("sign_in_failed", organization: user.organization, actor: nil,
+                                           details: { email_address: user.email_address })
+    end
+
     def authentication_provider
       Authentication::ProviderRegistry.current
     end

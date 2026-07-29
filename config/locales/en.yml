@@ -60,6 +60,7 @@ en:
       api_token: API token
       webhook_endpoint: Event endpoint
       webhook_delivery: Delivery
+      audit_event: Audit event
       membership: Membership
     attributes:
       user:
@@ -150,6 +151,12 @@ en:
         event: Event
         response_status: Response
         created_at: Sent at
+      audit_event:
+        action: Action
+        actor: User
+        details: Details
+        ip_address: Source
+        created_at: When
       membership:
         user: User
         user_id: User
@@ -580,3 +587,40 @@ en:
       submit: Import
       failed: Nothing was imported. A single invalid row stops the whole file.
       line: "Line %{line}:"
+
+  audit_events:
+    unknown_actor: Unknown
+    index:
+      title: Audit log
+      heading: Audit log
+      all_actions: All actions
+      all_actors: All users
+      empty: There are no records.
+      pages: Pages
+      previous: Previous
+      next: Next
+      total:
+        zero: 0 records
+        one: 1 record
+        other: "%{count} records"
+    actions:
+      signed_in: Signed in
+      sign_in_failed: Sign-in failed
+      signed_out: Signed out
+      user_created: User added
+      user_updated: User updated
+      user_deactivated: User deactivated
+      user_activated: User activated
+      department_created: Department added
+      department_updated: Department updated
+      department_deleted: Department deleted
+      membership_created: Member added
+      membership_deleted: Member removed
+      request_approved: Request approved
+      request_returned: Request returned
+      api_token_issued: Token issued
+      api_token_revoked: Token revoked
+      webhook_endpoint_created: Endpoint added
+      webhook_endpoint_deleted: Endpoint deleted
+      users_imported: Users imported
+      users_exported: Users exported

@@ -7,6 +7,8 @@ class MembershipsController < ApplicationController
     membership = @department.memberships.new(membership_params)
 
     if membership.save
+      record_audit_event("membership_created", target: membership,
+                                               details: { department: @department.code, user_id: membership.user_id })
       redirect_to @department, notice: t("memberships.created")
     else
       redirect_to @department, alert: membership.errors.full_messages.to_sentence
@@ -16,6 +18,7 @@ class MembershipsController < ApplicationController
   def destroy
     membership = @department.memberships.find(params[:id])
     membership.destroy
+    record_audit_event("membership_deleted", details: { department: @department.code, user_id: membership.user_id })
 
     redirect_to @department, notice: t("memberships.destroyed"), status: :see_other
   end
