@@ -492,3 +492,14 @@ ja:
     edit:
       title: 分類の編集
       heading: 分類の編集
+
+  notifications:
+    index:
+      title: 通知
+      heading: 通知
+      empty: 通知はありません。
+    events:
+      announcement_published: "お知らせが公開されました: %{title}"
+      request_submitted: "申請が提出されました: %{title}"
+      request_approved: "申請が承認されました: %{title}"
+      request_returned: "申請が差し戻されました: %{title}"

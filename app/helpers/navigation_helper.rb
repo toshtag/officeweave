@@ -17,6 +17,11 @@ module NavigationHelper
     items
   end
 
+  # 未読の通知の件数。見出し領域へ常に表示する。
+  def unread_notification_count
+    Current.user&.notifications&.unread&.count.to_i
+  end
+
   # 現在いる画面かどうか。読み上げにも現在位置を伝えるため、表示だけで示さない。
   def current_navigation_item?(path)
     path == root_path ? request.path == path : request.path.start_with?(path)
