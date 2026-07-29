@@ -1,0 +1,29 @@
+# イメージへ含めないもの。
+#
+# 指定がないと、作業ディレクトリの内容がそのまま build 文脈へ入る。
+# 鍵と接続情報がイメージへ焼き込まれ、配布した時点で漏れる。
+.git/
+.github/
+
+# 秘密情報
+.env
+.env.*
+!.env.example
+config/master.key
+config/credentials/*.key
+
+# 実行時に作られるもの
+log/*
+tmp/*
+storage/*
+backups/
+public/assets/
+
+# 開発と検証にだけ使うもの
+test/
+docs/
+compose.yaml
+compose.production.yaml
+Dockerfile
+Dockerfile.production
+.dockerignore
