@@ -6,6 +6,9 @@ set -euo pipefail
 # 片方だけを残すと、復元しても添付ファイルが開けない、
 # あるいは実体はあるのに参照する記録がない状態になる。
 #
+# 未処理のジョブも取得する。ジョブは業務データとは別のデータベースにあり、
+# 対象へ含めないと、復元した時点で送信待ちのメールと Webhook が失われる。
+#
 # 使い方:
 #   bin/backup [出力先ディレクトリ]   書庫をファイルとして書き出す
 #   bin/backup --stdout               書庫を標準出力へ流す
@@ -53,6 +56,7 @@ database_host="${DATABASE_HOST:-localhost}"
 database_port="${DATABASE_PORT:-5432}"
 database_user="${DATABASE_USER:-officeweave}"
 database_name="${DATABASE_NAME:-officeweave_development}"
+queue_database_name="${QUEUE_DATABASE_NAME:-officeweave_development_queue}"
 
 work_directory="$(mktemp -d)"
 trap 'rm -rf "${work_directory}"' EXIT
@@ -67,6 +71,17 @@ PGPASSWORD="${DATABASE_PASSWORD:-}" pg_dump \
   --format=plain \
   --file="${work_directory}/database.sql" \
   "${database_name}"
+
+log "未処理のジョブを書き出しています: ${queue_database_name}"
+PGPASSWORD="${DATABASE_PASSWORD:-}" pg_dump \
+  --host="${database_host}" \
+  --port="${database_port}" \
+  --username="${database_user}" \
+  --no-owner \
+  --no-privileges \
+  --format=plain \
+  --file="${work_directory}/queue_database.sql" \
+  "${queue_database_name}"
 
 log "アップロードされたファイルを含めています"
 mkdir -p "${work_directory}/storage"
@@ -86,9 +101,13 @@ fi
 
 # 復元する側が、どの版で取得したものかを判断できるようにする。
 # 接続情報や鍵は書かない。書庫は組織の外へ持ち出されることがある。
+# format_version は書庫の形を表す。
+# 2 から queue_database.sql を含む。
 cat > "${work_directory}/metadata.txt" <<METADATA
+format_version=2
 created_at=${timestamp}
 database_name=${database_name}
+queue_database_name=${queue_database_name}
 schema_version=${schema_version}
 application_version=${application_version}
 METADATA
