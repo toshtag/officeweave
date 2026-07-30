@@ -6,13 +6,23 @@
 各タスクは 1 ブランチ 1 PR に対応する。
 状態は `完了` `進行中` `未着手` のいずれかとし、マージのたびに更新する。
 
+現在地と実行順の正本は本書だけとする。README とロードマップへは複製しない。
+
 ## 現在地
 
 ```text
 現在の Phase: R0
 直近完了 Task: R0-T5
-進行中:        なし
-次に実行:      R0-T6 文書更新の失敗時に添付を削除しない（#53）
+進行中:        R0-T6
+次に実行:      R0-T7 CSV の未知の部門コードを誤りとして扱う（#60）
+```
+
+```text
+Task:    R0-T6
+Branch:  r0/t6-document-attachments
+Issues:  #53、#75
+内容:    文書更新時の添付追加・選択削除を原子的に扱う
+状態:    進行中
 ```
 
 ## P0 プロジェクト契約
@@ -137,8 +147,11 @@
 F 完了後の静的レビューで確認した不具合を、GitHub Issue として登録した。
 本 Phase では、それらを重大度と依存関係の順に修正する。新しい機能は足さない。
 
-1 Issue につき 1 ブランチ 1 PR とする。Issue が大きい場合は分割してよいが、
-分割した場合は本書へ追記してから実装へ入る。
+原則として 1 つの不具合契約につき 1 Issue とする。
+1 PR は 1 つの原子的な修正単位とする。
+複数 Issue が同じ原因・同じトランザクション境界・同じ回帰テスト群を共有する場合は、
+理由を本書と PR 本文へ記録したうえで、1 PR から複数 Issue を閉じてよい。
+Issue が大きい場合は分割してよいが、分割した場合は本書へ追記してから実装へ入る。
 
 | Task   | ブランチ                       | 対応 Issue                                                       | 内容                             | 状態  |
 | ------ | -------------------------- | -------------------------------------------------------------- | ------------------------------ | --- |
@@ -148,29 +161,34 @@ F 完了後の静的レビューで確認した不具合を、GitHub Issue と�
 | R0-T3  | `r0/t3-webhook-ssrf`       | [#50](https://github.com/toshtag/OfficeWeave/issues/50)         | Webhook 送信先を制限し SSRF を塞ぐ       | 完了  |
 | R0-T4  | `r0/t4-persistent-jobs`    | [#51](https://github.com/toshtag/OfficeWeave/issues/51)         | 永続キューとワーカーを導入する                | 完了  |
 | R0-T5  | `r0/t5-active-storage-routes` | [#52](https://github.com/toshtag/OfficeWeave/issues/52)      | Active Storage 標準ルートを無効化する     | 完了  |
-| R0-T6  | —                          | [#53](https://github.com/toshtag/OfficeWeave/issues/53)         | 文書更新の失敗時に添付を削除しない              | 未着手 |
-| R0-T7  | —                          | [#54](https://github.com/toshtag/OfficeWeave/issues/54)         | 申請の決裁を行ロックで直列化する               | 未着手 |
-| R0-T8  | —                          | [#55](https://github.com/toshtag/OfficeWeave/issues/55)         | 最後の有効な管理者を失う操作を拒否する            | 未着手 |
+| R0-T6  | `r0/t6-document-attachments` | [#53](https://github.com/toshtag/OfficeWeave/issues/53) [#75](https://github.com/toshtag/OfficeWeave/issues/75) | 文書更新時の添付追加・選択削除を原子的に扱う         | 進行中 |
+| R0-T7  | —                          | [#60](https://github.com/toshtag/OfficeWeave/issues/60)         | CSV の未知の部門コードを誤りとして扱う          | 未着手 |
+| R0-T8  | —                          | [#55](https://github.com/toshtag/OfficeWeave/issues/55)         | 最後の有効な管理者を失う操作を全経路で拒否する        | 未着手 |
 | R0-T9  | —                          | [#56](https://github.com/toshtag/OfficeWeave/issues/56)         | 未知の認証方式を起動時に失敗させる              | 未着手 |
 | R0-T10 | —                          | [#57](https://github.com/toshtag/OfficeWeave/issues/57)         | セッションへ期限を設け、戻り先と Host を制限する    | 未着手 |
-| R0-T11 | —                          | [#60](https://github.com/toshtag/OfficeWeave/issues/60)         | CSV の未知の部門コードを誤りとして扱う          | 未着手 |
-| R0-T12 | —                          | [#61](https://github.com/toshtag/OfficeWeave/issues/61)         | CSV 出力を数式インジェクションから守る          | 未着手 |
+| R0-T11 | —                          | [#61](https://github.com/toshtag/OfficeWeave/issues/61)         | CSV 出力を数式インジェクションから守る          | 未着手 |
+| R0-T12 | —                          | [#54](https://github.com/toshtag/OfficeWeave/issues/54)         | 申請の決裁を行ロックで直列化する               | 未着手 |
 | R0-T13 | —                          | [#66](https://github.com/toshtag/OfficeWeave/issues/66)         | パスワードの最低要件と初期値検査を追加する          | 未着手 |
-| R0-T14 | —                          | [#59](https://github.com/toshtag/OfficeWeave/issues/59)         | 公開待ちのお知らせを表示し、公開時に通知する         | 未着手 |
+| R0-T14 | —                          | [#65](https://github.com/toshtag/OfficeWeave/issues/65)         | 利用者の無効化で API トークンを失効させる        | 未着手 |
 | R0-T15 | —                          | [#58](https://github.com/toshtag/OfficeWeave/issues/58)         | 予約の組織整合性を検証する                  | 未着手 |
 | R0-T16 | —                          | [#62](https://github.com/toshtag/OfficeWeave/issues/62)         | 設定更新をひとつのトランザクションにまとめる         | 未着手 |
 | R0-T17 | —                          | [#63](https://github.com/toshtag/OfficeWeave/issues/63)         | API の不正な日時入力を 400 で返す         | 未着手 |
 | R0-T18 | —                          | [#64](https://github.com/toshtag/OfficeWeave/issues/64)         | 初期利用者の存在判定を組織単位にする             | 未着手 |
-| R0-T19 | —                          | [#65](https://github.com/toshtag/OfficeWeave/issues/65)         | 利用者の無効化で API トークンを失効させる        | 未着手 |
+| R0-T19 | —                          | [#59](https://github.com/toshtag/OfficeWeave/issues/59)         | 公開待ちのお知らせを表示し、公開時に通知する         | 未着手 |
 | R0-T20 | —                          | [#67](https://github.com/toshtag/OfficeWeave/issues/67)         | 差し戻し通知の翻訳キーの誤記を修正する            | 未着手 |
+| R0-T21 | —                          | —                                                               | 安定化完了監査。全 Issue、全検証、文書、配布構成の整合を確認する | 未着手 |
 
 ### 実行順の根拠
 
-- R0-T1 と R0-T2 を先に置く。データを失う経路を残したまま他の修正を検証すると、検証の失敗と実害の区別が付かない。
+- R0-T1 と R0-T2 を先に置いた。データを失う経路を残したまま他の修正を検証すると、検証の失敗と実害の区別が付かない。
 - R0-T3 から R0-T5 は、外部からの到達と情報の持ち出しに関わる。
-- R0-T4 の永続キュー導入は R0-T14 の公開時通知が前提とする定期実行の土台になるため、R0-T14 より前に置く。
-- R0-T6 から R0-T13 は、データの喪失または資格情報の弱さに関わる。
-- R0-T14 以降は、影響範囲が限定的なものを後段へまとめた。
+- R0-T6 と R0-T7 は、通常操作でデータが黙って失われる経路であり、未着手の中で実害が最も大きい。
+- R0-T6 は #53 と #75 を 1 PR で扱う。両者は `DocumentsController#update` の同じ添付更新契約を原因とし、
+  同じトランザクション境界と同じ回帰テスト群を共有するため、PR を分けると競合と退行の危険が増える。
+- R0-T8 から R0-T10 は、管理不能状態と認証・セッションの弱さに関わる。
+- R0-T11 から R0-T14 は、出力の安全性、同時実行、資格情報の弱さに関わる。
+- R0-T15 以降は、影響範囲が限定的なものを後段へまとめた。
+- R0-T21 で R0 全体の整合を確かめてから、公開リリースの判断へ進む。
 
 ## 分解の方針
 
