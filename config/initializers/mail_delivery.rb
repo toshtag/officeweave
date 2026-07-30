@@ -10,6 +10,10 @@ Rails.application.configure do
     from: ENV.fetch("MAIL_FROM", "officeweave@localhost")
   }
 
+  # 送信のやり直しを扱うジョブ。
+  # 一時的な失敗と恒久的な失敗を分けるため、既定のジョブを差し替える。
+  config.action_mailer.delivery_job = "NotificationMailDeliveryJob"
+
   smtp_address = ENV["SMTP_ADDRESS"]
 
   if smtp_address.present?

@@ -100,6 +100,31 @@ WEB_BIND_ADDRESS=0.0.0.0
 暗号化された通信を終端する仕組みは、このリポジトリに含まれていない。
 `WEB_BIND_ADDRESS=0.0.0.0` のまま公開ネットワークへ置かない。
 
+### 起動するサービス
+
+```text
+db      PostgreSQL。業務データと未処理のジョブを別のデータベースへ保持する
+web     画面と API
+worker  メールと Webhook の送信。ホストへポートを公開しない
+```
+
+`docker compose -f compose.production.yaml up -d` で 3 つとも起動する。
+worker は web の稼働を待って起動する。データベースの準備は web が行うためである。
+
+worker が止まっていると、送信は行われずジョブが溜まる。データは失われない。
+
+```bash
+docker compose -f compose.production.yaml ps
+```
+
+```bash
+docker compose -f compose.production.yaml logs -f worker
+```
+
+```bash
+docker compose -f compose.production.yaml exec -T web bin/jobs_status
+```
+
 ### 2 つの構成の違い
 
 | 項目          | 開発用（`compose.yaml`）  | 配布用（`compose.production.yaml`） |
@@ -111,6 +136,7 @@ WEB_BIND_ADDRESS=0.0.0.0
 | 暗号化された通信    | 必須にしない               | 既定で必須（`FORCE_SSL` で切り替え）      |
 | project 名     | `officeweave_development` | `officeweave_production`   |
 | データボリューム     | `development_db_data`     | `production_db_data` `production_storage_data` |
+| ジョブ用データベース   | `officeweave_development_queue` | `officeweave_production_queue` |
 
 ## 5. 最初の利用者の作成
 
@@ -174,6 +200,19 @@ script/production_restore backups/<書庫>
 
 詳しくは [バックアップと復元](backup.md) を参照する。
 取得しているだけでは復元できることの確認にならない。復元まで一度試す。
+
+### 送信の状況
+
+メールと Webhook はやり直しを含めて最大 5 回まで実行する。
+実行は at-least-once であり、同じ通知が二度届くことがある。
+
+やり直しを尽くした失敗は消さずに残る。定期的に確認する。
+
+```bash
+docker compose -f compose.production.yaml exec -T web bin/jobs_status --failed
+```
+
+詳しくは [設定](../development/configuration.md) を参照する。
 
 ### Webhook の送信先
 

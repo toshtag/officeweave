@@ -1,0 +1,77 @@
+#!/usr/bin/env ruby
+#
+# キューの状態を表示する。
+#
+# 管理画面は用意しない。運用で必要なのは、
+# 溜まっていないか、失敗が残っていないかを短時間で確かめることである。
+#
+# 引数なし: 件数の要約
+# --failed: 失敗したジョブの一覧
+#
+# 一覧には、ジョブの引数、メール本文、Webhook の送信内容、
+# 例外の全文を出さない。運用の記録として残り、持ち出されることがある。
+
+require_relative "../config/environment"
+
+def summary
+  puts "worker"
+  processes = SolidQueue::Process.order(:kind, :name)
+  if processes.empty?
+    puts "  稼働しているものがありません"
+  else
+    processes.group_by(&:kind).each do |kind, group|
+      puts "  #{kind}: #{group.size} 件（最終応答 #{group.map(&:last_heartbeat_at).max&.iso8601}）"
+    end
+  end
+
+  puts
+  puts "ジョブ"
+  puts "  待機中:   #{SolidQueue::ReadyExecution.count}"
+  puts "  実行予定: #{SolidQueue::ScheduledExecution.count}"
+  puts "  実行中:   #{SolidQueue::ClaimedExecution.count}"
+  puts "  失敗:     #{SolidQueue::FailedExecution.count}"
+
+  oldest = SolidQueue::ReadyExecution.minimum(:created_at)
+  puts "  最古の待機: #{oldest ? oldest.iso8601 : "なし"}"
+
+  if SolidQueue::FailedExecution.exists?
+    puts
+    puts "失敗したジョブがあります。bin/jobs_status --failed で確認してください。"
+  end
+end
+
+def failed
+  executions = SolidQueue::FailedExecution.includes(:job).order(created_at: :desc).limit(50)
+
+  if executions.empty?
+    puts "失敗したジョブはありません。"
+    return
+  end
+
+  puts "失敗したジョブ（最大 50 件）"
+  executions.each do |execution|
+    error = execution.error.is_a?(Hash) ? execution.error : {}
+    message = error["message"].to_s.tr("\n", " ")
+
+    puts format(
+      "  #%-8s %-32s %-22s %s",
+      execution.id,
+      execution.job&.class_name,
+      execution.created_at.iso8601,
+      "#{error['exception_class']}: #{message.truncate(120)}"
+    )
+  end
+
+  puts
+  puts "やり直す:   bin/rails runner 'SolidQueue::FailedExecution.find(<ID>).retry'"
+  puts "捨てる:     bin/rails runner 'SolidQueue::FailedExecution.find(<ID>).discard'"
+  puts "まとめて:   bin/rails runner 'SolidQueue::FailedExecution.retry_all'"
+end
+
+case ARGV.first
+when nil then summary
+when "--failed" then failed
+else
+  warn "使い方: bin/jobs_status [--failed]"
+  exit 1
+end

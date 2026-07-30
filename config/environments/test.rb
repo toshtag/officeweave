@@ -51,6 +51,11 @@ Rails.application.configure do
   # Raise error when a before_action's only/except options reference missing actions.
   config.action_controller.raise_on_missing_callback_actions = true
 
+  # テストのジョブは実行を待たずに確かめる。
+  # worker の起動を前提にすると、テストの成否が実行順に左右される。
+  # Solid Queue そのものの確認は、Docker を使う統合検証で行う。
+  config.active_job.queue_adapter = :test
+
   # Webhook 宛先の名前解決。
   #
   # 実行環境の DNS へ依存させない。IP を直接書いた宛先はそのまま返し、

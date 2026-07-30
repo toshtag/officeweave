@@ -52,7 +52,26 @@ docker compose -f compose.production.yaml logs -f web
 docker compose -f compose.production.yaml logs -f db
 ```
 
+```bash
+docker compose -f compose.production.yaml logs -f worker
+```
+
 記録の保管と回収は、組織の環境にある仕組みへ委ねている。
+
+### 送信の状況
+
+メールと Webhook は worker が送る。溜まっていないか、失敗が残っていないかを確認する。
+
+```bash
+docker compose -f compose.production.yaml exec -T web bin/jobs_status
+```
+
+```bash
+docker compose -f compose.production.yaml exec -T web bin/jobs_status --failed
+```
+
+worker が止まっていると、送信は行われずジョブが溜まる。データは失われない。
+`bin/diagnose` は worker の不在を失敗として報告する。
 
 ## 4. 監査
 
@@ -67,7 +86,7 @@ docker compose -f compose.production.yaml logs -f db
 | 頻度   | 内容                                       |
 | ---- | ---------------------------------------- |
 | 毎日   | バックアップの取得（利用者側の時刻起動などで自動化する）             |
-| 毎月   | `bin/diagnose` の実行、無効化し忘れた利用者の確認         |
+| 毎月   | `bin/diagnose` の実行、無効化し忘れた利用者の確認、失敗したジョブの確認 |
 | 四半期  | バックアップからの復元の確認、依存の更新の確認                  |
 | 随時   | セキュリティ修正の適用                              |
 
@@ -86,6 +105,22 @@ docker compose -f compose.production.yaml exec web bin/diagnose
 
 送信設定が有効かどうかを診断で確認する。
 利用者側で、その種類の通知を受け取らない設定にしている場合もある。
+
+worker が動いているかも確認する。止まっていると送信は行われない。
+
+```bash
+docker compose -f compose.production.yaml exec -T web bin/jobs_status
+```
+
+やり直しを尽くして失敗した送信は残る。理由を確認する。
+
+```bash
+docker compose -f compose.production.yaml exec -T web bin/jobs_status --failed
+```
+
+同じ通知が二度届く場合もある。実行は at-least-once であり、
+送信サーバーが受理した直後の切断では重複を防げない。
+Webhook では `X-OfficeWeave-Delivery-Id` で受け取る側が重複を判別できる。
 
 ### 添付ファイルが開けない
 

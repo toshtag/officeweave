@@ -1,0 +1,34 @@
+#!/usr/bin/env ruby
+#
+# worker が生きているかを返す。コンテナの healthcheck から呼ぶ。
+#
+# 実行イメージに含まれるとは限らない外部コマンドへ依存しない。
+# supervisor の PID ファイルと、その process の生存だけで判定する。
+
+require_relative "../config/environment"
+
+pidfile = Rails.application.config.solid_queue.supervisor_pidfile
+
+unless pidfile && File.exist?(pidfile)
+  warn "supervisor の PID ファイルがありません: #{pidfile}"
+  exit 1
+end
+
+pid = File.read(pidfile).to_i
+
+if pid <= 0
+  warn "PID ファイルの内容が読み取れません"
+  exit 1
+end
+
+begin
+  # 送信せずに存在だけを確かめる。
+  Process.kill(0, pid)
+rescue Errno::ESRCH
+  warn "supervisor process が見つかりません: #{pid}"
+  exit 1
+rescue Errno::EPERM
+  # 別の利用者の process として存在している。生きているとみなす。
+end
+
+exit 0

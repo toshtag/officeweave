@@ -3,7 +3,10 @@
 # 配布環境をホスト側の書庫から復元する。
 #
 # 停止したコンテナへは exec できない。
-# web を停止したうえで、別の一時コンテナへ書庫を標準入力から渡す。
+# web と worker を停止したうえで、別の一時コンテナへ書庫を標準入力から渡す。
+#
+# worker も止める。復元中に古いジョブが動くと、
+# 書庫の内容と噛み合わない送信が行われる。
 #
 # 復元先の内容は失われる。実行前に確認を求める。
 # 自動で実行する場合は FORCE=1 を指定する。
@@ -74,18 +77,23 @@ if ! service_running db; then
   fail "データベースが起動していません。先に docker compose -f compose.production.yaml up -d db を実行してください。"
 fi
 
+# 先に web を止め、新しいジョブが投入されない状態にしてから worker を止める。
 echo "web を停止しています" >&2
 compose stop web >/dev/null
 
+echo "worker を停止しています" >&2
+compose stop worker >/dev/null
+
 # 復元に失敗した状態のまま画面を開けない。
-# 中途半端なデータで運用を再開させないため、web は停止したままにする。
+# 中途半端なデータで運用を再開させないため、web と worker は停止したままにする。
 if ! compose run --rm --no-deps -T -e FORCE=1 web bin/restore --stdin < "${archive}"; then
   echo "" >&2
   echo "復元に失敗しました。" >&2
-  echo "web は停止したままにしています。中途半端なデータで運用を再開させないためです。" >&2
+  echo "web と worker は停止したままにしています。中途半端なデータで運用を再開させないためです。" >&2
   echo "" >&2
   echo "記録を確認する:" >&2
   echo "  docker compose -f compose.production.yaml logs web" >&2
+  echo "  docker compose -f compose.production.yaml logs worker" >&2
   echo "" >&2
   echo "別の書庫でやり直す:" >&2
   echo "  FORCE=1 script/production_restore <別の書庫>" >&2
@@ -107,6 +115,22 @@ done
 
 [ "${recovered}" -eq 1 ] ||
   fail "復元は完了しましたが、web が応答しません。docker compose -f compose.production.yaml logs web を確認してください。"
+
+echo "worker を起動しています" >&2
+compose start worker >/dev/null
+
+echo "worker の回復を確認しています" >&2
+worker_recovered=0
+for _ in $(seq 1 60); do
+  if compose exec -T worker bin/jobs_alive >/dev/null 2>&1; then
+    worker_recovered=1
+    break
+  fi
+  sleep 2
+done
+
+[ "${worker_recovered}" -eq 1 ] ||
+  fail "復元は完了しましたが、worker が応答しません。docker compose -f compose.production.yaml logs worker を確認してください。"
 
 echo "構成を診断しています" >&2
 compose exec -T web bin/diagnose

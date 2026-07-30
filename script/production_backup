@@ -9,8 +9,11 @@
 # コンテナ内の利用者とホストの利用者で UID が食い違うと書き込めず、
 # 書けた場合も root 所有の書庫が残るためである。
 #
-# データベースと添付ファイルの取得時点をそろえるため、取得中は web を停止する。
-# 取得のあいだ、利用者は画面を使えない。
+# データベースと添付ファイルの取得時点をそろえるため、取得中は web と worker を停止する。
+# 取得のあいだ、利用者は画面を使えず、メールと Webhook も送られない。
+#
+# 先に web を止める。新しいジョブが投入されない状態にしてから worker を止める。
+# 逆にすると、worker を止めた後に web が新しいジョブを積み、取得へ入らない。
 #
 # 使い方:
 #   script/production_backup [ホスト側の出力ディレクトリ]
@@ -63,24 +66,63 @@ if ! service_running db; then
   fail "データベースが起動していません。先に docker compose -f compose.production.yaml up -d を実行してください。"
 fi
 
-# 元々停止していた web を、この処理の副作用で起動しない。
+# 元々停止していたサービスを、この処理の副作用で起動しない。
 web_was_running=0
-if service_running web; then
-  web_was_running=1
-fi
+worker_was_running=0
+service_running web && web_was_running=1
+service_running worker && worker_was_running=1
 
-restart_web() {
-  [ "${web_was_running}" -eq 1 ] || return 0
+wait_for_web() {
+  for _ in $(seq 1 60); do
+    if compose exec -T web curl -sf http://127.0.0.1:3000/up >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 2
+  done
 
-  echo "web を再開しています" >&2
-  if ! compose start web >/dev/null 2>&1; then
-    fail "web を再開できませんでした。docker compose -f compose.production.yaml logs web を確認してください。"
+  return 1
+}
+
+# 再開は web から行う。worker は web の稼働を前提に起動する。
+restart_services() {
+  if [ "${web_was_running}" -eq 1 ]; then
+    echo "web を再開しています" >&2
+    compose start web >/dev/null 2>&1 ||
+      fail "web を再開できませんでした。docker compose -f compose.production.yaml logs web を確認してください。"
+
+    wait_for_web ||
+      fail "web が応答しません。docker compose -f compose.production.yaml logs web を確認してください。"
   fi
+
+  if [ "${worker_was_running}" -eq 1 ]; then
+    echo "worker を再開しています" >&2
+    compose start worker >/dev/null 2>&1 ||
+      fail "worker を再開できませんでした。docker compose -f compose.production.yaml logs worker を確認してください。"
+
+    wait_for_worker ||
+      fail "worker が応答しません。docker compose -f compose.production.yaml logs worker を確認してください。"
+  fi
+}
+
+wait_for_worker() {
+  for _ in $(seq 1 60); do
+    if compose exec -T worker bin/jobs_alive >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 2
+  done
+
+  return 1
 }
 
 if [ "${web_was_running}" -eq 1 ]; then
   echo "取得のあいだ web を停止します。画面は一時的に使えなくなります。" >&2
   compose stop web >/dev/null
+fi
+
+if [ "${worker_was_running}" -eq 1 ]; then
+  echo "worker を停止します。実行中のジョブの終了を待ちます。" >&2
+  compose stop worker >/dev/null
 fi
 
 mkdir -p "${output_directory}"
@@ -110,41 +152,25 @@ echo "書庫を取得しています" >&2
 # -T を付け、標準出力へ端末の制御文字が混ざらないようにする。
 if ! compose run --rm --no-deps -T web bin/backup --stdout > "${partial}"; then
   cleanup_partial
-  restart_web
+  restart_services
   fail "バックアップの取得に失敗しました。"
 fi
 
 if ! gzip --test "${partial}" 2>/dev/null; then
   cleanup_partial
-  restart_web
+  restart_services
   fail "取得した書庫を読み取れません。"
 fi
 
 if ! tar --list --gzip --file="${partial}" >/dev/null 2>&1; then
   cleanup_partial
-  restart_web
+  restart_services
   fail "取得した書庫を書庫として読み取れません。"
 fi
 
 mv "${partial}" "${archive}"
 
-restart_web
-
-if [ "${web_was_running}" -eq 1 ]; then
-  echo "web の回復を確認しています" >&2
-  recovered=0
-  for _ in $(seq 1 60); do
-    if compose exec -T web curl -sf http://127.0.0.1:3000/up >/dev/null 2>&1; then
-      recovered=1
-      break
-    fi
-    sleep 2
-  done
-
-  if [ "${recovered}" -ne 1 ]; then
-    fail "書庫は ${archive} へ取得しましたが、web が応答しません。docker compose -f compose.production.yaml logs web を確認してください。"
-  fi
-fi
+restart_services
 
 echo "取得しました: ${archive}" >&2
 echo "${archive}"

@@ -51,6 +51,7 @@ database_host="${DATABASE_HOST:-localhost}"
 database_port="${DATABASE_PORT:-5432}"
 database_user="${DATABASE_USER:-officeweave}"
 database_name="${DATABASE_NAME:-officeweave_development}"
+queue_database_name="${QUEUE_DATABASE_NAME:-officeweave_development_queue}"
 
 work_directory="$(mktemp -d)"
 trap 'rm -rf "${work_directory}"' EXIT
@@ -112,6 +113,13 @@ if [ ! -f "${contents}/metadata.txt" ]; then
   reject "取得時の情報が含まれていません"
 fi
 
+# 未処理のジョブ。
+# 形式 2 より前の書庫には含まれない。一律に拒否せず、空のキューとして復元する。
+has_queue_dump=0
+if [ -s "${contents}/queue_database.sql" ]; then
+  has_queue_dump=1
+fi
+
 # ---- 確認 ----
 
 if [ "${FORCE:-0}" != "1" ]; then
@@ -145,6 +153,30 @@ PGPASSWORD="${DATABASE_PASSWORD:-}" psql \
   --dbname="${database_name}" --quiet --set ON_ERROR_STOP=on \
   --file="${contents}/database.sql" >/dev/null ||
   failed "データベースを復元できませんでした。"
+
+# 未処理のジョブも書庫の内容へ置き換える。
+# 既存のジョブを残すと、復元した業務データと噛み合わない送信が動き出す。
+echo "未処理のジョブを取り除いています: ${queue_database_name}"
+PGPASSWORD="${DATABASE_PASSWORD:-}" psql \
+  --host="${database_host}" --port="${database_port}" --username="${database_user}" \
+  --dbname="${queue_database_name}" --quiet \
+  --command="DROP SCHEMA public CASCADE; CREATE SCHEMA public;" >/dev/null ||
+  failed "未処理のジョブを取り除けませんでした。"
+
+if [ "${has_queue_dump}" -eq 1 ]; then
+  echo "未処理のジョブを復元しています"
+  PGPASSWORD="${DATABASE_PASSWORD:-}" psql \
+    --host="${database_host}" --port="${database_port}" --username="${database_user}" \
+    --dbname="${queue_database_name}" --quiet --set ON_ERROR_STOP=on \
+    --file="${contents}/queue_database.sql" >/dev/null ||
+    failed "未処理のジョブを復元できませんでした。"
+else
+  # 形式 2 より前の書庫。ジョブの表だけを作り直し、未処理のジョブは無い状態で始める。
+  echo "この書庫には未処理のジョブが含まれていません。空のキューとして復元します。" >&2
+  echo "取得時に送信待ちだったメールと Webhook は失われます。" >&2
+  bin/rails db:prepare >/dev/null ||
+    failed "ジョブ用の表を作り直せませんでした。"
+fi
 
 # 書庫の内容へ置き換える。上書きだけで済ませると、
 # 書庫に含まれない古いファイルが残り、削除済みの添付が復活する。

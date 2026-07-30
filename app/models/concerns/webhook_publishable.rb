@@ -10,11 +10,13 @@ module WebhookPublishable
       return unless WebhookEndpoint::EVENTS.include?(event)
 
       organization.webhook_endpoints.active.find_each do |endpoint|
-        DeliverWebhookJob.perform_later(
-          endpoint.id,
-          event,
-          { event: event, occurred_at: Time.current.iso8601 }.merge(payload)
-        )
+        JobEnqueue.perform("webhook:#{event}") do
+          DeliverWebhookJob.perform_later(
+            endpoint.id,
+            event,
+            { event: event, occurred_at: Time.current.iso8601 }.merge(payload)
+          )
+        end
       end
     end
   end

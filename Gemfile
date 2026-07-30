@@ -14,6 +14,10 @@ gem "importmap-rails"
 # 利用者と部門の入出力に使う。Ruby 3.4 で標準添付から外れたため明示する。
 gem "csv"
 
+# メールと Webhook の送信を永続化する。
+# 保存先は既存の PostgreSQL とし、Redis などの常駐サービスを増やさない。
+gem "solid_queue", "~> 1.5"
+
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 gem "bcrypt", "~> 3.1.7"
 

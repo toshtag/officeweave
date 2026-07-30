@@ -1,7 +1,8 @@
 class ApplicationJob < ActiveJob::Base
-  # Automatically retry jobs that encountered a deadlock
-  # retry_on ActiveRecord::Deadlocked
+  # ジョブの投入を、トランザクションの確定後まで待つ。
+  # 確定前に worker が取り出すと、まだ見えないレコードを読もうとして失敗する。
+  self.enqueue_after_transaction_commit = true
 
-  # Most jobs are safe to ignore if the underlying records are no longer available
-  # discard_on ActiveJob::DeserializationError
+  # 引数のレコードが消えている場合は、やり直しても結果が変わらない。
+  discard_on ActiveJob::DeserializationError
 end

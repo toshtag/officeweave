@@ -8,6 +8,20 @@
 #   docker compose up -d --build
 name: officeweave_development
 
+# web と worker は同じ設定で動く。
+x-application-environment: &application_environment
+  DATABASE_HOST: db
+  DATABASE_USER: ${DATABASE_USER:-officeweave}
+  DATABASE_PASSWORD: ${DATABASE_PASSWORD:-officeweave_development}
+  DATABASE_NAME: ${DATABASE_NAME:-officeweave_development}
+  QUEUE_DATABASE_NAME: ${QUEUE_DATABASE_NAME:-officeweave_development_queue}
+  QUEUE_DATABASE_CONNECTIONS: ${QUEUE_DATABASE_CONNECTIONS:-5}
+  JOB_THREADS: ${JOB_THREADS:-2}
+  JOB_PROCESSES: ${JOB_PROCESSES:-1}
+  RAILS_ENV: ${RAILS_ENV:-development}
+  # メール本文などの URL は、実際に公開しているポートで組み立てる。
+  WEB_PORT: ${WEB_PORT:-3210}
+
 services:
   db:
     image: postgres:18.4-bookworm
@@ -32,24 +46,52 @@ services:
       args:
         RUBY_VERSION: "3.4.10"
     environment:
-      DATABASE_HOST: db
-      DATABASE_USER: ${DATABASE_USER:-officeweave}
-      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-officeweave_development}
-      DATABASE_NAME: ${DATABASE_NAME:-officeweave_development}
-      RAILS_ENV: ${RAILS_ENV:-development}
-      # メール本文などの URL は、実際に公開しているポートで組み立てる。
-      WEB_PORT: ${WEB_PORT:-3210}
+      <<: *application_environment
     volumes:
       # ソースコードだけを共有する。gem はイメージ内に置き、
       # 名前付きボリュームで /usr/local/bundle を覆わない。
       # Gemfile を変更した場合は docker compose build を実行する。
       - .:/app
+    healthcheck:
+      # データベースの準備は web の起動処理が行う。
+      # worker はその完了を待つため、web の稼働をここで判定できるようにする。
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3000/up >/dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
     ports:
       # 既定では loopback にだけ公開する。
       # 同じ端末で他の開発環境が動いていても衝突しにくい値を選ぶ。
       - "${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-3210}:3000"
     depends_on:
       db:
+        condition: service_healthy
+
+  # メールと Webhook の送信を実際に行う。
+  #
+  # 運用環境と同じ方式で動かす。実行方式が違うと、
+  # キューに関わる不具合が手元で再現しない。
+  # 画面を提供しないため、ホストへポートを公開しない。
+  worker:
+    build:
+      context: .
+      args:
+        RUBY_VERSION: "3.4.10"
+    command: bin/jobs
+    stop_grace_period: 30s
+    environment:
+      <<: *application_environment
+    volumes:
+      - .:/app
+    healthcheck:
+      test: ["CMD-SHELL", "bin/jobs_alive"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    depends_on:
+      web:
         condition: service_healthy
 
 volumes:

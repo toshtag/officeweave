@@ -39,6 +39,16 @@ docker compose exec web bin/rails officeweave:demo_data
 起動後、`http://127.0.0.1:3210` を開きます。
 データベースの作成と移行は初回起動時に自動で実行されます。
 
+起動するのは 3 つです。
+
+```text
+db      PostgreSQL。業務データと未処理のジョブを別のデータベースへ保持します
+web     画面と API
+worker  メールと Webhook の送信。ホストへポートを公開しません
+```
+
+worker が止まっていると、送信は行われずジョブが溜まります。データは失われません。
+
 公開先は既定で loopback だけです。同じ端末の他の開発環境と衝突する場合や、
 別の端末から接続したい場合は `.env` の `WEB_BIND_ADDRESS` と `WEB_PORT` を変更します。
 
@@ -76,6 +86,22 @@ docker compose exec web bin/verify
 
 ```bash
 docker compose exec web bin/diagnose
+```
+
+送信の状況を確認します。
+
+```bash
+docker compose exec web bin/jobs_status
+```
+
+```bash
+docker compose exec web bin/jobs_status --failed
+```
+
+worker の記録を追います。
+
+```bash
+docker compose logs -f worker
 ```
 
 配布用の構成でバックアップを取得します。書庫はホストの `backups/` へ作られます。
@@ -191,8 +217,8 @@ Copyright (C) 2026 OfficeWeave contributors
 
 ```text
 現在の Phase:        R0 安定化
-直近完了 Task:       R0-T1 Docker 構成・データボリューム・ポートの分離
-次に実行する Task:   R0-T2 バックアップの永続化と復元手順の是正
+直近完了 Task:       R0-T4 永続キューとワーカーの導入
+次に実行する Task:   R0-T5 Active Storage 標準ルートの無効化
 ```
 
 進行状況は [実行キュー](docs/execution_queue.md) で管理します。

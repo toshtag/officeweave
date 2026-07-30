@@ -49,7 +49,7 @@ class BackupScriptTest < ActiveSupport::TestCase
     end
   end
 
-  test "書庫に必須の 3 つが含まれる" do
+  test "書庫に必須の 4 つが含まれる" do
     with_shell_sandbox do |sandbox|
       prepare(sandbox)
       File.write(sandbox.path("storage", "note.txt"), "添付")
@@ -59,6 +59,8 @@ class BackupScriptTest < ActiveSupport::TestCase
 
       names = entries(Dir.glob(sandbox.path("out", "*.tar.gz")).first)
       assert_includes names, "./database.sql"
+      # 未処理のジョブも取得する。含めないと、復元で送信待ちが失われる。
+      assert_includes names, "./queue_database.sql"
       assert_includes names, "./metadata.txt"
       assert_includes names, "./storage/note.txt"
     end
@@ -77,6 +79,9 @@ class BackupScriptTest < ActiveSupport::TestCase
       assert_includes metadata, "application_version=9.9.9"
       assert_includes metadata, "schema_version=20260101000000"
       assert_includes metadata, "database_name="
+      # 形式 2 から未処理のジョブを含む。
+      assert_includes metadata, "format_version=2"
+      assert_includes metadata, "queue_database_name="
     end
   end
 

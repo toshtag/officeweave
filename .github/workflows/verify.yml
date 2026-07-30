@@ -78,6 +78,7 @@ jobs:
           INITIAL_USER_EMAIL=admin@example.invalid
           INITIAL_USER_PASSWORD=verification-only-user-password
           WEB_PORT=3210
+          QUEUE_DATABASE_NAME=officeweave_production_queue
           SETTINGS
           echo "SECRET_KEY_BASE=$(openssl rand -hex 64)" >> .env
 
@@ -103,6 +104,18 @@ jobs:
 
       - name: 初期利用者を作成する
         run: docker compose -f compose.production.yaml exec -T web bin/rails db:seed
+
+      - name: worker が稼働することを確かめる
+        run: |
+          for _ in $(seq 1 60); do
+            if docker compose -f compose.production.yaml exec -T worker bin/jobs_alive >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "worker が起動しませんでした" >&2
+          docker compose -f compose.production.yaml logs worker >&2
+          exit 1
 
       - name: 構成を診断する
         run: docker compose -f compose.production.yaml exec -T web bin/diagnose
@@ -140,6 +153,7 @@ jobs:
           INITIAL_USER_EMAIL=admin@example.invalid
           INITIAL_USER_PASSWORD=verification-only-user-password
           WEB_PORT=3212
+          QUEUE_DATABASE_NAME=officeweave_production_queue
           SETTINGS
           echo "SECRET_KEY_BASE=$(openssl rand -hex 64)" >> .env
 
@@ -166,14 +180,26 @@ jobs:
             bin/rails runner 'Organization.create!(code: "backup-check", name: "取得前の組織")'
           docker compose -f compose.production.yaml exec -T web \
             sh -c 'echo "取得前のファイル" > storage/before-backup.txt'
+          # 実行予定のジョブを積む。外部へ出さないため、存在しない送信先を指す。
+          # job_id はホスト側で保持する。コンテナ内の tmp は作り直しで失われる。
+          job_id="$(docker compose -f compose.production.yaml exec -T web bin/rails runner '
+            puts DeliverWebhookJob.set(wait: 1.hour).perform_later(0, "request_submitted", { subject_id: 1 }).job_id
+          ' | tail -1 | tr -d '\r')"
+          echo "job_id=${job_id}"
+          test -n "${job_id}"
+          echo "BACKUP_JOB_ID=${job_id}" >> "$GITHUB_ENV"
 
       - name: バックアップを取得する
         run: script/production_backup
 
       - name: ホストへ書庫があることを確かめる
         run: |
-          test -f "$(ls -1 backups/officeweave-*.tar.gz | head -1)"
-          tar --list --gzip --file="$(ls -1 backups/officeweave-*.tar.gz | head -1)" | head
+          archive="$(ls -1 backups/officeweave-*.tar.gz | head -1)"
+          test -f "${archive}"
+          tar --list --gzip --file="${archive}" | head
+          # 未処理のジョブを含む形式であることを確かめる。
+          tar --list --gzip --file="${archive}" | grep -qx "./queue_database.sql"
+          tar --extract --gzip --to-stdout --file="${archive}" ./metadata.txt | grep -qx "format_version=2"
 
       - name: web を作り直しても書庫が残ることを確かめる
         run: |
@@ -192,6 +218,11 @@ jobs:
             bin/rails runner 'Organization.create!(code: "after-backup", name: "取得後の組織")'
           docker compose -f compose.production.yaml exec -T web \
             sh -c 'echo "取得後のファイル" > storage/after-backup.txt; rm -f storage/before-backup.txt'
+          # 取得時のジョブを捨て、別のジョブを積む。
+          docker compose -f compose.production.yaml exec -T web bin/rails runner '
+            SolidQueue::Job.where(finished_at: nil).find_each(&:destroy)
+            DeliverWebhookJob.set(wait: 2.hours).perform_later(0, "request_submitted", { subject_id: 777 })
+          '
 
       - name: 欠けた書庫では何も壊さないことを確かめる
         run: |
@@ -225,6 +256,17 @@ jobs:
             test ! -f storage/after-backup.txt || { echo "書庫にない古いファイルが残っている" >&2; exit 1; }
           '
 
+      - name: 未処理のジョブが取得時点へ戻ることを確かめる
+        run: |
+          docker compose -f compose.production.yaml exec -T -e BACKUP_JOB_ID web bin/rails runner '
+            unless SolidQueue::Job.exists?(active_job_id: ENV.fetch("BACKUP_JOB_ID"))
+              raise "取得時点のジョブが戻っていない"
+            end
+            if SolidQueue::Job.where(finished_at: nil).count != 1
+              raise "書庫にないジョブが残っている"
+            end
+          '
+
       - name: 依存先まで含めて確認する
         run: |
           response="$(curl -sf http://127.0.0.1:3212/health)"
@@ -244,3 +286,166 @@ jobs:
           docker compose -f compose.production.yaml down -v
           # 書庫には検証用とはいえ組織のデータが入る。成果物として残さない。
           rm -rf backups
+
+  queue:
+    name: 永続キュー
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    env:
+      COMPOSE_PROJECT_NAME: officeweave_ci_${{ github.run_id }}_queue
+
+    steps:
+      - name: ソースを取得する
+        uses: actions/checkout@v4
+
+      - name: 設定を用意する
+        run: |
+          cat > .env <<'SETTINGS'
+          DATABASE_USER=officeweave
+          DATABASE_PASSWORD=verification-only-password
+          DATABASE_NAME=officeweave_production
+          QUEUE_DATABASE_NAME=officeweave_production_queue
+          APPLICATION_HOST=localhost
+          APPLICATION_PROTOCOL=http
+          FORCE_SSL=false
+          INITIAL_USER_NAME=検証用の管理者
+          INITIAL_USER_EMAIL=admin@example.invalid
+          INITIAL_USER_PASSWORD=verification-only-user-password
+          WEB_PORT=3213
+          SETTINGS
+          echo "SECRET_KEY_BASE=$(openssl rand -hex 64)" >> .env
+
+      - name: 配布用の構成で起動する
+        run: docker compose -f compose.production.yaml up -d --build
+
+      - name: 応答するまで待つ
+        run: |
+          for _ in $(seq 1 90); do
+            if curl -sf http://127.0.0.1:3213/up > /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "起動しませんでした" >&2
+          docker compose -f compose.production.yaml logs >&2
+          exit 1
+
+      - name: worker が稼働することを確かめる
+        run: |
+          for _ in $(seq 1 60); do
+            if docker compose -f compose.production.yaml exec -T worker bin/jobs_alive >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "worker が起動しませんでした" >&2
+          docker compose -f compose.production.yaml logs worker >&2
+          exit 1
+
+      - name: worker がホストへポートを公開していないことを確かめる
+        run: |
+          # compose port の終了状態は版によって異なる。公開の有無は ps の表示で判断する。
+          published="$(docker compose -f compose.production.yaml ps --format '{{.Ports}}' worker)"
+          echo "worker のポート: ${published}"
+          case "${published}" in
+            *"->"*)
+              echo "worker がホストへポートを公開している" >&2
+              exit 1
+              ;;
+          esac
+
+      - name: ジョブ用データベースと表があることを確かめる
+        run: |
+          docker compose -f compose.production.yaml exec -T db \
+            psql -U officeweave -d officeweave_production_queue -tAc \
+            "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name LIKE 'solid_queue%';" \
+            | tr -d ' ' | grep -qx '11'
+
+      - name: worker を止めてジョブを積む
+        run: |
+          docker compose -f compose.production.yaml stop worker
+          # 外部へ出さないため、存在しない送信先を指す。
+          # job_id はホスト側で保持する。コンテナ内の tmp は作り直しで失われる。
+          job_id="$(docker compose -f compose.production.yaml exec -T web bin/rails runner '
+            puts DeliverWebhookJob.set(wait: 10.minutes).perform_later(0, "request_submitted", { subject_id: 1 }).job_id
+          ' | tail -1 | tr -d '\r')"
+          echo "job_id=${job_id}"
+          test -n "${job_id}"
+          echo "QUEUE_JOB_ID=${job_id}" >> "$GITHUB_ENV"
+          docker compose -f compose.production.yaml exec -T web \
+            bin/rails runner 'raise "ジョブが保存されていない" if SolidQueue::Job.where(finished_at: nil).count.zero?'
+
+      - name: web を作り直してもジョブが残ることを確かめる
+        run: |
+          docker compose -f compose.production.yaml up -d --force-recreate web
+          for _ in $(seq 1 90); do
+            curl -sf http://127.0.0.1:3213/up > /dev/null && break
+            sleep 2
+          done
+          docker compose -f compose.production.yaml exec -T -e QUEUE_JOB_ID web bin/rails runner '
+            raise "ジョブが失われた" unless SolidQueue::Job.exists?(active_job_id: ENV.fetch("QUEUE_JOB_ID"))
+          '
+
+      - name: worker を作り直してもジョブが残ることを確かめる
+        run: |
+          docker compose -f compose.production.yaml rm -f -s worker
+          docker compose -f compose.production.yaml exec -T -e QUEUE_JOB_ID web bin/rails runner '
+            raise "ジョブが失われた" unless SolidQueue::Job.exists?(active_job_id: ENV.fetch("QUEUE_JOB_ID"))
+          '
+
+      - name: データベースを再起動してもジョブが残ることを確かめる
+        run: |
+          docker compose -f compose.production.yaml restart db
+          for _ in $(seq 1 60); do
+            docker compose -f compose.production.yaml exec -T db pg_isready -U officeweave >/dev/null 2>&1 && break
+            sleep 2
+          done
+          docker compose -f compose.production.yaml exec -T -e QUEUE_JOB_ID web bin/rails runner '
+            raise "ジョブが失われた" unless SolidQueue::Job.exists?(active_job_id: ENV.fetch("QUEUE_JOB_ID"))
+          '
+
+      - name: worker を起動するとジョブが処理されることを確かめる
+        run: |
+          # 待機時間を過ぎた状態にし、すぐ実行させる。
+          docker compose -f compose.production.yaml exec -T web bin/rails runner '
+            SolidQueue::ScheduledExecution.update_all(scheduled_at: 1.minute.ago)
+          '
+          docker compose -f compose.production.yaml up -d worker
+          for _ in $(seq 1 60); do
+            if docker compose -f compose.production.yaml exec -T -e QUEUE_JOB_ID web bin/rails runner '
+              exit(SolidQueue::Job.exists?(active_job_id: ENV.fetch("QUEUE_JOB_ID"), finished_at: nil) ? 1 : 0)
+            '; then
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "ジョブが処理されませんでした" >&2
+          docker compose -f compose.production.yaml logs worker >&2
+          exit 1
+
+      - name: 失敗したジョブが残ることを確かめる
+        run: |
+          docker compose -f compose.production.yaml exec -T web \
+            bin/rails runner 'DeliverWebhookJob.perform_later("引数が足りない")'
+          for _ in $(seq 1 40); do
+            if docker compose -f compose.production.yaml exec -T web \
+              bin/rails runner 'exit(SolidQueue::FailedExecution.exists? ? 0 : 1)'; then
+              docker compose -f compose.production.yaml exec -T web bin/jobs_status --failed
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "失敗したジョブが残りませんでした" >&2
+          exit 1
+
+      - name: 失敗の存在で診断を止めないことを確かめる
+        run: docker compose -f compose.production.yaml exec -T web bin/diagnose
+
+      - name: 失敗した場合の記録を出す
+        if: failure()
+        run: docker compose -f compose.production.yaml logs
+
+      - name: 後片付け
+        if: always()
+        run: docker compose -f compose.production.yaml down -v

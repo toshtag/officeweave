@@ -10,9 +10,9 @@
 
 ```text
 現在の Phase: R0
-直近完了 Task: R0-T3
+直近完了 Task: R0-T4
 進行中:        なし
-次に実行:      R0-T4 永続キューとワーカーを導入する（#51）
+次に実行:      R0-T5 Active Storage 標準ルートを無効化する（#52）
 ```
 
 ## P0 プロジェクト契約
@@ -146,8 +146,8 @@ F 完了後の静的レビューで確認した不具合を、GitHub Issue と�
 | R0-T1  | `r0/t1-compose-isolation`  | [#48](https://github.com/toshtag/OfficeWeave/issues/48)         | Docker 構成・データボリューム・ポートを分離する    | 完了  |
 | R0-T2  | `r0/t2-backup-restore`     | [#49](https://github.com/toshtag/OfficeWeave/issues/49)         | バックアップの永続化と復元手順を成立させる          | 完了  |
 | R0-T3  | `r0/t3-webhook-ssrf`       | [#50](https://github.com/toshtag/OfficeWeave/issues/50)         | Webhook 送信先を制限し SSRF を塞ぐ       | 完了  |
-| R0-T4  | `r0/t4-durable-queue`      | [#51](https://github.com/toshtag/OfficeWeave/issues/51)         | 永続キューとワーカーを導入する                | 未着手 |
-| R0-T5  | —                          | [#52](https://github.com/toshtag/OfficeWeave/issues/52)         | Active Storage 標準ルートを無効化する     | 未着手 |
+| R0-T4  | `r0/t4-persistent-jobs`    | [#51](https://github.com/toshtag/OfficeWeave/issues/51)         | 永続キューとワーカーを導入する                | 完了  |
+| R0-T5  | `r0/t5-active-storage-routes` | [#52](https://github.com/toshtag/OfficeWeave/issues/52)      | Active Storage 標準ルートを無効化する     | 未着手 |
 | R0-T6  | —                          | [#53](https://github.com/toshtag/OfficeWeave/issues/53)         | 文書更新の失敗時に添付を削除しない              | 未着手 |
 | R0-T7  | —                          | [#54](https://github.com/toshtag/OfficeWeave/issues/54)         | 申請の決裁を行ロックで直列化する               | 未着手 |
 | R0-T8  | —                          | [#55](https://github.com/toshtag/OfficeWeave/issues/55)         | 最後の有効な管理者を失う操作を拒否する            | 未着手 |

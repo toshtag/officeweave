@@ -1,0 +1,23 @@
+# Solid Queue の実行構成。
+#
+# 単一ホストでの運用を前提とする。process と thread を無理に増やさない。
+# thread 数は queue データベースの接続数を超えないようにする。
+# worker は待機と heartbeat でも接続を使うため、余裕を残す。
+default: &default
+  dispatchers:
+    - polling_interval: 1
+      batch_size: 100
+  workers:
+    - queues: "*"
+      threads: <%= ENV.fetch("JOB_THREADS", 2) %>
+      processes: <%= ENV.fetch("JOB_PROCESSES", 1) %>
+      polling_interval: 1
+
+development:
+  <<: *default
+
+test:
+  <<: *default
+
+production:
+  <<: *default
