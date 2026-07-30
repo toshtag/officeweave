@@ -46,8 +46,117 @@ class DocumentAttachmentsTest < ActionDispatch::IntegrationTest
     assert_select ".error-summary"
   end
 
+  test "添付ファイルを追加しても既存の添付ファイルが残る" do
+    document = documents(:travel_rule)
+    attach_text(document, "keep_a.txt")
+    attach_text(document, "keep_b.txt")
+
+    patch document_url(document), params: {
+      document: { title: document.title, attachments: [ uploaded_file(filename: "added.txt") ] }
+    }
+
+    assert_redirected_to document_url(document)
+    assert_equal %w[added.txt keep_a.txt keep_b.txt], attachment_filenames(document)
+  end
+
+  test "文書の更新に失敗した場合は選択した添付ファイルが削除されない" do
+    document = documents(:travel_rule)
+    keep_a = attach_text(document, "keep_a.txt")
+    attach_text(document, "keep_b.txt")
+
+    patch document_url(document), params: {
+      document: { title: "", remove_attachment_ids: [ keep_a.id ] }
+    }
+
+    assert_response :unprocessable_content
+    assert_equal %w[keep_a.txt keep_b.txt], attachment_filenames(document)
+    assert ActiveStorage::Blob.exists?(keep_a.blob_id), "取り除かなかった添付の Blob が残ること"
+    assert keep_a.blob.service.exist?(keep_a.blob.key), "取り除かなかった添付の保存実体が残ること"
+    assert_select "label", text: "keep_a.txt"
+    assert_select "label", text: "keep_b.txt"
+  end
+
+  test "添付ファイルの追加と選択削除を同時に行える" do
+    document = documents(:travel_rule)
+    removed = attach_text(document, "remove.txt")
+    attach_text(document, "keep.txt")
+
+    patch document_url(document), params: {
+      document: { title: document.title,
+                  remove_attachment_ids: [ removed.id ],
+                  attachments: [ uploaded_file(filename: "added.txt") ] }
+    }
+
+    assert_redirected_to document_url(document)
+    assert_equal %w[added.txt keep.txt], attachment_filenames(document)
+  end
+
+  test "文書の更新に失敗した場合は追加した添付ファイルが反映されない" do
+    document = documents(:travel_rule)
+    attach_text(document, "keep.txt")
+
+    patch document_url(document), params: {
+      document: { title: "", attachments: [ uploaded_file(filename: "added.txt") ] }
+    }
+
+    assert_response :unprocessable_content
+    assert_equal %w[keep.txt], attachment_filenames(document)
+    assert_select "label", text: "keep.txt"
+  end
+
+  test "上限件数の文書へ追加すると受け付けず、既存の添付ファイルが残る" do
+    document = documents(:travel_rule)
+    filenames = (1..Document::MAX_ATTACHMENT_COUNT).map { |number| format("file_%02d.txt", number) }
+    filenames.each { |filename| attach_text(document, filename) }
+
+    patch document_url(document), params: {
+      document: { title: document.title, attachments: [ uploaded_file(filename: "added.txt") ] }
+    }
+
+    assert_response :unprocessable_content
+    assert_equal filenames, attachment_filenames(document)
+  end
+
+  test "上限件数の文書でも削除と追加を同時に行えば保存できる" do
+    document = documents(:travel_rule)
+    filenames = (1..Document::MAX_ATTACHMENT_COUNT).map { |number| format("file_%02d.txt", number) }
+    removed = attach_text(document, filenames.first)
+    filenames.drop(1).each { |filename| attach_text(document, filename) }
+
+    patch document_url(document), params: {
+      document: { title: document.title,
+                  remove_attachment_ids: [ removed.id ],
+                  attachments: [ uploaded_file(filename: "added.txt") ] }
+    }
+
+    assert_redirected_to document_url(document)
+    assert_equal (filenames.drop(1) + %w[added.txt]).sort, attachment_filenames(document)
+  end
+
+  test "他の文書の添付ファイルを削除対象に指定しても削除されない" do
+    document = documents(:travel_rule)
+    other_document = documents(:onboarding)
+    other_attachment = attach_text(other_document, "other.txt")
+
+    patch document_url(document), params: {
+      document: { title: document.title, remove_attachment_ids: [ other_attachment.id ] }
+    }
+
+    assert_redirected_to document_url(document)
+    assert_equal %w[other.txt], attachment_filenames(other_document)
+  end
+
   private
-    def uploaded_file(size = 1.kilobyte)
-      Rack::Test::UploadedFile.new(StringIO.new("a" * size), "text/plain", original_filename: "sample.txt")
+    def uploaded_file(size = 1.kilobyte, filename: "sample.txt")
+      Rack::Test::UploadedFile.new(StringIO.new("a" * size), "text/plain", original_filename: filename)
+    end
+
+    def attach_text(document, filename)
+      document.attachments.attach(io: StringIO.new("a"), filename: filename, content_type: "text/plain")
+      document.reload.attachments.find { |attachment| attachment.filename.to_s == filename }
+    end
+
+    def attachment_filenames(document)
+      document.reload.attachments.map { |attachment| attachment.filename.to_s }.sort
     end
 end

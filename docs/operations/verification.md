@@ -171,7 +171,21 @@ test -z "$(printf '%s\n' "$ROUTES" | grep 'active_storage' || true)"
 取得できる範囲は `test/controllers/attachment_delivery_test.rb` が押さえている。
 ここで確かめるのは、実際に動いている構成でも同じであることである。
 
-## 8. 主要な業務の流れ
+## 8. 文書添付の更新
+
+文書の編集で、添付の追加と選択削除が既存の添付を壊さないことを確かめる。
+
+```text
+1. 文書へ添付を追加しても、既存の添付が維持される
+2. 文書の更新が失敗した場合、選択削除した添付が維持される
+```
+
+追加が置き換えにならないこと、失敗した更新が添付を消さないことは、
+`test/controllers/document_attachments_test.rb` と
+`test/system/document_attachments_test.rb` が押さえている。
+ここで確かめるのは、実際に動いている構成でも同じであることである。
+
+## 9. 主要な業務の流れ
 
 `test/system/end_to_end_test.rb` が、次を画面の操作だけで通す。
 
@@ -186,7 +200,7 @@ test -z "$(printf '%s\n' "$ROUTES" | grep 'active_storage' || true)"
 
 自動で実行されるため、手作業での確認は不要とする。
 
-## 9. 自動実行
+## 10. 自動実行
 
 `.github/workflows/verify.yml` が、変更のたびに次を実行する。
 

@@ -37,9 +37,7 @@ class DocumentsController < ApplicationController
   end
 
   def update
-    remove_selected_attachments
-
-    if @document.update(document_params)
+    if update_document_and_attachments
       redirect_to @document, notice: t("documents.updated")
     else
       render :edit, status: :unprocessable_content
@@ -53,13 +51,39 @@ class DocumentsController < ApplicationController
   end
 
   private
-    # 取り除く添付は、追加とは別に扱う。
-    # 同じ入力欄で表すと、置き換えなのか追加なのかが判別できない。
-    def remove_selected_attachments
-      ids = params.dig(:document, :remove_attachment_ids)
-      return if ids.blank?
+    # 属性の変更、添付の追加、選択した添付の取り外しをひとつの更新として扱う。
+    # 途中で失敗した場合は何も反映しない。取り外しを先に確定させると、
+    # 検証に失敗した更新でも添付だけが消えてしまう。
+    #
+    # 新しいファイルは既存の添付への追加として扱う。代入で渡すと置き換えになり、
+    # 追加のつもりの操作で既存の添付が失われる。
+    # 取り除く添付は remove_attachment_ids だけで表し、必ず自文書の関連内で絞る。
+    # 件数と大きさの検証は、追加と取り外しを反映した最終的な添付に対して働く。
+    #
+    # Blob の実体は、取り外した関連のコミットが成功した後にだけ消える。
+    def update_document_and_attachments
+      attributes = document_params
+      added = Array(attributes.delete(:attachments)).reject(&:blank?)
+      removed = @document.attachments.where(id: remove_attachment_ids)
 
-      @document.attachments.where(id: ids).each(&:purge)
+      Document.transaction(requires_new: true) do
+        removed.each(&:destroy)
+        @document.assign_attributes(attributes)
+        @document.attachments.attach(added) if added.any?
+        @document.save!
+      end
+
+      true
+    rescue ActiveRecord::RecordInvalid
+      # 巻き戻した途中状態を編集画面へ持ち込まない。
+      # そのまま描画すると、実際には残っている添付が画面から消えて見える。
+      @document.attachment_changes.delete("attachments")
+      @document.attachments.reset
+      false
+    end
+
+    def remove_attachment_ids
+      Array(params.dig(:document, :remove_attachment_ids)).reject(&:blank?)
     end
 
     def set_document
