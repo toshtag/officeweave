@@ -49,6 +49,79 @@ class ProductionBackupScriptsTest < ActiveSupport::TestCase
 
   # --- 取得 ---
 
+  # --- worker ---
+
+  test "web を止めてから worker を止め、web から順に戻す" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+
+      _stdout, stderr, status = sandbox.run(
+        "script/production_backup", sandbox.path("out"),
+        env: environment(sandbox, running: "db web worker")
+      )
+
+      assert status.success?, stderr
+      log = calls(sandbox)
+
+      # 先に web を止める。新しいジョブが積まれない状態にしてから worker を止める。
+      assert_operator log.index("stop web"), :<, log.index("stop worker")
+      assert_operator log.index("stop worker"), :<, log.index("bin/backup --stdout")
+      # 戻すのは web から。worker は web の稼働を前提に起動する。
+      assert_operator log.index("start web"), :<, log.index("start worker")
+    end
+  end
+
+  test "元々止まっている worker を勝手に起動しない" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+
+      _stdout, stderr, status = sandbox.run(
+        "script/production_backup", sandbox.path("out"),
+        env: environment(sandbox, running: "db web")
+      )
+
+      assert status.success?, stderr
+      refute_includes calls(sandbox), "stop worker"
+      refute_includes calls(sandbox), "start worker"
+    end
+  end
+
+  test "復元では web と worker を止め、成功時だけ両方を起動する" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+
+      _stdout, stderr, status = sandbox.run(
+        "script/production_restore", File.join(sandbox.root, "archive.tar.gz"),
+        env: environment(sandbox, running: "db web worker").merge("FORCE" => "1")
+      )
+
+      assert status.success?, stderr
+      log = calls(sandbox)
+
+      assert_operator log.index("stop web"), :<, log.index("stop worker")
+      assert_operator log.index("start web"), :<, log.index("start worker")
+      assert_includes log, "bin/jobs_alive"
+    end
+  end
+
+  test "復元に失敗したら worker も停止したままにする" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+
+      _stdout, stderr, status = sandbox.run(
+        "script/production_restore", File.join(sandbox.root, "archive.tar.gz"),
+        env: environment(sandbox, running: "db web worker").merge("FORCE" => "1", "FAKE_RESTORE_EXIT" => "1")
+      )
+
+      refute status.success?
+      assert_includes stderr, "web と worker は停止したままにしています"
+      assert_includes calls(sandbox), "stop worker"
+      refute_includes calls(sandbox), "start worker"
+    end
+  end
+
+  # --- 取得 ---
+
   test "web が動いていれば、停止してから取得し、元へ戻す" do
     with_shell_sandbox do |sandbox|
       prepare(sandbox)
@@ -175,7 +248,7 @@ class ProductionBackupScriptsTest < ActiveSupport::TestCase
       )
 
       refute status.success?
-      assert_includes stderr, "web は停止したままにしています"
+      assert_includes stderr, "停止したままにしています"
       assert_includes calls(sandbox), "stop web"
       refute_includes calls(sandbox), "start web"
     end

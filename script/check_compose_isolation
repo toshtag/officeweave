@@ -11,6 +11,13 @@
 #   4. web の既定の公開ポートが 3210
 #   5. web の既定の公開アドレスが 127.0.0.1
 #   6. override を重ねたときだけ、開発用データベースが 127.0.0.1:55432 へ公開される
+#   7. 開発用と配布用の両方に worker がある
+#   8. worker はホストへポートを公開しない
+#   9. web と worker が同じジョブ用データベースを使う
+#  10. 開発用と配布用のジョブ用データベース名が異なる
+#  11. worker は web の稼働を待って起動する
+#  12. 配布用の worker は再起動方針を持つ
+#  13. 実行 thread 数がジョブ用データベースの接続数を超えない
 #
 # 使い方:
 #   script/check_compose_isolation
@@ -145,6 +152,77 @@ if [ "$override_db_published" = "127.0.0.1:55432" ]; then
   report ok "override 指定時だけ 127.0.0.1:55432 へ公開される"
 else
   report ng "override 指定時の公開先が 127.0.0.1:55432 ではない（${override_db_published}）"
+fi
+
+# ---- worker ----
+
+check_worker() {
+  local label="$1" document="$2"
+
+  if [ "$(query "$document" services.worker)" = "null" ]; then
+    report ng "${label}に worker がない。ジョブが溜まるだけで実行されない"
+    return
+  fi
+
+  report ok "${label}に worker がある"
+
+  local ports
+  ports="$(query "$document" services.worker.ports)"
+
+  if [ "$ports" = "null" ]; then
+    report ok "${label}の worker はホストへポートを公開しない"
+  else
+    report ng "${label}の worker がホストへポートを公開している（${ports}）"
+  fi
+
+  local web_queue worker_queue
+  web_queue="$(query "$document" services.web.environment.QUEUE_DATABASE_NAME | tr -d '"')"
+  worker_queue="$(query "$document" services.worker.environment.QUEUE_DATABASE_NAME | tr -d '"')"
+
+  if [ "$web_queue" = "$worker_queue" ] && [ "$web_queue" != "null" ]; then
+    report ok "${label}の web と worker が同じジョブ用データベースを使う（${web_queue}）"
+  else
+    report ng "${label}の web と worker でジョブ用データベースが違う（web ${web_queue} / worker ${worker_queue}）"
+  fi
+
+  local depends
+  depends="$(query "$document" services.worker.depends_on.web.condition | tr -d '"')"
+
+  if [ "$depends" = "service_healthy" ]; then
+    report ok "${label}の worker は web の稼働を待って起動する"
+  else
+    report ng "${label}の worker が web の稼働を待っていない（${depends}）"
+  fi
+
+  local threads connections
+  threads="$(query "$document" services.worker.environment.JOB_THREADS | tr -d '"')"
+  connections="$(query "$document" services.worker.environment.QUEUE_DATABASE_CONNECTIONS | tr -d '"')"
+
+  if [ "$threads" != "null" ] && [ "$connections" != "null" ] && [ "$threads" -le "$((connections - 2))" ]; then
+    report ok "${label}の実行 thread 数が接続数に収まる（thread ${threads} / 接続 ${connections}）"
+  else
+    report ng "${label}の実行 thread 数が接続数に対して多い（thread ${threads} / 接続 ${connections}）"
+  fi
+}
+
+check_worker "開発用" "$development"
+check_worker "配布用" "$production"
+
+production_worker_restart="$(query "$production" services.worker.restart | tr -d '"')"
+
+if [ "$production_worker_restart" != "null" ]; then
+  report ok "配布用の worker が再起動方針を持つ（${production_worker_restart}）"
+else
+  report ng "配布用の worker に再起動方針がない"
+fi
+
+development_queue="$(query "$development" services.web.environment.QUEUE_DATABASE_NAME | tr -d '"')"
+production_queue="$(query "$production" services.web.environment.QUEUE_DATABASE_NAME | tr -d '"')"
+
+if [ "$development_queue" != "$production_queue" ]; then
+  report ok "ジョブ用データベース名が異なる（開発 ${development_queue} / 配布 ${production_queue}）"
+else
+  report ng "ジョブ用データベース名が同じ（${development_queue}）"
 fi
 
 if [ "$failures" -eq 0 ]; then

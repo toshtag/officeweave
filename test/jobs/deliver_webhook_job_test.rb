@@ -11,16 +11,24 @@ class DeliverWebhookJobTest < ActiveJob::TestCase
   # --- 送信時の再検証 ---
 
   test "送信のたびに名前解決をやり直す" do
+    address = loopback_address(4)
+    @endpoint.update_column(:url, "http://hooks.internal.example/events")
     calls = []
-    job = DeliverWebhookJob.new
-    job.resolver = lambda do |hostname, port|
-      calls << [ hostname, port ]
-      [ "93.184.216.34" ]
+
+    with_local_server(address) do |_received|
+      job = DeliverWebhookJob.new
+      job.allowlist = Set["http://hooks.internal.example:80"]
+      job.resolver = lambda do |hostname, port|
+        calls << [ hostname, port ]
+        [ address ]
+      end
+
+      job.perform(@endpoint.id, "request_submitted", { subject_id: 1 })
+      job.perform(@endpoint.id, "request_submitted", { subject_id: 1 })
     end
 
-    job.perform(@endpoint.id, "request_submitted", { subject_id: 1 })
-
-    assert_equal [ [ "example.com", 443 ] ], calls
+    # 送信のたびに解決する。保存時の結果を持ち回さない。
+    assert_equal [ [ "hooks.internal.example", 80 ], [ "hooks.internal.example", 80 ] ], calls
   end
 
   test "保存時は外部でも、送信時に内部へ変わっていれば送らない" do
@@ -205,6 +213,102 @@ class DeliverWebhookJobTest < ActiveJob::TestCase
     assert_equal 302, @endpoint.webhook_deliveries.recent_first.first.response_status
   end
 
+  # --- やり直し ---
+
+  test "合計 5 回まで実行し、待ち時間はメールとそろえる" do
+    assert_equal 5, DeliverWebhookJob::MAXIMUM_ATTEMPTS
+    assert_equal NotificationMailDeliveryJob::RETRY_INTERVALS, DeliverWebhookJob::RETRY_INTERVALS
+  end
+
+  test "やり直す応答の範囲" do
+    [ 408, 425, 429, 500, 502, 503, 504, 599 ].each do |status|
+      assert_includes DeliverWebhookJob::RETRYABLE_STATUSES, status, "#{status} をやり直さない"
+    end
+
+    [ 200, 201, 204, 301, 302, 400, 401, 403, 404, 409, 410, 422, 451 ].each do |status|
+      refute_includes DeliverWebhookJob::RETRYABLE_STATUSES, status, "#{status} をやり直している"
+    end
+  end
+
+  test "一時的な応答ではやり直しを積み、記録も残す" do
+    [ 408, 425, 429, 500, 503 ].each do |status|
+      assert_difference -> { WebhookDelivery.count }, 1 do
+        assert_raises(DeliverWebhookJob::TransientDeliveryError, "#{status} でやり直しへ渡していない") do
+          deliver_to_local_server(status: "#{status} 応答")
+        end
+      end
+
+      assert_equal status, @endpoint.webhook_deliveries.recent_first.first.response_status
+    end
+  end
+
+  test "成功と恒久的な応答ではやり直さない" do
+    [ 200, 204, 302, 400, 404, 422 ].each do |status|
+      deliver_to_local_server(status: "#{status} 応答")
+
+      assert_equal status, @endpoint.webhook_deliveries.recent_first.first.response_status
+    end
+  end
+
+  test "通信そのものの失敗ではやり直しを積む" do
+    # 受け付けるものがいない宛先へつなぎ、接続の失敗を作る。
+    address = loopback_address(3)
+
+    job = DeliverWebhookJob.new
+    job.resolver = ->(_hostname, _port) { [ address ] }
+    job.allowlist = Set["http://hooks.internal.example:80"]
+    @endpoint.update_column(:url, "http://hooks.internal.example/events")
+
+    assert_difference -> { WebhookDelivery.count }, 1 do
+      assert_raises(DeliverWebhookJob::TransientDeliveryError) do
+        job.perform(@endpoint.id, "request_submitted", { subject_id: 1 })
+      end
+    end
+
+    assert @endpoint.webhook_deliveries.recent_first.first.error_message.present?
+  end
+
+  test "宛先の拒否ではやり直さない" do
+    job = DeliverWebhookJob.new
+    job.resolver = ->(_hostname, _port) { [ "10.0.0.1" ] }
+
+    # やり直しの例外が出ないこと自体が契約である。
+    job.perform(@endpoint.id, "request_submitted", { subject_id: 1 })
+
+    assert_equal "destination_not_allowed", @endpoint.webhook_deliveries.recent_first.first.failure_code
+  end
+
+  test "やり直しの例外へ宛先や送信内容を入れない" do
+    error = assert_raises(DeliverWebhookJob::TransientDeliveryError) do
+      deliver_to_local_server(status: "503 応答", payload: { secret: "漏れてはいけない値" })
+    end
+
+    refute_includes error.message, "漏れてはいけない値"
+    refute_includes error.message, "hooks.internal.example"
+  end
+
+  test "配信識別子を添え、やり直しても変わらない" do
+    address = loopback_address
+    @endpoint.update_column(:url, "http://hooks.internal.example/events")
+
+    with_local_server(address) do |received|
+      job = DeliverWebhookJob.new
+      job.resolver = ->(_hostname, _port) { [ address ] }
+      job.allowlist = Set["http://hooks.internal.example:80"]
+
+      # 同じジョブを 2 回実行する。やり直しは同じ job_id で行われる。
+      job.perform(@endpoint.id, "request_submitted", { subject_id: 1 })
+      job.perform(@endpoint.id, "request_submitted", { subject_id: 1 })
+
+      identifiers = received.call.map { |request| request.headers["x-officeweave-delivery-id"] }
+
+      assert_equal 2, identifiers.size
+      assert identifiers.all?(&:present?), "配信識別子が空になっている"
+      assert_equal 1, identifiers.uniq.size, "やり直しで配信識別子が変わっている"
+      assert_equal job.job_id, identifiers.first
+    end
+  end
+
   # --- 既存の契約 ---
 
   test "宛先へ到達できない場合も記録が残る" do
@@ -234,4 +338,19 @@ class DeliverWebhookJobTest < ActiveJob::TestCase
       DeliverWebhookJob.perform_now(0, "request_submitted", { subject_id: 1 })
     end
   end
+
+  private
+    # 応答を決めた受信サーバーへ送る。
+    def deliver_to_local_server(status:, payload: { subject_id: 1 })
+      address = loopback_address(2)
+      @endpoint.update_column(:url, "http://hooks.internal.example/events")
+
+      with_local_server(address, status: status) do |_received|
+        job = DeliverWebhookJob.new
+        job.resolver = ->(_hostname, _port) { [ address ] }
+        job.allowlist = Set["http://hooks.internal.example:80"]
+
+        job.perform(@endpoint.id, "request_submitted", payload)
+      end
+    end
 end

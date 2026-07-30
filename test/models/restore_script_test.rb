@@ -116,6 +116,36 @@ class RestoreScriptTest < ActiveSupport::TestCase
     end
   end
 
+  test "未処理のジョブも復元する" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+      archive = build_archive(sandbox)
+
+      _stdout, stderr, status = sandbox.run("bin/restore", archive, env: { "FORCE" => "1" })
+
+      assert status.success?, stderr
+      # ジョブ用のデータベースも一度空にしてから戻す。
+      # 残すと、復元した業務データと噛み合わない送信が動き出す。
+      assert_includes calls(sandbox), "--dbname=officeweave_development_queue"
+      assert_includes calls(sandbox), "queue_database.sql"
+    end
+  end
+
+  test "未処理のジョブが無い古い書庫も受け付ける" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+      # 形式 2 より前の書庫。ジョブの表を作り直す道具を用意する。
+      install_fake_rails(sandbox)
+      archive = build_archive(sandbox, queue: false)
+
+      _stdout, stderr, status = sandbox.run("bin/restore", archive, env: { "FORCE" => "1" })
+
+      assert status.success?, stderr
+      assert_includes stderr, "空のキューとして復元します"
+      assert_includes stderr, "失われます"
+    end
+  end
+
   test "確認に応じなければ何も変えない" do
     with_shell_sandbox do |sandbox|
       prepare(sandbox)
@@ -136,13 +166,25 @@ class RestoreScriptTest < ActiveSupport::TestCase
       FileUtils.mkdir_p(sandbox.path("storage"))
     end
 
+    # bin/restore は現在地からの相対で bin/rails を呼ぶ。
+    # 作業ディレクトリ側へ、呼び出しを受け止めるだけのものを置く。
+    def install_fake_rails(sandbox)
+      FileUtils.mkdir_p(sandbox.path("bin"))
+      path = sandbox.path("bin", "rails")
+      File.write(path, "#!/bin/bash\necho \"rails $*\" >> \"${FAKE_LOG}\"\n")
+      FileUtils.chmod(0o755, path)
+    end
+
     # 正しい形の書庫を組み立てる。
-    def build_archive(sandbox, storage: {}, database: "-- 取得したデータベースの内容\n", omit: nil)
+    def build_archive(sandbox, storage: {}, database: "-- 取得したデータベースの内容\n", omit: nil, queue: true)
       source = File.join(sandbox.root, "archive-source-#{SecureRandom.hex(4)}")
       FileUtils.mkdir_p(File.join(source, "storage"))
 
       File.write(File.join(source, "database.sql"), database) unless omit == "./database.sql"
-      File.write(File.join(source, "metadata.txt"), "created_at=20260101T000000Z\n") unless omit == "./metadata.txt"
+      File.write(File.join(source, "queue_database.sql"), "-- 未処理のジョブ\n") if queue
+      unless omit == "./metadata.txt"
+        File.write(File.join(source, "metadata.txt"), "format_version=2\ncreated_at=20260101T000000Z\n")
+      end
       FileUtils.rm_rf(File.join(source, "storage")) if omit == "./storage"
 
       storage.each do |name, body|
