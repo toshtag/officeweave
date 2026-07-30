@@ -32,6 +32,12 @@ class DiagnosticsTest < ActiveSupport::TestCase
     assert_equal :ok, find("ファイルの保存先")[:status]
   end
 
+  test "添付ファイルの取得経路が文書の配下だけであることを確認する" do
+    check = find("添付ファイルの取得経路")
+
+    assert_equal :ok, check[:status]
+  end
+
   test "有効な管理者がいない場合は失敗として扱う" do
     User.update_all(role: "member")
 

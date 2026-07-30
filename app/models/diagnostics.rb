@@ -9,6 +9,7 @@ class Diagnostics
       pending_migrations,
       required_extensions,
       storage_writable,
+      attachment_routes,
       secret_key,
       mail_delivery,
       application_host,
@@ -69,6 +70,27 @@ class Diagnostics
       ok("ファイルの保存先", path.to_s)
     rescue StandardError => exception
       error("ファイルの保存先", exception.message)
+    end
+
+    # 添付ファイルの取得経路。
+    #
+    # 保存基盤が作る経路は、署名付きの ID を知っている相手へ
+    # ログインの有無も文書の参照範囲も問わず配信する。
+    # 設定を戻しても画面は動くため、稼働中の構成として確かめる。
+    def attachment_routes
+      standard = Rails.application.routes.routes.count do |route|
+        route.defaults[:controller].to_s.start_with?("active_storage/")
+      end
+
+      if standard.zero?
+        ok("添付ファイルの取得経路", "文書の配下の経路だけ")
+      else
+        error("添付ファイルの取得経路",
+              "保存基盤の経路が #{standard} 件あります。" \
+              "config.active_storage.draw_routes = false を設定してください。")
+      end
+    rescue StandardError => exception
+      error("添付ファイルの取得経路", exception.message)
     end
 
     def secret_key
