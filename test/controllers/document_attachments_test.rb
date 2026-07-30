@@ -1,6 +1,8 @@
 require "test_helper"
 
 class DocumentAttachmentsTest < ActionDispatch::IntegrationTest
+  include ActiveJob::TestHelper
+
   setup { sign_in_as users(:taro) }
 
   test "添付ファイルを付けて作成できる" do
@@ -64,9 +66,11 @@ class DocumentAttachmentsTest < ActionDispatch::IntegrationTest
     keep_a = attach_text(document, "keep_a.txt")
     attach_text(document, "keep_b.txt")
 
-    patch document_url(document), params: {
-      document: { title: "", remove_attachment_ids: [ keep_a.id ] }
-    }
+    assert_no_enqueued_jobs only: ActiveStorage::PurgeJob do
+      patch document_url(document), params: {
+        document: { title: "", remove_attachment_ids: [ keep_a.id ] }
+      }
+    end
 
     assert_response :unprocessable_content
     assert_equal %w[keep_a.txt keep_b.txt], attachment_filenames(document)
@@ -95,13 +99,94 @@ class DocumentAttachmentsTest < ActionDispatch::IntegrationTest
     document = documents(:travel_rule)
     attach_text(document, "keep.txt")
 
-    patch document_url(document), params: {
-      document: { title: "", attachments: [ uploaded_file(filename: "added.txt") ] }
-    }
+    assert_no_difference [ -> { ActiveStorage::Attachment.count }, -> { ActiveStorage::Blob.count } ] do
+      patch document_url(document), params: {
+        document: { title: "", attachments: [ uploaded_file(filename: "added.txt") ] }
+      }
+    end
 
     assert_response :unprocessable_content
     assert_equal %w[keep.txt], attachment_filenames(document)
     assert_select "label", text: "keep.txt"
+  end
+
+  test "文書の更新に失敗しても入力した内容と既存の添付ファイルが画面へ戻る" do
+    document = documents(:travel_rule)
+    keep = attach_text(document, "keep.txt")
+    sales = departments(:sales)
+
+    patch document_url(document), params: {
+      document: { title: "", body: "改訂した本文",
+                  visibility: "departments",
+                  department_ids: [ sales.id ],
+                  remove_attachment_ids: [ keep.id ],
+                  attachments: [ uploaded_file(filename: "added.txt") ] }
+    }
+
+    assert_response :unprocessable_content
+
+    document.reload
+    assert_equal "出張旅費規程", document.title
+    assert_equal "出張に関する旅費の取り扱いを定める。", document.body
+    assert_equal "organization", document.visibility
+    assert_empty document.department_ids
+    assert_equal %w[keep.txt], attachment_filenames(document)
+
+    assert_select ".error-summary"
+    assert_select "textarea#document_body", text: /改訂した本文/
+    assert_select "input#document_department_#{sales.id}[checked]"
+    assert_select "label", text: "keep.txt"
+  end
+
+  test "選択削除した添付ファイルの実体はジョブ処理後に消える" do
+    document = documents(:travel_rule)
+    removed = attach_text(document, "remove.txt")
+    attach_text(document, "keep.txt")
+    removed_blob = removed.blob
+
+    perform_enqueued_jobs only: ActiveStorage::PurgeJob do
+      patch document_url(document), params: {
+        document: { title: document.title, remove_attachment_ids: [ removed.id ] }
+      }
+    end
+
+    assert_redirected_to document_url(document)
+    assert_not ActiveStorage::Attachment.exists?(removed.id), "取り除いた添付の関連が消えること"
+    assert_not ActiveStorage::Blob.exists?(removed_blob.id), "取り除いた添付の Blob が消えること"
+    assert_not removed_blob.service.exist?(removed_blob.key), "取り除いた添付の保存実体が消えること"
+    assert_equal %w[keep.txt], attachment_filenames(document)
+  end
+
+  test "他の文書から参照されている添付ファイルの実体は削除されない" do
+    document = documents(:travel_rule)
+    other_document = documents(:onboarding)
+    shared = attach_text(document, "shared.txt")
+    other_document.attachments.attach(shared.blob)
+    shared_blob = shared.blob
+
+    perform_enqueued_jobs only: ActiveStorage::PurgeJob do
+      patch document_url(document), params: {
+        document: { title: document.title, remove_attachment_ids: [ shared.id ] }
+      }
+    end
+
+    assert_redirected_to document_url(document)
+    assert_empty attachment_filenames(document)
+    assert_equal %w[shared.txt], attachment_filenames(other_document)
+    assert ActiveStorage::Blob.exists?(shared_blob.id), "参照が残る間は Blob が消えないこと"
+    assert shared_blob.service.exist?(shared_blob.key), "参照が残る間は保存実体が消えないこと"
+
+    last_attachment = other_document.attachments.find { |attachment| attachment.filename.to_s == "shared.txt" }
+
+    perform_enqueued_jobs only: ActiveStorage::PurgeJob do
+      patch document_url(other_document), params: {
+        document: { title: other_document.title, remove_attachment_ids: [ last_attachment.id ] }
+      }
+    end
+
+    assert_redirected_to document_url(other_document)
+    assert_not ActiveStorage::Blob.exists?(shared_blob.id), "最後の参照が消えると Blob が消えること"
+    assert_not shared_blob.service.exist?(shared_blob.key), "最後の参照が消えると保存実体が消えること"
   end
 
   test "上限件数の文書へ追加すると受け付けず、既存の添付ファイルが残る" do

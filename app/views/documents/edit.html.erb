@@ -2,6 +2,6 @@
 
 <div class="panel panel--narrow stack">
   <h1><%= t("documents.edit.heading") %></h1>
-  <%= render "form", document: @document %>
+  <%= render "form", document: @document, selected_department_ids: @selected_department_ids %>
   <%= link_to t("common.back"), documents_path %>
 </div>
