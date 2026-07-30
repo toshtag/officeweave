@@ -50,4 +50,24 @@ Rails.application.configure do
 
   # Raise error when a before_action's only/except options reference missing actions.
   config.action_controller.raise_on_missing_callback_actions = true
+
+  # Webhook 宛先の名前解決。
+  #
+  # 実行環境の DNS へ依存させない。IP を直接書いた宛先はそのまま返し、
+  # 決まったホスト名だけを決まったアドレスへ解決する。
+  # それ以外は解決できない扱いとし、外部へ問い合わせない。
+  config.x.webhook_destination_resolver = lambda do |hostname, _port|
+    begin
+      return [ IPAddr.new(hostname).to_s ]
+    rescue IPAddr::Error
+      # ホスト名として扱う。
+    end
+
+    case hostname
+    when "example.com", "hooks.example.com" then [ "93.184.216.34" ]
+    when "localhost" then [ "::1", "127.0.0.1" ]
+    when "internal.example", "hooks.internal.example" then [ "10.0.0.5" ]
+    else raise WebhookDestination::Error.new(:resolution_failed)
+    end
+  end
 end
