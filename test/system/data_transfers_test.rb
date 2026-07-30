@@ -25,4 +25,16 @@ class DataTransfersTest < ApplicationSystemTestCase
     assert_selector ".error-summary"
     assert_text I18n.t("data_transfers.import.line", line: 3)
   end
+
+  test "未知の部門コードは行番号と識別子が示される" do
+    sign_in_as users(:taro)
+
+    visit data_transfers_path
+    attach_file I18n.t("data_transfers.import.file"), file_fixture("users_unknown_department.csv")
+    click_button I18n.t("data_transfers.import.submit")
+
+    assert_selector ".error-summary"
+    assert_text I18n.t("data_transfers.import.line", line: 2)
+    assert_text "missing-department"
+  end
 end

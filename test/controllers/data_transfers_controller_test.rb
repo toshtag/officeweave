@@ -48,6 +48,23 @@ class DataTransfersControllerTest < ActionDispatch::IntegrationTest
     assert_select ".error-summary"
   end
 
+  test "未知の部門コードは行番号と識別子を示して拒否される" do
+    sign_in_as users(:taro)
+
+    post users_import_url, params: { file: csv_file(<<~CSV) }
+      name,email_address,role,locale,departments
+      山田 太郎,#{users(:taro).email_address},administrator,ja,missing-department
+    CSV
+
+    assert_response :unprocessable_content
+    assert_select ".error-summary" do
+      assert_select "li", text: /#{Regexp.escape(I18n.t("data_transfers.import.line", line: 2))}/
+      assert_select "li", text: /missing-department/
+    end
+    assert_not_includes response.body, I18n.t("data_transfers.imported", created: 0, updated: 0)
+    assert_equal [ departments(:sales) ], users(:taro).reload.departments
+  end
+
   test "ファイルを選ばない場合は理由が示される" do
     sign_in_as users(:taro)
 

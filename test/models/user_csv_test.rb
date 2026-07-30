@@ -152,6 +152,27 @@ class UserCsvTest < ActiveSupport::TestCase
     assert_nil organizations(:main).users.find_by(email_address: "ichiro@example.com")
   end
 
+  test "departments 列を空欄にすると所属をすべて解除する" do
+    result = @csv.import(<<~CSV)
+      name,email_address,role,locale,departments
+      山田 太郎,#{users(:taro).email_address},administrator,,
+    CSV
+
+    assert_predicate result, :success?
+    assert_empty users(:taro).reload.departments
+  end
+
+  test "複数の部門コードを指定できる" do
+    result = @csv.import(<<~CSV)
+      name,email_address,role,locale,departments
+      山田 太郎,#{users(:taro).email_address},administrator,,sales development
+    CSV
+
+    assert_predicate result, :success?
+    assert_equal [ departments(:sales), departments(:development) ].sort_by(&:id),
+                 users(:taro).reload.departments.sort_by(&:id)
+  end
+
   test "departments 列がなければ既存の所属を変えない" do
     result = @csv.import(<<~CSV)
       name,email_address,role,locale
