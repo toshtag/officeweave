@@ -1,7 +1,8 @@
 # 出来事を外部へ送る宛先。
 #
-# 宛先は管理者が登録する。任意の URL へ送るため、
-# 登録できる利用者を管理者に限ることが唯一の防御になる。
+# 宛先は管理者が登録する。ただし、登録できる利用者を絞ることだけを防御にしない。
+# 誤った登録も、権限を奪われた場合も、内部ネットワークへの入口になり得る。
+# 宛先として妥当かどうかは WebhookDestination が判断する。
 class WebhookEndpoint < ApplicationRecord
   # 送る出来事。通知と同じ区分にそろえる。
   EVENTS = Notification::EVENTS
@@ -12,7 +13,7 @@ class WebhookEndpoint < ApplicationRecord
 
   validates :name, presence: true, length: { maximum: 100 }
   validates :url, presence: true, length: { maximum: 2_000 }
-  validate :url_must_be_http
+  validate :url_must_be_permitted_destination, if: :destination_check_required?
   validates :secret, presence: true, length: { maximum: 200 }
 
   scope :active, -> { where(active: true) }
@@ -26,16 +27,20 @@ class WebhookEndpoint < ApplicationRecord
   end
 
   private
-    # 形式の判定を正規表現で行うと、改行を挟んだ値が通り抜ける。
-    # 実際に解析して、方式と宛先が揃っていることを確かめる。
-    def url_must_be_http
-      return if url.blank?
+    # 名前解決を伴う検査は、宛先か有効状態が変わるときだけ行う。
+    # 名前の変更などで毎回行うと、DNS の一時的な不調で無関係な更新まで止まる。
+    def destination_check_required?
+      return false if url.blank?
 
-      uri = URI.parse(url)
+      new_record? || url_changed? || (active_changed? && active?)
+    end
 
-      errors.add(:url, :invalid) unless uri.is_a?(URI::HTTP) && uri.host.present?
-    rescue URI::InvalidURIError
-      errors.add(:url, :invalid)
+    # 保存の時点で誤りを管理者へ返す。
+    # ただし、これを唯一の防御にしない。送信の時点でも同じ検査を行う。
+    def url_must_be_permitted_destination
+      WebhookDestination.resolve!(url)
+    rescue WebhookDestination::Error => error
+      errors.add(:url, error.reason)
     end
 
     def assign_secret

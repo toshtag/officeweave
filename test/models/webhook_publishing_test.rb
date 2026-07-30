@@ -28,7 +28,7 @@ class WebhookPublishingTest < ActiveSupport::TestCase
   end
 
   test "別組織の送信先へは積まれない" do
-    other = organizations(:other).webhook_endpoints.create!(name: "別組織", url: "https://example.invalid/hook")
+    other = organizations(:other).webhook_endpoints.create!(name: "別組織", url: "https://hooks.example.com/hook")
 
     perform_enqueued_jobs_ids = []
     assert_enqueued_jobs 1, only: DeliverWebhookJob do

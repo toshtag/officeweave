@@ -175,6 +175,28 @@ script/production_restore backups/<書庫>
 詳しくは [バックアップと復元](backup.md) を参照する。
 取得しているだけでは復元できることの確認にならない。復元まで一度試す。
 
+### Webhook の送信先
+
+Webhook は既定で、組織の外にある http / https の宛先だけへ送信する。
+ポートは 80 番または 443 番に限る。https を推奨する。
+
+ループバックや私用アドレスへは送信しない。保存時と送信時の両方で検査する。
+
+閉じたネットワーク内の宛先へ送る必要がある場合だけ、`.env` へ次を設定する。
+防御を弱める設定であるため、必要な origin だけを挙げる。
+
+```text
+WEBHOOK_PRIVATE_DESTINATION_ALLOWLIST=http://hooks.internal.example
+```
+
+設定したら診断で確認する。
+
+```bash
+docker compose -f compose.production.yaml exec web bin/diagnose
+```
+
+詳しくは [設定](../development/configuration.md) を参照する。
+
 ### 更新
 
 [アップグレード](upgrade.md) の手順に従う。

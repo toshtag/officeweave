@@ -31,7 +31,7 @@
           <% @deliveries.each do |delivery| %>
             <tr>
               <td><%= t("notifications.events.#{delivery.event}", title: "") %></td>
-              <td><%= delivery.response_status || delivery.error_message %></td>
+              <td><%= delivery.outcome %></td>
               <td><%= l(delivery.created_at, format: :short) %></td>
             </tr>
           <% end %>

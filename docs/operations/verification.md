@@ -101,7 +101,23 @@ docker run --rm --entrypoint sh <イメージ名> -c 'ls config/master.key .env'
 
 欠けた書庫で復元を試み、既存のデータが変更されないことも確かめる。
 
-## 5. 主要な業務の流れ
+## 5. Webhook の送信先
+
+外部の宛先へ実際に送るのではなく、拒否と許可の境界を確かめる。
+
+```text
+1. 送信先へ http://127.0.0.1/ を登録しようとして、拒否されることを確かめる
+2. 送信先へ http://example.com:8080/ を登録しようとして、拒否されることを確かめる
+3. WEBHOOK_PRIVATE_DESTINATION_ALLOWLIST を空のまま bin/diagnose を実行し、
+   「設定なし」と出ることを確かめる
+4. 書式の不正な値を設定して bin/diagnose を実行し、失敗することを確かめる
+```
+
+実在する外部の宛先や、クラウドのメタデータサービスへは送信しない。
+送信そのものの確認は、`test/jobs/deliver_webhook_job_test.rb` が
+プロセス内の受信サーバーで行っている。
+
+## 6. 主要な業務の流れ
 
 `test/system/end_to_end_test.rb` が、次を画面の操作だけで通す。
 
@@ -116,7 +132,7 @@ docker run --rm --entrypoint sh <イメージ名> -c 'ls config/master.key .env'
 
 自動で実行されるため、手作業での確認は不要とする。
 
-## 6. 自動実行
+## 7. 自動実行
 
 `.github/workflows/verify.yml` が、変更のたびに次を実行する。
 

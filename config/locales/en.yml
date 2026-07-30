@@ -162,6 +162,21 @@ en:
         user_id: User
         department: Department
         primary: Primary department
+    errors:
+      models:
+        webhook_endpoint:
+          attributes:
+            url:
+              invalid_url: must be a URL starting with http or https
+              unsupported_scheme: only accepts http or https
+              missing_host: is missing a host name
+              credentials_not_allowed: must not contain a user name or password
+              fragment_not_allowed: must not contain a fragment after #
+              port_not_allowed: only accepts port 80 or 443
+              resolution_failed: has a host name that could not be resolved
+              resolution_timeout: has a host name that took too long to resolve
+              destination_not_allowed: points at an internal or reserved address. Use an external destination
+              invalid_allowlist: cannot be checked. Review the WEBHOOK_PRIVATE_DESTINATION_ALLOWLIST setting
 
   common:
     back: Back to list
@@ -560,7 +575,7 @@ en:
     new:
       heading: Add an endpoint
       submit: Add
-      url_hint: Use a URL starting with http or https. Events can be sent outside your organization, so check the destination.
+      url_hint: Use an external https destination. Only port 80 and 443 are accepted. Internal and loopback addresses cannot be used.
     show:
       deliveries: Delivery log
       no_deliveries: Nothing has been sent yet.
@@ -568,6 +583,17 @@ en:
     status:
       active: Active
       inactive: Disabled
+    failures:
+      invalid_url: The URL is malformed
+      unsupported_scheme: Not http or https
+      missing_host: No host name
+      credentials_not_allowed: The URL contains credentials
+      fragment_not_allowed: The URL contains a fragment
+      port_not_allowed: The port is not allowed
+      resolution_failed: The host name could not be resolved
+      resolution_timeout: Resolving the host name timed out
+      destination_not_allowed: The destination is not allowed
+      invalid_allowlist: The allowlist setting is invalid
 
   data_transfers:
     title: Import and export
