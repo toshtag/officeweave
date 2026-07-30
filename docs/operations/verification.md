@@ -188,7 +188,24 @@ test -z "$(printf '%s\n' "$ROUTES" | grep 'active_storage' || true)"
 `test/system/document_attachments_test.rb` が押さえている。
 ここで確かめるのは、実際に動いている構成でも同じであることである。
 
-## 9. 主要な業務の流れ
+## 9. 利用者 CSV の所属更新
+
+利用者 CSV の `departments` 列が、既存の所属を黙って壊さないことを確かめる。
+
+```text
+1. 未知の部門コードを含む取り込みは、行番号とコードを表示して拒否される
+2. 拒否されたとき、CSV 内の全利用者の属性と所属が変更されていない
+3. departments 列を省略すると、既存の所属が維持される
+4. departments 列を付けて空欄にすると、所属がすべて解除される
+5. 登録済みのコードだけの場合は、指定された所属へ更新される
+```
+
+未知のコードの拒否と全体ロールバックは `test/models/user_csv_test.rb` が、
+画面での行番号とコードの表示は `test/controllers/data_transfers_controller_test.rb` と
+`test/system/data_transfers_test.rb` が押さえている。
+ここで確かめるのは、実際に動いている構成でも同じであることである。
+
+## 10. 主要な業務の流れ
 
 `test/system/end_to_end_test.rb` が、次を画面の操作だけで通す。
 
@@ -203,7 +220,7 @@ test -z "$(printf '%s\n' "$ROUTES" | grep 'active_storage' || true)"
 
 自動で実行されるため、手作業での確認は不要とする。
 
-## 10. 自動実行
+## 11. 自動実行
 
 `.github/workflows/verify.yml` が、変更のたびに次を実行する。
 

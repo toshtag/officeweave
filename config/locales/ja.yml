@@ -624,11 +624,13 @@ ja:
     import:
       heading: 利用者の取り込み
       description: メールアドレスが一致する利用者は更新し、なければ追加します。パスワードは扱いません。
-      columns_hint: 1 行目に上記の見出しを付けてください。departments は部門の識別子を空白で区切って並べます。
+      columns_hint: 1 行目に上記の見出しを付けてください。departments は部門の識別子を空白で区切って並べます。departments 列を省くと所属は変わりません。列を付けて空欄にすると、所属をすべて解除します。登録されていない識別子が 1 件でもあると、何も取り込まれません。
       file: CSV ファイル
       submit: 取り込む
       failed: 取り込めませんでした。1 件でも誤りがあると、何も保存されません。
       line: "%{line} 行目:"
+      errors:
+        unknown_departments: "登録されていない部門の識別子です: %{codes}"
 
   audit_events:
     unknown_actor: 不明

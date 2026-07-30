@@ -4,6 +4,9 @@ require "csv"
 #
 # 取り込みは、1 行でも誤りがあれば何も保存しない。
 # 一部だけ取り込まれると、どこまで反映されたか分からなくなる。
+#
+# departments は列の有無で意味が変わる。列がなければ所属を変えず、
+# 列があり空欄なら所属をすべて解除する。未知のコードは行の誤りとする。
 class UserCsv
   HEADERS = %w[name email_address role locale departments].freeze
 
@@ -42,12 +45,15 @@ class UserCsv
         was_new = user.new_record?
 
         assign(user, row)
+        unknown_codes = unknown_department_codes(row)
 
-        if user.save
-          apply_departments(user, row["departments"])
+        if unknown_codes.any?
+          # 行番号は見出しを含めた表示上の位置で伝える。
+          errors << { line: index + 2, messages: [ unknown_departments_message(unknown_codes) ] }
+        elsif user.save
+          apply_departments(user, row) if row.header?("departments")
           was_new ? created += 1 : updated += 1
         else
-          # 行番号は見出しを含めた表示上の位置で伝える。
           errors << { line: index + 2, messages: user.errors.full_messages }
         end
       end
@@ -86,8 +92,28 @@ class UserCsv
       user.errors.add(:role, :inclusion)
     end
 
-    def apply_departments(user, codes)
-      wanted = @organization.departments.where(code: codes.to_s.split)
+    # コードは空白で区切る。重複は 1 件として扱い、入力順を保つ。
+    def requested_codes(row)
+      row["departments"].to_s.split.uniq
+    end
+
+    # 自組織で解決できないコードは、大文字小文字の違いも含めて未知とする。
+    # 推測での補正や別組織からの解決は行わない。
+    def unknown_department_codes(row)
+      return [] unless row.header?("departments")
+
+      codes = requested_codes(row)
+
+      codes - @organization.departments.where(code: codes).pluck(:code)
+    end
+
+    def unknown_departments_message(codes)
+      I18n.t("data_transfers.import.errors.unknown_departments", codes: codes.join(", "))
+    end
+
+    # departments 列がある行だけが呼ぶ。空欄は所属なしへの置き換えとなる。
+    def apply_departments(user, row)
+      wanted = @organization.departments.where(code: requested_codes(row))
       user.memberships.where.not(department_id: wanted.select(:id)).destroy_all
 
       wanted.each do |department|
