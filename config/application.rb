@@ -41,6 +41,17 @@ module Officeweave
     # 取りこぼすと、複製した環境で重複が防げなくなる。
     config.active_record.schema_format = :sql
 
+    # 保存基盤が用意する経路を作らない。
+    #
+    # 標準の経路は署名付きの ID を知っている相手へそのまま配信する。
+    # ログインの有無も、文書の参照範囲も見ないため、
+    # 添付に対して文書と同じ制限をかけられない。
+    # 範囲を後から狭めても、発行済みの URL は期限まで有効なままになる。
+    #
+    # 添付は DocumentAttachmentsController だけから返す。
+    # ここは環境ごとに変える設定ではないため、全環境へ一度だけ書く。
+    config.active_storage.draw_routes = false
+
     # Configuration for the application, engines, and railties goes here.
     #
     # These settings can be overridden in specific environments using the files
