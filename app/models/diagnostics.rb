@@ -14,7 +14,8 @@ class Diagnostics
       application_host,
       administrator_exists,
       webhook_allowlist,
-      webhook_destinations
+      webhook_destinations,
+      *queue_checks
     ]
   end
 
@@ -114,6 +115,110 @@ class Diagnostics
       end
     rescue StandardError => exception
       error("管理者", exception.message)
+    end
+
+    # ジョブに関わる検査。
+    #
+    # 永続キューを使わない設定では、表も worker も存在しない。
+    # 当てはまらない検査を失敗として並べると、本当の不備が埋もれる。
+    def queue_checks
+      adapter = ActiveJob::Base.queue_adapter_name.to_s
+
+      unless adapter == "solid_queue"
+        return [ warning("ジョブの実行方式",
+                         "永続キューを使わない設定です（#{adapter}）。ジョブは保存されません。") ]
+      end
+
+      [ queue_database, queue_settings, job_workers, failed_jobs ]
+    end
+
+    # ジョブ用の表があるか。
+    #
+    # 存在しない表へ問い合わせると、その接続のトランザクションが壊れる。
+    # 以降の検査まで巻き込むため、カタログの照会で確かめる。
+    def queue_tables_present?
+      SolidQueue::Job.connection.table_exists?("solid_queue_jobs")
+    rescue StandardError
+      false
+    end
+
+    # ジョブの保存先。
+    #
+    # primary とは別の論理データベースへ置く。
+    # 接続できない、または表が無い状態では、送信が一切行われない。
+    def queue_database
+      if queue_tables_present?
+        ok("ジョブの保存先", SolidQueue::Job.connection_db_config.database)
+      else
+        error("ジョブの保存先",
+              "ジョブ用の表がありません。bin/rails db:prepare を実行してください。")
+      end
+    rescue StandardError => exception
+      error("ジョブの保存先", exception.message)
+    end
+
+    # 実行 thread 数と接続数の整合。
+    #
+    # worker は実行 thread のほかに待機と heartbeat でも接続を使う。
+    # thread 数を接続数まで使い切ると、待機の側が接続を取れずに止まる。
+    def queue_settings
+      threads = ENV.fetch("JOB_THREADS", 2).to_i
+      processes = ENV.fetch("JOB_PROCESSES", 1).to_i
+      connections = ENV.fetch("QUEUE_DATABASE_CONNECTIONS", 5).to_i
+
+      if threads < 1 || processes < 1 || connections < 1
+        return error("ジョブの実行設定",
+                     "JOB_THREADS、JOB_PROCESSES、QUEUE_DATABASE_CONNECTIONS は 1 以上にしてください。")
+      end
+
+      if threads > connections - 2
+        error("ジョブの実行設定",
+              "JOB_THREADS=#{threads} に対して QUEUE_DATABASE_CONNECTIONS=#{connections} が不足しています。" \
+              "待機と heartbeat の分を含め、実行 thread 数 + 2 以上にしてください。")
+      else
+        ok("ジョブの実行設定", "process #{processes}、thread #{threads}、接続 #{connections}")
+      end
+    end
+
+    # worker の稼働。
+    #
+    # web だけが動いていても、ジョブは溜まるだけで実行されない。
+    # 配布用の構成では worker の不在を失敗として扱う。
+    def job_workers
+      return error("ジョブの実行", "ジョブ用の表がありません。") unless queue_tables_present?
+
+      # 種別の名前には実行方式が付く（Supervisor(fork) など）。前方一致で数える。
+      supervisors = SolidQueue::Process.where("kind LIKE 'Supervisor%'").count
+      workers = SolidQueue::Process.where(kind: "Worker").count
+
+      if workers.positive?
+        ok("ジョブの実行", "supervisor #{supervisors}、worker #{workers}")
+      elsif Rails.env.production?
+        error("ジョブの実行",
+              "worker が動いていません。docker compose -f compose.production.yaml up -d worker を実行してください。")
+      else
+        warning("ジョブの実行", "worker が動いていません。ジョブは溜まるだけで実行されません。")
+      end
+    rescue StandardError => exception
+      error("ジョブの実行", exception.message)
+    end
+
+    # 失敗したジョブ。
+    #
+    # 自動では消さない。存在するだけで起動を止めることもしない。
+    # 気付ける形にして、運用者の判断へ委ねる。
+    def failed_jobs
+      return error("失敗したジョブ", "ジョブ用の表がありません。") unless queue_tables_present?
+
+      count = SolidQueue::FailedExecution.count
+
+      if count.zero?
+        ok("失敗したジョブ", "なし")
+      else
+        warning("失敗したジョブ", "#{count} 件あります。bin/jobs_status --failed で内容を確認してください。")
+      end
+    rescue StandardError => exception
+      error("失敗したジョブ", exception.message)
     end
 
     # 内部宛先の許可設定。
