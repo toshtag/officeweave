@@ -24,7 +24,8 @@ docker compose -f compose.production.yaml up -d --build
 docker compose -f compose.production.yaml exec web bin/diagnose
 ```
 
-データベースの移行は起動時に自動で実行される。
+データベースの移行は起動時に自動で実行される。web が行い、worker は行わない。
+worker は web の稼働を待って起動するため、同時に移行して競合することはない。
 
 ### 手順の意図
 
@@ -48,6 +49,12 @@ docker compose -f compose.production.yaml exec web bin/diagnose
 メールの送信設定
 メール本文の URL に使うホスト名
 有効な管理者が存在するか
+Webhook の内部宛先の許可設定
+登録済みの Webhook 宛先が送信できるか
+ジョブの保存先
+ジョブの実行設定（thread 数と接続数の整合）
+worker が動いているか
+失敗したジョブが残っていないか
 ```
 
 失敗がある場合は 0 以外で終了する。
