@@ -181,11 +181,13 @@ jobs:
           docker compose -f compose.production.yaml exec -T web \
             sh -c 'echo "取得前のファイル" > storage/before-backup.txt'
           # 実行予定のジョブを積む。外部へ出さないため、存在しない送信先を指す。
-          docker compose -f compose.production.yaml exec -T web bin/rails runner '
-            job = DeliverWebhookJob.set(wait: 1.hour).perform_later(0, "request_submitted", { subject_id: 1 })
-            File.write("tmp/backup-job-id", job.job_id)
-          '
-          docker compose -f compose.production.yaml exec -T web cat tmp/backup-job-id
+          # job_id はホスト側で保持する。コンテナ内の tmp は作り直しで失われる。
+          job_id="$(docker compose -f compose.production.yaml exec -T web bin/rails runner '
+            puts DeliverWebhookJob.set(wait: 1.hour).perform_later(0, "request_submitted", { subject_id: 1 }).job_id
+          ' | tail -1 | tr -d '\r')"
+          echo "job_id=${job_id}"
+          test -n "${job_id}"
+          echo "BACKUP_JOB_ID=${job_id}" >> "$GITHUB_ENV"
 
       - name: バックアップを取得する
         run: script/production_backup
@@ -256,9 +258,8 @@ jobs:
 
       - name: 未処理のジョブが取得時点へ戻ることを確かめる
         run: |
-          docker compose -f compose.production.yaml exec -T web bin/rails runner '
-            expected = File.read("tmp/backup-job-id").strip
-            unless SolidQueue::Job.exists?(active_job_id: expected)
+          docker compose -f compose.production.yaml exec -T -e BACKUP_JOB_ID web bin/rails runner '
+            unless SolidQueue::Job.exists?(active_job_id: ENV.fetch("BACKUP_JOB_ID"))
               raise "取得時点のジョブが戻っていない"
             end
             if SolidQueue::Job.where(finished_at: nil).count != 1
@@ -344,10 +345,15 @@ jobs:
 
       - name: worker がホストへポートを公開していないことを確かめる
         run: |
-          if docker compose -f compose.production.yaml port worker 3000 2>/dev/null; then
-            echo "worker がホストへポートを公開している" >&2
-            exit 1
-          fi
+          # compose port の終了状態は版によって異なる。公開の有無は ps の表示で判断する。
+          published="$(docker compose -f compose.production.yaml ps --format '{{.Ports}}' worker)"
+          echo "worker のポート: ${published}"
+          case "${published}" in
+            *"->"*)
+              echo "worker がホストへポートを公開している" >&2
+              exit 1
+              ;;
+          esac
 
       - name: ジョブ用データベースと表があることを確かめる
         run: |
@@ -360,10 +366,13 @@ jobs:
         run: |
           docker compose -f compose.production.yaml stop worker
           # 外部へ出さないため、存在しない送信先を指す。
-          docker compose -f compose.production.yaml exec -T web bin/rails runner '
-            job = DeliverWebhookJob.set(wait: 10.minutes).perform_later(0, "request_submitted", { subject_id: 1 })
-            File.write("tmp/queue-job-id", job.job_id)
-          '
+          # job_id はホスト側で保持する。コンテナ内の tmp は作り直しで失われる。
+          job_id="$(docker compose -f compose.production.yaml exec -T web bin/rails runner '
+            puts DeliverWebhookJob.set(wait: 10.minutes).perform_later(0, "request_submitted", { subject_id: 1 }).job_id
+          ' | tail -1 | tr -d '\r')"
+          echo "job_id=${job_id}"
+          test -n "${job_id}"
+          echo "QUEUE_JOB_ID=${job_id}" >> "$GITHUB_ENV"
           docker compose -f compose.production.yaml exec -T web \
             bin/rails runner 'raise "ジョブが保存されていない" if SolidQueue::Job.where(finished_at: nil).count.zero?'
 
@@ -374,17 +383,15 @@ jobs:
             curl -sf http://127.0.0.1:3213/up > /dev/null && break
             sleep 2
           done
-          docker compose -f compose.production.yaml exec -T web bin/rails runner '
-            expected = File.read("tmp/queue-job-id").strip
-            raise "ジョブが失われた" unless SolidQueue::Job.exists?(active_job_id: expected)
+          docker compose -f compose.production.yaml exec -T -e QUEUE_JOB_ID web bin/rails runner '
+            raise "ジョブが失われた" unless SolidQueue::Job.exists?(active_job_id: ENV.fetch("QUEUE_JOB_ID"))
           '
 
       - name: worker を作り直してもジョブが残ることを確かめる
         run: |
           docker compose -f compose.production.yaml rm -f -s worker
-          docker compose -f compose.production.yaml exec -T web bin/rails runner '
-            expected = File.read("tmp/queue-job-id").strip
-            raise "ジョブが失われた" unless SolidQueue::Job.exists?(active_job_id: expected)
+          docker compose -f compose.production.yaml exec -T -e QUEUE_JOB_ID web bin/rails runner '
+            raise "ジョブが失われた" unless SolidQueue::Job.exists?(active_job_id: ENV.fetch("QUEUE_JOB_ID"))
           '
 
       - name: データベースを再起動してもジョブが残ることを確かめる
@@ -394,9 +401,8 @@ jobs:
             docker compose -f compose.production.yaml exec -T db pg_isready -U officeweave >/dev/null 2>&1 && break
             sleep 2
           done
-          docker compose -f compose.production.yaml exec -T web bin/rails runner '
-            expected = File.read("tmp/queue-job-id").strip
-            raise "ジョブが失われた" unless SolidQueue::Job.exists?(active_job_id: expected)
+          docker compose -f compose.production.yaml exec -T -e QUEUE_JOB_ID web bin/rails runner '
+            raise "ジョブが失われた" unless SolidQueue::Job.exists?(active_job_id: ENV.fetch("QUEUE_JOB_ID"))
           '
 
       - name: worker を起動するとジョブが処理されることを確かめる
@@ -407,9 +413,8 @@ jobs:
           '
           docker compose -f compose.production.yaml up -d worker
           for _ in $(seq 1 60); do
-            if docker compose -f compose.production.yaml exec -T web bin/rails runner '
-              expected = File.read("tmp/queue-job-id").strip
-              exit(SolidQueue::Job.exists?(active_job_id: expected, finished_at: nil) ? 1 : 0)
+            if docker compose -f compose.production.yaml exec -T -e QUEUE_JOB_ID web bin/rails runner '
+              exit(SolidQueue::Job.exists?(active_job_id: ENV.fetch("QUEUE_JOB_ID"), finished_at: nil) ? 1 : 0)
             '; then
               exit 0
             fi
