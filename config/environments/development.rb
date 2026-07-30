@@ -60,6 +60,14 @@ Rails.application.configure do
   # Highlight code that enqueued background job in logs.
   config.active_job.verbose_enqueue_logs = true
 
+  # 開発環境でも永続キューを使う。
+  # 実行方式が運用環境と違うと、キューに関わる不具合が手元で再現しない。
+  config.active_job.queue_adapter = :solid_queue
+  config.solid_queue.connects_to = { database: { writing: :queue } }
+  config.solid_queue.preserve_finished_jobs = true
+  config.solid_queue.clear_finished_jobs_after = 1.day
+  config.solid_queue.supervisor_pidfile = Rails.root.join("tmp/pids/solid_queue.pid")
+
   # Highlight code that triggered redirect in logs.
   config.action_dispatch.verbose_redirect_logs = true
 

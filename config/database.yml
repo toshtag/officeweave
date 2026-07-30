@@ -1,5 +1,10 @@
 # 接続情報は環境変数から読み取る。
 # 秘密情報を設定ファイルへ書き込まないため、既定値は開発用の値だけにとどめる。
+#
+# ジョブは primary とは別の論理データベースへ置く。
+# 接続先のサービスは同じで、新しい PostgreSQL コンテナは増やさない。
+# 業務データと同じデータベースへ混ぜると、
+# バックアップの対象や接続数の見積もりが絡み合う。
 default: &default
   adapter: postgresql
   encoding: unicode
@@ -9,15 +14,32 @@ default: &default
   username: <%= ENV.fetch("DATABASE_USER", "officeweave") %>
   password: <%= ENV.fetch("DATABASE_PASSWORD", nil) %>
 
-development:
+# ジョブ用の接続。
+# worker は実行 thread のほかに待機と heartbeat でも接続を使う。
+# そのため実行 thread 数より多く確保する。
+queue: &queue
   <<: *default
-  database: <%= ENV.fetch("DATABASE_NAME", "officeweave_development") %>
+  max_connections: <%= ENV.fetch("QUEUE_DATABASE_CONNECTIONS", 5) %>
+  migrations_paths: db/queue_migrate
+
+development:
+  primary:
+    <<: *default
+    database: <%= ENV.fetch("DATABASE_NAME", "officeweave_development") %>
+  queue:
+    <<: *queue
+    database: <%= ENV.fetch("QUEUE_DATABASE_NAME", "officeweave_development_queue") %>
 
 # test は実行のたびに再作成される。development と同じ名前にしてはならない。
+# テストのジョブは実行を待たない test アダプターで扱うため、queue は用意しない。
 test:
   <<: *default
   database: <%= ENV.fetch("TEST_DATABASE_NAME", "officeweave_test") %>
 
 production:
-  <<: *default
-  database: <%= ENV.fetch("DATABASE_NAME", "officeweave_production") %>
+  primary:
+    <<: *default
+    database: <%= ENV.fetch("DATABASE_NAME", "officeweave_production") %>
+  queue:
+    <<: *queue
+    database: <%= ENV.fetch("QUEUE_DATABASE_NAME", "officeweave_production_queue") %>

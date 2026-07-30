@@ -1,0 +1,9 @@
+# 定期実行の登録。
+#
+# ここへ業務の処理を足さない。運用の都合で動く処理が増えるほど、
+# どの時刻に何が動くのかを追えなくなる。
+# 現時点では Solid Queue 自身の後始末だけを登録する。
+production:
+  clear_solid_queue_finished_jobs:
+    command: "SolidQueue::Job.clear_finished_in_batches(sleep_between_batches: 0.3)"
+    schedule: every hour at minute 12
