@@ -61,6 +61,28 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     assert_predicate users(:hanako).reload, :administrator?
   end
 
+  test "最後の管理者を一般利用者へ変更できない" do
+    assert_no_difference -> { AuditEvent.where(action: "user_updated").count } do
+      patch user_url(users(:taro)), params: { user: { role: "member" } }
+    end
+
+    assert_response :unprocessable_content
+    assert_select ".error-summary", text: /#{Regexp.escape(last_active_administrator_message)}/
+    assert_predicate users(:taro).reload, :administrator?
+  end
+
+  test "管理者が 2 人いれば一般利用者へ変更できる" do
+    users(:hanako).update!(role: "administrator")
+
+    assert_difference -> { AuditEvent.where(action: "user_updated").count }, 1 do
+      patch user_url(users(:taro)), params: { user: { role: "member" } }
+    end
+
+    assert_redirected_to users_path
+    assert_predicate users(:taro).reload, :member?
+    assert_predicate users(:hanako).reload, :administrator?
+  end
+
   test "別組織の利用者は編集できない" do
     get edit_user_url(users(:outsider))
 
@@ -75,4 +97,9 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :forbidden
   end
+
+  private
+    def last_active_administrator_message
+      I18n.t("activerecord.errors.models.user.attributes.base.last_active_administrator")
+    end
 end
