@@ -57,7 +57,9 @@ class Notification < ApplicationRecord
   def deliver_by_mail
     return unless user.mail_notifications_for?(event)
 
-    NotificationMailer.with(notification: self).notify.deliver_later
+    JobEnqueue.perform("mail:#{event}") do
+      NotificationMailer.with(notification: self).notify.deliver_later
+    end
   end
 
   def read?
