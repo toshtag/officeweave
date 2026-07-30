@@ -133,6 +133,9 @@ class UserCsvTest < ActiveSupport::TestCase
   end
 
   test "未知の部門コードがある場合は他の正常な行も巻き戻す" do
+    # 1 行目の降格そのものは誤りにしない。巻き戻す対象を残すため管理者を増やす。
+    users(:hanako).update!(role: "administrator")
+
     result = @csv.import(<<~CSV)
       name,email_address,role,locale,departments
       山田 太郎（更新）,#{users(:taro).email_address},member,ja,development

@@ -164,6 +164,10 @@ ja:
         primary: 主たる所属
     errors:
       models:
+        user:
+          attributes:
+            base:
+              last_active_administrator: 組織には利用中の管理者が少なくとも 1 人必要です
         webhook_endpoint:
           attributes:
             url:
