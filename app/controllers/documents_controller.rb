@@ -75,6 +75,10 @@ class DocumentsController < ApplicationController
 
       true
     rescue ActiveRecord::RecordInvalid
+      # 巻き戻した途中状態を編集画面へ持ち込まない。
+      # そのまま描画すると、実際には残っている添付が画面から消えて見える。
+      @document.attachment_changes.delete("attachments")
+      @document.attachments.reset
       false
     end
 

@@ -72,6 +72,8 @@ class DocumentAttachmentsTest < ActionDispatch::IntegrationTest
     assert_equal %w[keep_a.txt keep_b.txt], attachment_filenames(document)
     assert ActiveStorage::Blob.exists?(keep_a.blob_id), "取り除かなかった添付の Blob が残ること"
     assert keep_a.blob.service.exist?(keep_a.blob.key), "取り除かなかった添付の保存実体が残ること"
+    assert_select "label", text: "keep_a.txt"
+    assert_select "label", text: "keep_b.txt"
   end
 
   test "添付ファイルの追加と選択削除を同時に行える" do
@@ -99,6 +101,7 @@ class DocumentAttachmentsTest < ActionDispatch::IntegrationTest
 
     assert_response :unprocessable_content
     assert_equal %w[keep.txt], attachment_filenames(document)
+    assert_select "label", text: "keep.txt"
   end
 
   test "上限件数の文書へ追加すると受け付けず、既存の添付ファイルが残る" do
