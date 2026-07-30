@@ -12,7 +12,9 @@ class Diagnostics
       secret_key,
       mail_delivery,
       application_host,
-      administrator_exists
+      administrator_exists,
+      webhook_allowlist,
+      webhook_destinations
     ]
   end
 
@@ -112,5 +114,49 @@ class Diagnostics
       end
     rescue StandardError => exception
       error("管理者", exception.message)
+    end
+
+    # 内部宛先の許可設定。
+    #
+    # 構文が不正なまま起動すると、Webhook の送信がすべて拒否される。
+    # 黙って無視せず、ここで気付けるようにする。
+    def webhook_allowlist
+      allowlist = WebhookDestination.allowlist_from_environment
+
+      if allowlist.empty?
+        ok("Webhook の内部宛先の許可", "設定なし（外部の宛先だけを許可）")
+      else
+        warning("Webhook の内部宛先の許可",
+                "#{allowlist.size} 件の origin を許可しています。内部ネットワークへの送信を許す設定です。")
+      end
+    rescue WebhookDestination::Error
+      error("Webhook の内部宛先の許可",
+            "#{WebhookDestination::ALLOWLIST_VARIABLE} の書式が不正です。" \
+            "http または https の origin をカンマ区切りで指定してください。")
+    end
+
+    # 登録済みの Webhook 宛先。
+    #
+    # 既存のデータは自動で変更しない。送信時に拒否されるため、
+    # 使えなくなっている宛先を管理者が把握できるようにする。
+    # 出力には宛先の ID と名称だけを載せ、URL や解決した IP は載せない。
+    def webhook_destinations
+      endpoints = WebhookEndpoint.active.ordered
+      return ok("Webhook の送信先", "有効な送信先がありません") if endpoints.empty?
+
+      rejected = endpoints.filter_map do |endpoint|
+        WebhookDestination.resolve!(endpoint.url)
+        nil
+      rescue WebhookDestination::Error => exception
+        "##{endpoint.id} #{endpoint.name}（#{exception.reason}）"
+      end
+
+      if rejected.empty?
+        ok("Webhook の送信先", "#{endpoints.size} 件すべて送信できます")
+      else
+        error("Webhook の送信先", "送信できない宛先: #{rejected.join(' / ')}")
+      end
+    rescue StandardError => exception
+      error("Webhook の送信先", exception.message)
     end
 end

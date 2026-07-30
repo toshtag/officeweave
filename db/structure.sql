@@ -941,7 +941,8 @@ CREATE TABLE public.webhook_deliveries (
     error_message character varying,
     delivered_at timestamp(6) without time zone,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    failure_code character varying
 );
 
 
@@ -2333,6 +2334,7 @@ ALTER TABLE ONLY public.announcement_departments
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260730000000'),
 ('20260729084654'),
 ('20260729083323'),
 ('20260729083322'),
