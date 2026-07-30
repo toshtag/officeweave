@@ -12,7 +12,7 @@
 
 ```text
 現在の Phase: R0
-直近完了 Task: R0-T6
+直近完了 Task: R0-T6A
 進行中:        なし
 次に実行:      R0-T7 CSV の未知の部門コードを誤りとして扱う（#60）
 ```
@@ -154,6 +154,7 @@ Issue が大きい場合は分割してよいが、分割した場合は本書�
 | R0-T4  | `r0/t4-persistent-jobs`    | [#51](https://github.com/toshtag/OfficeWeave/issues/51)         | 永続キューとワーカーを導入する                | 完了  |
 | R0-T5  | `r0/t5-active-storage-routes` | [#52](https://github.com/toshtag/OfficeWeave/issues/52)      | Active Storage 標準ルートを無効化する     | 完了  |
 | R0-T6  | `r0/t6-document-attachments` | [#53](https://github.com/toshtag/OfficeWeave/issues/53) [#75](https://github.com/toshtag/OfficeWeave/issues/75) | 文書更新時の添付追加・選択削除を原子的に扱う         | 完了  |
+| R0-T6A | `r0/t6a-active-storage-public-api` | [#77](https://github.com/toshtag/OfficeWeave/issues/77)   | 文書添付更新を公開 API だけで完結させる         | 完了  |
 | R0-T7  | —                          | [#60](https://github.com/toshtag/OfficeWeave/issues/60)         | CSV の未知の部門コードを誤りとして扱う          | 未着手 |
 | R0-T8  | —                          | [#55](https://github.com/toshtag/OfficeWeave/issues/55)         | 最後の有効な管理者を失う操作を全経路で拒否する        | 未着手 |
 | R0-T9  | —                          | [#56](https://github.com/toshtag/OfficeWeave/issues/56)         | 未知の認証方式を起動時に失敗させる              | 未着手 |
