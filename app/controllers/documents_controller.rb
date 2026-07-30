@@ -75,11 +75,24 @@ class DocumentsController < ApplicationController
 
       true
     rescue ActiveRecord::RecordInvalid
-      # 巻き戻した途中状態を編集画面へ持ち込まない。
-      # そのまま描画すると、実際には残っている添付が画面から消えて見える。
-      @document.attachment_changes.delete("attachments")
-      @document.attachments.reset
+      restore_edit_screen(attributes)
       false
+    end
+
+    # 巻き戻した途中状態を編集画面へ持ち込まない。
+    # そのまま描画すると、実際には残っている添付が画面から消えて見える。
+    #
+    # reload で DB 上の文書と添付へ戻したうえで、検証エラーと、入力されたスカラー属性だけを
+    # 表示のために復元する。部門の選択は表示専用の値として渡す。
+    # 保存済みの文書へ部門を代入し直すと、描画のつもりの操作がその場で保存されてしまう。
+    def restore_edit_screen(attributes)
+      submitted_errors = @document.errors.map { |error| error }
+      @selected_department_ids = Array(params.dig(:document, :department_ids)).reject(&:blank?).map(&:to_i)
+
+      @document.reload
+      @document.assign_attributes(attributes.except(:department_ids))
+      @document.errors.clear
+      submitted_errors.each { |error| @document.errors.import(error) }
     end
 
     def remove_attachment_ids
