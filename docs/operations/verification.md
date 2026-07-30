@@ -141,7 +141,37 @@ docker run --rm --entrypoint sh <イメージ名> -c 'ls config/master.key .env'
 外部の SMTP や Webhook 宛先へは接続しない。
 ジョブの投入には、存在しない送信先の ID を使う。
 
-## 7. 主要な業務の流れ
+## 7. 添付ファイルの取得経路
+
+添付ファイルは、文書の配下の経路からだけ取得できる。
+保存基盤が用意する `/rails/active_storage/` の経路は全環境で作らない。
+署名付きの ID を知っていることは、参照できる根拠にしない。
+
+経路の一覧を確かめる。開発用と配布用の両方で行う。
+
+```bash
+ROUTES="$(docker compose exec -T web bin/rails routes)"
+test -z "$(printf '%s\n' "$ROUTES" | grep 'active_storage' || true)"
+```
+
+`grep -q` をそのままつなぐと、上流が書き込み中に閉じられて誤った失敗になる。
+出力を一度変数へ受けてから判定する。
+
+```text
+1. 経路の一覧に active_storage が現れない
+2. bin/diagnose の「添付ファイルの取得経路」が OK になる
+3. 通常のフォームから添付を追加でき、文書の画面から取得できる
+4. 未ログインで添付の URL へ入ると、ログイン画面へ移る
+5. 文書を参照できない利用者が添付の URL へ入ると、見つからない扱いになる
+6. /rails/active_storage/blobs/proxy/<署名付き ID>/<ファイル名> が見つからない扱いになる
+7. 参照できる状態で得た添付の URL が、公開範囲を狭めた後は取得できない
+```
+
+経路が存在しないことは `test/models/attachment_routes_test.rb` が、
+取得できる範囲は `test/controllers/attachment_delivery_test.rb` が押さえている。
+ここで確かめるのは、実際に動いている構成でも同じであることである。
+
+## 8. 主要な業務の流れ
 
 `test/system/end_to_end_test.rb` が、次を画面の操作だけで通す。
 
@@ -156,7 +186,7 @@ docker run --rm --entrypoint sh <イメージ名> -c 'ls config/master.key .env'
 
 自動で実行されるため、手作業での確認は不要とする。
 
-## 8. 自動実行
+## 9. 自動実行
 
 `.github/workflows/verify.yml` が、変更のたびに次を実行する。
 
