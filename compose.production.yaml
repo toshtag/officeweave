@@ -14,6 +14,39 @@
 #   docker compose -f compose.production.yaml up -d --build
 name: officeweave_production
 
+# web と worker は同じ設定で動く。
+# 片方だけへ設定を足すと、画面では通るのに送信だけが失敗する状態が生まれる。
+x-application-environment: &application_environment
+  RAILS_ENV: production
+  DATABASE_HOST: db
+  DATABASE_USER: ${DATABASE_USER:?DATABASE_USER を設定してください}
+  DATABASE_PASSWORD: ${DATABASE_PASSWORD:?DATABASE_PASSWORD を設定してください}
+  DATABASE_NAME: ${DATABASE_NAME:-officeweave_production}
+  QUEUE_DATABASE_NAME: ${QUEUE_DATABASE_NAME:-officeweave_production_queue}
+  QUEUE_DATABASE_CONNECTIONS: ${QUEUE_DATABASE_CONNECTIONS:-5}
+  JOB_THREADS: ${JOB_THREADS:-2}
+  JOB_PROCESSES: ${JOB_PROCESSES:-1}
+  SECRET_KEY_BASE: ${SECRET_KEY_BASE:?SECRET_KEY_BASE を設定してください}
+  APPLICATION_HOST: ${APPLICATION_HOST:-localhost}
+  APPLICATION_PROTOCOL: ${APPLICATION_PROTOCOL:-https}
+  MAIL_FROM: ${MAIL_FROM:-officeweave@localhost}
+  SMTP_ADDRESS: ${SMTP_ADDRESS:-}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_USER_NAME: ${SMTP_USER_NAME:-}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  SMTP_AUTHENTICATION: ${SMTP_AUTHENTICATION:-}
+  SMTP_ENABLE_STARTTLS: ${SMTP_ENABLE_STARTTLS:-true}
+  INITIAL_USER_NAME: ${INITIAL_USER_NAME:-}
+  INITIAL_USER_EMAIL: ${INITIAL_USER_EMAIL:-}
+  INITIAL_USER_PASSWORD: ${INITIAL_USER_PASSWORD:-}
+  ORGANIZATION_NAME: ${ORGANIZATION_NAME:-OfficeWeave}
+  ORGANIZATION_CODE: ${ORGANIZATION_CODE:-default}
+  AUTHENTICATION_PROVIDER: ${AUTHENTICATION_PROVIDER:-internal}
+  WEBHOOK_PRIVATE_DESTINATION_ALLOWLIST: ${WEBHOOK_PRIVATE_DESTINATION_ALLOWLIST:-}
+  FORCE_SSL: ${FORCE_SSL:-true}
+  # メール本文などの URL は、実際に公開しているポートで組み立てる。
+  WEB_PORT: ${WEB_PORT:-3210}
+
 services:
   db:
     image: postgres:18.4-bookworm
@@ -36,34 +69,18 @@ services:
       dockerfile: Dockerfile.production
     restart: unless-stopped
     environment:
-      RAILS_ENV: production
-      DATABASE_HOST: db
-      DATABASE_USER: ${DATABASE_USER:?DATABASE_USER を設定してください}
-      DATABASE_PASSWORD: ${DATABASE_PASSWORD:?DATABASE_PASSWORD を設定してください}
-      DATABASE_NAME: ${DATABASE_NAME:-officeweave_production}
-      SECRET_KEY_BASE: ${SECRET_KEY_BASE:?SECRET_KEY_BASE を設定してください}
-      APPLICATION_HOST: ${APPLICATION_HOST:-localhost}
-      APPLICATION_PROTOCOL: ${APPLICATION_PROTOCOL:-https}
-      MAIL_FROM: ${MAIL_FROM:-officeweave@localhost}
-      SMTP_ADDRESS: ${SMTP_ADDRESS:-}
-      SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_USER_NAME: ${SMTP_USER_NAME:-}
-      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
-      SMTP_AUTHENTICATION: ${SMTP_AUTHENTICATION:-}
-      SMTP_ENABLE_STARTTLS: ${SMTP_ENABLE_STARTTLS:-true}
-      INITIAL_USER_NAME: ${INITIAL_USER_NAME:-}
-      INITIAL_USER_EMAIL: ${INITIAL_USER_EMAIL:-}
-      INITIAL_USER_PASSWORD: ${INITIAL_USER_PASSWORD:-}
-      ORGANIZATION_NAME: ${ORGANIZATION_NAME:-OfficeWeave}
-      ORGANIZATION_CODE: ${ORGANIZATION_CODE:-default}
-      AUTHENTICATION_PROVIDER: ${AUTHENTICATION_PROVIDER:-internal}
-      WEBHOOK_PRIVATE_DESTINATION_ALLOWLIST: ${WEBHOOK_PRIVATE_DESTINATION_ALLOWLIST:-}
-      FORCE_SSL: ${FORCE_SSL:-true}
-      # メール本文などの URL は、実際に公開しているポートで組み立てる。
-      WEB_PORT: ${WEB_PORT:-3210}
+      <<: *application_environment
     volumes:
       # アップロードされたファイルは、入れ替えても失われないようにする。
       - production_storage_data:/app/storage
+    healthcheck:
+      # データベースの準備は web の起動処理が行う。
+      # worker はその完了を待つため、web の稼働をここで判定できるようにする。
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3000/up >/dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
     ports:
       # 既定では loopback にだけ公開する。逆プロキシの背後へ置く構成を前提とする。
       # 逆プロキシを使わず外部へ直接公開する場合に限り、
@@ -71,6 +88,33 @@ services:
       - "${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-3210}:3000"
     depends_on:
       db:
+        condition: service_healthy
+
+  # メールと Webhook の送信を実際に行う。
+  #
+  # 画面を提供しないため、ホストへポートを公開しない。
+  # データベースの準備は web が行う。同時に移行を実行して競合させない。
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+    command: bin/jobs
+    restart: unless-stopped
+    # 実行中のジョブを終わらせる時間を与える。
+    # 足りないと、処理の途中で止まったジョブがやり直しになる。
+    stop_grace_period: 30s
+    environment:
+      <<: *application_environment
+    volumes:
+      - production_storage_data:/app/storage
+    healthcheck:
+      test: ["CMD-SHELL", "bin/jobs_alive"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    depends_on:
+      web:
         condition: service_healthy
 
 volumes:
