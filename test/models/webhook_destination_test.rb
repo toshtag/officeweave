@@ -280,4 +280,32 @@ class WebhookDestinationTest < ActiveSupport::TestCase
   test "知らない理由は組み立てられない" do
     assert_raises(ArgumentError) { WebhookDestination::Error.new(:something_else) }
   end
+
+  # --- 既定の名前解決 ---
+
+  test "設定していない環境では既定の名前解決を使う" do
+    # config.x は未設定の項目にも空の設定オブジェクトを返す。
+    # それは nil でもなく respond_to?(:call) にも真を返すため、
+    # 緩い判定にすると名前解決がすべて失敗する。
+    assert_equal WebhookDestination::DEFAULT_RESOLVER,
+                 WebhookDestination.resolver_or_default(ActiveSupport::OrderedOptions.new)
+    assert_equal WebhookDestination::DEFAULT_RESOLVER,
+                 WebhookDestination.resolver_or_default(nil)
+    assert_equal WebhookDestination::DEFAULT_RESOLVER,
+                 WebhookDestination.resolver_or_default(Object.new)
+  end
+
+  test "設定された名前解決を使う" do
+    resolver = ->(_hostname, _port) { [ "93.184.216.34" ] }
+
+    assert_equal resolver, WebhookDestination.resolver_or_default(resolver)
+    assert_kind_of Proc, WebhookDestination.configured_resolver
+  end
+
+  test "名前解決が呼び出せない場合は解決できませんで隠さない" do
+    # 組み立ての誤りは、解決の失敗として飲み込まない。
+    assert_raises(NoMethodError) do
+      WebhookDestination.resolve!("http://example.com/", resolver: Object.new, allowlist: Set.new)
+    end
+  end
 end

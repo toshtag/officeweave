@@ -121,7 +121,15 @@ class WebhookDestination
     # テスト環境だけは、実行環境の DNS へ依存しない実装へ差し替える。
     # 設定は読むだけとし、テストの途中で書き換えない。
     def configured_resolver
-      Rails.application.config.x.webhook_destination_resolver || DEFAULT_RESOLVER
+      resolver_or_default(Rails.application.config.x.webhook_destination_resolver)
+    end
+
+    # config.x は未設定の項目に対しても空の設定オブジェクトを返す。
+    # それは nil でもなく、respond_to?(:call) にも真を返す。
+    # そのため Proc であることを条件にする。
+    # ここを緩めると、設定していない環境で名前解決がすべて失敗する。
+    def resolver_or_default(candidate)
+      candidate.is_a?(Proc) ? candidate : DEFAULT_RESOLVER
     end
 
     # 設定された許可リスト。構文が不正な場合は黙って無視しない。
@@ -212,11 +220,12 @@ class WebhookDestination
       normalized
     end
 
+    # 名前解決の失敗だけを拒否へ変える。
+    # StandardError をまとめて拾うと、組み立ての誤りが
+    # 「解決できませんでした」として隠れてしまう。
     def resolve_addresses
       Array(resolver.call(hostname, uri.port)).map(&:to_s).uniq
-    rescue Error
-      raise
-    rescue StandardError
+    rescue SocketError, IOError, SystemCallError
       raise Error.new(:resolution_failed)
     end
 
