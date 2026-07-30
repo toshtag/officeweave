@@ -50,8 +50,9 @@ class UserCsvTest < ActiveSupport::TestCase
   test "取り込みでパスワードは変わらない" do
     digest_before = users(:taro).password_digest
 
-    @csv.import("name,email_address\n山田 太郎,#{users(:taro).email_address}\n")
+    result = @csv.import("name,email_address,role\n山田 太郎,#{users(:taro).email_address},administrator\n")
 
+    assert_predicate result, :success?
     assert_equal digest_before, users(:taro).reload.password_digest
   end
 
@@ -132,6 +133,9 @@ class UserCsvTest < ActiveSupport::TestCase
   end
 
   test "未知の部門コードがある場合は他の正常な行も巻き戻す" do
+    # 1 行目の降格そのものは誤りにしない。巻き戻す対象を残すため管理者を増やす。
+    users(:hanako).update!(role: "administrator")
+
     result = @csv.import(<<~CSV)
       name,email_address,role,locale,departments
       山田 太郎（更新）,#{users(:taro).email_address},member,ja,development
@@ -173,6 +177,76 @@ class UserCsvTest < ActiveSupport::TestCase
                  users(:taro).reload.departments.sort_by(&:id)
   end
 
+  test "最後の管理者を一般利用者へ変える取り込みは全体を拒否する" do
+    result = @csv.import(<<~CSV)
+      name,email_address,role,locale,departments
+      山田 太郎（更新）,#{users(:taro).email_address},member,ja,development
+    CSV
+
+    assert_not_predicate result, :success?
+    assert_equal 0, result.created_count
+    assert_equal 0, result.updated_count
+    assert_equal 2, result.errors.first[:line]
+    assert_includes result.errors.first[:messages], last_active_administrator_message
+
+    user = users(:taro).reload
+
+    assert_equal "山田 太郎", user.name
+    assert_equal "administrator", user.role
+    assert_nil user.locale
+    assert_equal [ departments(:sales) ], user.departments
+  end
+
+  test "権限を空欄にした取り込みでも最後の管理者を守る" do
+    result = @csv.import(<<~CSV)
+      name,email_address,role,locale,departments
+      山田 太郎（更新）,#{users(:taro).email_address},,ja,development
+    CSV
+
+    assert_not_predicate result, :success?
+    assert_includes result.errors.first[:messages], last_active_administrator_message
+
+    user = users(:taro).reload
+
+    assert_equal "山田 太郎", user.name
+    assert_equal "administrator", user.role
+    assert_nil user.locale
+    assert_equal [ departments(:sales) ], user.departments
+  end
+
+  test "同じ取り込みで管理者を全員一般利用者へ変えられない" do
+    users(:hanako).update!(role: "administrator")
+
+    result = @csv.import(<<~CSV)
+      name,email_address,role,locale
+      山田 太郎（更新）,#{users(:taro).email_address},member,ja
+      佐藤 花子（更新）,#{users(:hanako).email_address},member,ja
+    CSV
+
+    assert_not_predicate result, :success?
+    assert_equal 3, result.errors.first[:line]
+    assert_includes result.errors.first[:messages], last_active_administrator_message
+    assert_equal 0, result.updated_count
+
+    assert_equal "administrator", users(:taro).reload.role
+    assert_equal "山田 太郎", users(:taro).name
+    assert_equal "administrator", users(:hanako).reload.role
+  end
+
+  test "管理者が 2 人いれば取り込みで 1 人を一般利用者へ変えられる" do
+    users(:hanako).update!(role: "administrator")
+
+    result = @csv.import(<<~CSV)
+      name,email_address,role,locale
+      山田 太郎,#{users(:taro).email_address},member,
+    CSV
+
+    assert_predicate result, :success?
+    assert_equal 1, result.updated_count
+    assert_equal "member", users(:taro).reload.role
+    assert_equal 1, organizations(:main).users.active.administrator.count
+  end
+
   test "departments 列がなければ既存の所属を変えない" do
     result = @csv.import(<<~CSV)
       name,email_address,role,locale
@@ -187,4 +261,9 @@ class UserCsvTest < ActiveSupport::TestCase
     assert_equal "ja", user.locale
     assert_equal [ departments(:sales) ], user.departments
   end
+
+  private
+    def last_active_administrator_message
+      I18n.t("activerecord.errors.models.user.attributes.base.last_active_administrator")
+    end
 end

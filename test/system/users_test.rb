@@ -33,4 +33,30 @@ class UsersTest < ApplicationSystemTestCase
 
     assert_text I18n.t("users.cannot_deactivate_self")
   end
+
+  test "最後の管理者を一般利用者へ変えようとすると理由が示される" do
+    visit edit_user_path(users(:taro))
+
+    select I18n.t("roles.member"), from: User.human_attribute_name(:role)
+    click_button I18n.t("helpers.submit.update")
+
+    assert_text I18n.t("activerecord.errors.models.user.attributes.base.last_active_administrator")
+
+    visit users_path
+
+    assert_predicate users(:taro).reload, :administrator?
+  end
+
+  test "管理者が 2 人いれば一般利用者へ変えられる" do
+    users(:hanako).update!(role: "administrator")
+
+    visit edit_user_path(users(:taro))
+
+    select I18n.t("roles.member"), from: User.human_attribute_name(:role)
+    click_button I18n.t("helpers.submit.update")
+
+    assert_text I18n.t("users.updated")
+    assert_predicate users(:taro).reload, :member?
+    assert_predicate users(:hanako).reload, :administrator?
+  end
 end

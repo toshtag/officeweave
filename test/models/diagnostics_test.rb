@@ -45,7 +45,9 @@ class DiagnosticsTest < ActiveSupport::TestCase
   end
 
   test "無効にされた管理者は数えない" do
-    User.where(role: "administrator").find_each(&:deactivate!)
+    # 通常の経路では最後の管理者を無効にできない。
+    # ここで確かめるのは、それでも管理者不在になった場合に気づけることである。
+    User.where(role: "administrator").update_all(deactivated_at: Time.current)
 
     assert_equal :error, Diagnostics.new.run.find { |c| c[:name] == "管理者" }[:status]
   end

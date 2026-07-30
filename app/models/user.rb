@@ -37,6 +37,13 @@ class User < ApplicationRecord
   scope :active, -> { where(deactivated_at: nil) }
   scope :deactivated, -> { where.not(deactivated_at: nil) }
 
+  # 組織には利用中の管理者が少なくとも 1 人必要とする。
+  # 管理者が誰もいなくなると、利用者も部門も設定も画面からは戻せない。
+  #
+  # 判定は保存の直前に 1 か所だけ置く。画面、無効化、CSV 取込へ個別に
+  # 置くと、経路が増えたときに漏れる。
+  before_update :preserve_active_administrator, if: :removing_active_administrator?
+
   def active?
     deactivated_at.nil?
   end
@@ -66,4 +73,38 @@ class User < ApplicationRecord
   def primary_department
     memberships.primary.first&.department
   end
+
+  private
+    # 保存前は利用中の管理者で、保存後はそうでなくなる更新だけを対象とする。
+    # 一般利用者の更新や、管理者への昇格、管理者の氏名変更は対象にしない。
+    def removing_active_administrator?
+      active_administrator_in_database? && !(administrator? && active?)
+    end
+
+    def active_administrator_in_database?
+      attribute_in_database("role") == "administrator" &&
+        attribute_in_database("deactivated_at").nil?
+    end
+
+    # 件数を数えるだけでは、同時に実行された 2 件の降格が互いを管理者として
+    # 観測し、両方成功しうる。組織の行を占有してから数え直すことで、
+    # 判定と更新を組織単位で直列化する。ロックは更新のトランザクションが
+    # 終わるまで保持される。
+    def preserve_active_administrator
+      Organization.lock.find(organization_id)
+
+      return if another_active_administrator_exists?
+
+      errors.add(:base, :last_active_administrator)
+      throw(:abort)
+    end
+
+    # 読み込み済みの関連ではなく、ロック後のデータベースへ問い合わせる。
+    def another_active_administrator_exists?
+      User.where(organization_id: organization_id)
+          .active
+          .administrator
+          .where.not(id: id)
+          .exists?
+    end
 end
