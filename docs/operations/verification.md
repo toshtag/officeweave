@@ -205,7 +205,29 @@ test -z "$(printf '%s\n' "$ROUTES" | grep 'active_storage' || true)"
 `test/system/data_transfers_test.rb` が押さえている。
 ここで確かめるのは、実際に動いている構成でも同じであることである。
 
-## 10. 主要な業務の流れ
+## 10. 管理者不在の防止
+
+組織から利用中の管理者がいなくなる経路が残っていないことを確かめる。
+
+```text
+1. 最後の利用中の管理者を一般利用者へ変更できない
+2. 最後の利用中の管理者を無効化できない
+3. CSV 取込でも同じ理由で拒否され、取込全体がロールバックされる
+4. 管理者が 2 人以上いる場合は、1 人の降格または無効化が成功する
+5. 同時に 2 人を降格しても、利用中の管理者が 1 人残る
+6. 別組織の管理者と、無効にした管理者は人数へ数えない
+```
+
+判定は `app/models/user.rb` の 1 か所に置き、画面、無効化、CSV 取込の
+すべてがここを通る。同時実行は組織の行を占有して直列化する。
+
+不変条件は `test/models/user_test.rb` と `test/models/user_csv_test.rb` が、
+画面での拒否は `test/controllers/users_controller_test.rb` と
+`test/system/users_test.rb` が、同時実行と行ロックは
+`test/models/user_administrator_concurrency_test.rb` が押さえている。
+ここで確かめるのは、実際に動いている構成でも同じであることである。
+
+## 11. 主要な業務の流れ
 
 `test/system/end_to_end_test.rb` が、次を画面の操作だけで通す。
 
@@ -220,7 +242,7 @@ test -z "$(printf '%s\n' "$ROUTES" | grep 'active_storage' || true)"
 
 自動で実行されるため、手作業での確認は不要とする。
 
-## 11. 自動実行
+## 12. 自動実行
 
 `.github/workflows/verify.yml` が、変更のたびに次を実行する。
 
