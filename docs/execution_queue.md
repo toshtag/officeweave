@@ -12,9 +12,9 @@
 
 ```text
 現在の Phase: R0
-直近完了 Task: R0-T8
+直近完了 Task: R0-T9
 進行中:        なし
-次に実行:      R0-T9 未知の認証方式を起動時に失敗させる（#56）
+次に実行:      R0-T10 セッションへ期限を設け、戻り先と Host を制限する（#57）
 ```
 
 ## P0 プロジェクト契約
@@ -157,7 +157,7 @@ Issue が大きい場合は分割してよいが、分割した場合は本書�
 | R0-T6A | `r0/t6a-active-storage-public-api` | [#77](https://github.com/toshtag/OfficeWeave/issues/77)   | 文書添付更新を公開 API だけで完結させる         | 完了  |
 | R0-T7  | `r0/t7-unknown-department-codes` | [#60](https://github.com/toshtag/OfficeWeave/issues/60)   | CSV の未知の部門コードを誤りとして扱う          | 完了  |
 | R0-T8  | `r0/t8-active-administrator-invariant` | [#55](https://github.com/toshtag/OfficeWeave/issues/55) | 最後の有効な管理者を失う操作を全経路で拒否する        | 完了  |
-| R0-T9  | —                          | [#56](https://github.com/toshtag/OfficeWeave/issues/56)         | 未知の認証方式を起動時に失敗させる              | 未着手 |
+| R0-T9  | `r0/t9-auth-provider-fail-closed` | [#56](https://github.com/toshtag/OfficeWeave/issues/56)  | 未知の認証方式を起動時に失敗させる              | 完了  |
 | R0-T10 | —                          | [#57](https://github.com/toshtag/OfficeWeave/issues/57)         | セッションへ期限を設け、戻り先と Host を制限する    | 未着手 |
 | R0-T11 | —                          | [#61](https://github.com/toshtag/OfficeWeave/issues/61)         | CSV 出力を数式インジェクションから守る          | 未着手 |
 | R0-T12 | —                          | [#54](https://github.com/toshtag/OfficeWeave/issues/54)         | 申請の決裁を行ロックで直列化する               | 未着手 |
@@ -169,6 +169,7 @@ Issue が大きい場合は分割してよいが、分割した場合は本書�
 | R0-T18 | —                          | [#64](https://github.com/toshtag/OfficeWeave/issues/64)         | 初期利用者の存在判定を組織単位にする             | 未着手 |
 | R0-T19 | —                          | [#59](https://github.com/toshtag/OfficeWeave/issues/59)         | 公開待ちのお知らせを表示し、公開時に通知する         | 未着手 |
 | R0-T20 | —                          | [#67](https://github.com/toshtag/OfficeWeave/issues/67)         | 差し戻し通知の翻訳キーの誤記を修正する            | 未着手 |
+| R0-T20A | —                         | [#81](https://github.com/toshtag/OfficeWeave/issues/81)         | 保存先診断の probe を実行ごとに分離する         | 未着手 |
 | R0-T21 | —                          | —                                                               | 安定化完了監査。全 Issue、全検証、文書、配布構成の整合を確認する | 未着手 |
 
 ### 実行順の根拠
