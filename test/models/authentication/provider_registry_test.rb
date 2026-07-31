@@ -9,6 +9,20 @@ module Authentication
       def self.authenticate(email_address:, password:) = User.find_by(email_address: email_address)
     end
 
+    # 登録側の不備を再現する、識別子だけが不正な方式。
+    # 登録の時点で拒否されるため、他の呼び出しは持たない。
+    class EmptyNameProvider
+      def self.name_key = ""
+    end
+
+    class BlankNameProvider
+      def self.name_key = " "
+    end
+
+    class PaddedNameProvider
+      def self.name_key = " internal "
+    end
+
     teardown { ProviderRegistry.instance_variable_get(:@providers).delete("stub") }
 
     test "設定が無い場合は内部認証になる" do
@@ -69,6 +83,35 @@ module Authentication
 
     test "知らない名前を直接取り出そうとすると失敗する" do
       assert_raises(ProviderRegistry::UnknownProvider) { ProviderRegistry.fetch("does-not-exist") }
+    end
+
+    test "空文字の識別子は登録できない" do
+      error = assert_raises(ProviderRegistry::InvalidProviderName) do
+        ProviderRegistry.register(EmptyNameProvider)
+      end
+
+      assert_includes error.message, %(name_key="")
+      assert_not_includes ProviderRegistry.registered, ""
+    end
+
+    test "空白だけの識別子は登録できない" do
+      error = assert_raises(ProviderRegistry::InvalidProviderName) do
+        ProviderRegistry.register(BlankNameProvider)
+      end
+
+      assert_includes error.message, %(name_key=" ")
+      assert_not_includes ProviderRegistry.registered, " "
+    end
+
+    test "前後に空白を含む識別子は登録できない" do
+      error = assert_raises(ProviderRegistry::InvalidProviderName) do
+        ProviderRegistry.register(PaddedNameProvider)
+      end
+
+      assert_includes error.message, %(name_key=" internal ")
+      assert_not_includes ProviderRegistry.registered, " internal "
+      # 取り除いて登録し直さない。既存の internal も奪わせない。
+      assert_equal InternalProvider, ProviderRegistry.fetch("internal")
     end
 
     private
