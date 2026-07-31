@@ -11,6 +11,9 @@ class Diagnostics
     unspecified: "は接続先を特定しないアドレスです。"
   }.freeze
 
+  # 手順書や設定の雛形に載る値が、そのまま運用へ残っていないかを見る変数。
+  SECRET_VARIABLES = %w[DATABASE_PASSWORD INITIAL_USER_PASSWORD SMTP_PASSWORD].freeze
+
   def run
     [
       database_connection,
@@ -22,6 +25,8 @@ class Diagnostics
       mail_delivery,
       application_host,
       administrator_exists,
+      initial_secrets,
+      administrator_passwords,
       authentication_provider,
       webhook_allowlist,
       webhook_destinations,
@@ -187,6 +192,55 @@ class Diagnostics
       end
     rescue StandardError => exception
       error("管理者", exception.message)
+    end
+
+    # 設定に残った既知の初期値。
+    #
+    # 出力するのは変数名だけとする。値も長さも載せない。診断の結果は画面にも
+    # ログにも残るため、そこへ秘密情報を書き写すと、置き場所を 1 つ増やすことになる。
+    def initial_secrets
+      remaining = SECRET_VARIABLES.select { |name| Authentication::PasswordPolicy.known_unsafe?(ENV[name]) }
+
+      if remaining.empty?
+        ok("秘密情報の初期値", "既知の初期値は残っていません")
+      else
+        warning("秘密情報の初期値", "#{remaining.join('、')} を変更してください。")
+      end
+    end
+
+    # 保存済みの管理者が既知の初期値をそのまま使っていないか。
+    #
+    # 対象は利用中の管理者に限る。初期利用者は管理者として作られるため、
+    # この Issue が示す危険はここに集まる。利用者全員へ何度も bcrypt の照合を
+    # 行うと、診断そのものが重くなって使われなくなる。
+    #
+    # 見つけられるのは既知の値そのものを使っている場合だけである。
+    # 保存済みの digest からは長さも中身も復元できず、弱いパスワード全般は
+    # ここでは判定できない。
+    def administrator_passwords
+      unless internal_authentication?
+        return ok("管理者のパスワード", "内部のパスワードでは認証していません")
+      end
+
+      affected = User.active.where(role: "administrator").select do |user|
+        Authentication::PasswordPolicy::KNOWN_UNSAFE_VALUES.any? { |candidate| user.authenticate(candidate) }
+      end
+
+      if affected.empty?
+        ok("管理者のパスワード", "既知の初期値を使う管理者はいません")
+      else
+        warning("管理者のパスワード",
+                "#{affected.map(&:email_address).join('、')} が既知の初期値を使っています。変更してください。")
+      end
+    rescue StandardError => exception
+      error("管理者のパスワード", exception.message)
+    end
+
+    # 外部の方式で認証している間、保存済みのパスワードはログインに使われない。
+    def internal_authentication?
+      Authentication::ProviderRegistry.current.name_key == Authentication::InternalProvider.name_key
+    rescue StandardError
+      false
     end
 
     # ジョブに関わる検査。

@@ -163,6 +163,10 @@ ja:
         department: 部門
         primary: 主たる所属
     errors:
+      # 画面を通らない経路で保存に失敗した場合の文言。
+      # bin/rails db:seed の失敗はここだけが理由を伝える。
+      messages:
+        record_invalid: "検証に失敗しました: %{errors}"
       models:
         user:
           attributes:
