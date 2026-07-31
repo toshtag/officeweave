@@ -47,38 +47,45 @@ class DiagnosticsTest < ActiveSupport::TestCase
   # 待ち時間ではなく Queue で足並みをそろえる。待ち時間で揃えると、
   # 遅い環境で先後がずれ、退行を見逃す。
   test "ファイルの保存先の確認を同時に実行できる" do
-    ready = Queue.new
-    start = Queue.new
-    outcomes = Queue.new
-    threads = []
-
     with_isolated_storage_root do |root|
-      STORAGE_PROBE_WORKERS.times do
-        threads << Thread.new do
-          ready << :ready
-          start.pop
+      ready = Queue.new
+      start = Queue.new
+      outcomes = Queue.new
+      threads = []
+      remaining = []
 
-          outcomes << Diagnostics.new.send(:storage_writable)
-        rescue StandardError => error
-          outcomes << error
+      begin
+        STORAGE_PROBE_WORKERS.times do
+          threads << Thread.new do
+            ready << :ready
+            start.pop
+
+            outcomes << Diagnostics.new.send(:storage_writable)
+          rescue StandardError => error
+            outcomes << error
+          end
         end
+
+        Timeout.timeout(PREPARATION_TIMEOUT) { STORAGE_PROBE_WORKERS.times { ready.pop } }
+        STORAGE_PROBE_WORKERS.times { start << true }
+        threads.each { |thread| assert thread.join(COMPLETION_TIMEOUT), "確認が終わりませんでした" }
+
+        results = Timeout.timeout(OUTCOME_TIMEOUT) { STORAGE_PROBE_WORKERS.times.map { outcomes.pop } }
+        failures = results.grep(Exception)
+
+        assert_empty failures, failures.map { |error| "#{error.class}: #{error.message}" }.join("\n")
+        assert(results.all? { |result| result[:status] == :ok },
+               results.reject { |result| result[:status] == :ok }.inspect)
+      ensure
+        # 回収は保存先を戻す前に終える。途中で失敗した場合でも、生き残った
+        # thread が共有の保存先へ書きに行くことがない。
+        remaining = release_and_join_storage_threads(threads, start)
       end
 
-      Timeout.timeout(PREPARATION_TIMEOUT) { STORAGE_PROBE_WORKERS.times { ready.pop } }
-      STORAGE_PROBE_WORKERS.times { start << true }
-      threads.each { |thread| assert thread.join(COMPLETION_TIMEOUT), "確認が終わりませんでした" }
-
-      results = Timeout.timeout(OUTCOME_TIMEOUT) { STORAGE_PROBE_WORKERS.times.map { outcomes.pop } }
-      failures = results.grep(Exception)
-
-      assert_empty failures, failures.map { |error| "#{error.class}: #{error.message}" }.join("\n")
-      assert(results.all? { |result| result[:status] == :ok },
-             results.reject { |result| result[:status] == :ok }.inspect)
+      # 元の失敗があればそちらが先に伝わる。ここまで来た場合だけ確かめる。
+      assert_empty remaining, "停止できない診断の thread が残りました"
       assert_empty Dir.children(root)
     end
-  ensure
-    threads.select(&:alive?).each { start << true }
-    threads.each { |thread| thread.kill unless thread.join(CLEANUP_TIMEOUT) }
   end
 
   # 正常に終わった確認は、保存先へ何も残さない。
@@ -328,6 +335,23 @@ class DiagnosticsTest < ActiveSupport::TestCase
   end
 
   private
+    # 開始待ちの thread を解放し、止まるまで見届ける。
+    #
+    # kill は停止を指示するだけで、そこで終わったことにはならない。
+    # 指示のあとにもう一度 join し、それでも生きているものだけを返す。
+    def release_and_join_storage_threads(threads, start)
+      threads.count(&:alive?).times { start << true }
+
+      threads.filter_map do |thread|
+        next if thread.join(CLEANUP_TIMEOUT)
+
+        thread.kill
+        thread.join(CLEANUP_TIMEOUT)
+
+        thread if thread.alive?
+      end
+    end
+
     # 保存先の後片付けは、この試験だけが使うディレクトリで確かめる。
     #
     # テストは process 単位で並列に走り、どの process も同じ tmp/storage を使う。
