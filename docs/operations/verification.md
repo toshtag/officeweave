@@ -205,7 +205,38 @@ test -z "$(printf '%s\n' "$ROUTES" | grep 'active_storage' || true)"
 `test/system/data_transfers_test.rb` が押さえている。
 ここで確かめるのは、実際に動いている構成でも同じであることである。
 
-## 10. 管理者不在の防止
+## 10. CSV 出力の安全性
+
+確かめるのは次の 2 つである。書き出した CSV の各データセルが、数式として
+解釈され得る開始文字を持たない構造になっていること。OfficeWeave 内での
+書き出しと再取り込みが、元の値を保つこと。
+
+```text
+1. = + - @ で始まる値が、先頭に ' を付けて書き出される
+2. タブ、復帰、改行で始まる値も同じく保護される
+3. 全角の ＝ ＋ － ＠ で始まる値も同じく保護される
+4. カンマ、引用符、改行を含む値が 1 つのセルに留まり、行と列が増えない
+5. 利用者 CSV を書き出して取り込むと、元のデータと一致する
+6. 元から ' で始まる値も一致する
+7. 利用者 CSV と部門 CSV が同じ生成経路を使う
+```
+
+個別の表計算ソフトが実際にどう表示し評価するかは、確認の対象にしない。
+製品、版、取り込み設定によって異なるためである。保証できるのは上の構造と
+往復までであり、開いた先での安全までは請け合わない。
+
+保護と復元は `app/models/csv_transfer.rb` の 1 か所に置き、利用者 CSV の
+書き出しと取り込み、部門 CSV の書き出しがここを通る。標準の CSV を
+`CsvTransfer` の外から参照していないことも、同じ検証で押さえている。
+
+開始文字ごとの保護と往復は `test/models/csv_transfer_test.rb` が、
+書き出しと取り込みを通した往復は `test/models/user_csv_test.rb` が、
+部門 CSV の書き出しは `test/models/department_csv_test.rb` が、
+画面からの書き出しは `test/controllers/data_transfers_controller_test.rb` が
+押さえている。ここで確かめるのは、実際に動いている構成でも同じである
+ことである。
+
+## 11. 管理者不在の防止
 
 組織から利用中の管理者がいなくなる経路が残っていないことを確かめる。
 
@@ -227,7 +258,7 @@ test -z "$(printf '%s\n' "$ROUTES" | grep 'active_storage' || true)"
 `test/models/user_administrator_concurrency_test.rb` が押さえている。
 ここで確かめるのは、実際に動いている構成でも同じであることである。
 
-## 11. 認証方式の解決
+## 12. 認証方式の解決
 
 設定した認証方式が、そのまま稼働中の構成になることを確かめる。
 
@@ -257,7 +288,7 @@ web と worker への伝播は `script/check_compose_isolation` が、
 `test/models/authentication/provider_boot_test.rb` が押さえている。
 ここで確かめるのは、実際に動いている構成でも同じであることである。
 
-## 12. セッションの期限と受け入れる Host
+## 13. セッションの期限と受け入れる Host
 
 設定ファイルの記述ではなく、起動した配布用の構成への要求で確かめる。
 
@@ -295,7 +326,7 @@ curl -s -o /dev/null -w '%{http_code}\n' \
 `test/models/session_test.rb` と `test/controllers/sessions_controller_test.rb`
 が押さえている。ここで確かめるのは、実際に動いている構成でも同じであることである。
 
-## 13. 主要な業務の流れ
+## 14. 主要な業務の流れ
 
 `test/system/end_to_end_test.rb` が、次を画面の操作だけで通す。
 
@@ -310,7 +341,7 @@ curl -s -o /dev/null -w '%{http_code}\n' \
 
 自動で実行されるため、手作業での確認は不要とする。
 
-## 14. 自動実行
+## 15. 自動実行
 
 `.github/workflows/verify.yml` が、変更のたびに次を実行する。
 
