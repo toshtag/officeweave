@@ -160,6 +160,39 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "有効なセッションで要求すると最終利用日時が進む" do
+    sign_in_as(@user)
+    signed_in = Current.session
+
+    travel 20.minutes do
+      get root_url
+
+      assert_in_delta Time.current, signed_in.reload.last_active_at, 1
+    end
+  end
+
+  test "署名が壊れた Cookie では応答を壊さずログイン画面へ戻す" do
+    sign_in_as(@user)
+    other = users(:hanako).sessions.create!
+    cookies["session_id"] = "#{cookies['session_id']}tampered"
+
+    get root_url
+
+    assert_redirected_to new_session_path
+    assert cookies[:session_id].blank?, "署名の検証に失敗した Cookie が残っている"
+    assert Session.exists?(other.id), "無関係なセッションを削除している"
+  end
+
+  test "記録の無い Cookie では応答を壊さずログイン画面へ戻す" do
+    sign_in_as(@user)
+    Current.session.destroy!
+
+    get root_url
+
+    assert_redirected_to new_session_path
+    assert cookies[:session_id].blank?, "対応する記録の無い Cookie が残っている"
+  end
+
   private
     def sign_in_with_password
       post session_path, params: { email_address: @user.email_address, password: "password-for-tests" }
