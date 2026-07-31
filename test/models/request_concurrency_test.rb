@@ -1,0 +1,206 @@
+require "test_helper"
+require "timeout"
+
+# 同じ申請へ競合する状態変更が同時に届いた場合の確認。
+#
+# 直前に読み取った状態で判定すると、承認と差し戻しの両方が成立し、
+# 履歴と通知が食い違ったまま残る。それを確かめるには別々の接続から
+# 同時に処理する必要があるため、このクラスだけトランザクションで囲む既定を外す。
+class RequestConcurrencyTest < ActiveSupport::TestCase
+  include ActiveJob::TestHelper
+  include ActionMailer::TestHelper
+
+  self.use_transactional_tests = false
+
+  # 決裁ごとに違う理由を渡す。敗れた側の理由が履歴へ残っていないことを見るため。
+  DECISION_COMMENTS = { "approved" => "承認の理由", "returned" => "差し戻しの理由" }.freeze
+
+  # 待機はすべて上限を持たせる。退行を CI の停止ではなく失敗として受け取るため。
+  PREPARATION_TIMEOUT = 10
+  COMPLETION_TIMEOUT = 30
+  OUTCOME_TIMEOUT = 5
+  CLEANUP_TIMEOUT = 5
+
+  setup do
+    @organization = Organization.create!(name: "申請の同時実行", code: "request-concurrency")
+    @department = @organization.departments.create!(name: "総務部", code: "general-affairs")
+    @applicant = create_user("applicant@example.com", role: "member")
+    @approver = create_user("approver@example.com", role: "administrator")
+    @approver.memberships.create!(department: @department)
+    @request_type = @organization.request_types.create!(
+      name: "休暇届", code: "leave", approver_department: @department
+    )
+    @endpoint = @organization.webhook_endpoints.create!(name: "連携先", url: "https://example.com/hook")
+    @request = @organization.requests.create!(
+      request_type: @request_type,
+      applicant: @applicant,
+      title: "夏季休暇の申請",
+      status: "pending",
+      submitted_at: 1.day.ago
+    )
+  end
+
+  teardown do
+    Notification.where(subject: @request).delete_all
+    @request.request_activities.delete_all
+    @request.destroy
+    @request_type.destroy
+    @endpoint.destroy
+    @organization.users.each { |user| user.memberships.delete_all }
+    @organization.users.destroy_all
+    @department.destroy
+    @organization.destroy
+  end
+
+  test "承認と差し戻しが同時に届いても成立するのは片方だけ" do
+    outcomes = concurrently(approve, return_to_applicant)
+
+    assert_empty outcomes.grep(Exception)
+    assert_equal 1, outcomes.count(true)
+    assert_equal 1, outcomes.count(false)
+    assert_includes %w[approved returned], @request.reload.status
+    assert_not_nil @request.decided_at
+  end
+
+  test "承認と差し戻しが競合しても決裁の履歴は 1 件だけ残る" do
+    concurrently(approve, return_to_applicant)
+
+    activity = decision_activities.sole
+
+    assert_equal @request.reload.status, activity.action
+    assert_equal DECISION_COMMENTS.fetch(activity.action), activity.comment
+  end
+
+  test "承認と差し戻しが競合しても申請者への通知は最終の状態だけになる" do
+    concurrently(approve, return_to_applicant)
+
+    notification = decision_notifications.sole
+
+    assert_equal "request_#{@request.reload.status}", notification.event
+  end
+
+  test "承認と差し戻しが競合してもメールの送信は成立した決裁のぶんだけ積まれる" do
+    assert_enqueued_emails 1 do
+      concurrently(approve, return_to_applicant)
+    end
+  end
+
+  test "承認と差し戻しが競合しても外部への送信は成立した決裁のぶんだけ積まれる" do
+    assert_enqueued_jobs 1, only: DeliverWebhookJob do
+      concurrently(approve, return_to_applicant)
+    end
+  end
+
+  test "同じ承認が二重に届いても成立するのは 1 件だけ" do
+    outcomes = concurrently(approve, approve)
+
+    assert_empty outcomes.grep(Exception)
+    assert_equal 1, outcomes.count(true)
+    assert_equal 1, outcomes.count(false)
+    assert_equal "approved", @request.reload.status
+    assert_equal 1, decision_activities.count
+    assert_equal 1, decision_notifications.count
+  end
+
+  test "同じ取り下げが二重に届いても成立するのは 1 件だけ" do
+    outcomes = concurrently(withdraw, withdraw)
+
+    assert_empty outcomes.grep(Exception)
+    assert_equal 1, outcomes.count(true)
+    assert_equal 1, outcomes.count(false)
+    assert_equal "withdrawn", @request.reload.status
+    assert_equal 1, @request.request_activities.where(action: "withdrawn").count
+  end
+
+  test "状態を変える処理では申請の行をロックする" do
+    statements = locking_statements { @request.approve(actor: @approver) }
+
+    assert_predicate statements, :any?
+  end
+
+  private
+    def create_user(email_address, role:)
+      @organization.users.create!(
+        name: email_address,
+        email_address: email_address,
+        password: "a-secret-value",
+        role: role
+      )
+    end
+
+    def approve
+      ->(request) { request.approve(actor: @approver, comment: DECISION_COMMENTS.fetch("approved")) }
+    end
+
+    def return_to_applicant
+      ->(request) { request.return_to_applicant(actor: @approver, comment: DECISION_COMMENTS.fetch("returned")) }
+    end
+
+    def withdraw
+      ->(request) { request.withdraw(actor: @applicant) }
+    end
+
+    def decision_activities
+      @request.request_activities.where(action: %w[approved returned])
+    end
+
+    def decision_notifications
+      Notification.where(user: @applicant, subject: @request, event: %w[request_approved request_returned])
+    end
+
+    # 両方の thread が申請を読み終えてから、同時に処理へ入る。
+    # 待ち時間で揃えると、遅い環境で先後がずれて確認にならない。
+    #
+    # 準備の成否は必ず ready へ 1 件通知する。通知しないまま終わる thread が
+    # あると、待つ側が理由の分からないまま止まる。
+    def concurrently(*operations)
+      ready = Queue.new
+      start = Queue.new
+      outcomes = Queue.new
+      threads = []
+
+      operations.each do |operation|
+        threads << Thread.new do
+          prepared = false
+
+          begin
+            ActiveRecord::Base.connection_pool.with_connection do
+              target = Request.find(@request.id)
+              prepared = true
+              ready << :ready
+              start.pop
+              outcomes << operation.call(target)
+            end
+          rescue StandardError => error
+            outcomes << error
+            ready << error unless prepared
+          end
+        end
+      end
+
+      Timeout.timeout(PREPARATION_TIMEOUT) { operations.each { ready.pop } }
+      operations.each { start << true }
+      threads.each { |thread| assert thread.join(COMPLETION_TIMEOUT), "処理が終わりませんでした" }
+
+      Timeout.timeout(OUTCOME_TIMEOUT) { operations.map { outcomes.pop } }
+    ensure
+      # 異常終了では、開始の合図を待ったままの thread が残る。
+      # 解放しても終わらないものだけを止め、次のテストへ持ち越さない。
+      threads.select(&:alive?).each { start << true }
+      threads.each { |thread| thread.kill unless thread.join(CLEANUP_TIMEOUT) }
+    end
+
+    # SQL 全体の一致は実装の書き方に縛られるため、対象と種類だけを見る。
+    def locking_statements
+      statements = []
+      subscriber = ActiveSupport::Notifications.subscribe("sql.active_record") do |*, payload|
+        statements << payload[:sql]
+      end
+
+      yield
+
+      statements.grep(/FOR UPDATE/i).grep(/requests/i)
+    ensure
+      ActiveSupport::Notifications.unsubscribe(subscriber)
+    end
+end
