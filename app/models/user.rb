@@ -90,6 +90,8 @@ class User < ApplicationRecord
 
     def password_meets_policy
       case Authentication::PasswordPolicy.violation(password)
+      when :blank
+        errors.add(:password, :blank)
       when :known_unsafe
         errors.add(:password, :known_unsafe)
       when :too_short

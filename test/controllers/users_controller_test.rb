@@ -70,6 +70,32 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     assert_select ".error-summary", text: /#{Regexp.escape(known_unsafe_message(:en))}/
   end
 
+  # 入力欄の minlength と required は通ってしまう値。要求を直接送って確かめる。
+  test "空白だけのパスワードでは追加できない" do
+    assert_no_difference [ -> { User.count }, -> { AuditEvent.count } ] do
+      post users_url, params: {
+        user: { name: "鈴木 一郎", email_address: "ichiro@example.com",
+                password: " " * 15, password_confirmation: " " * 15 }
+      }
+    end
+
+    assert_response :unprocessable_content
+    assert_select ".error-summary", text: /#{Regexp.escape(blank_message)}/
+  end
+
+  # 空欄と同じく「変更しない」として扱う。誤りとして示す場面ではない。
+  test "空白だけのパスワードでの更新は現在の digest を保つ" do
+    user = users(:hanako)
+    digest_before = user.password_digest
+
+    patch user_url(user), params: {
+      user: { name: "佐藤 花子", password: " " * 15, password_confirmation: " " * 15 }
+    }
+
+    assert_redirected_to users_path
+    assert_equal digest_before, user.reload.password_digest
+  end
+
   test "15 文字に満たないパスワードへは変更できない" do
     user = users(:hanako)
     digest_before = user.password_digest
@@ -161,6 +187,10 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
   private
     def last_active_administrator_message
       I18n.t("activerecord.errors.models.user.attributes.base.last_active_administrator")
+    end
+
+    def blank_message
+      I18n.t("errors.messages.blank")
     end
 
     def known_unsafe_message(locale = I18n.default_locale)

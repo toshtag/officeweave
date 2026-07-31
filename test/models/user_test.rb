@@ -165,6 +165,25 @@ class UserTest < ActiveSupport::TestCase
     end
   end
 
+  # 長さだけを見ると通ってしまう値。digest は作られるため、必須検査でも止まらない。
+  test "空白だけのパスワードは長さを満たしていても使えない" do
+    [ " " * 15, "\t" * 15, "　" * 15 ].each do |value|
+      user = build_user(password: value, password_confirmation: value)
+
+      assert_not user.valid?, "#{value.inspect} が受理された"
+      assert_includes user.errors.details[:password], { error: :blank }
+      assert_not_includes user.errors.details[:password].map { |detail| detail[:error] }, :too_short
+      assert_not_includes user.errors.details[:password].map { |detail| detail[:error] }, :known_unsafe
+    end
+  end
+
+  test "空白を含むだけのパスワードは使える" do
+    value = "a long secret value"
+    user = build_user(password: value, password_confirmation: value)
+
+    assert user.valid?
+  end
+
   test "既知の初期値を部分として含むだけのパスワードは使える" do
     value = "officeweave-is-not-the-password"
     user = build_user(password: value, password_confirmation: value)

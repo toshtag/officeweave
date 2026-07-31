@@ -26,6 +26,19 @@ class Authentication::PasswordPolicyTest < ActiveSupport::TestCase
 
   test "空白を含むことを理由に拒まない" do
     assert_nil Authentication::PasswordPolicy.violation("a long secret value")
+    assert_nil Authentication::PasswordPolicy.violation("#{'a' * 14} ")
+  end
+
+  # has_secure_password は空文字でない値なら digest を作る。
+  # 空白だけの値は、長さを満たしていても新しいパスワードとして受け取らない。
+  test "空白だけの値は長さを満たしていても拒む" do
+    [ " " * 15, "\t" * 15, "　" * 15, " " * 20 ].each do |value|
+      assert_equal :blank, Authentication::PasswordPolicy.violation(value), "#{value.inspect} を受理した"
+    end
+  end
+
+  test "空白だけの値は長さを理由にしない" do
+    assert_equal :blank, Authentication::PasswordPolicy.violation(" ")
   end
 
   test "既知の初期値は表記を変えても拒む" do

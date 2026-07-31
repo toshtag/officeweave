@@ -22,16 +22,24 @@ module Authentication
       officeweave
     ].freeze
 
+    # 空白だけで構成された値。タブと全角空白も同じ扱いとする。
+    ONLY_WHITESPACE = /\A[[:space:]]*\z/
+
     class << self
       # 満たしていない条件を返す。満たしている場合は nil を返す。
       #
-      # 未入力は対象外とする。値を設定しない更新と、要件を満たさない値の設定は
-      # 別のことであり、必須かどうかは呼ぶ側が決める。
+      # nil と空文字は対象外とする。値を設定しない更新と、要件を満たさない値の
+      # 設定は別のことであり、必須かどうかは呼ぶ側が決める。
       #
-      # 既知の値は長さより先に判定する。同じ入力へ理由を 2 つ並べても、
+      # 空白だけの値は、空文字とは分けて拒む。has_secure_password は空文字で
+      # ない値なら digest を作るため、長さを満たした空白は必須検査も長さの
+      # 検査も通り抜けてしまう。空白を含む通常の値は受理する。
+      #
+      # 空白と既知の値は長さより先に判定する。同じ入力へ理由を 2 つ並べても、
       # 直し方は変わらない。
       def violation(value)
         return if value.nil? || value.empty?
+        return :blank if value.match?(ONLY_WHITESPACE)
         return :known_unsafe if known_unsafe?(value)
         return :too_short if value.length < MINIMUM_LENGTH
 
