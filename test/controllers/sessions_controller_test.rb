@@ -97,10 +97,18 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/;\s*secure/i, session_cookie)
   end
 
-  test "絶対期限を過ぎたセッションでは保護された画面へ到達できない" do
+  test "操作を続けていても絶対期限を過ぎると保護された画面へ到達できない" do
     sign_in_as(@user)
 
-    travel 8.hours do
+    # 無操作期限に掛からない間隔で操作を続ける。7 時間 55 分まで到達する。
+    (1..19).each do |interval|
+      travel interval * 25.minutes do
+        get root_url
+        assert_response :success
+      end
+    end
+
+    travel 8.hours + 1.minute do
       get root_url
 
       assert_redirected_to new_session_path
@@ -110,7 +118,7 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
   test "無操作のまま 30 分を過ぎたセッションでは保護された画面へ到達できない" do
     sign_in_as(@user)
 
-    travel 30.minutes do
+    travel 31.minutes do
       get root_url
 
       assert_redirected_to new_session_path
@@ -135,7 +143,7 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
   test "期限切れのセッションは記録ごと破棄される" do
     sign_in_as(@user)
 
-    travel 8.hours do
+    travel 31.minutes do
       assert_difference -> { Session.count }, -1 do
         get root_url
       end
@@ -145,7 +153,7 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
   test "期限切れのセッションでは Cookie も削除される" do
     sign_in_as(@user)
 
-    travel 8.hours do
+    travel 31.minutes do
       get root_url
 
       assert cookies[:session_id].blank?, "期限切れの後も session_id が残っている"
