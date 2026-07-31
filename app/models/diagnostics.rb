@@ -14,6 +14,7 @@ class Diagnostics
       mail_delivery,
       application_host,
       administrator_exists,
+      authentication_provider,
       webhook_allowlist,
       webhook_destinations,
       *queue_checks
@@ -241,6 +242,17 @@ class Diagnostics
       end
     rescue StandardError => exception
       error("失敗したジョブ", exception.message)
+    end
+
+    # 稼働中の認証方式。
+    #
+    # 知らない名前は起動時に拒否するため、通常はここへ現れない。
+    # 表示するのはクラス名ではなく、設定で指定する名前とする。
+    # 設定した値と見比べられないと、確認にならない。
+    def authentication_provider
+      ok("認証方式", Authentication::ProviderRegistry.current.name_key)
+    rescue StandardError => exception
+      error("認証方式", exception.message)
     end
 
     # 内部宛先の許可設定。

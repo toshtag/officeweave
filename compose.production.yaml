@@ -41,7 +41,9 @@ x-application-environment: &application_environment
   INITIAL_USER_PASSWORD: ${INITIAL_USER_PASSWORD:-}
   ORGANIZATION_NAME: ${ORGANIZATION_NAME:-OfficeWeave}
   ORGANIZATION_CODE: ${ORGANIZATION_CODE:-default}
-  AUTHENTICATION_PROVIDER: ${AUTHENTICATION_PROVIDER:-internal}
+  # 未設定の場合だけ内部認証を使う。
+  # 空文字は既定値へ置き換えず、そのまま渡す。設定の誤りは起動時に拒否する。
+  AUTHENTICATION_PROVIDER: ${AUTHENTICATION_PROVIDER-internal}
   WEBHOOK_PRIVATE_DESTINATION_ALLOWLIST: ${WEBHOOK_PRIVATE_DESTINATION_ALLOWLIST:-}
   FORCE_SSL: ${FORCE_SSL:-true}
   # メール本文などの URL は、実際に公開しているポートで組み立てる。
