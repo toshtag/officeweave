@@ -382,7 +382,9 @@ curl -s -o /dev/null -w '%{http_code}\n' \
 2. 管理者画面で 15 文字のパスワードを受理する
 3. 大文字・数字・記号の混在を求めない
 4. 空白を含む値は受理し、空白だけの値は長さを満たしていても拒否する
-5. change_me、password、officeweave を、表記を変えても拒否する
+5. change_me、password、officeweave を、表記を変えても拒否する。
+   大文字小文字の違い、ASCII 空白、全角空白やノーブレークスペースで前後を
+   囲んだ場合も拒否する。内部の空白と部分一致は拒否の理由にしない
 6. 既存利用者の氏名や権限の更新では、新しいパスワードを求めない
 7. 要件を満たさない INITIAL_USER_PASSWORD では作成が失敗し、利用者を作らない
 8. 初期利用者の作成後、web と worker に INITIAL_USER_PASSWORD が残らない
