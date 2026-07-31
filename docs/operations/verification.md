@@ -271,7 +271,12 @@ web と worker への伝播は `script/check_compose_isolation` が、
 7. compose の healthcheck が healthy になる
 8. ログイン応答の session_id に有限の有効期限が付く
 9. その有効期限が、記録側の expires_at と一致する
+10. APPLICATION_HOST= と空欄にすると起動しない
+11. スキームやポートを含む値では起動しない
 ```
+
+`docker compose config` で、空欄が `localhost` へ置き換わらないことも確かめる。
+置き換わると、誤設定のまま起動してしまう。
 
 `.env` は書き換えず、専用の project 名と一時的な env ファイルで起動する。
 
