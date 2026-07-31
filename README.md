@@ -43,10 +43,14 @@ docker compose up -d --build
 初回のみ、最初の利用者を作成します。
 
 ```bash
-docker compose exec web bin/rails db:seed
+script/seed_initial_user
 ```
 
-作成後、`INITIAL_USER_PASSWORD` は `.env` から削除できます。
+資格情報は、このとき作られる一時コンテナにだけ渡します。処理が終わると
+そのコンテナは削除されます。稼働中の web と worker には渡しません。
+
+作成後、`INITIAL_USER_PASSWORD` は `.env` から削除してください。
+web と worker を作り直す必要はありません。
 
 動作を確かめるためのデータを入れる場合は、次を実行します。
 

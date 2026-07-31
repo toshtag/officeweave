@@ -52,8 +52,14 @@
   前後の空白と大文字小文字の違いを問わず拒否するようにした
 - 初期利用者の資格情報から既定値をなくした。
   `INITIAL_USER_EMAIL` と `INITIAL_USER_PASSWORD` を設定するまで、
-  `bin/rails db:seed` は利用者を作成しない。開発環境も同じとする
-- 開発用の構成へ `INITIAL_USER_*` と組織の設定を渡すようにした
+  初期利用者は作成しない。開発環境も同じとする
+- 初期管理者の資格情報を、稼働し続ける web と worker へ渡さないようにした。
+  `script/seed_initial_user` が作る一時コンテナだけで使用する。
+  作成後は `.env` から削除でき、web と worker の作り直しは要らない
+- 初期利用者を作成するコマンドを `script/seed_initial_user` にした。
+  配布用の構成では `--production` を付ける
+- `bin/diagnose` で、`INITIAL_USER_PASSWORD` が実行環境に残っている場合に
+  注意を出すようにした。値の強弱は問わない
 - `.env.example` の秘密情報を空欄とし、`change_me` を残さないようにした
 - 初期資格情報の危険な設定を `bin/diagnose` で確認できるようにした。
   設定に残った既知の初期値と、その値をそのまま使っている利用中の管理者を知らせる

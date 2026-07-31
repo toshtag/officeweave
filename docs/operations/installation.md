@@ -62,7 +62,7 @@ SECRET_KEY_BASE        署名に使う鍵
 
 ### 最初の管理者の資格情報
 
-初期利用者は `bin/rails db:seed` で作成する。作成する前に設定する。
+初期利用者は `script/seed_initial_user` で作成する。作成する前に設定する。
 
 ```text
 INITIAL_USER_EMAIL     必須。既定値はない
@@ -72,14 +72,22 @@ INITIAL_USER_PASSWORD  必須。既定値はない。15 文字以上とする
 パスワードは 15 文字以上にする。大文字・数字・記号の混在は求めない。
 空白を含めてもよいが、空白だけの値は使用できない。
 `change_me`、`password`、`officeweave` は、表記を変えても使用できない。
-要件を満たさない値を設定した場合、`bin/rails db:seed` は失敗し、利用者を作らない。
+要件を満たさない値を設定した場合、作成は失敗し、利用者を作らない。
 
 実際に設定した値を、コマンドの例や作業記録へ書き写さない。
 本書と `.env.example` に載る値は、いずれも使用できない値である。
 
-初期利用者の作成後は、`INITIAL_USER_PASSWORD` を環境から取り除いてよい。
-設定に残った既知の初期値と、その値をそのまま使っている管理者は、
-`bin/diagnose` が注意として知らせる。
+### 資格情報の寿命
+
+`INITIAL_USER_*` は、稼働し続ける web と worker へは渡さない。
+`script/seed_initial_user` が作る一時コンテナにだけ渡し、処理が終わると
+そのコンテナは削除される。
+
+初期利用者の作成後は、`INITIAL_USER_PASSWORD` を `.env` から削除する。
+web と worker を作り直す必要はない。もともと渡していないためである。
+
+残っている場合は `bin/diagnose` が注意として知らせる。値の強弱は問わない。
+設定に残った既知の初期値と、その値をそのまま使っている管理者も、同じく知らせる。
 
 ### 接続するホスト名
 
@@ -234,16 +242,19 @@ docker compose -f compose.production.yaml exec -T web bin/jobs_status
 ## 5. 最初の利用者の作成
 
 ```bash
-docker compose -f compose.production.yaml exec web bin/rails db:seed
+script/seed_initial_user --production
 ```
 
 `.env` に設定した値で、最初の管理者が作られる。
 既に利用者が存在する場合は何も行わない。
 
+資格情報は一時コンテナにだけ渡る。稼働中の web と worker では実行しない。
+
 `INITIAL_USER_EMAIL` と `INITIAL_USER_PASSWORD` のどちらかが未設定の場合、
 利用者は作成されず、必要な設定を知らせて終わる。推測した資格情報では作らない。
 
-作成後は `INITIAL_USER_PASSWORD` を `.env` から削除してよい。
+作成後は `INITIAL_USER_PASSWORD` を `.env` から削除する。
+web と worker の作り直しは要らない。
 
 ## 6. 確認
 

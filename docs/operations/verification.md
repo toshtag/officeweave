@@ -40,11 +40,13 @@ curl -s http://127.0.0.1:3210/health
 ```
 
 ```bash
-docker compose exec web bin/rails db:seed
+script/seed_initial_user
 ```
 
 `.env` へ `INITIAL_USER_EMAIL` と `INITIAL_USER_PASSWORD` を設定していない場合、
 利用者は作成されず、必要な設定を知らせて終わる。既定の資格情報は用意しない。
+
+資格情報は一時コンテナにだけ渡る。稼働中の web と worker には渡らない。
 
 ```bash
 docker compose exec web bin/diagnose
@@ -382,14 +384,22 @@ curl -s -o /dev/null -w '%{http_code}\n' \
 4. 空白を含む値は受理し、空白だけの値は長さを満たしていても拒否する
 5. change_me、password、officeweave を、表記を変えても拒否する
 6. 既存利用者の氏名や権限の更新では、新しいパスワードを求めない
-7. 要件を満たさない INITIAL_USER_PASSWORD では db:seed が失敗し、利用者を作らない
-8. bin/diagnose が、設定に残った既知の初期値を変数名だけで知らせる
-9. bin/diagnose が、既知の初期値を使う利用中の管理者を知らせる
+7. 要件を満たさない INITIAL_USER_PASSWORD では作成が失敗し、利用者を作らない
+8. 初期利用者の作成後、web と worker に INITIAL_USER_PASSWORD が残らない
+9. seed 用の一時コンテナが残らない
+10. bin/diagnose が、実行環境に残った INITIAL_USER_PASSWORD を知らせる
+11. bin/diagnose が、設定に残った既知の初期値を変数名だけで知らせる
+12. bin/diagnose が、既知の初期値を使う利用中の管理者を知らせる
 ```
 
 判定は `app/models/authentication/password_policy.rb` の 1 か所に置き、
-管理者画面、`db:seed`、CSV 取込による新しい利用者、`bin/diagnose` の
-すべてがここを通る。
+管理者画面、`script/seed_initial_user`、CSV 取込による新しい利用者、
+`bin/diagnose` のすべてがここを通る。
+
+初期利用者の資格情報は、稼働し続ける web と worker へは渡さない。
+`script/seed_initial_user` が作る一時コンテナにだけ渡す。
+非伝播は `script/check_compose_isolation` が、スクリプトの契約は
+`test/models/seed_initial_user_script_test.rb` が押さえている。
 
 最低要件は `test/models/authentication/password_policy_test.rb` と
 `test/models/user_test.rb` が、画面での拒否は
