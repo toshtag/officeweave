@@ -190,6 +190,17 @@ class DiagnosticsTest < ActiveSupport::TestCase
     assert_equal :ok, check[:status]
   end
 
+  test "既知の初期値を Unicode の空白で囲んでも見つける" do
+    check = with_environment("DATABASE_PASSWORD" => "\u3000\u3000officeweave\u3000\u3000",
+                             "SMTP_PASSWORD" => "\u00A0\u00A0password\u00A0\u00A0") { check_named("秘密情報の初期値") }
+
+    assert_equal :warning, check[:status]
+    assert_includes check[:detail], "DATABASE_PASSWORD"
+    assert_includes check[:detail], "SMTP_PASSWORD"
+    assert_not_includes check[:detail], "officeweave"
+    assert_not_includes check[:detail], "password"
+  end
+
   # 診断の出力は画面にもログにも残る。原因を読むのに要るのは変数名だけである。
   test "秘密情報の値そのものは出力しない" do
     check = with_environment("DATABASE_PASSWORD" => "change_me") { check_named("秘密情報の初期値") }

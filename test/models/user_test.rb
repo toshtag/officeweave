@@ -184,6 +184,18 @@ class UserTest < ActiveSupport::TestCase
     assert user.valid?
   end
 
+  # 前後の空白を無視する範囲が空白だけの判定と食い違うと、そこから迂回できる。
+  test "既知の初期値を Unicode の空白で囲んでも使えない" do
+    [ "\u3000\u3000officeweave\u3000\u3000", "\u00A0\u00A0password\u00A0\u00A0\u00A0\u00A0\u00A0" ].each do |value|
+      user = build_user(password: value, password_confirmation: value)
+
+      assert_not user.valid?, "#{value.inspect} が受理された"
+      assert_includes user.errors.details[:password], { error: :known_unsafe }
+      assert_not_includes user.errors.details[:password].map { |detail| detail[:error] }, :too_short
+      assert_not_includes user.errors.details[:password].map { |detail| detail[:error] }, :blank
+    end
+  end
+
   test "既知の初期値を部分として含むだけのパスワードは使える" do
     value = "officeweave-is-not-the-password"
     user = build_user(password: value, password_confirmation: value)

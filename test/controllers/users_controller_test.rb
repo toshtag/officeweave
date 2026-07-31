@@ -70,6 +70,21 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     assert_select ".error-summary", text: /#{Regexp.escape(known_unsafe_message(:en))}/
   end
 
+  # 入力欄の制限も長さの検査も通ってしまう値。要求を直接送って確かめる。
+  test "Unicode の空白で囲んだ既知の初期値では追加できない" do
+    value = "\u3000\u3000officeweave\u3000\u3000"
+
+    assert_no_difference [ -> { User.count }, -> { AuditEvent.count } ] do
+      post users_url, params: {
+        user: { name: "鈴木 一郎", email_address: "ichiro@example.com",
+                password: value, password_confirmation: value }
+      }
+    end
+
+    assert_response :unprocessable_content
+    assert_select ".error-summary", text: /#{Regexp.escape(known_unsafe_message)}/
+  end
+
   # 入力欄の minlength と required は通ってしまう値。要求を直接送って確かめる。
   test "空白だけのパスワードでは追加できない" do
     assert_no_difference [ -> { User.count }, -> { AuditEvent.count } ] do

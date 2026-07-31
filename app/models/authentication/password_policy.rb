@@ -25,6 +25,14 @@ module Authentication
     # 空白だけで構成された値。タブと全角空白も同じ扱いとする。
     ONLY_WHITESPACE = /\A[[:space:]]*\z/
 
+    # 既知の値と比べるときに取り除く前後の空白。
+    #
+    # String#strip は ASCII の空白と NUL しか落とさない。ONLY_WHITESPACE と
+    # 範囲が食い違うと、全角空白やノーブレークスペースで既知の値を囲むだけで
+    # 検査を抜けられる。空白の定義は 1 つにそろえる。
+    LEADING_WHITESPACE = /\A[[:space:]]+/
+    TRAILING_WHITESPACE = /[[:space:]]+\z/
+
     class << self
       # 満たしていない条件を返す。満たしている場合は nil を返す。
       #
@@ -55,8 +63,15 @@ module Authentication
       def known_unsafe?(value)
         return false unless value.is_a?(String)
 
-        KNOWN_UNSAFE_VALUES.include?(value.strip.downcase)
+        KNOWN_UNSAFE_VALUES.include?(without_surrounding_whitespace(value).downcase)
       end
+
+      private
+        # 取り除くのは前後だけとする。内部の空白は値の一部であり、
+        # 詰めてから比べると、既知の値ではないものまで既知の値と見なす。
+        def without_surrounding_whitespace(value)
+          value.sub(LEADING_WHITESPACE, "").sub(TRAILING_WHITESPACE, "")
+        end
     end
   end
 end

@@ -48,6 +48,46 @@ class Authentication::PasswordPolicyTest < ActiveSupport::TestCase
     end
   end
 
+  # 前後の空白を無視する範囲は、空白だけの判定と同じでなければならない。
+  # 食い違うと、片方だけが認める空白で既知の値を囲んで迂回できる。
+  test "既知の初期値を Unicode の空白で囲んでも拒む" do
+    [
+      "\u3000\u3000officeweave\u3000\u3000",                   # 全角空白
+      "\u00A0\u00A0password\u00A0\u00A0\u00A0\u00A0\u00A0", # ノーブレークスペース
+      "\u2003\u2003\u2003change_me\u2003\u2003\u2003",       # EM SPACE
+      "   Officeweave    ",                                    # ASCII 空白と大文字小文字
+      "\r\n\r\npassword\r\n\r\n\r\n"                     # 改行
+    ].each do |value|
+      assert_operator value.length, :>=, Authentication::PasswordPolicy::MINIMUM_LENGTH,
+                      "#{value.inspect} が最低長に満たない"
+      assert Authentication::PasswordPolicy.known_unsafe?(value), "#{value.inspect} を見逃した"
+      assert_equal :known_unsafe, Authentication::PasswordPolicy.violation(value)
+    end
+  end
+
+  # 取り除くのは前後だけとする。内部の空白は値の一部である。
+  test "内部の空白を取り除いたうえで既知の初期値と比べない" do
+    [
+      "office\u3000weave-is-safe",
+      "my\u00A0password-is-long",
+      "change\u2003_me-is-not-known"
+    ].each do |value|
+      assert_not Authentication::PasswordPolicy.known_unsafe?(value), "#{value.inspect} を拒んだ"
+      assert_nil Authentication::PasswordPolicy.violation(value)
+    end
+  end
+
+  # 判定のためだけに取り除く。保存するのは入力された値そのものである。
+  test "既知の初期値と比べても元の値を変えない" do
+    value = "\u3000OfficeWeave\u3000"
+    original = value.dup
+
+    Authentication::PasswordPolicy.known_unsafe?(value)
+    Authentication::PasswordPolicy.violation(value)
+
+    assert_equal original, value
+  end
+
   test "既知の初期値を部分として含むだけの値は拒まない" do
     [ "officeweave-is-not-the-password", "my-password-is-long" ].each do |value|
       assert_not Authentication::PasswordPolicy.known_unsafe?(value), "#{value.inspect} を拒んだ"
