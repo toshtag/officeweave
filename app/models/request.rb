@@ -110,10 +110,18 @@ class Request < ApplicationRecord
     request_activities.create!(actor: actor, action: "created")
   end
 
-  # 承認と差し戻しを行える利用者かどうか。
+  # 承認と差し戻しを任されている利用者かどうか。
   # 自分の申請は自分で承認できない。
+  #
+  # 現在の状態は見ない。状態は競合で変わり得るため、
+  # 実際に処理できるかどうかは行を占有した change_status だけが決める。
+  def decision_authorized_for?(user)
+    applicant_id != user.id && request_type.approvable_by?(user)
+  end
+
+  # 決裁の操作を画面へ出してよいかどうか。
   def decidable_by?(user)
-    status == "pending" && applicant_id != user.id && request_type.approvable_by?(user)
+    status == "pending" && decision_authorized_for?(user)
   end
 
   private
