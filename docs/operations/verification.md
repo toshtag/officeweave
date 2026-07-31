@@ -257,7 +257,45 @@ web と worker への伝播は `script/check_compose_isolation` が、
 `test/models/authentication/provider_boot_test.rb` が押さえている。
 ここで確かめるのは、実際に動いている構成でも同じであることである。
 
-## 12. 主要な業務の流れ
+## 12. セッションの期限と受け入れる Host
+
+設定ファイルの記述ではなく、起動した配布用の構成への要求で確かめる。
+
+```text
+1. 正しい Host で /up が 200
+2. 正しい Host で /health が 200
+3. 想定外の Host で /up が 403
+4. 想定外の Host で /health が 403
+5. 想定外の Host で保護された画面が 403
+6. Host ヘッダーを省いたループバックへの要求が 403
+7. compose の healthcheck が healthy になる
+8. ログイン応答の session_id に有限の有効期限が付く
+9. その有効期限が、記録側の expires_at と一致する
+10. APPLICATION_HOST= と空欄にすると起動しない
+11. スキームやポートを含む値では起動しない
+12. IP アドレスとして成立しない値では起動しない
+13. APPLICATION_PORT を設定するとメールの URL にポートが入る
+14. WEB_PORT だけを変えてもメールの URL にポートが混ざらない
+```
+
+`docker compose config` で、空欄が `localhost` へ置き換わらないことも確かめる。
+置き換わると、誤設定のまま起動してしまう。
+
+`.env` は書き換えず、専用の project 名と一時的な env ファイルで起動する。
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' \
+  -H 'Host: unexpected.example' http://127.0.0.1:3210/up
+```
+
+`403` が返ることが正しい。
+
+期限そのもの（無操作 30 分、絶対 8 時間、境界の時刻、活動で絶対期限が
+延びないこと、定期削除が期限切れだけを消すこと）は
+`test/models/session_test.rb` と `test/controllers/sessions_controller_test.rb`
+が押さえている。ここで確かめるのは、実際に動いている構成でも同じであることである。
+
+## 13. 主要な業務の流れ
 
 `test/system/end_to_end_test.rb` が、次を画面の操作だけで通す。
 
@@ -272,7 +310,7 @@ web と worker への伝播は `script/check_compose_isolation` が、
 
 自動で実行されるため、手作業での確認は不要とする。
 
-## 13. 自動実行
+## 14. 自動実行
 
 `.github/workflows/verify.yml` が、変更のたびに次を実行する。
 
@@ -280,6 +318,7 @@ web と worker への伝播は `script/check_compose_isolation` が、
 Compose 構成の分離の検査
 bin/verify（開発用の構成）
 配布用の構成での起動、稼働確認、診断
+配布用の構成での想定外の Host の拒否
 配布用の構成でのバックアップと復元
 配布用の構成での永続キューと worker
 ```

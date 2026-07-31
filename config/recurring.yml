@@ -2,8 +2,14 @@
 #
 # ここへ業務の処理を足さない。運用の都合で動く処理が増えるほど、
 # どの時刻に何が動くのかを追えなくなる。
-# 現時点では Solid Queue 自身の後始末だけを登録する。
+# 登録するのは、放置すると記録が溜まり続ける後始末だけとする。
+#
+# 実行する分は互いにずらす。同じ分に重ねると、片方の遅れが
+# もう片方の実行時刻へそのまま出る。
 production:
   clear_solid_queue_finished_jobs:
     command: "SolidQueue::Job.clear_finished_in_batches(sleep_between_batches: 0.3)"
     schedule: every hour at minute 12
+  delete_expired_sessions:
+    command: "Session.delete_expired"
+    schedule: every hour at minute 22

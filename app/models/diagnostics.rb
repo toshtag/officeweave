@@ -1,8 +1,16 @@
+require "ipaddr"
+
 # 運用時の構成を確認する。
 #
 # 「起動している」ことと「正しく動く」ことは別である。
 # 送信設定の不備や、実行し忘れた移行は、使われて初めて分かる。
 class Diagnostics
+  # 公開 URL として使えない理由と、その説明。
+  PUBLIC_URL_PROBLEMS = {
+    loopback: "は利用者の端末自身を指します。",
+    unspecified: "は接続先を特定しないアドレスです。"
+  }.freeze
+
   def run
     [
       database_connection,
@@ -118,14 +126,55 @@ class Diagnostics
       end
     end
 
+    # 確かめるのは、設定を書いたかどうかではなく、
+    # メールを受け取った利用者の端末からその URL へ戻れる見込みがあるかである。
+    #
+    # 設定元では判定できない。配布用の構成は APPLICATION_HOST が未設定でも
+    # localhost をコンテナへ渡すため、環境変数の有無では
+    # 「設定しなかった」と「localhost を明示した」を区別できない。
     def application_host
-      host = ActionMailer::Base.default_url_options[:host]
+      options = ActionMailer::Base.default_url_options
+      host = options[:host].to_s
 
-      if host.present? && host != "example.com"
-        ok("メール本文の URL", host)
-      else
+      problem = Rails.env.production? ? public_url_host_problem(host) : nil
+
+      if host.blank?
         warning("メール本文の URL", "APPLICATION_HOST を設定してください。通知から画面へ戻れません。")
+      elsif problem
+        warning("メール本文の URL",
+                "#{public_url_authority(options)} #{PUBLIC_URL_PROBLEMS.fetch(problem)}" \
+                "利用者が接続できる APPLICATION_HOST を設定してください。")
+      else
+        ok("メール本文の URL", public_url_authority(options))
       end
+    end
+
+    # 公開先として使えない理由。使える場合は nil を返す。
+    #
+    # 設定としては正しいため起動は拒否しない。単一端末での試用や、
+    # 逆プロキシを整える前の確認では、この値のまま動かせる必要がある。
+    # 組織内の DNS 名は端末から到達できる場合があるため、名前だけでは注意にしない。
+    def public_url_host_problem(host)
+      normalized = host.downcase
+      return :loopback if normalized == "localhost" || normalized.end_with?(".localhost")
+
+      address = IPAddr.new(normalized.delete_prefix("[").delete_suffix("]"))
+      # IPv4 を包んだ IPv6 は、包みを外してから判定する。
+      # 外さないと ::ffff:0.0.0.0 が未指定として扱われない。
+      address = address.native if address.ipv4_mapped?
+
+      return :unspecified if address.to_i.zero?
+      return :loopback if address.loopback?
+
+      nil
+    rescue IPAddr::Error
+      # 起動時に検査済みだが、診断だけを取り出して使う場合にも失敗させない。
+      nil
+    end
+
+    # 公開ポートを指定している場合は、ホスト名と合わせて示す。
+    def public_url_authority(options)
+      options[:port] ? "#{options[:host]}:#{options[:port]}" : options[:host].to_s
     end
 
     def administrator_exists

@@ -869,7 +869,9 @@ CREATE TABLE public.sessions (
     ip_address character varying,
     user_agent character varying,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    last_active_at timestamp(6) without time zone NOT NULL,
+    expires_at timestamp(6) without time zone NOT NULL
 );
 
 
@@ -1920,6 +1922,20 @@ CREATE UNIQUE INDEX index_resources_on_organization_id_and_code ON public.resour
 
 
 --
+-- Name: index_sessions_on_expires_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_sessions_on_expires_at ON public.sessions USING btree (expires_at);
+
+
+--
+-- Name: index_sessions_on_last_active_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_sessions_on_last_active_at ON public.sessions USING btree (last_active_at);
+
+
+--
 -- Name: index_sessions_on_user_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2334,6 +2350,7 @@ ALTER TABLE ONLY public.announcement_departments
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260731000000'),
 ('20260730000000'),
 ('20260729084654'),
 ('20260729083323'),

@@ -34,6 +34,24 @@ class LocalesControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to root_path
   end
 
+  test "逆斜線を使った外部サイトへの誘導を受け付けない" do
+    patch locale_url, params: { locale: "en", return_to: "/\\example.invalid/" }
+
+    assert_redirected_to root_path
+  end
+
+  test "解釈できない戻り先で応答を壊さない" do
+    patch locale_url, params: { locale: "en", return_to: "/documents/[" }
+
+    assert_redirected_to root_path
+  end
+
+  test "制御文字を含む戻り先で応答を壊さない" do
+    patch locale_url, params: { locale: "en", return_to: "/documents\nSet-Cookie: injected=1" }
+
+    assert_redirected_to root_path
+  end
+
   test "言語の切り替えは GET では受け付けない" do
     get "/locale?locale=en"
 

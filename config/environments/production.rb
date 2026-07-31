@@ -73,8 +73,9 @@ Rails.application.configure do
   # Set this to true and configure the email server for immediate delivery to raise delivery errors.
   # config.action_mailer.raise_delivery_errors = false
 
-  # Set host to be used by links generated in mailer templates.
-  config.action_mailer.default_url_options = { host: "example.com" }
+  # メール本文の URL は config/initializers/mail_delivery.rb で組み立てる。
+  # ここへ仮の値を置かない。置くと、受け入れる Host と公開 URL の既定値が
+  # 別々の場所で決まり、設定しないまま起動したときに食い違う。
 
   # Specify outgoing SMTP server. Remember to add smtp/* credentials via bin/rails credentials:edit.
   # config.action_mailer.smtp_settings = {
@@ -96,11 +97,17 @@ Rails.application.configure do
   config.active_record.attributes_for_inspect = [ :id ]
 
   # Enable DNS rebinding protection and other `Host` header attacks.
-  # config.hosts = [
-  #   "example.com",     # Allow requests from example.com
-  #   /.*\.example\.com/ # Allow requests from subdomains like `www.example.com`
-  # ]
+  # 受け入れるのは、利用者が接続する 1 つのホスト名だけとする。
+  # 正規表現や任意のサブドメインは許可しない。許可を広げるほど、
+  # 想定外の名前で届いた要求を、正規の要求と区別できなくなる。
   #
-  # Skip DNS rebinding protection for the default health check endpoint.
-  # config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
+  # 値は起動の時点で検査する。middleware が組み上がる前に失敗させ、
+  # 誤設定のまま稼働確認だけが通る状態を作らない。
+  config.hosts = [
+    Officeweave::Configuration::ApplicationHost.resolve(ENV["APPLICATION_HOST"], default: "localhost")
+  ]
+
+  # 稼働確認の経路も Host の検査から外さない。
+  # 除外すると、その経路だけは任意の Host で到達できる。
+  # コンテナ内からの確認は、要求する側が正しい Host を付ける。
 end

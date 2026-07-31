@@ -88,7 +88,7 @@ jobs:
       - name: 応答するまで待つ
         run: |
           for _ in $(seq 1 60); do
-            if curl -sf http://127.0.0.1:3210/up > /dev/null; then
+            if curl -sf -H 'Host: localhost' http://127.0.0.1:3210/up > /dev/null; then
               exit 0
             fi
             sleep 2
@@ -98,9 +98,25 @@ jobs:
 
       - name: 依存先まで含めて確認する
         run: |
-          response="$(curl -sf http://127.0.0.1:3210/health)"
+          response="$(curl -sf -H 'Host: localhost' http://127.0.0.1:3210/health)"
           echo "${response}"
           echo "${response}" | grep -q '"status":"ok"'
+
+      - name: 想定外の Host を拒否することを確かめる
+        run: |
+          # 設定ファイルの文字列ではなく、起動した運用環境への要求で確かめる。
+          # 稼働確認の経路も例外にしない。
+          for path in /up /health /; do
+            status="$(
+              curl -s -o /dev/null -w '%{http_code}' \
+                -H 'Host: unexpected.example' "http://127.0.0.1:3210${path}"
+            )"
+            echo "${path}: ${status}"
+            if [ "${status}" != "403" ]; then
+              echo "${path} が想定外の Host を受け入れた" >&2
+              exit 1
+            fi
+          done
 
       - name: 初期利用者を作成する
         run: docker compose -f compose.production.yaml exec -T web bin/rails db:seed
@@ -163,7 +179,7 @@ jobs:
       - name: 応答するまで待つ
         run: |
           for _ in $(seq 1 90); do
-            if curl -sf http://127.0.0.1:3212/up > /dev/null; then
+            if curl -sf -H 'Host: localhost' http://127.0.0.1:3212/up > /dev/null; then
               exit 0
             fi
             sleep 2
@@ -205,7 +221,7 @@ jobs:
         run: |
           docker compose -f compose.production.yaml up -d --force-recreate web
           for _ in $(seq 1 90); do
-            curl -sf http://127.0.0.1:3212/up > /dev/null && break
+            curl -sf -H 'Host: localhost' http://127.0.0.1:3212/up > /dev/null && break
             sleep 2
           done
           test -f "$(ls -1 backups/officeweave-*.tar.gz | head -1)"
@@ -233,7 +249,7 @@ jobs:
           fi
           docker compose -f compose.production.yaml up -d web
           for _ in $(seq 1 90); do
-            curl -sf http://127.0.0.1:3212/up > /dev/null && break
+            curl -sf -H 'Host: localhost' http://127.0.0.1:3212/up > /dev/null && break
             sleep 2
           done
           docker compose -f compose.production.yaml exec -T web \
@@ -269,7 +285,7 @@ jobs:
 
       - name: 依存先まで含めて確認する
         run: |
-          response="$(curl -sf http://127.0.0.1:3212/health)"
+          response="$(curl -sf -H 'Host: localhost' http://127.0.0.1:3212/health)"
           echo "${response}"
           echo "${response}" | grep -q '"status":"ok"'
 
@@ -322,7 +338,7 @@ jobs:
       - name: 応答するまで待つ
         run: |
           for _ in $(seq 1 90); do
-            if curl -sf http://127.0.0.1:3213/up > /dev/null; then
+            if curl -sf -H 'Host: localhost' http://127.0.0.1:3213/up > /dev/null; then
               exit 0
             fi
             sleep 2
@@ -380,7 +396,7 @@ jobs:
         run: |
           docker compose -f compose.production.yaml up -d --force-recreate web
           for _ in $(seq 1 90); do
-            curl -sf http://127.0.0.1:3213/up > /dev/null && break
+            curl -sf -H 'Host: localhost' http://127.0.0.1:3213/up > /dev/null && break
             sleep 2
           done
           docker compose -f compose.production.yaml exec -T -e QUEUE_JOB_ID web bin/rails runner '

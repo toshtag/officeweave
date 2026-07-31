@@ -18,14 +18,9 @@ class LocalesController < ApplicationController
     end
 
     # 外部サイトへの誘導に使われないよう、自サイト内の絶対パスだけを許可する。
-    # //example.com は上位プロトコル相対の URL として解釈されるため除外する。
+    # 認証後の戻り先と同じ判定を使う。同じ「遷移先として認める経路」に、
+    # 画面ごとに違う条件を置くと、緩いほうが抜け道になる。
     def return_path
-      candidate = params[:return_to].to_s
-
-      if candidate.start_with?("/") && !candidate.start_with?("//")
-        candidate
-      else
-        root_path
-      end
+      Authentication::LocalPath.permitted(params[:return_to]) || root_path
     end
 end

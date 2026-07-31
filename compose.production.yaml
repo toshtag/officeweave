@@ -27,8 +27,13 @@ x-application-environment: &application_environment
   JOB_THREADS: ${JOB_THREADS:-2}
   JOB_PROCESSES: ${JOB_PROCESSES:-1}
   SECRET_KEY_BASE: ${SECRET_KEY_BASE:?SECRET_KEY_BASE を設定してください}
-  APPLICATION_HOST: ${APPLICATION_HOST:-localhost}
+  # 未設定の場合だけ localhost を使う。
+  # 空文字は既定値へ置き換えず、そのまま渡す。設定の誤りは起動時に拒否する。
+  APPLICATION_HOST: ${APPLICATION_HOST-localhost}
   APPLICATION_PROTOCOL: ${APPLICATION_PROTOCOL:-https}
+  # 利用者が接続する公開ポート。逆プロキシで 80 または 443 を公開する構成では指定しない。
+  # 下の WEB_PORT とは別物であり、値を流用しない。
+  APPLICATION_PORT: ${APPLICATION_PORT-}
   MAIL_FROM: ${MAIL_FROM:-officeweave@localhost}
   SMTP_ADDRESS: ${SMTP_ADDRESS:-}
   SMTP_PORT: ${SMTP_PORT:-587}
@@ -46,7 +51,9 @@ x-application-environment: &application_environment
   AUTHENTICATION_PROVIDER: ${AUTHENTICATION_PROVIDER-internal}
   WEBHOOK_PRIVATE_DESTINATION_ALLOWLIST: ${WEBHOOK_PRIVATE_DESTINATION_ALLOWLIST:-}
   FORCE_SSL: ${FORCE_SSL:-true}
-  # メール本文などの URL は、実際に公開しているポートで組み立てる。
+  # ホストから web コンテナへ公開するポート。
+  # メール本文の公開 URL へは使わない。逆プロキシの背後では、
+  # 利用者が接続するポートと一致しない。公開 URL は APPLICATION_PORT で指定する。
   WEB_PORT: ${WEB_PORT:-3210}
 
 services:
@@ -78,7 +85,13 @@ services:
     healthcheck:
       # データベースの準備は web の起動処理が行う。
       # worker はその完了を待つため、web の稼働をここで判定できるようにする。
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3000/up >/dev/null"]
+      #
+      # 運用環境は APPLICATION_HOST 以外の Host を拒否する。
+      # ループバックへ直接要求するため、Host は明示する。
+      # $$ で escape し、compose ではなくコンテナ内の shell へ展開させる。
+      # web へ実際に渡っている値と、確認に使う値を必ず一致させる。
+      # ここで既定値へ落とさない。落とすと、誤設定でも稼働確認だけが通る。
+      test: ["CMD-SHELL", "curl -fsS -H \"Host: $${APPLICATION_HOST}\" http://127.0.0.1:3000/up >/dev/null"]
       interval: 5s
       timeout: 3s
       retries: 20

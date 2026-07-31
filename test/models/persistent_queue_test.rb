@@ -34,7 +34,21 @@ class PersistentQueueTest < ActiveSupport::TestCase
     recurring = YAML.safe_load_file(Rails.root.join("config/recurring.yml"), aliases: true)
 
     assert_equal %w[production], recurring.keys
-    assert_equal %w[clear_solid_queue_finished_jobs], recurring["production"].keys
+    assert_equal %w[clear_solid_queue_finished_jobs delete_expired_sessions], recurring["production"].keys
+  end
+
+  test "後始末は同じ分に重ねない" do
+    tasks = YAML.safe_load_file(Rails.root.join("config/recurring.yml"), aliases: true).fetch("production")
+    minutes = tasks.values.map { |task| task.fetch("schedule") }
+
+    assert_equal minutes.uniq.size, minutes.size, "同じ時刻に複数の後始末を登録している"
+  end
+
+  test "期限切れセッションの削除は登録した名前で呼び出せる" do
+    tasks = YAML.safe_load_file(Rails.root.join("config/recurring.yml"), aliases: true).fetch("production")
+
+    assert_equal "Session.delete_expired", tasks.dig("delete_expired_sessions", "command")
+    assert_respond_to Session, :delete_expired
   end
 
   test "ジョブは primary とは別のデータベースへ置く" do

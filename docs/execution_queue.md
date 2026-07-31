@@ -12,9 +12,9 @@
 
 ```text
 現在の Phase: R0
-直近完了 Task: R0-T9A
+直近完了 Task: R0-T10
 進行中:        なし
-次に実行:      R0-T10 セッションへ期限を設け、戻り先と Host を制限する（#57）
+次に実行:      R0-T11 CSV 出力を数式インジェクションから守る（#61）
 ```
 
 ## P0 プロジェクト契約
@@ -159,7 +159,7 @@ Issue が大きい場合は分割してよいが、分割した場合は本書�
 | R0-T8  | `r0/t8-active-administrator-invariant` | [#55](https://github.com/toshtag/OfficeWeave/issues/55) | 最後の有効な管理者を失う操作を全経路で拒否する        | 完了  |
 | R0-T9  | `r0/t9-auth-provider-fail-closed` | [#56](https://github.com/toshtag/OfficeWeave/issues/56)  | 未知の認証方式を起動時に失敗させる              | 完了  |
 | R0-T9A | `r0/t9a-auth-provider-name-collision` | [#83](https://github.com/toshtag/OfficeWeave/issues/83) | 認証方式の登録名衝突を拒否する               | 完了  |
-| R0-T10 | —                          | [#57](https://github.com/toshtag/OfficeWeave/issues/57)         | セッションへ期限を設け、戻り先と Host を制限する    | 未着手 |
+| R0-T10 | `r0/t10-session-boundaries` | [#57](https://github.com/toshtag/OfficeWeave/issues/57)        | セッションへ期限を設け、戻り先と Host を制限する    | 完了  |
 | R0-T11 | —                          | [#61](https://github.com/toshtag/OfficeWeave/issues/61)         | CSV 出力を数式インジェクションから守る          | 未着手 |
 | R0-T12 | —                          | [#54](https://github.com/toshtag/OfficeWeave/issues/54)         | 申請の決裁を行ロックで直列化する               | 未着手 |
 | R0-T13 | —                          | [#66](https://github.com/toshtag/OfficeWeave/issues/66)         | パスワードの最低要件と初期値検査を追加する          | 未着手 |
@@ -184,6 +184,17 @@ Issue が大きい場合は分割してよいが、分割した場合は本書�
 - R0-T11 から R0-T14 は、出力の安全性、同時実行、資格情報の弱さに関わる。
 - R0-T15 以降は、影響範囲が限定的なものを後段へまとめた。
 - R0-T21 で R0 全体の整合を確かめてから、公開リリースの判断へ進む。
+
+### R0-T21 の監査項目
+
+R0 の各タスクで、範囲外として意図的に残した確認をここへ集める。
+
+- 外部認証を実装する前に、`Authentication::ProviderRegistry.register` が登録対象へ要求する
+  `name_key`、`authenticate`、`password_required?` の契約を確認する。
+  R0-T21 の時点で起動時の検証を実装しない場合は、
+  R2 の外部認証実装より前に実行するブロッキングタスクとして本書へ明示する。
+- セッションの無操作期限と絶対期限は、R0-T10 で固定値とした。
+  運用先ごとの変更要求が確認された場合に、設定化を R2 で検討する。
 
 ## 分解の方針
 

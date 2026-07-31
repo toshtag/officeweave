@@ -104,9 +104,14 @@ echo "web を起動しています" >&2
 compose start web >/dev/null
 
 echo "web の回復を確認しています" >&2
+# 運用環境は APPLICATION_HOST 以外の Host を拒否する。
+# ループバックへ直接要求するため、Host は明示する。
+# 参照する値は web コンテナ内のものとする。ホスト側の環境変数を使うと、
+# 実際に web へ渡っている値と食い違ったときに気付けない。
 recovered=0
 for _ in $(seq 1 60); do
-  if compose exec -T web curl -sf http://127.0.0.1:3000/health >/dev/null 2>&1; then
+  if compose exec -T web sh -c \
+    'curl -sf -H "Host: ${APPLICATION_HOST}" http://127.0.0.1:3000/health' >/dev/null 2>&1; then
     recovered=1
     break
   fi

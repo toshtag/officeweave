@@ -84,8 +84,85 @@ class DiagnosticsTest < ActiveSupport::TestCase
     assert_includes %i[warning ok], check[:status]
   end
 
+  # 配布用の構成は、APPLICATION_HOST が未設定でも localhost を環境変数として渡す。
+  # 環境変数の有無では設定漏れを判別できないため、実際の公開先で判定する。
+  test "運用環境で利用者の端末を指す公開 URL は注意として扱う" do
+    [ "localhost", "portal.localhost", "127.0.0.1", "127.20.30.40", "[::1]",
+      "[::ffff:127.0.0.1]", "[::ffff:7f00:1]" ].each do |host|
+      check = application_host_check(host: host, application_host: "localhost")
+
+      assert_equal :warning, check[:status], host
+      assert_includes check[:detail], host
+      assert_includes check[:detail], "APPLICATION_HOST"
+    end
+  end
+
+  test "運用環境で接続先を特定しない公開 URL は注意として扱う" do
+    [ "0.0.0.0", "[::]", "[::ffff:0.0.0.0]" ].each do |host|
+      check = application_host_check(host: host, application_host: host)
+
+      assert_equal :warning, check[:status], host
+      assert_includes check[:detail], host
+      assert_includes check[:detail], "APPLICATION_HOST"
+    end
+  end
+
+  test "運用環境で外部から到達できる公開 URL は確認済みとして扱う" do
+    [ "officeweave.example.com", "portal.internal", "192.0.2.10", "[2001:db8::10]",
+      "[::ffff:192.0.2.10]" ].each do |host|
+      check = application_host_check(host: host)
+
+      assert_equal :ok, check[:status], host
+      assert_equal host, check[:detail]
+    end
+  end
+
+  test "公開ポートを指定している場合はホスト名と合わせて示す" do
+    check = application_host_check(host: "officeweave.example.com", port: 8443)
+
+    assert_equal :ok, check[:status]
+    assert_equal "officeweave.example.com:8443", check[:detail]
+  end
+
+  test "公開 URL のホスト名が無い場合は注意として扱う" do
+    check = application_host_check(host: nil)
+
+    assert_equal :warning, check[:status]
+    assert_includes check[:detail], "APPLICATION_HOST"
+  end
+
+  test "運用環境以外では localhost を注意として扱わない" do
+    check = application_host_check(host: "localhost", environment: "test")
+
+    assert_equal :ok, check[:status]
+  end
+
   private
     def find(name)
       @checks.find { |check| check[:name] == name }
+    end
+
+    # メールの設定と実行環境を明示して、公開 URL の確認だけを取り出す。
+    #
+    # 差し替えのための依存は増やさない。いずれも標準の設定であり、
+    # 書き換えたものは ensure で必ず元へ戻す。
+    def application_host_check(host:, port: nil, environment: "production", application_host: nil)
+      options = { protocol: "https" }
+      options[:host] = host if host
+      options[:port] = port if port
+
+      saved_options = ActionMailer::Base.default_url_options
+      saved_environment = Rails.env
+      saved_host = ENV["APPLICATION_HOST"]
+
+      ActionMailer::Base.default_url_options = options
+      Rails.env = environment
+      application_host.nil? ? ENV.delete("APPLICATION_HOST") : ENV["APPLICATION_HOST"] = application_host
+
+      Diagnostics.new.run.find { |check| check[:name] == "メール本文の URL" }
+    ensure
+      ActionMailer::Base.default_url_options = saved_options
+      Rails.env = saved_environment
+      saved_host.nil? ? ENV.delete("APPLICATION_HOST") : ENV["APPLICATION_HOST"] = saved_host
     end
 end
