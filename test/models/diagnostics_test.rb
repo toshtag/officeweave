@@ -137,9 +137,106 @@ class DiagnosticsTest < ActiveSupport::TestCase
     assert_equal :ok, check[:status]
   end
 
+  test "秘密情報へ既知の初期値が残っている場合は注意として扱う" do
+    check = with_environment("DATABASE_PASSWORD" => "change_me") { check_named("秘密情報の初期値") }
+
+    assert_equal :warning, check[:status]
+    assert_includes check[:detail], "DATABASE_PASSWORD"
+  end
+
+  test "既知の初期値は表記が違っても見つける" do
+    check = with_environment("INITIAL_USER_PASSWORD" => "PASSWORD",
+                             "SMTP_PASSWORD" => " officeweave ") { check_named("秘密情報の初期値") }
+
+    assert_equal :warning, check[:status]
+    assert_includes check[:detail], "INITIAL_USER_PASSWORD"
+    assert_includes check[:detail], "SMTP_PASSWORD"
+  end
+
+  # 診断の出力は画面にもログにも残る。原因を読むのに要るのは変数名だけである。
+  test "秘密情報の値そのものは出力しない" do
+    check = with_environment("DATABASE_PASSWORD" => "change_me") { check_named("秘密情報の初期値") }
+
+    assert_not_includes check[:detail], "change_me"
+  end
+
+  test "既知の初期値でない秘密情報は確認済みとして扱う" do
+    check = with_environment("DATABASE_PASSWORD" => "a-long-secret-value",
+                             "INITIAL_USER_PASSWORD" => nil,
+                             "SMTP_PASSWORD" => nil) { check_named("秘密情報の初期値") }
+
+    assert_equal :ok, check[:status]
+  end
+
+  test "既知の初期値を使う管理者がいる場合は注意として扱う" do
+    administrator = users(:taro)
+    administrator.update_columns(password_digest: BCrypt::Password.create("officeweave"))
+
+    check = check_named("管理者のパスワード")
+
+    assert_equal :warning, check[:status]
+    assert_includes check[:detail], administrator.email_address
+  end
+
+  test "管理者のパスワードの確認では digest も一致した値も出力しない" do
+    users(:taro).update_columns(password_digest: BCrypt::Password.create("officeweave"))
+
+    check = check_named("管理者のパスワード")
+
+    assert_not_includes check[:detail], "officeweave"
+    assert_not_includes check[:detail], users(:taro).reload.password_digest
+  end
+
+  test "無効にされた管理者は既知の初期値の確認から外す" do
+    users(:hanako).update!(role: "administrator")
+    users(:taro).update_columns(password_digest: BCrypt::Password.create("officeweave"),
+                                deactivated_at: Time.current)
+
+    assert_equal :ok, check_named("管理者のパスワード")[:status]
+  end
+
+  test "一般利用者は既知の初期値の確認から外す" do
+    users(:hanako).update_columns(password_digest: BCrypt::Password.create("officeweave"))
+
+    assert_equal :ok, check_named("管理者のパスワード")[:status]
+  end
+
+  # 外部の方式で認証している間は、保存済みのパスワードでログインできない。
+  test "外部認証を使う設定では保存済みのパスワードを確認しない" do
+    users(:taro).update_columns(password_digest: BCrypt::Password.create("officeweave"))
+    Authentication::ProviderRegistry.register(PasswordlessProvider)
+
+    check = with_environment("AUTHENTICATION_PROVIDER" => "passwordless") { check_named("管理者のパスワード") }
+
+    assert_equal :ok, check[:status]
+  ensure
+    Authentication::ProviderRegistry.instance_variable_get(:@providers).delete("passwordless")
+  end
+
+  # パスワードを求めない外部方式の代わりとして使う。
+  class PasswordlessProvider
+    def self.name_key = "passwordless"
+    def self.password_required? = false
+    def self.authenticate(email_address:, password:) = User.find_by(email_address: email_address)
+  end
+
   private
     def find(name)
       @checks.find { |check| check[:name] == name }
+    end
+
+    def check_named(name)
+      Diagnostics.new.run.find { |check| check[:name] == name }
+    end
+
+    # 環境変数は実行時に読む。書き換えたものは、失敗しても必ず元へ戻す。
+    def with_environment(values)
+      saved = values.keys.index_with { |name| ENV[name] }
+      values.each { |name, value| value.nil? ? ENV.delete(name) : ENV[name] = value }
+
+      yield
+    ensure
+      saved.each { |name, value| value.nil? ? ENV.delete(name) : ENV[name] = value }
     end
 
     # メールの設定と実行環境を明示して、公開 URL の確認だけを取り出す。

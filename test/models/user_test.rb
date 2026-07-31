@@ -122,6 +122,76 @@ class UserTest < ActiveSupport::TestCase
     assert_predicate administrator.reload, :administrator?
   end
 
+  test "1 文字のパスワードでは作成できない" do
+    user = build_user(password: "a", password_confirmation: "a")
+
+    assert_not user.valid?
+    assert_includes user.errors.details[:password], { error: :too_short, count: 15 }
+  end
+
+  test "14 文字のパスワードでは作成できない" do
+    user = build_user(password: "abcdefghijklmn", password_confirmation: "abcdefghijklmn")
+
+    assert_not user.valid?
+    assert_includes user.errors.details[:password], { error: :too_short, count: 15 }
+  end
+
+  # 文字種の混在は求めない。長さだけを条件とする。
+  test "15 文字あれば小文字だけのパスワードでも作成できる" do
+    user = build_user(password: "abcdefghijklmno", password_confirmation: "abcdefghijklmno")
+
+    assert user.valid?
+  end
+
+  test "最低長はバイト数ではなく文字数で数える" do
+    short = build_user(password: "あいうえおかきくけこさしすせ", password_confirmation: "あいうえおかきくけこさしすせ")
+
+    assert_not short.valid?
+    assert_includes short.errors.details[:password], { error: :too_short, count: 15 }
+
+    long = build_user(password: "あいうえおかきくけこさしすせそ", password_confirmation: "あいうえおかきくけこさしすせそ")
+
+    assert long.valid?
+  end
+
+  # 前後の空白や大文字小文字の違いで、既知の値を迂回できないようにする。
+  test "既知の初期値はそのままでも表記を変えても使えない" do
+    [ "change_me", "PASSWORD", " officeweave " ].each do |value|
+      user = build_user(password: value, password_confirmation: value)
+
+      assert_not user.valid?, "#{value.inspect} が受理された"
+      assert_includes user.errors.details[:password], { error: :known_unsafe }
+      assert_not_includes user.errors.details[:password].map { |detail| detail[:error] }, :too_short
+    end
+  end
+
+  test "既知の初期値を部分として含むだけのパスワードは使える" do
+    value = "officeweave-is-not-the-password"
+    user = build_user(password: value, password_confirmation: value)
+
+    assert user.valid?
+  end
+
+  # 要件を満たさないパスワードで既に運用している利用者を、この検査で締め出さない。
+  test "保存済みの短いパスワードは無効にならない" do
+    user = users(:hanako)
+    user.update_columns(password_digest: BCrypt::Password.create("short"))
+    user.reload
+
+    assert user.authenticate("short")
+    assert user.update(name: "佐藤 花子（更新）")
+    assert user.update(locale: "en")
+    assert user.update(role: "administrator")
+    assert user.reload.authenticate("short")
+  end
+
+  test "保存済みの短いパスワードを改めて設定し直すことはできない" do
+    user = users(:hanako)
+    user.update_columns(password_digest: BCrypt::Password.create("short"))
+
+    assert_not user.reload.update(password: "short", password_confirmation: "short")
+  end
+
   private
     def active_administrator_count
       @organization.users.active.administrator.count
@@ -132,7 +202,7 @@ class UserTest < ActiveSupport::TestCase
         {
           name: "鈴木 一郎",
           email_address: "ichiro@example.com",
-          password: "a-secret-value"
+          password: "a-long-secret-value"
         }.merge(attributes)
       )
     end

@@ -15,7 +15,8 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     assert_difference -> { User.count }, 1 do
       post users_url, params: {
         user: { name: "鈴木 一郎", email_address: "ichiro@example.com",
-                password: "a-secret-value", password_confirmation: "a-secret-value", role: "member" }
+                password: "a-long-secret-value", password_confirmation: "a-long-secret-value",
+                role: "member" }
       }
     end
 
@@ -27,11 +28,57 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     assert_no_difference -> { User.count } do
       post users_url, params: {
         user: { name: "鈴木 一郎", email_address: "ichiro@example.com",
-                password: "a-secret-value", password_confirmation: "different-value" }
+                password: "a-long-secret-value", password_confirmation: "a-different-value" }
       }
     end
 
     assert_response :unprocessable_content
+  end
+
+  test "15 文字に満たないパスワードでは追加できない" do
+    assert_no_difference [ -> { User.count }, -> { AuditEvent.count } ] do
+      post users_url, params: {
+        user: { name: "鈴木 一郎", email_address: "ichiro@example.com",
+                password: "abcdefghijklmn", password_confirmation: "abcdefghijklmn" }
+      }
+    end
+
+    assert_response :unprocessable_content
+  end
+
+  test "既知の初期値では追加できない" do
+    assert_no_difference [ -> { User.count }, -> { AuditEvent.count } ] do
+      post users_url, params: {
+        user: { name: "鈴木 一郎", email_address: "ichiro@example.com",
+                password: "change_me", password_confirmation: "change_me" }
+      }
+    end
+
+    assert_response :unprocessable_content
+  end
+
+  test "15 文字に満たないパスワードへは変更できない" do
+    user = users(:hanako)
+    digest_before = user.password_digest
+
+    patch user_url(user), params: {
+      user: { password: "abcdefghijklmn", password_confirmation: "abcdefghijklmn" }
+    }
+
+    assert_response :unprocessable_content
+    assert_equal digest_before, user.reload.password_digest
+  end
+
+  test "既知の初期値へは変更できない" do
+    user = users(:hanako)
+    digest_before = user.password_digest
+
+    patch user_url(user), params: {
+      user: { password: "change_me", password_confirmation: "change_me" }
+    }
+
+    assert_response :unprocessable_content
+    assert_equal digest_before, user.reload.password_digest
   end
 
   test "パスワードを空にすると変更されない" do
