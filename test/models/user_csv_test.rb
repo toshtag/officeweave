@@ -155,15 +155,20 @@ class UserCsvTest < ActiveSupport::TestCase
   end
 
   # 取り込みでは資格情報を配らないため、本人が変更するまで使えない値を割り当てる。
-  # その値が最低要件を満たさなくなると、取り込みそのものが通らなくなる。
-  test "新しい利用者へ割り当てる内部用の値は最低要件を満たす" do
+  # 割り当てた値は保存後に取り出せない。要件を満たさなくなれば保存自体が失敗するため、
+  # 実際に取り込めたことをもって、その値が要件を通った証拠とする。
+  test "新しい利用者の内部用パスワードは User の要件を通る" do
     result = @csv.import(<<~CSV)
       name,email_address,role,locale,departments
       鈴木 一郎,ichiro@example.com,member,,sales
     CSV
 
     assert_predicate result, :success?
-    assert_nil Authentication::PasswordPolicy.violation(SecureRandom.hex(32))
+    assert_equal 1, result.created_count
+
+    user = organizations(:main).users.find_by!(email_address: "ichiro@example.com")
+
+    assert_predicate user.password_digest, :present?
   end
 
   test "既存の利用者は更新する" do
