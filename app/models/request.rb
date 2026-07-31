@@ -137,17 +137,27 @@ class Request < ApplicationRecord
 
     # 状態の変更と記録を必ず一緒に行う。
     # 別々に書くと、記録の漏れた変更が生まれる。
+    #
+    # 遷移できるかどうかは、行を占有して読み直した状態だけで決める。
+    # 読み込みのあとに判定すると、同じ承認待ちを見た承認と差し戻しが
+    # 両方成立し、履歴と通知が食い違ったまま残る。
+    #
+    # 通知や外部への送信はここへ含めない。占有したまま外部を待つと、
+    # 送信の遅れがそのまま他の操作の待ち時間になる。
     def change_status(to:, actor:, action:, comment: nil)
-      return false unless can_transition_to?(to)
+      changed = false
 
-      transaction do
+      with_lock do
+        next unless can_transition_to?(to)
+
         self.status = to
         yield if block_given?
         save!
         request_activities.create!(actor: actor, action: action, comment: comment)
+        changed = true
       end
 
-      true
+      changed
     end
 
     def request_type_must_be_in_same_organization
