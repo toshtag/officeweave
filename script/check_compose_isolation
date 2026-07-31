@@ -28,11 +28,8 @@
 #  21. 配布用の web と worker へ公開ポートが同じ値で渡る
 #  22. 公開ポートが未設定の場合は空文字が渡る
 #  23. 公開ポートの値を補正しない
-#  24. 開発用と配布用の web と worker へ初期利用者の資格情報が同じ値で渡る
-#  25. 初期利用者の資格情報が未設定の場合は空文字が渡る
-#  26. 初期利用者の資格情報の空文字を既定の値へ置き換えない
-#  27. 明示した初期利用者の資格情報を補正しない
-#  28. 開発用にも組織の名称と識別子が渡る
+#  24. 開発用と配布用の web と worker へ初期利用者の資格情報を渡さない
+#  25. 開発用と配布用の web と worker へ組織の設定を渡さない
 #
 # 使い方:
 #   script/check_compose_isolation
@@ -300,25 +297,37 @@ check_variable production "配布用の未設定時" APPLICATION_PORT unset '""'
 check_variable production "配布用の明示時" APPLICATION_PORT 3210 '"3210"'
 check_variable production "配布用の空文字" APPLICATION_PORT "" '""'
 
-# 初期利用者の資格情報は開発用にも渡す。渡さないままにすると、
-# db:seed が推測した既定の資格情報へ頼らざるを得なくなる。
+# 初期利用者と組織の設定は、常駐する web と worker へ渡さない。
 #
-# 未設定と明示した空欄は、どちらも空文字のまま届ける。既定の値へ置き換えると、
-# 設定し忘れたまま、既知の資格情報でログインできる利用者が作られてしまう。
-# 検査には実際の秘密情報を使わない。
-check_variable development "開発用の未設定時" INITIAL_USER_PASSWORD unset '""'
-check_variable production "配布用の未設定時" INITIAL_USER_PASSWORD unset '""'
-check_variable development "開発用の明示時" INITIAL_USER_PASSWORD check-initial-password '"check-initial-password"'
-check_variable production "配布用の明示時" INITIAL_USER_PASSWORD check-initial-password '"check-initial-password"'
-check_variable development "開発用の空文字" INITIAL_USER_PASSWORD "" '""'
-check_variable production "配布用の空文字" INITIAL_USER_PASSWORD "" '""'
-check_variable development "開発用の未設定時" INITIAL_USER_EMAIL unset '""'
-check_variable development "開発用の明示時" INITIAL_USER_EMAIL check@example.com '"check@example.com"'
+# 使うのは bin/rails db:seed だけであり、通常の実行には要らない。渡すと、
+# 初期管理者の平文パスワードがコンテナの寿命のあいだ環境に残る。
+# .env から消しても、作成済みのコンテナの環境は変わらない。
+#
+# 空文字で渡すことも避ける。値は空でも、設定経路そのものが常駐側に残る。
+# 値の受け渡しは script/seed_initial_user が一時コンテナへ限定する。
+#
+# 明示的に値を与えた状態で確かめる。与えなければ、変数を参照していても
+# 結果は「無い」となり、非伝播を確かめたことにならない。
+check_variable_absent() {
+  local target="$1" label="$2" name="$3"
+  local document web worker
 
-# 組織は資格情報ではない。未設定の場合は既定の値で作る。
-check_variable development "開発用の未設定時" ORGANIZATION_NAME unset '"OfficeWeave"'
-check_variable development "開発用の未設定時" ORGANIZATION_CODE unset '"default"'
-check_variable development "開発用の明示時" ORGANIZATION_CODE check-organization '"check-organization"'
+  document="$(config_with_variable "$target" "$name" "check-must-not-propagate")"
+  web="$(query "$document" "services.web.environment.${name}")"
+  worker="$(query "$document" "services.worker.environment.${name}")"
+
+  if [ "$web" = "null" ] && [ "$worker" = "null" ]; then
+    report ok "${label}の web と worker へ ${name} を渡さない"
+  else
+    report ng "${label}の ${name} が常駐サービスへ残っている（web ${web} / worker ${worker}）"
+  fi
+}
+
+for variable in INITIAL_USER_NAME INITIAL_USER_EMAIL INITIAL_USER_PASSWORD \
+                ORGANIZATION_NAME ORGANIZATION_CODE; do
+  check_variable_absent development "開発用" "$variable"
+  check_variable_absent production "配布用" "$variable"
+done
 
 if [ "$failures" -eq 0 ]; then
   echo "分離の条件をすべて満たしています"

@@ -12,7 +12,13 @@ class Diagnostics
   }.freeze
 
   # 手順書や設定の雛形に載る値が、そのまま運用へ残っていないかを見る変数。
-  SECRET_VARIABLES = %w[DATABASE_PASSWORD INITIAL_USER_PASSWORD SMTP_PASSWORD].freeze
+  #
+  # INITIAL_USER_PASSWORD はここへ含めない。値の強弱に関わらず、実行環境へ
+  # 残っていること自体を注意とするため、別の確認で扱う。
+  SECRET_VARIABLES = %w[DATABASE_PASSWORD SMTP_PASSWORD].freeze
+
+  # 初期利用者の作成にだけ使う変数。
+  INITIAL_USER_PASSWORD_VARIABLE = "INITIAL_USER_PASSWORD".freeze
 
   def run
     [
@@ -26,6 +32,7 @@ class Diagnostics
       application_host,
       administrator_exists,
       initial_secrets,
+      initial_user_password_environment,
       administrator_passwords,
       authentication_provider,
       webhook_allowlist,
@@ -205,6 +212,23 @@ class Diagnostics
         ok("秘密情報の初期値", "既知の初期値は残っていません")
       else
         warning("秘密情報の初期値", "#{remaining.join('、')} を変更してください。")
+      end
+    end
+
+    # 初期利用者のパスワードが実行環境へ残っていないか。
+    #
+    # 値の強弱は問わない。強い値でも、これは管理者の平文パスワードである。
+    # 必要なのは初期利用者を作る一瞬だけで、その後は持ち続ける理由がない。
+    #
+    # script/seed_initial_user は一時コンテナへだけ渡すため、通常はここへ現れない。
+    # 現れた場合は、常駐するコンテナの環境へ入り込んでいる。
+    def initial_user_password_environment
+      if ENV[INITIAL_USER_PASSWORD_VARIABLE].present?
+        warning("初期利用者の資格情報",
+                "#{INITIAL_USER_PASSWORD_VARIABLE} が実行環境に残っています。" \
+                "初期利用者の作成後は取り除いてください。")
+      else
+        ok("初期利用者の資格情報", "実行環境には残っていません")
       end
     end
 

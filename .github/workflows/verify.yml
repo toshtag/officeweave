@@ -119,7 +119,25 @@ jobs:
           done
 
       - name: 初期利用者を作成する
-        run: docker compose -f compose.production.yaml exec -T web bin/rails db:seed
+        # 資格情報は常駐する web と worker へ渡さない。
+        # 一時コンテナへ変数名だけを指定して渡す経路をそのまま使う。
+        run: script/seed_initial_user --production
+
+      - name: 初期利用者の資格情報が常駐サービスへ残らないことを確かめる
+        run: |
+          # 値そのものは出力しない。変数が定義されていないことだけを確かめる。
+          for service in web worker; do
+            if ! docker compose -f compose.production.yaml exec -T "${service}" \
+              sh -c 'test -z "${INITIAL_USER_PASSWORD+x}"'; then
+              echo "${service} に INITIAL_USER_PASSWORD が残っている" >&2
+              exit 1
+            fi
+          done
+          # 一時コンテナは --rm で消える。残っていないことを確かめる。
+          if docker compose -f compose.production.yaml ps -a --format '{{.Name}}' | grep -- '-run-'; then
+            echo "seed 用の一時コンテナが残っている" >&2
+            exit 1
+          fi
 
       - name: worker が稼働することを確かめる
         run: |
@@ -188,7 +206,9 @@ jobs:
           exit 1
 
       - name: 初期利用者を作成する
-        run: docker compose -f compose.production.yaml exec -T web bin/rails db:seed
+        # 資格情報は常駐する web と worker へ渡さない。
+        # 一時コンテナへ変数名だけを指定して渡す経路をそのまま使う。
+        run: script/seed_initial_user --production
 
       - name: 取得前の状態を作る
         run: |

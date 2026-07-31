@@ -145,12 +145,40 @@ class DiagnosticsTest < ActiveSupport::TestCase
   end
 
   test "既知の初期値は表記が違っても見つける" do
-    check = with_environment("INITIAL_USER_PASSWORD" => "PASSWORD",
+    check = with_environment("DATABASE_PASSWORD" => "CHANGE_ME",
                              "SMTP_PASSWORD" => " officeweave ") { check_named("秘密情報の初期値") }
 
     assert_equal :warning, check[:status]
-    assert_includes check[:detail], "INITIAL_USER_PASSWORD"
+    assert_includes check[:detail], "DATABASE_PASSWORD"
     assert_includes check[:detail], "SMTP_PASSWORD"
+  end
+
+  # 値の強弱は問わない。強い値でも、これは管理者の平文パスワードである。
+  test "初期利用者のパスワードが実行環境に残っていれば注意として扱う" do
+    [ "r0-t13-strong-seed-password", "change_me" ].each do |value|
+      check = with_environment("INITIAL_USER_PASSWORD" => value) { check_named("初期利用者の資格情報") }
+
+      assert_equal :warning, check[:status], "#{value.inspect} を見逃した"
+      assert_includes check[:detail], "INITIAL_USER_PASSWORD"
+      assert_not_includes check[:detail], value
+    end
+  end
+
+  test "初期利用者のパスワードが未設定または空欄なら確認済みとして扱う" do
+    [ nil, "" ].each do |value|
+      check = with_environment("INITIAL_USER_PASSWORD" => value) { check_named("初期利用者の資格情報") }
+
+      assert_equal :ok, check[:status], "#{value.inspect} を注意にした"
+    end
+  end
+
+  # 残存の確認と、既知の初期値の確認は別の観点として分ける。
+  test "初期利用者のパスワードは既知の初期値の確認へ含めない" do
+    check = with_environment("INITIAL_USER_PASSWORD" => "change_me",
+                             "DATABASE_PASSWORD" => "a-long-secret-value",
+                             "SMTP_PASSWORD" => nil) { check_named("秘密情報の初期値") }
+
+    assert_equal :ok, check[:status]
   end
 
   # 診断の出力は画面にもログにも残る。原因を読むのに要るのは変数名だけである。
@@ -162,7 +190,6 @@ class DiagnosticsTest < ActiveSupport::TestCase
 
   test "既知の初期値でない秘密情報は確認済みとして扱う" do
     check = with_environment("DATABASE_PASSWORD" => "a-long-secret-value",
-                             "INITIAL_USER_PASSWORD" => nil,
                              "SMTP_PASSWORD" => nil) { check_named("秘密情報の初期値") }
 
     assert_equal :ok, check[:status]
