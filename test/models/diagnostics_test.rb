@@ -1,6 +1,14 @@
 require "test_helper"
+require "timeout"
 
 class DiagnosticsTest < ActiveSupport::TestCase
+  # 待機はすべて上限を持たせる。退行を CI の停止ではなく失敗として受け取るため。
+  STORAGE_PROBE_WORKERS = 16
+  PREPARATION_TIMEOUT = 10
+  COMPLETION_TIMEOUT = 10
+  OUTCOME_TIMEOUT = 5
+  CLEANUP_TIMEOUT = 5
+
   setup { @checks = Diagnostics.new.run }
 
   test "確認の一覧を返す" do
@@ -30,6 +38,53 @@ class DiagnosticsTest < ActiveSupport::TestCase
 
   test "ファイルの保存先へ書き込めることを確認する" do
     assert_equal :ok, find("ファイルの保存先")[:status]
+  end
+
+  # 保存先の確認は、実行ごとに違う名前のファイルを作る。
+  # 固定名だと、同時に走った診断どうしが同じファイルを消し合う。
+  #
+  # 待ち時間ではなく Queue で足並みをそろえる。待ち時間で揃えると、
+  # 遅い環境で先後がずれ、退行を見逃す。
+  test "ファイルの保存先の確認を同時に実行できる" do
+    ready = Queue.new
+    start = Queue.new
+    outcomes = Queue.new
+    threads = []
+
+    STORAGE_PROBE_WORKERS.times do
+      threads << Thread.new do
+        ready << :ready
+        start.pop
+
+        outcomes << Diagnostics.new.send(:storage_writable)
+      rescue StandardError => error
+        outcomes << error
+      end
+    end
+
+    Timeout.timeout(PREPARATION_TIMEOUT) { STORAGE_PROBE_WORKERS.times { ready.pop } }
+    STORAGE_PROBE_WORKERS.times { start << true }
+    threads.each { |thread| assert thread.join(COMPLETION_TIMEOUT), "確認が終わりませんでした" }
+
+    results = Timeout.timeout(OUTCOME_TIMEOUT) { STORAGE_PROBE_WORKERS.times.map { outcomes.pop } }
+    failures = results.grep(Exception)
+
+    assert_empty failures, failures.map { |error| "#{error.class}: #{error.message}" }.join("\n")
+    assert(results.all? { |result| result[:status] == :ok },
+           results.reject { |result| result[:status] == :ok }.inspect)
+  ensure
+    threads.select(&:alive?).each { start << true }
+    threads.each { |thread| thread.kill unless thread.join(CLEANUP_TIMEOUT) }
+  end
+
+  # 正常に終わった確認は、保存先へ何も残さない。
+  test "ファイルの保存先の確認はプローブを残さない" do
+    Diagnostics.new.send(:storage_writable)
+
+    root = ActiveStorage::Blob.service.try(:root).to_s
+
+    assert_empty Dir.glob(File.join(root, ".officeweave-diagnose-*"))
+    assert_not File.exist?(File.join(root, ".officeweave-diagnose"))
   end
 
   test "添付ファイルの取得経路が文書の配下だけであることを確認する" do

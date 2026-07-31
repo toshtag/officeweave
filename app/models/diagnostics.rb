@@ -1,4 +1,5 @@
 require "ipaddr"
+require "tempfile"
 
 # 運用時の構成を確認する。
 #
@@ -79,14 +80,25 @@ class Diagnostics
       error("データベースの拡張機能", exception.message)
     end
 
+    # 保存先へ実際に書けるか。
+    #
+    # 名前は実行ごとに変える。固定名を使うと、同時に走った診断どうしが同じ
+    # ファイルを作り、先に消したほうの後で残りが消せずに失敗する。
+    # 存在を確かめてから消す形にしても、確かめてから消すまでの間に
+    # 別の実行が入り込むため解消しない。
+    #
+    # 作れることだけでなく、書き込めることまで確かめる。block を抜けた時点で
+    # 閉じて削除するため、成功しても失敗してもプローブを残さない。
     def storage_writable
       path = ActiveStorage::Blob.service.try(:root)
       return warning("ファイルの保存先", "ローカルディスク以外の保存先です") if path.blank?
 
       FileUtils.mkdir_p(path)
-      probe = File.join(path, ".officeweave-diagnose")
-      File.write(probe, "")
-      File.delete(probe)
+
+      Tempfile.create([ ".officeweave-diagnose-", ".tmp" ], path.to_s) do |probe|
+        probe.write("officeweave")
+        probe.flush
+      end
 
       ok("ファイルの保存先", path.to_s)
     rescue StandardError => exception
