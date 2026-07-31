@@ -32,7 +32,7 @@ class AuditEventsTest < ActionDispatch::IntegrationTest
     assert_difference -> { AuditEvent.with_action("user_created").count }, 1 do
       post users_url, params: {
         user: { name: "鈴木 一郎", email_address: "ichiro@example.com",
-                password: "a-secret-value", password_confirmation: "a-secret-value" }
+                password: "a-long-secret-value", password_confirmation: "a-long-secret-value" }
       }
     end
   end

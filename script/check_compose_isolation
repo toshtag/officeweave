@@ -28,6 +28,8 @@
 #  21. 配布用の web と worker へ公開ポートが同じ値で渡る
 #  22. 公開ポートが未設定の場合は空文字が渡る
 #  23. 公開ポートの値を補正しない
+#  24. 開発用と配布用の web と worker へ初期利用者の資格情報を渡さない
+#  25. 開発用と配布用の web と worker へ組織の設定を渡さない
 #
 # 使い方:
 #   script/check_compose_isolation
@@ -67,14 +69,14 @@ development_with_database_config() {
     docker compose -f compose.yaml -f compose.database.yaml --env-file /dev/null config --format json
 }
 
-# 認証方式の伝播だけは、値を変えて解決し直す必要がある。
-# 第 2 引数へ unset を渡した場合は、環境変数そのものを与えない。
-config_with_provider() {
-  local target="$1" setting="$2"
+# 値の伝播は、値を変えて解決し直す必要がある。
+# 第 3 引数へ unset を渡した場合は、環境変数そのものを与えない。
+config_with_variable() {
+  local target="$1" name="$2" setting="$3"
   local -a environment=(env -i PATH="$PATH" HOME="$HOME")
 
   if [ "$setting" != "unset" ]; then
-    environment+=("AUTHENTICATION_PROVIDER=$setting")
+    environment+=("${name}=${setting}")
   fi
 
   if [ "$target" = "production" ]; then
@@ -83,22 +85,6 @@ config_with_provider() {
   else
     "${environment[@]}" docker compose -f compose.yaml --env-file /dev/null config --format json
   fi
-}
-
-# 公開先の設定も、値を変えて解決し直す。
-# 配布用の構成にだけ渡る設定のため、production だけを対象とする。
-config_with_setting() {
-  local name="$1" setting="$2"
-  local -a environment=(
-    env -i PATH="$PATH" HOME="$HOME"
-    DATABASE_USER=check DATABASE_PASSWORD=check SECRET_KEY_BASE=check
-  )
-
-  if [ "$setting" != "unset" ]; then
-    environment+=("${name}=${setting}")
-  fi
-
-  "${environment[@]}" docker compose -f compose.production.yaml --env-file /dev/null config --format json
 }
 
 echo "Compose 構成の分離を検査します"
@@ -269,45 +255,17 @@ else
   report ng "ジョブ用データベース名が同じ（${development_queue}）"
 fi
 
-# ---- 認証方式 ----
+# ---- 値の伝播 ----
 #
-# 指定された名前が登録済みかどうかを判定するのは Compose の役目ではない。
-# 値をそのまま web と worker へ届け、拒否は Rails の起動時に行う。
+# 指定された値が正しいかどうかを判定するのは Compose の役目ではない。
+# 値をそのまま web と worker へ届け、拒否は Rails の起動時か検証で行う。
 # 期待値は JSON のまま比べる。空文字と未指定を同じ表示にしない。
 
-check_provider() {
-  local target="$1" label="$2" setting="$3" expected="$4"
+check_variable() {
+  local target="$1" label="$2" name="$3" setting="$4" expected="$5"
   local document web worker
 
-  document="$(config_with_provider "$target" "$setting")"
-  web="$(query "$document" services.web.environment.AUTHENTICATION_PROVIDER)"
-  worker="$(query "$document" services.worker.environment.AUTHENTICATION_PROVIDER)"
-
-  if [ "$web" = "$expected" ] && [ "$worker" = "$expected" ]; then
-    report ok "${label}の web と worker へ認証方式が ${expected} で渡る"
-  else
-    report ng "${label}の認証方式が期待と異なる（期待 ${expected} / web ${web} / worker ${worker}）"
-  fi
-}
-
-check_provider development "開発用の未設定時" unset '"internal"'
-check_provider production "配布用の未設定時" unset '"internal"'
-check_provider development "開発用の明示時" check-provider '"check-provider"'
-check_provider production "配布用の明示時" check-provider '"check-provider"'
-check_provider development "開発用の空文字" "" '""'
-check_provider production "配布用の空文字" "" '""'
-
-# 受け入れる Host も、認証方式と同じ契約にする。
-# 空文字が既定値へ置き換わると、誤設定のまま localhost で起動してしまう。
-#
-# 公開ポートは web と worker の両方へ渡す。メールの本文は worker でも組み立てる。
-# 片側だけへ渡すと、画面からは正しく見えるのに通知の URL だけが違う。
-# 値の書式は compose では判定しない。起動時の検査が拒否する。
-check_public_setting() {
-  local name="$1" label="$2" setting="$3" expected="$4"
-  local document web worker
-
-  document="$(config_with_setting "$name" "$setting")"
+  document="$(config_with_variable "$target" "$name" "$setting")"
   web="$(query "$document" "services.web.environment.${name}")"
   worker="$(query "$document" "services.worker.environment.${name}")"
 
@@ -318,12 +276,58 @@ check_public_setting() {
   fi
 }
 
-check_public_setting APPLICATION_HOST "配布用の未設定時" unset '"localhost"'
-check_public_setting APPLICATION_HOST "配布用の明示時" officeweave.example.com '"officeweave.example.com"'
-check_public_setting APPLICATION_HOST "配布用の空文字" "" '""'
-check_public_setting APPLICATION_PORT "配布用の未設定時" unset '""'
-check_public_setting APPLICATION_PORT "配布用の明示時" 3210 '"3210"'
-check_public_setting APPLICATION_PORT "配布用の空文字" "" '""'
+check_variable development "開発用の未設定時" AUTHENTICATION_PROVIDER unset '"internal"'
+check_variable production "配布用の未設定時" AUTHENTICATION_PROVIDER unset '"internal"'
+check_variable development "開発用の明示時" AUTHENTICATION_PROVIDER check-provider '"check-provider"'
+check_variable production "配布用の明示時" AUTHENTICATION_PROVIDER check-provider '"check-provider"'
+check_variable development "開発用の空文字" AUTHENTICATION_PROVIDER "" '""'
+check_variable production "配布用の空文字" AUTHENTICATION_PROVIDER "" '""'
+
+# 受け入れる Host も、認証方式と同じ契約にする。
+# 空文字が既定値へ置き換わると、誤設定のまま localhost で起動してしまう。
+#
+# 公開ポートは web と worker の両方へ渡す。メールの本文は worker でも組み立てる。
+# 片側だけへ渡すと、画面からは正しく見えるのに通知の URL だけが違う。
+# 値の書式は compose では判定しない。起動時の検査が拒否する。
+# いずれも配布用の構成にだけ渡る設定のため、production だけを対象とする。
+check_variable production "配布用の未設定時" APPLICATION_HOST unset '"localhost"'
+check_variable production "配布用の明示時" APPLICATION_HOST officeweave.example.com '"officeweave.example.com"'
+check_variable production "配布用の空文字" APPLICATION_HOST "" '""'
+check_variable production "配布用の未設定時" APPLICATION_PORT unset '""'
+check_variable production "配布用の明示時" APPLICATION_PORT 3210 '"3210"'
+check_variable production "配布用の空文字" APPLICATION_PORT "" '""'
+
+# 初期利用者と組織の設定は、常駐する web と worker へ渡さない。
+#
+# 使うのは bin/rails db:seed だけであり、通常の実行には要らない。渡すと、
+# 初期管理者の平文パスワードがコンテナの寿命のあいだ環境に残る。
+# .env から消しても、作成済みのコンテナの環境は変わらない。
+#
+# 空文字で渡すことも避ける。値は空でも、設定経路そのものが常駐側に残る。
+# 値の受け渡しは script/seed_initial_user が一時コンテナへ限定する。
+#
+# 明示的に値を与えた状態で確かめる。与えなければ、変数を参照していても
+# 結果は「無い」となり、非伝播を確かめたことにならない。
+check_variable_absent() {
+  local target="$1" label="$2" name="$3"
+  local document web worker
+
+  document="$(config_with_variable "$target" "$name" "check-must-not-propagate")"
+  web="$(query "$document" "services.web.environment.${name}")"
+  worker="$(query "$document" "services.worker.environment.${name}")"
+
+  if [ "$web" = "null" ] && [ "$worker" = "null" ]; then
+    report ok "${label}の web と worker へ ${name} を渡さない"
+  else
+    report ng "${label}の ${name} が常駐サービスへ残っている（web ${web} / worker ${worker}）"
+  fi
+}
+
+for variable in INITIAL_USER_NAME INITIAL_USER_EMAIL INITIAL_USER_PASSWORD \
+                ORGANIZATION_NAME ORGANIZATION_CODE; do
+  check_variable_absent development "開発用" "$variable"
+  check_variable_absent production "配布用" "$variable"
+done
 
 if [ "$failures" -eq 0 ]; then
   echo "分離の条件をすべて満たしています"

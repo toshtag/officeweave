@@ -40,8 +40,13 @@ curl -s http://127.0.0.1:3210/health
 ```
 
 ```bash
-docker compose exec web bin/rails db:seed
+script/seed_initial_user
 ```
+
+`.env` へ `INITIAL_USER_EMAIL` と `INITIAL_USER_PASSWORD` を設定していない場合、
+利用者は作成されず、必要な設定を知らせて終わる。既定の資格情報は用意しない。
+
+資格情報は一時コンテナにだけ渡る。稼働中の web と worker には渡らない。
 
 ```bash
 docker compose exec web bin/diagnose
@@ -367,7 +372,60 @@ curl -s -o /dev/null -w '%{http_code}\n' \
 自動の並行テストを正本とし、ここで確かめるのは、実際に動いている構成でも
 同じであることである。
 
-## 16. 自動実行
+## 16. パスワードの最低要件と初期資格情報
+
+新しく設定するパスワードが同じ契約を通ることと、既知の初期値のまま
+使い始められないことを確かめる。
+
+```text
+1. 管理者画面で 14 文字のパスワードを拒否し、理由が画面へ出る
+2. 管理者画面で 15 文字のパスワードを受理する
+3. 大文字・数字・記号の混在を求めない
+4. 空白を含む値は受理し、空白だけの値は長さを満たしていても拒否する
+5. change_me、password、officeweave を、表記を変えても拒否する。
+   大文字小文字の違い、ASCII 空白、全角空白やノーブレークスペースで前後を
+   囲んだ場合も拒否する。内部の空白と部分一致は拒否の理由にしない
+6. 既存利用者の氏名や権限の更新では、新しいパスワードを求めない
+7. 要件を満たさない INITIAL_USER_PASSWORD では作成が失敗し、利用者を作らない
+8. 初期利用者の作成後、web と worker に INITIAL_USER_PASSWORD が残らない
+9. seed 用の一時コンテナが残らない
+10. 同名のホスト環境変数があっても、.env または --env-file の値で作成される
+11. bin/diagnose が、Rails の実行環境へ渡った INITIAL_USER_PASSWORD を知らせる
+12. bin/diagnose が、設定に残った既知の初期値を変数名だけで知らせる
+13. bin/diagnose が、既知の初期値を使う利用中の管理者を知らせる
+```
+
+判定は `app/models/authentication/password_policy.rb` の 1 か所に置き、
+管理者画面、`script/seed_initial_user`、CSV 取込による新しい利用者、
+`bin/diagnose` のすべてがここを通る。
+
+初期利用者の資格情報は、稼働し続ける web と worker へは渡さない。
+`script/seed_initial_user` が作る一時コンテナにだけ渡す。
+値の入力元は `.env` または `--env-file` だけとし、同名のホスト環境変数は使わない。
+非伝播は `script/check_compose_isolation` が、スクリプトの契約は
+`test/models/seed_initial_user_script_test.rb` が押さえている。
+
+最低要件は `test/models/authentication/password_policy_test.rb` と
+`test/models/user_test.rb` が、画面での拒否は
+`test/controllers/users_controller_test.rb` と `test/system/users_test.rb` が、
+診断は `test/models/diagnostics_test.rb` が、設定の伝播は
+`script/check_compose_isolation` が押さえている。
+ここで確かめるのは、実際に動いている構成でも同じであることである。
+
+`bin/diagnose` が見つけられるのは次の 3 つだけである。
+
+```text
+Rails の実行環境へ渡った INITIAL_USER_PASSWORD
+Rails の実行環境に残った既知の初期値
+保存済みの管理者が既知の初期値そのものを使っている状態
+```
+
+見えるのは Rails が動いている process の環境だけである。ホストの `.env` に
+値が残っているかどうかは分からない。そこはファイルを見て確かめる。
+保存済みの digest からは長さも中身も復元できないため、
+弱いパスワード全般も判定できない。
+
+## 17. 自動実行
 
 `.github/workflows/verify.yml` が、変更のたびに次を実行する。
 

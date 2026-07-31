@@ -19,6 +19,12 @@ x-application-environment: &application_environment
   JOB_THREADS: ${JOB_THREADS:-2}
   JOB_PROCESSES: ${JOB_PROCESSES:-1}
   RAILS_ENV: ${RAILS_ENV:-development}
+  # 初期利用者と組織の設定（INITIAL_USER_*、ORGANIZATION_*）はここへ置かない。
+  # 使うのは bin/rails db:seed だけで、web と worker の通常の実行には要らない。
+  # 常駐するコンテナへ渡すと、初期管理者の平文パスワードがその寿命のあいだ
+  # 環境に残り続ける。.env から消しても、作成済みのコンテナからは消えない。
+  # script/seed_initial_user が、一時コンテナへ変数名だけを指定して渡す。
+  #
   # 認証方式。未設定の場合だけ内部認証を使う。
   # 空文字は既定値へ置き換えず、そのまま渡す。設定の誤りは起動時に拒否する。
   AUTHENTICATION_PROVIDER: ${AUTHENTICATION_PROVIDER-internal}

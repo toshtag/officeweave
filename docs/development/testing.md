@@ -34,6 +34,20 @@ docker compose exec web bin/rails test:all
 docker compose exec web bin/rails test test/controllers/health_controller_test.rb
 ```
 
+### 一時データベースを使う手作業の検証
+
+通常の構成に対して `bin/rails db:drop` を実行しない。
+複数のデータベースを持つため、環境単位で消える。一時的なデータベースだけを
+消したつもりでも、同じ環境の他のデータベースまで巻き込む。
+
+専用の Compose project と volume を作り、検証後はその project だけを
+`down --volumes` で削除する。
+
+```bash
+docker compose --project-name officeweave_check --env-file /tmp/check.env up -d
+docker compose --project-name officeweave_check --env-file /tmp/check.env down --volumes
+```
+
 ## 3. システムテストの実行方法
 
 システムテストはブラウザーを起動せず、`rack_test` で実行する。

@@ -163,11 +163,17 @@ ja:
         department: 部門
         primary: 主たる所属
     errors:
+      # 画面を通らない経路で保存に失敗した場合の文言。
+      # bin/rails db:seed の失敗はここだけが理由を伝える。
+      messages:
+        record_invalid: "検証に失敗しました: %{errors}"
       models:
         user:
           attributes:
             base:
               last_active_administrator: 組織には利用中の管理者が少なくとも 1 人必要です
+            password:
+              known_unsafe: は既知の初期値のため使用できません
         webhook_endpoint:
           attributes:
             url:
@@ -290,6 +296,7 @@ ja:
       active: 利用中
       deactivated: 無効
     form:
+      password_policy_hint: "%{count} 文字以上で設定してください。大文字・数字・記号の混在は必須ではありません。"
       password_hint: 変更する場合だけ入力してください。空のままにすると変更されません。
       locale_unset: 設定しない
       locale_hint: 設定しない場合、ブラウザーの言語設定に従います。

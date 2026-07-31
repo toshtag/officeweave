@@ -21,14 +21,37 @@ git clone https://github.com/toshtag/officeweave.git
 ```
 
 ```bash
-cd officeweave && cp .env.example .env && docker compose up -d --build
+cd officeweave && cp .env.example .env
+```
+
+`.env` を開き、最初の利用者の資格情報を設定します。
+既定値はありません。設定するまで利用者は作成されません。
+
+```text
+INITIAL_USER_EMAIL     最初の管理者のメールアドレス
+INITIAL_USER_PASSWORD  15 文字以上のパスワード
+```
+
+パスワードは 15 文字以上にします。大文字・数字・記号の混在は不要です。
+空白を含めても構いませんが、空白だけの値は使用できません。
+`change_me`、`password`、`officeweave` は、表記を変えても使用できません。
+
+```bash
+docker compose up -d --build
 ```
 
 初回のみ、最初の利用者を作成します。
 
 ```bash
-docker compose exec web bin/rails db:seed
+script/seed_initial_user
 ```
+
+資格情報は、このとき作られる一時コンテナにだけ渡します。処理が終わると
+そのコンテナは削除されます。稼働中の web と worker には渡しません。
+値は `.env` から読みます。同名のホスト環境変数は使いません。
+
+作成後、`INITIAL_USER_PASSWORD` は `.env` から削除してください。
+web と worker を作り直す必要はありません。
 
 動作を確かめるためのデータを入れる場合は、次を実行します。
 
@@ -51,10 +74,6 @@ worker が止まっていると、送信は行われずジョブが溜まりま�
 
 公開先は既定で loopback だけです。同じ端末の他の開発環境と衝突する場合や、
 別の端末から接続したい場合は `.env` の `WEB_BIND_ADDRESS` と `WEB_PORT` を変更します。
-
-開発環境の既定の資格情報は `admin@officeweave.test` / `officeweave` です。
-`.env` の `INITIAL_USER_EMAIL` と `INITIAL_USER_PASSWORD` で変更できます。
-運用環境では必ず変更してください。
 
 設定を変更する場合は `.env` を編集します。設定可能な項目は [設定](docs/development/configuration.md) を参照してください。
 

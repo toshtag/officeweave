@@ -181,7 +181,7 @@ class RequestConcurrencyTest < ActiveSupport::TestCase
       @organization.users.create!(
         name: email_address,
         email_address: email_address,
-        password: "a-secret-value",
+        password: "a-long-secret-value",
         role: role
       )
     end

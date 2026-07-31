@@ -154,6 +154,23 @@ class UserCsvTest < ActiveSupport::TestCase
     assert_includes user.departments, departments(:sales)
   end
 
+  # 取り込みでは資格情報を配らないため、本人が変更するまで使えない値を割り当てる。
+  # 割り当てた値は保存後に取り出せない。要件を満たさなくなれば保存自体が失敗するため、
+  # 実際に取り込めたことをもって、その値が要件を通った証拠とする。
+  test "新しい利用者の内部用パスワードは User の要件を通る" do
+    result = @csv.import(<<~CSV)
+      name,email_address,role,locale,departments
+      鈴木 一郎,ichiro@example.com,member,,sales
+    CSV
+
+    assert_predicate result, :success?
+    assert_equal 1, result.created_count
+
+    user = organizations(:main).users.find_by!(email_address: "ichiro@example.com")
+
+    assert_predicate user.password_digest, :present?
+  end
+
   test "既存の利用者は更新する" do
     result = @csv.import(<<~CSV)
       name,email_address,role,locale,departments

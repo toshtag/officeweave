@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+#
+# 初期利用者を作成する。
+#
+# 資格情報は一時コンテナにだけ渡す。web と worker の共通環境へ置くと、
+# 初期管理者の平文パスワードが、そのコンテナの寿命のあいだ環境に残る。
+# 作成後に .env から消しても、作成済みのコンテナの環境は変わらない。
+#
+# 値そのものは引数へ載せない。変数名だけを -e で指定し、値の受け渡しは
+# docker compose が .env または --env-file から解決したものに任せる。
+# 引数へ載せると、ホストの process 一覧へ平文が現れる。
+#
+# 値の入力元は .env または --env-file だけとする。同名のホスト環境変数は使わない。
+# 使うと、指定した設定ファイルとは違う資格情報で管理者が作られ得る。
+#
+# 一時コンテナは --rm で削除する。稼働中の web や worker は使わない。
+#
+# 使い方:
+#   script/seed_initial_user
+#   script/seed_initial_user --production
+#   script/seed_initial_user --env-file /path/to/env
+#   script/seed_initial_user --project-name officeweave_check --env-file /tmp/check.env
+
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+# db:seed が読む変数。ここへ挙げたものだけを一時コンテナへ渡す。
+SEED_VARIABLES=(
+  INITIAL_USER_NAME
+  INITIAL_USER_EMAIL
+  INITIAL_USER_PASSWORD
+  ORGANIZATION_NAME
+  ORGANIZATION_CODE
+)
+
+usage() {
+  cat <<'USAGE'
+初期利用者を作成します。資格情報は一時コンテナにだけ渡します。
+
+使い方:
+  script/seed_initial_user [オプション]
+
+オプション:
+  --production           配布用の構成（compose.production.yaml）を使う
+  --env-file PATH        設定を読み込むファイル
+  --project-name NAME    Compose の project 名
+  --help                 この説明を表示する
+
+INITIAL_USER_EMAIL と INITIAL_USER_PASSWORD を設定してから実行してください。
+パスワードは 15 文字以上にします。
+USAGE
+}
+
+compose_arguments=()
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --production)
+      compose_arguments+=(-f compose.production.yaml)
+      ;;
+    --env-file)
+      if [ "$#" -lt 2 ]; then
+        echo "--env-file にはファイルの位置を指定してください。" >&2
+        usage >&2
+        exit 2
+      fi
+      compose_arguments+=(--env-file "$2")
+      shift
+      ;;
+    --project-name)
+      if [ "$#" -lt 2 ]; then
+        echo "--project-name には project 名を指定してください。" >&2
+        usage >&2
+        exit 2
+      fi
+      compose_arguments+=(--project-name "$2")
+      shift
+      ;;
+    --help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "知らないオプションです: $1" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+
+  shift
+done
+
+variable_arguments=()
+for name in "${SEED_VARIABLES[@]}"; do
+  variable_arguments+=(-e "$name")
+done
+
+# 値を伴わない -e NAME は、同名のホスト環境変数があればそちらを優先し、
+# .env や --env-file の値を使わない。指定した設定ファイルを正本にするため、
+# docker compose を呼ぶ前に、この 5 つだけを現在の環境から外す。
+#
+# 外すのは seed 専用の変数に限る。DATABASE_* や COMPOSE_PROJECT_NAME など、
+# 環境から与える運用が成り立っている設定の優先順位は変えない。
+unset "${SEED_VARIABLES[@]}"
+
+# --no-deps を付け、db を巻き込んで作り直さないようにする。
+# db:seed の終了状態はそのまま呼び出し側へ返す。
+exec docker compose "${compose_arguments[@]}" run --rm --no-deps \
+  "${variable_arguments[@]}" \
+  web bin/rails db:seed

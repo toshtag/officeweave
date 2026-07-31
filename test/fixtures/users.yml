@@ -1,4 +1,5 @@
-<% password_digest = BCrypt::Password.create("password-for-tests") %>
+<%# 照合の速さはテストの実行時間に直に効く。固定のデータには最小の負荷を使う。 %>
+<% password_digest = BCrypt::Password.create("password-for-tests", cost: BCrypt::Engine::MIN_COST) %>
 
 taro:
   organization: main

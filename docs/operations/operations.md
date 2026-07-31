@@ -120,7 +120,7 @@ docker compose -f compose.production.yaml exec web bin/diagnose
 ```
 
 有効な管理者が存在するかを確認する。
-いない場合は、`.env` を設定したうえで `bin/rails db:seed` を実行する。
+いない場合は、`.env` を設定したうえで `script/seed_initial_user` を実行する。
 
 ### すぐにログイン画面へ戻される
 

@@ -15,7 +15,8 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     assert_difference -> { User.count }, 1 do
       post users_url, params: {
         user: { name: "鈴木 一郎", email_address: "ichiro@example.com",
-                password: "a-secret-value", password_confirmation: "a-secret-value", role: "member" }
+                password: "a-long-secret-value", password_confirmation: "a-long-secret-value",
+                role: "member" }
       }
     end
 
@@ -27,11 +28,111 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     assert_no_difference -> { User.count } do
       post users_url, params: {
         user: { name: "鈴木 一郎", email_address: "ichiro@example.com",
-                password: "a-secret-value", password_confirmation: "different-value" }
+                password: "a-long-secret-value", password_confirmation: "a-different-value" }
       }
     end
 
     assert_response :unprocessable_content
+  end
+
+  test "15 文字に満たないパスワードでは追加できない" do
+    assert_no_difference [ -> { User.count }, -> { AuditEvent.count } ] do
+      post users_url, params: {
+        user: { name: "鈴木 一郎", email_address: "ichiro@example.com",
+                password: "abcdefghijklmn", password_confirmation: "abcdefghijklmn" }
+      }
+    end
+
+    assert_response :unprocessable_content
+  end
+
+  test "既知の初期値では追加できない" do
+    assert_no_difference [ -> { User.count }, -> { AuditEvent.count } ] do
+      post users_url, params: {
+        user: { name: "鈴木 一郎", email_address: "ichiro@example.com",
+                password: "change_me", password_confirmation: "change_me" }
+      }
+    end
+
+    assert_response :unprocessable_content
+    assert_select ".error-summary", text: /#{Regexp.escape(known_unsafe_message)}/
+  end
+
+  test "英語の画面でも拒む理由が示される" do
+    users(:taro).update!(locale: "en")
+
+    post users_url, params: {
+      user: { name: "Ichiro Suzuki", email_address: "ichiro@example.com",
+              password: "change_me", password_confirmation: "change_me" }
+    }
+
+    assert_response :unprocessable_content
+    assert_select ".error-summary", text: /#{Regexp.escape(known_unsafe_message(:en))}/
+  end
+
+  # 入力欄の制限も長さの検査も通ってしまう値。要求を直接送って確かめる。
+  test "Unicode の空白で囲んだ既知の初期値では追加できない" do
+    value = "\u3000\u3000officeweave\u3000\u3000"
+
+    assert_no_difference [ -> { User.count }, -> { AuditEvent.count } ] do
+      post users_url, params: {
+        user: { name: "鈴木 一郎", email_address: "ichiro@example.com",
+                password: value, password_confirmation: value }
+      }
+    end
+
+    assert_response :unprocessable_content
+    assert_select ".error-summary", text: /#{Regexp.escape(known_unsafe_message)}/
+  end
+
+  # 入力欄の minlength と required は通ってしまう値。要求を直接送って確かめる。
+  test "空白だけのパスワードでは追加できない" do
+    assert_no_difference [ -> { User.count }, -> { AuditEvent.count } ] do
+      post users_url, params: {
+        user: { name: "鈴木 一郎", email_address: "ichiro@example.com",
+                password: " " * 15, password_confirmation: " " * 15 }
+      }
+    end
+
+    assert_response :unprocessable_content
+    assert_select ".error-summary", text: /#{Regexp.escape(blank_message)}/
+  end
+
+  # 空欄と同じく「変更しない」として扱う。誤りとして示す場面ではない。
+  test "空白だけのパスワードでの更新は現在の digest を保つ" do
+    user = users(:hanako)
+    digest_before = user.password_digest
+
+    patch user_url(user), params: {
+      user: { name: "佐藤 花子", password: " " * 15, password_confirmation: " " * 15 }
+    }
+
+    assert_redirected_to users_path
+    assert_equal digest_before, user.reload.password_digest
+  end
+
+  test "15 文字に満たないパスワードへは変更できない" do
+    user = users(:hanako)
+    digest_before = user.password_digest
+
+    patch user_url(user), params: {
+      user: { password: "abcdefghijklmn", password_confirmation: "abcdefghijklmn" }
+    }
+
+    assert_response :unprocessable_content
+    assert_equal digest_before, user.reload.password_digest
+  end
+
+  test "既知の初期値へは変更できない" do
+    user = users(:hanako)
+    digest_before = user.password_digest
+
+    patch user_url(user), params: {
+      user: { password: "change_me", password_confirmation: "change_me" }
+    }
+
+    assert_response :unprocessable_content
+    assert_equal digest_before, user.reload.password_digest
   end
 
   test "パスワードを空にすると変更されない" do
@@ -101,5 +202,13 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
   private
     def last_active_administrator_message
       I18n.t("activerecord.errors.models.user.attributes.base.last_active_administrator")
+    end
+
+    def blank_message
+      I18n.t("errors.messages.blank")
+    end
+
+    def known_unsafe_message(locale = I18n.default_locale)
+      I18n.t("activerecord.errors.models.user.attributes.password.known_unsafe", locale: locale)
     end
 end

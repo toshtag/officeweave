@@ -119,7 +119,54 @@ jobs:
           done
 
       - name: 初期利用者を作成する
-        run: docker compose -f compose.production.yaml exec -T web bin/rails db:seed
+        # 資格情報は常駐する web と worker へ渡さない。
+        # 一時コンテナへ変数名だけを指定して渡す経路をそのまま使う。
+        #
+        # 値の正本は .env とする。周囲のシェルへ別の値を置いた状態で実行し、
+        # そちらが採用されないことを次の手順で確かめる。
+        env:
+          INITIAL_USER_NAME: シェル側の管理者
+          INITIAL_USER_EMAIL: shell-admin@example.invalid
+          INITIAL_USER_PASSWORD: shell-defined-seed-password
+          ORGANIZATION_NAME: シェル側の組織
+          ORGANIZATION_CODE: shell-organization
+        run: script/seed_initial_user --production
+
+      - name: seed の値が .env から取られたことを確かめる
+        run: |
+          # 値そのものは出力しない。判定は runner の終了状態だけで行う。
+          docker compose -f compose.production.yaml exec -T \
+            -e EXPECTED_EMAIL=admin@example.invalid \
+            -e UNEXPECTED_EMAIL=shell-admin@example.invalid \
+            -e EXPECTED_PASSWORD=verification-only-user-password \
+            -e UNEXPECTED_PASSWORD=shell-defined-seed-password \
+            web bin/rails runner '
+              user = User.find_by(email_address: ENV.fetch("EXPECTED_EMAIL"))
+              raise ".env のメールアドレスで利用者が作られていない" if user.nil?
+              raise "シェル側のメールアドレスで利用者が作られている" if
+                User.exists?(email_address: ENV.fetch("UNEXPECTED_EMAIL"))
+              raise "組織が .env の設定になっていない" unless user.organization.code == "default"
+              raise ".env のパスワードで認証できない" unless
+                user.authenticate(ENV.fetch("EXPECTED_PASSWORD"))
+              raise "シェル側のパスワードで認証できてしまう" if
+                user.authenticate(ENV.fetch("UNEXPECTED_PASSWORD"))
+            '
+
+      - name: 初期利用者の資格情報が常駐サービスへ残らないことを確かめる
+        run: |
+          # 値そのものは出力しない。変数が定義されていないことだけを確かめる。
+          for service in web worker; do
+            if ! docker compose -f compose.production.yaml exec -T "${service}" \
+              sh -c 'test -z "${INITIAL_USER_PASSWORD+x}"'; then
+              echo "${service} に INITIAL_USER_PASSWORD が残っている" >&2
+              exit 1
+            fi
+          done
+          # 一時コンテナは --rm で消える。残っていないことを確かめる。
+          if docker compose -f compose.production.yaml ps -a --format '{{.Name}}' | grep -- '-run-'; then
+            echo "seed 用の一時コンテナが残っている" >&2
+            exit 1
+          fi
 
       - name: worker が稼働することを確かめる
         run: |
@@ -188,7 +235,9 @@ jobs:
           exit 1
 
       - name: 初期利用者を作成する
-        run: docker compose -f compose.production.yaml exec -T web bin/rails db:seed
+        # 資格情報は常駐する web と worker へ渡さない。
+        # 一時コンテナへ変数名だけを指定して渡す経路をそのまま使う。
+        run: script/seed_initial_user --production
 
       - name: 取得前の状態を作る
         run: |
@@ -346,6 +395,11 @@ jobs:
           echo "起動しませんでした" >&2
           docker compose -f compose.production.yaml logs >&2
           exit 1
+
+      - name: 初期利用者を作成する
+        # 資格情報は常駐する web と worker へ渡らない。
+        # 起動時の db:prepare では作られないため、明示的に実行する。
+        run: script/seed_initial_user --production
 
       - name: worker が稼働することを確かめる
         run: |

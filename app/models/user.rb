@@ -33,6 +33,13 @@ class User < ApplicationRecord
   validates :locale, inclusion: { in: ->(_) { I18n.available_locales.map(&:to_s) } },
                      allow_nil: true
 
+  # 新しく平文を割り当てた場合だけ、最低要件を確かめる。
+  #
+  # 保存済みの digest は対象にしない。要件を満たさないパスワードで既に運用して
+  # いる利用者を、この検査だけでログインできなくすることはしない。
+  # 経路ごとではなく User モデルへ置くことで、画面も CSV も初期データも同じ契約を通る。
+  validate :password_meets_policy, if: :password_assigned?
+
   scope :ordered, -> { order(:name) }
   scope :active, -> { where(deactivated_at: nil) }
   scope :deactivated, -> { where.not(deactivated_at: nil) }
@@ -75,6 +82,23 @@ class User < ApplicationRecord
   end
 
   private
+    # 空欄での送信は「変更しない」を意味する。未入力を要件の違反にしない。
+    # 値そのものの必須は has_secure_password が確かめる。
+    def password_assigned?
+      !password.nil? && !password.empty?
+    end
+
+    def password_meets_policy
+      case Authentication::PasswordPolicy.violation(password)
+      when :blank
+        errors.add(:password, :blank)
+      when :known_unsafe
+        errors.add(:password, :known_unsafe)
+      when :too_short
+        errors.add(:password, :too_short, count: Authentication::PasswordPolicy::MINIMUM_LENGTH)
+      end
+    end
+
     # 保存前は利用中の管理者で、保存後はそうでなくなる更新だけを対象とする。
     # 一般利用者の更新や、管理者への昇格、管理者の氏名変更は対象にしない。
     def removing_active_administrator?
