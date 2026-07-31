@@ -387,9 +387,10 @@ curl -s -o /dev/null -w '%{http_code}\n' \
 7. 要件を満たさない INITIAL_USER_PASSWORD では作成が失敗し、利用者を作らない
 8. 初期利用者の作成後、web と worker に INITIAL_USER_PASSWORD が残らない
 9. seed 用の一時コンテナが残らない
-10. bin/diagnose が、実行環境に残った INITIAL_USER_PASSWORD を知らせる
-11. bin/diagnose が、設定に残った既知の初期値を変数名だけで知らせる
-12. bin/diagnose が、既知の初期値を使う利用中の管理者を知らせる
+10. 同名のホスト環境変数があっても、.env または --env-file の値で作成される
+11. bin/diagnose が、Rails の実行環境へ渡った INITIAL_USER_PASSWORD を知らせる
+12. bin/diagnose が、設定に残った既知の初期値を変数名だけで知らせる
+13. bin/diagnose が、既知の初期値を使う利用中の管理者を知らせる
 ```
 
 判定は `app/models/authentication/password_policy.rb` の 1 か所に置き、
@@ -398,6 +399,7 @@ curl -s -o /dev/null -w '%{http_code}\n' \
 
 初期利用者の資格情報は、稼働し続ける web と worker へは渡さない。
 `script/seed_initial_user` が作る一時コンテナにだけ渡す。
+値の入力元は `.env` または `--env-file` だけとし、同名のホスト環境変数は使わない。
 非伝播は `script/check_compose_isolation` が、スクリプトの契約は
 `test/models/seed_initial_user_script_test.rb` が押さえている。
 
@@ -408,9 +410,18 @@ curl -s -o /dev/null -w '%{http_code}\n' \
 `script/check_compose_isolation` が押さえている。
 ここで確かめるのは、実際に動いている構成でも同じであることである。
 
-`bin/diagnose` が見つけられるのは、設定に残った既知の値と、保存済みの管理者が
-既知の値そのものを使っている状態の 2 つだけである。保存済みの digest からは
-長さも中身も復元できないため、弱いパスワード全般は判定できない。
+`bin/diagnose` が見つけられるのは次の 3 つだけである。
+
+```text
+Rails の実行環境へ渡った INITIAL_USER_PASSWORD
+Rails の実行環境に残った既知の初期値
+保存済みの管理者が既知の初期値そのものを使っている状態
+```
+
+見えるのは Rails が動いている process の環境だけである。ホストの `.env` に
+値が残っているかどうかは分からない。そこはファイルを見て確かめる。
+保存済みの digest からは長さも中身も復元できないため、
+弱いパスワード全般も判定できない。
 
 ## 17. 自動実行
 

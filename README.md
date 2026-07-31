@@ -48,6 +48,7 @@ script/seed_initial_user
 
 資格情報は、このとき作られる一時コンテナにだけ渡します。処理が終わると
 そのコンテナは削除されます。稼働中の web と worker には渡しません。
+値は `.env` から読みます。同名のホスト環境変数は使いません。
 
 作成後、`INITIAL_USER_PASSWORD` は `.env` から削除してください。
 web と worker を作り直す必要はありません。
