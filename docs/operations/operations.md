@@ -42,6 +42,14 @@ docker compose -f compose.production.yaml exec web bin/rails runner "puts UserCs
 再起動判定に `/health` を使わない。
 データベースの一時的な不調で、アプリケーションが再起動を繰り返す。
 
+どちらの経路も `Host` の検査を受ける。
+ループバックの IP へ直接確かめるときは、`Host` ヘッダーを明示する。
+
+```bash
+docker compose -f compose.production.yaml exec web \
+  sh -c 'curl -fsS -H "Host: ${APPLICATION_HOST}" http://127.0.0.1:3000/up'
+```
+
 ### 記録
 
 ```bash
@@ -83,6 +91,8 @@ worker が止まっていると、送信は行われずジョブが溜まる。�
 
 ## 5. 定期的に行うこと
 
+期限切れのセッションは、毎時アプリケーションが削除する。運用側の作業はない。
+
 | 頻度   | 内容                                       |
 | ---- | ---------------------------------------- |
 | 毎日   | バックアップの取得（利用者側の時刻起動などで自動化する）             |
@@ -100,6 +110,28 @@ docker compose -f compose.production.yaml exec web bin/diagnose
 
 有効な管理者が存在するかを確認する。
 いない場合は、`.env` を設定したうえで `bin/rails db:seed` を実行する。
+
+### すぐにログイン画面へ戻される
+
+ログイン状態は、無操作 30 分か、ログインから 8 時間で終わる。
+どちらか一方でも超えると、記録と Cookie の両方を破棄してログイン画面へ戻す。
+想定どおりの動作であり、あらためてログインする。
+
+`SECRET_KEY_BASE` を変えた直後も、進行中のセッションはすべて無効になる。
+
+### 403 が返る
+
+要求の `Host` が `APPLICATION_HOST` と一致していない。
+
+```bash
+docker compose -f compose.production.yaml exec web sh -c 'echo "${APPLICATION_HOST}"'
+```
+
+`.env` の値と、利用者が実際に接続しているホスト名を突き合わせる。
+逆プロキシを使う場合は、元の `Host` をそのまま転送しているかを確認する。
+書き換えている場合は、転送後の値を `APPLICATION_HOST` に合わせる。
+
+値を変えたら web を再起動する。
 
 ### 通知が届かない
 

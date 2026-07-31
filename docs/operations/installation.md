@@ -58,6 +58,35 @@ SECRET_KEY_BASE        署名に使う鍵
 
 設定できる項目の一覧は [設定](../development/configuration.md) にある。
 
+### 接続するホスト名
+
+公開する前に `APPLICATION_HOST` を必ず設定する。
+運用環境では、ここに書いた 1 つのホスト名だけを受け入れ、
+それ以外の `Host` を持つ要求は 403 で拒否する。
+
+```text
+正: officeweave.example.com
+誤: https://officeweave.example.com/
+```
+
+スキーム、経路、ポートは含めない。
+逆プロキシの背後へ置く場合は、利用者が接続するホスト名を書く。
+逆プロキシが `Host` を書き換える構成では、転送される値と一致させる。
+
+設定を間違えると、正規の要求も 403 になる。
+値を変えたら、web を再起動する。
+
+```bash
+docker compose -f compose.production.yaml up -d --force-recreate web
+```
+
+稼働確認をループバックの IP へ直接送る場合は、`Host` を明示する。
+付けないと、正しく動いていても 403 になる。
+
+```bash
+curl -fsS -H "Host: officeweave.example.com" http://127.0.0.1:3210/up
+```
+
 ### 署名に使う鍵
 
 ```bash
