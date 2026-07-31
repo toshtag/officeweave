@@ -55,13 +55,17 @@ module Authentication
       nil
     end
 
+    # 保存するのは、検査を通ったパスとクエリだけとする。
+    # request.url はスキームとホストを含む。要求の Host を戻り先へ持ち込まない。
     def request_authentication
-      session[:return_to_after_authenticating] = request.url
+      session[:return_to_after_authenticating] = LocalPath.permitted(request.fullpath)
       redirect_to new_session_path
     end
 
+    # 保存済みの値も、使用する時点でもう一度検査する。
+    # 落とす先は root_path とする。root_url は要求の Host を再び含める。
     def after_authentication_url
-      session.delete(:return_to_after_authenticating) || root_url
+      LocalPath.permitted(session.delete(:return_to_after_authenticating)) || root_path
     end
 
     def start_new_session_for(user)
