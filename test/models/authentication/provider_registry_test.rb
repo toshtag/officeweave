@@ -23,7 +23,27 @@ module Authentication
       def self.name_key = " internal "
     end
 
-    teardown { ProviderRegistry.instance_variable_get(:@providers).delete("stub") }
+    # 既に使われている識別子を、別の実装が名乗る場合を再現する。
+    class ConflictingInternalProvider
+      def self.name_key = "internal"
+      def self.password_required? = false
+      def self.authenticate(email_address:, password:) = nil
+    end
+
+    class ConflictingStubProvider
+      def self.name_key = "stub"
+      def self.password_required? = true
+      def self.authenticate(email_address:, password:) = nil
+    end
+
+    # テスト用の登録を残さない。
+    # 上書きを試す検査があるため、internal は既定へ必ず戻す。
+    teardown do
+      providers = ProviderRegistry.instance_variable_get(:@providers)
+      providers.delete("stub")
+      providers.delete("reloadable")
+      providers["internal"] = InternalProvider
+    end
 
     test "設定が無い場合は内部認証になる" do
       with_provider(nil) do
@@ -114,7 +134,73 @@ module Authentication
       assert_equal InternalProvider, ProviderRegistry.fetch("internal")
     end
 
+    test "別の実装は internal を名乗れない" do
+      error = assert_raises(ProviderRegistry::DuplicateProviderName) do
+        ProviderRegistry.register(ConflictingInternalProvider)
+      end
+
+      assert_includes error.message, "internal"
+      assert_includes error.message, InternalProvider.name
+      assert_includes error.message, ConflictingInternalProvider.name
+
+      assert_equal InternalProvider, ProviderRegistry.fetch("internal")
+      with_provider(nil) do
+        assert_equal InternalProvider, ProviderRegistry.current
+      end
+    end
+
+    test "別の実装は登録済みの識別子を上書きできない" do
+      ProviderRegistry.register(StubProvider)
+      before = ProviderRegistry.registered.dup
+
+      assert_raises(ProviderRegistry::DuplicateProviderName) do
+        ProviderRegistry.register(ConflictingStubProvider)
+      end
+
+      assert_equal StubProvider, ProviderRegistry.fetch("stub")
+      assert_equal before, ProviderRegistry.registered
+    end
+
+    test "同じ実装の再登録は成功する" do
+      ProviderRegistry.register(StubProvider)
+      ProviderRegistry.register(StubProvider)
+
+      assert_equal StubProvider, ProviderRegistry.fetch("stub")
+      assert_equal 1, ProviderRegistry.registered.count("stub")
+    end
+
+    test "再読み込み後の同じ実装へ入れ替えられる" do
+      # 開発環境では、同じ定数が再読み込みで別のクラスになる。
+      # これを衝突として拒否すると、画面を開くたびに起動できなくなる。
+      original = define_reloadable_provider
+      ProviderRegistry.register(original)
+
+      replacement = define_reloadable_provider
+      ProviderRegistry.register(replacement)
+
+      assert_not_same original, replacement
+      assert_same replacement, ProviderRegistry.fetch("reloadable")
+    ensure
+      remove_reloadable_provider
+    end
+
     private
+      RELOADABLE = :ReloadableProvider
+
+      # 同じ完全修飾名を持つ、別のクラスオブジェクトを作る。
+      def define_reloadable_provider
+        remove_reloadable_provider
+        provider = Class.new do
+          def self.name_key = "reloadable"
+        end
+        self.class.const_set(RELOADABLE, provider)
+        provider
+      end
+
+      def remove_reloadable_provider
+        self.class.send(:remove_const, RELOADABLE) if self.class.const_defined?(RELOADABLE, false)
+      end
+
       # 親プロセスの設定へ依存させない。nil は「設定が無い」を意味する。
       def with_provider(name)
         original = ENV["AUTHENTICATION_PROVIDER"]
