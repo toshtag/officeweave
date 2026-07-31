@@ -48,7 +48,7 @@ cp .env.example .env
 `.env` を編集する。運用環境では、少なくとも次を設定する。
 
 ```text
-DATABASE_PASSWORD      推測されない値へ変更する
+DATABASE_PASSWORD      推測されない値を設定する
 INITIAL_USER_EMAIL     最初の管理者のメールアドレス
 INITIAL_USER_PASSWORD  最初の管理者のパスワード
 APPLICATION_HOST       利用者が接続するホスト名
@@ -56,7 +56,29 @@ SMTP_ADDRESS           通知をメールで送る場合
 SECRET_KEY_BASE        署名に使う鍵
 ```
 
+`.env.example` の秘密情報は空欄である。空欄のままでは構成を解決できず、起動しない。
+
 設定できる項目の一覧は [設定](../development/configuration.md) にある。
+
+### 最初の管理者の資格情報
+
+初期利用者は `bin/rails db:seed` で作成する。作成する前に設定する。
+
+```text
+INITIAL_USER_EMAIL     必須。既定値はない
+INITIAL_USER_PASSWORD  必須。既定値はない。15 文字以上とする
+```
+
+パスワードは 15 文字以上にする。大文字・数字・記号の混在は求めない。
+`change_me`、`password`、`officeweave` は、表記を変えても使用できない。
+要件を満たさない値を設定した場合、`bin/rails db:seed` は失敗し、利用者を作らない。
+
+実際に設定した値を、コマンドの例や作業記録へ書き写さない。
+本書と `.env.example` に載る値は、いずれも使用できない値である。
+
+初期利用者の作成後は、`INITIAL_USER_PASSWORD` を環境から取り除いてよい。
+設定に残った既知の初期値と、その値をそのまま使っている管理者は、
+`bin/diagnose` が注意として知らせる。
 
 ### 接続するホスト名
 
@@ -216,6 +238,11 @@ docker compose -f compose.production.yaml exec web bin/rails db:seed
 
 `.env` に設定した値で、最初の管理者が作られる。
 既に利用者が存在する場合は何も行わない。
+
+`INITIAL_USER_EMAIL` と `INITIAL_USER_PASSWORD` のどちらかが未設定の場合、
+利用者は作成されず、必要な設定を知らせて終わる。推測した資格情報では作らない。
+
+作成後は `INITIAL_USER_PASSWORD` を `.env` から削除してよい。
 
 ## 6. 確認
 

@@ -43,6 +43,9 @@ curl -s http://127.0.0.1:3210/health
 docker compose exec web bin/rails db:seed
 ```
 
+`.env` へ `INITIAL_USER_EMAIL` と `INITIAL_USER_PASSWORD` を設定していない場合、
+利用者は作成されず、必要な設定を知らせて終わる。既定の資格情報は用意しない。
+
 ```bash
 docker compose exec web bin/diagnose
 ```
@@ -367,7 +370,38 @@ curl -s -o /dev/null -w '%{http_code}\n' \
 自動の並行テストを正本とし、ここで確かめるのは、実際に動いている構成でも
 同じであることである。
 
-## 16. 自動実行
+## 16. パスワードの最低要件と初期資格情報
+
+新しく設定するパスワードが同じ契約を通ることと、既知の初期値のまま
+使い始められないことを確かめる。
+
+```text
+1. 管理者画面で 14 文字のパスワードを拒否し、理由が画面へ出る
+2. 管理者画面で 15 文字のパスワードを受理する
+3. 大文字・数字・記号の混在を求めない
+4. change_me、password、officeweave を、表記を変えても拒否する
+5. 既存利用者の氏名や権限の更新では、新しいパスワードを求めない
+6. 要件を満たさない INITIAL_USER_PASSWORD では db:seed が失敗し、利用者を作らない
+7. bin/diagnose が、設定に残った既知の初期値を変数名だけで知らせる
+8. bin/diagnose が、既知の初期値を使う利用中の管理者を知らせる
+```
+
+判定は `app/models/authentication/password_policy.rb` の 1 か所に置き、
+管理者画面、`db:seed`、CSV 取込による新しい利用者、`bin/diagnose` の
+すべてがここを通る。
+
+最低要件は `test/models/authentication/password_policy_test.rb` と
+`test/models/user_test.rb` が、画面での拒否は
+`test/controllers/users_controller_test.rb` と `test/system/users_test.rb` が、
+診断は `test/models/diagnostics_test.rb` が、設定の伝播は
+`script/check_compose_isolation` が押さえている。
+ここで確かめるのは、実際に動いている構成でも同じであることである。
+
+`bin/diagnose` が見つけられるのは、設定に残った既知の値と、保存済みの管理者が
+既知の値そのものを使っている状態の 2 つだけである。保存済みの digest からは
+長さも中身も復元できないため、弱いパスワード全般は判定できない。
+
+## 17. 自動実行
 
 `.github/workflows/verify.yml` が、変更のたびに次を実行する。
 
