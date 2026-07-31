@@ -78,7 +78,12 @@ services:
     healthcheck:
       # データベースの準備は web の起動処理が行う。
       # worker はその完了を待つため、web の稼働をここで判定できるようにする。
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3000/up >/dev/null"]
+      #
+      # 運用環境は APPLICATION_HOST 以外の Host を拒否する。
+      # ループバックへ直接要求するため、Host は明示する。
+      # $$ で escape し、compose ではなくコンテナ内の shell へ展開させる。
+      # web へ実際に渡っている値と、確認に使う値を必ず一致させる。
+      test: ["CMD-SHELL", "curl -fsS -H \"Host: $${APPLICATION_HOST:-localhost}\" http://127.0.0.1:3000/up >/dev/null"]
       interval: 5s
       timeout: 3s
       retries: 20

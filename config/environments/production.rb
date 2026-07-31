@@ -96,11 +96,12 @@ Rails.application.configure do
   config.active_record.attributes_for_inspect = [ :id ]
 
   # Enable DNS rebinding protection and other `Host` header attacks.
-  # config.hosts = [
-  #   "example.com",     # Allow requests from example.com
-  #   /.*\.example\.com/ # Allow requests from subdomains like `www.example.com`
-  # ]
-  #
-  # Skip DNS rebinding protection for the default health check endpoint.
-  # config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
+  # 受け入れるのは、利用者が接続する 1 つのホスト名だけとする。
+  # 正規表現や任意のサブドメインは許可しない。許可を広げるほど、
+  # 想定外の名前で届いた要求を、正規の要求と区別できなくなる。
+  config.hosts = [ ENV.fetch("APPLICATION_HOST", "localhost") ]
+
+  # 稼働確認の経路も Host の検査から外さない。
+  # 除外すると、その経路だけは任意の Host で到達できる。
+  # コンテナ内からの確認は、要求する側が正しい Host を付ける。
 end
