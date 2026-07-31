@@ -5,6 +5,12 @@ require "ipaddr"
 # 「起動している」ことと「正しく動く」ことは別である。
 # 送信設定の不備や、実行し忘れた移行は、使われて初めて分かる。
 class Diagnostics
+  # 公開 URL として使えない理由と、その説明。
+  PUBLIC_URL_PROBLEMS = {
+    loopback: "は利用者の端末自身を指します。",
+    unspecified: "は接続先を特定しないアドレスです。"
+  }.freeze
+
   def run
     [
       database_connection,
@@ -130,30 +136,40 @@ class Diagnostics
       options = ActionMailer::Base.default_url_options
       host = options[:host].to_s
 
+      problem = Rails.env.production? ? public_url_host_problem(host) : nil
+
       if host.blank?
         warning("メール本文の URL", "APPLICATION_HOST を設定してください。通知から画面へ戻れません。")
-      elsif Rails.env.production? && local_only_host?(host)
+      elsif problem
         warning("メール本文の URL",
-                "#{public_url_authority(options)} は利用者の端末を指します。" \
+                "#{public_url_authority(options)} #{PUBLIC_URL_PROBLEMS.fetch(problem)}" \
                 "利用者が接続できる APPLICATION_HOST を設定してください。")
       else
         ok("メール本文の URL", public_url_authority(options))
       end
     end
 
-    # 受け取った端末自身へ戻ってしまう公開先か。
+    # 公開先として使えない理由。使える場合は nil を返す。
     #
     # 設定としては正しいため起動は拒否しない。単一端末での試用や、
     # 逆プロキシを整える前の確認では、この値のまま動かせる必要がある。
     # 組織内の DNS 名は端末から到達できる場合があるため、名前だけでは注意にしない。
-    def local_only_host?(host)
+    def public_url_host_problem(host)
       normalized = host.downcase
-      return true if normalized == "localhost" || normalized.end_with?(".localhost")
+      return :loopback if normalized == "localhost" || normalized.end_with?(".localhost")
 
-      IPAddr.new(normalized.delete_prefix("[").delete_suffix("]")).loopback?
+      address = IPAddr.new(normalized.delete_prefix("[").delete_suffix("]"))
+      # IPv4 を包んだ IPv6 は、包みを外してから判定する。
+      # 外さないと ::ffff:0.0.0.0 が未指定として扱われない。
+      address = address.native if address.ipv4_mapped?
+
+      return :unspecified if address.to_i.zero?
+      return :loopback if address.loopback?
+
+      nil
     rescue IPAddr::Error
       # 起動時に検査済みだが、診断だけを取り出して使う場合にも失敗させない。
-      false
+      nil
     end
 
     # 公開ポートを指定している場合は、ホスト名と合わせて示す。

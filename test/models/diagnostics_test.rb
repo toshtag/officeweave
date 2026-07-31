@@ -87,7 +87,8 @@ class DiagnosticsTest < ActiveSupport::TestCase
   # 配布用の構成は、APPLICATION_HOST が未設定でも localhost を環境変数として渡す。
   # 環境変数の有無では設定漏れを判別できないため、実際の公開先で判定する。
   test "運用環境で利用者の端末を指す公開 URL は注意として扱う" do
-    [ "localhost", "portal.localhost", "127.0.0.1", "127.20.30.40", "[::1]" ].each do |host|
+    [ "localhost", "portal.localhost", "127.0.0.1", "127.20.30.40", "[::1]",
+      "[::ffff:127.0.0.1]", "[::ffff:7f00:1]" ].each do |host|
       check = application_host_check(host: host, application_host: "localhost")
 
       assert_equal :warning, check[:status], host
@@ -96,8 +97,19 @@ class DiagnosticsTest < ActiveSupport::TestCase
     end
   end
 
+  test "運用環境で接続先を特定しない公開 URL は注意として扱う" do
+    [ "0.0.0.0", "[::]", "[::ffff:0.0.0.0]" ].each do |host|
+      check = application_host_check(host: host, application_host: host)
+
+      assert_equal :warning, check[:status], host
+      assert_includes check[:detail], host
+      assert_includes check[:detail], "APPLICATION_HOST"
+    end
+  end
+
   test "運用環境で外部から到達できる公開 URL は確認済みとして扱う" do
-    [ "officeweave.example.com", "portal.internal", "192.0.2.10", "[2001:db8::10]" ].each do |host|
+    [ "officeweave.example.com", "portal.internal", "192.0.2.10", "[2001:db8::10]",
+      "[::ffff:192.0.2.10]" ].each do |host|
       check = application_host_check(host: host)
 
       assert_equal :ok, check[:status], host
