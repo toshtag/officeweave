@@ -21,6 +21,7 @@ Bundler.require(*Rails.groups)
 # 環境設定の評価より前に読み込む。
 # config/environments/production.rb から使うため、autoload の順序へ依存させない。
 require_relative "../lib/officeweave/configuration/application_host"
+require_relative "../lib/officeweave/configuration/application_port"
 
 module Officeweave
   class Application < Rails::Application

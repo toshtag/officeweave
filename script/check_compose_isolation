@@ -25,6 +25,9 @@
 #  18. 配布用の web と worker へ受け入れる Host が同じ値で渡る
 #  19. 受け入れる Host が未設定の場合は localhost が渡る
 #  20. 受け入れる Host の明示した空文字が localhost へ置き換えられない
+#  21. 配布用の web と worker へ公開ポートが同じ値で渡る
+#  22. 公開ポートが未設定の場合は空文字が渡る
+#  23. 公開ポートの値を補正しない
 #
 # 使い方:
 #   script/check_compose_isolation
@@ -82,17 +85,17 @@ config_with_provider() {
   fi
 }
 
-# 受け入れる Host も、値を変えて解決し直す。
+# 公開先の設定も、値を変えて解決し直す。
 # 配布用の構成にだけ渡る設定のため、production だけを対象とする。
-config_with_application_host() {
-  local setting="$1"
+config_with_setting() {
+  local name="$1" setting="$2"
   local -a environment=(
     env -i PATH="$PATH" HOME="$HOME"
     DATABASE_USER=check DATABASE_PASSWORD=check SECRET_KEY_BASE=check
   )
 
   if [ "$setting" != "unset" ]; then
-    environment+=("APPLICATION_HOST=$setting")
+    environment+=("${name}=${setting}")
   fi
 
   "${environment[@]}" docker compose -f compose.production.yaml --env-file /dev/null config --format json
@@ -296,24 +299,31 @@ check_provider production "配布用の空文字" "" '""'
 
 # 受け入れる Host も、認証方式と同じ契約にする。
 # 空文字が既定値へ置き換わると、誤設定のまま localhost で起動してしまう。
-check_application_host() {
-  local label="$1" setting="$2" expected="$3"
+#
+# 公開ポートは web と worker の両方へ渡す。メールの本文は worker でも組み立てる。
+# 片側だけへ渡すと、画面からは正しく見えるのに通知の URL だけが違う。
+# 値の書式は compose では判定しない。起動時の検査が拒否する。
+check_public_setting() {
+  local name="$1" label="$2" setting="$3" expected="$4"
   local document web worker
 
-  document="$(config_with_application_host "$setting")"
-  web="$(query "$document" services.web.environment.APPLICATION_HOST)"
-  worker="$(query "$document" services.worker.environment.APPLICATION_HOST)"
+  document="$(config_with_setting "$name" "$setting")"
+  web="$(query "$document" "services.web.environment.${name}")"
+  worker="$(query "$document" "services.worker.environment.${name}")"
 
   if [ "$web" = "$expected" ] && [ "$worker" = "$expected" ]; then
-    report ok "${label}の web と worker へ受け入れる Host が ${expected} で渡る"
+    report ok "${label}の web と worker へ ${name} が ${expected} で渡る"
   else
-    report ng "${label}の受け入れる Host が期待と異なる（期待 ${expected} / web ${web} / worker ${worker}）"
+    report ng "${label}の ${name} が期待と異なる（期待 ${expected} / web ${web} / worker ${worker}）"
   fi
 }
 
-check_application_host "配布用の未設定時" unset '"localhost"'
-check_application_host "配布用の明示時" officeweave.example.com '"officeweave.example.com"'
-check_application_host "配布用の空文字" "" '""'
+check_public_setting APPLICATION_HOST "配布用の未設定時" unset '"localhost"'
+check_public_setting APPLICATION_HOST "配布用の明示時" officeweave.example.com '"officeweave.example.com"'
+check_public_setting APPLICATION_HOST "配布用の空文字" "" '""'
+check_public_setting APPLICATION_PORT "配布用の未設定時" unset '""'
+check_public_setting APPLICATION_PORT "配布用の明示時" 3210 '"3210"'
+check_public_setting APPLICATION_PORT "配布用の空文字" "" '""'
 
 if [ "$failures" -eq 0 ]; then
   echo "分離の条件をすべて満たしています"

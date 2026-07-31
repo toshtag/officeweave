@@ -38,12 +38,25 @@ Rails.application.configure do
 
   # 表示する URL の組み立てに使う。
   # 受け入れる Host と同じ正本を通す。同じ環境変数へ別々の検査を持たない。
-  host = Officeweave::Configuration::ApplicationHost.resolve(ENV["APPLICATION_HOST"], default: nil)
+  # 運用環境の既定は、受け入れる Host と同じ localhost へ揃える。
+  # 別の既定を置くと、設定しないまま起動したときに公開先が 2 つに割れる。
+  host = Officeweave::Configuration::ApplicationHost.resolve(
+    ENV["APPLICATION_HOST"],
+    default: Rails.env.production? ? "localhost" : nil
+  )
+
+  # 公開 URL のポートは WEB_PORT から自動で決めない。
+  # WEB_PORT はホストから web コンテナへ公開するポートであり、
+  # 逆プロキシやポート転送の背後では、利用者が接続するポートと一致しない。
+  port = Officeweave::Configuration::ApplicationPort.resolve(ENV["APPLICATION_PORT"])
 
   if host.present?
-    config.action_mailer.default_url_options = {
+    options = {
       host: host,
       protocol: ENV.fetch("APPLICATION_PROTOCOL", "https")
     }
+    options[:port] = port if port
+
+    config.action_mailer.default_url_options = options
   end
 end

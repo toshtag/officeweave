@@ -119,13 +119,21 @@ class Diagnostics
     end
 
     def application_host
-      host = ActionMailer::Base.default_url_options[:host]
+      options = ActionMailer::Base.default_url_options
 
-      if host.present? && host != "example.com"
-        ok("メール本文の URL", host)
-      else
+      # 運用環境の既定は、受け入れる Host と同じ localhost である。
+      # 到達できる値には見えるため、設定していないことを値からは判別できない。
+      # 環境変数そのものの有無で判定する。
+      if options[:host].blank? || (Rails.env.production? && ENV["APPLICATION_HOST"].blank?)
         warning("メール本文の URL", "APPLICATION_HOST を設定してください。通知から画面へ戻れません。")
+      else
+        ok("メール本文の URL", public_url_authority(options))
       end
+    end
+
+    # 公開ポートを指定している場合は、ホスト名と合わせて示す。
+    def public_url_authority(options)
+      options[:port] ? "#{options[:host]}:#{options[:port]}" : options[:host].to_s
     end
 
     def administrator_exists

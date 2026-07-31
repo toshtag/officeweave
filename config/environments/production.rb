@@ -73,8 +73,9 @@ Rails.application.configure do
   # Set this to true and configure the email server for immediate delivery to raise delivery errors.
   # config.action_mailer.raise_delivery_errors = false
 
-  # Set host to be used by links generated in mailer templates.
-  config.action_mailer.default_url_options = { host: "example.com" }
+  # メール本文の URL は config/initializers/mail_delivery.rb で組み立てる。
+  # ここへ仮の値を置かない。置くと、受け入れる Host と公開 URL の既定値が
+  # 別々の場所で決まり、設定しないまま起動したときに食い違う。
 
   # Specify outgoing SMTP server. Remember to add smtp/* credentials via bin/rails credentials:edit.
   # config.action_mailer.smtp_settings = {

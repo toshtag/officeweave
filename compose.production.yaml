@@ -31,6 +31,9 @@ x-application-environment: &application_environment
   # 空文字は既定値へ置き換えず、そのまま渡す。設定の誤りは起動時に拒否する。
   APPLICATION_HOST: ${APPLICATION_HOST-localhost}
   APPLICATION_PROTOCOL: ${APPLICATION_PROTOCOL:-https}
+  # 利用者が接続する公開ポート。逆プロキシで 80 または 443 を公開する構成では指定しない。
+  # 下の WEB_PORT とは別物であり、値を流用しない。
+  APPLICATION_PORT: ${APPLICATION_PORT-}
   MAIL_FROM: ${MAIL_FROM:-officeweave@localhost}
   SMTP_ADDRESS: ${SMTP_ADDRESS:-}
   SMTP_PORT: ${SMTP_PORT:-587}
@@ -48,7 +51,9 @@ x-application-environment: &application_environment
   AUTHENTICATION_PROVIDER: ${AUTHENTICATION_PROVIDER-internal}
   WEBHOOK_PRIVATE_DESTINATION_ALLOWLIST: ${WEBHOOK_PRIVATE_DESTINATION_ALLOWLIST:-}
   FORCE_SSL: ${FORCE_SSL:-true}
-  # メール本文などの URL は、実際に公開しているポートで組み立てる。
+  # ホストから web コンテナへ公開するポート。
+  # メール本文の公開 URL へは使わない。逆プロキシの背後では、
+  # 利用者が接続するポートと一致しない。公開 URL は APPLICATION_PORT で指定する。
   WEB_PORT: ${WEB_PORT:-3210}
 
 services:
