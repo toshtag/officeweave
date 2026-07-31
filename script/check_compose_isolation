@@ -22,6 +22,9 @@
 #  15. 認証方式が未設定の場合は internal が渡る
 #  16. 明示した認証方式は補正されずに渡る
 #  17. 明示した空文字が internal へ置き換えられない
+#  18. 配布用の web と worker へ受け入れる Host が同じ値で渡る
+#  19. 受け入れる Host が未設定の場合は localhost が渡る
+#  20. 受け入れる Host の明示した空文字が localhost へ置き換えられない
 #
 # 使い方:
 #   script/check_compose_isolation
@@ -77,6 +80,22 @@ config_with_provider() {
   else
     "${environment[@]}" docker compose -f compose.yaml --env-file /dev/null config --format json
   fi
+}
+
+# 受け入れる Host も、値を変えて解決し直す。
+# 配布用の構成にだけ渡る設定のため、production だけを対象とする。
+config_with_application_host() {
+  local setting="$1"
+  local -a environment=(
+    env -i PATH="$PATH" HOME="$HOME"
+    DATABASE_USER=check DATABASE_PASSWORD=check SECRET_KEY_BASE=check
+  )
+
+  if [ "$setting" != "unset" ]; then
+    environment+=("APPLICATION_HOST=$setting")
+  fi
+
+  "${environment[@]}" docker compose -f compose.production.yaml --env-file /dev/null config --format json
 }
 
 echo "Compose 構成の分離を検査します"
@@ -274,6 +293,27 @@ check_provider development "開発用の明示時" check-provider '"check-provid
 check_provider production "配布用の明示時" check-provider '"check-provider"'
 check_provider development "開発用の空文字" "" '""'
 check_provider production "配布用の空文字" "" '""'
+
+# 受け入れる Host も、認証方式と同じ契約にする。
+# 空文字が既定値へ置き換わると、誤設定のまま localhost で起動してしまう。
+check_application_host() {
+  local label="$1" setting="$2" expected="$3"
+  local document web worker
+
+  document="$(config_with_application_host "$setting")"
+  web="$(query "$document" services.web.environment.APPLICATION_HOST)"
+  worker="$(query "$document" services.worker.environment.APPLICATION_HOST)"
+
+  if [ "$web" = "$expected" ] && [ "$worker" = "$expected" ]; then
+    report ok "${label}の web と worker へ受け入れる Host が ${expected} で渡る"
+  else
+    report ng "${label}の受け入れる Host が期待と異なる（期待 ${expected} / web ${web} / worker ${worker}）"
+  fi
+}
+
+check_application_host "配布用の未設定時" unset '"localhost"'
+check_application_host "配布用の明示時" officeweave.example.com '"officeweave.example.com"'
+check_application_host "配布用の空文字" "" '""'
 
 if [ "$failures" -eq 0 ]; then
   echo "分離の条件をすべて満たしています"

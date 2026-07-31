@@ -79,7 +79,7 @@ service_running worker && worker_was_running=1
 wait_for_web() {
   for _ in $(seq 1 60); do
     if compose exec -T web sh -c \
-      'curl -sf -H "Host: ${APPLICATION_HOST:-localhost}" http://127.0.0.1:3000/up' >/dev/null 2>&1; then
+      'curl -sf -H "Host: ${APPLICATION_HOST}" http://127.0.0.1:3000/up' >/dev/null 2>&1; then
       return 0
     fi
     sleep 2

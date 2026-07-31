@@ -111,7 +111,7 @@ echo "web の回復を確認しています" >&2
 recovered=0
 for _ in $(seq 1 60); do
   if compose exec -T web sh -c \
-    'curl -sf -H "Host: ${APPLICATION_HOST:-localhost}" http://127.0.0.1:3000/health' >/dev/null 2>&1; then
+    'curl -sf -H "Host: ${APPLICATION_HOST}" http://127.0.0.1:3000/health' >/dev/null 2>&1; then
     recovered=1
     break
   fi

@@ -18,6 +18,10 @@ require "rails/test_unit/railtie"
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
 
+# 環境設定の評価より前に読み込む。
+# config/environments/production.rb から使うため、autoload の順序へ依存させない。
+require_relative "../lib/officeweave/configuration/application_host"
+
 module Officeweave
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
@@ -26,7 +30,9 @@ module Officeweave
     # Please, add to the `ignore` list any other `lib` subdirectories that do
     # not contain `.rb` files, or that should not be reloaded or eager loaded.
     # Common ones are `templates`, `generators`, or `middleware`, for example.
-    config.autoload_lib(ignore: %w[assets tasks])
+    # configuration は環境設定より前に明示的に読み込む。
+    # autoload の対象に残すと、同じ定数を二重に定義することになる。
+    config.autoload_lib(ignore: %w[assets tasks officeweave/configuration])
 
     # 利用者向け画面は日本語と英語に対応する。
     # 既定は日本語とし、対応していない言語が指定された場合も既定へ落とす。

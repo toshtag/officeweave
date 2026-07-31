@@ -99,7 +99,12 @@ Rails.application.configure do
   # 受け入れるのは、利用者が接続する 1 つのホスト名だけとする。
   # 正規表現や任意のサブドメインは許可しない。許可を広げるほど、
   # 想定外の名前で届いた要求を、正規の要求と区別できなくなる。
-  config.hosts = [ ENV.fetch("APPLICATION_HOST", "localhost") ]
+  #
+  # 値は起動の時点で検査する。middleware が組み上がる前に失敗させ、
+  # 誤設定のまま稼働確認だけが通る状態を作らない。
+  config.hosts = [
+    Officeweave::Configuration::ApplicationHost.resolve(ENV["APPLICATION_HOST"], default: "localhost")
+  ]
 
   # 稼働確認の経路も Host の検査から外さない。
   # 除外すると、その経路だけは任意の Host で到達できる。

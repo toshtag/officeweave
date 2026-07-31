@@ -37,7 +37,8 @@ Rails.application.configure do
   end
 
   # 表示する URL の組み立てに使う。
-  host = ENV["APPLICATION_HOST"]
+  # 受け入れる Host と同じ正本を通す。同じ環境変数へ別々の検査を持たない。
+  host = Officeweave::Configuration::ApplicationHost.resolve(ENV["APPLICATION_HOST"], default: nil)
 
   if host.present?
     config.action_mailer.default_url_options = {
