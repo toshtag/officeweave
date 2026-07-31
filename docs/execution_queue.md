@@ -12,9 +12,9 @@
 
 ```text
 現在の Phase: R0
-直近完了 Task: R0-T11
+直近完了 Task: R0-T12
 進行中:        なし
-次に実行:      R0-T12 申請の決裁を行ロックで直列化する（#54）
+次に実行:      R0-T13 パスワードの最低要件と初期値検査を追加する（#66）
 ```
 
 ## P0 プロジェクト契約
@@ -161,7 +161,7 @@ Issue が大きい場合は分割してよいが、分割した場合は本書�
 | R0-T9A | `r0/t9a-auth-provider-name-collision` | [#83](https://github.com/toshtag/OfficeWeave/issues/83) | 認証方式の登録名衝突を拒否する               | 完了  |
 | R0-T10 | `r0/t10-session-boundaries` | [#57](https://github.com/toshtag/OfficeWeave/issues/57)        | セッションへ期限を設け、戻り先と Host を制限する    | 完了  |
 | R0-T11 | `r0/t11-csv-formula-injection` | [#61](https://github.com/toshtag/OfficeWeave/issues/61)     | CSV 出力を数式インジェクションから守る          | 完了  |
-| R0-T12 | —                          | [#54](https://github.com/toshtag/OfficeWeave/issues/54)         | 申請の決裁を行ロックで直列化する               | 未着手 |
+| R0-T12 | `r0/t12-request-transition-lock` | [#54](https://github.com/toshtag/OfficeWeave/issues/54)   | 申請の決裁を行ロックで直列化する               | 完了  |
 | R0-T13 | —                          | [#66](https://github.com/toshtag/OfficeWeave/issues/66)         | パスワードの最低要件と初期値検査を追加する          | 未着手 |
 | R0-T14 | —                          | [#65](https://github.com/toshtag/OfficeWeave/issues/65)         | 利用者の無効化で API トークンを失効させる        | 未着手 |
 | R0-T15 | —                          | [#58](https://github.com/toshtag/OfficeWeave/issues/58)         | 予約の組織整合性を検証する                  | 未着手 |

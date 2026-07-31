@@ -48,6 +48,20 @@ class RequestDecisionTest < ActiveSupport::TestCase
     assert_not requests(:hanako_leave_draft).decidable_by?(users(:taro))
   end
 
+  # 立場は状態と切り離して判断する。状態は競合で変わり得るため、
+  # 実際に処理できるかどうかは行を占有したときにあらためて決める。
+  test "決裁を任された利用者は状態に関わらず立場を持つ" do
+    assert requests(:hanako_leave_draft).decision_authorized_for?(users(:taro))
+  end
+
+  test "自分の申請では決裁の立場を持たない" do
+    assert_not requests(:taro_leave_pending).decision_authorized_for?(users(:taro))
+  end
+
+  test "承認する部門に属さない利用者は決裁の立場を持たない" do
+    assert_not requests(:taro_leave_pending).decision_authorized_for?(users(:hanako))
+  end
+
   test "承認済みの申請は再び処理できない" do
     request = requests(:hanako_expense_pending)
     request.approve(actor: users(:taro))

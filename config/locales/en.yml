@@ -415,6 +415,7 @@ en:
     submitted: The request has been submitted.
     withdrawn: The request has been withdrawn.
     cannot_submit: This request cannot be submitted from its current state.
+    cannot_withdraw: This request cannot be withdrawn from its current state.
     submit: Submit
     withdraw: Withdraw
     not_submitted: Not submitted

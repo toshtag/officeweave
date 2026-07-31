@@ -1,7 +1,7 @@
 # 申請の承認と差し戻し。
 class RequestDecisionsController < ApplicationController
   before_action :set_request
-  before_action :require_decidable
+  before_action :require_decision_authorized
 
   def create
     result =
@@ -23,10 +23,13 @@ class RequestDecisionsController < ApplicationController
       @request = Request.visible_to(Current.user).find(params[:request_id])
     end
 
-    # 承認できる立場かどうかは、種別に指定した部門と権限で決まる。
+    # ここで確かめるのは立場だけにする。立場は種別に指定した部門と権限で決まり、
     # 自分の申請を自分で承認することは認めない。
-    def require_decidable
-      return if @request.decidable_by?(Current.user)
+    #
+    # 現在の状態は確かめない。ここで確かめても、実際に処理するまでの間に
+    # 他の決裁が成立し得る。状態は行を占有した Request モデルだけが判断する。
+    def require_decision_authorized
+      return if @request.decision_authorized_for?(Current.user)
 
       render "shared/forbidden", status: :forbidden, formats: :html
     end
