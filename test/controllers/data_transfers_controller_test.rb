@@ -19,6 +19,40 @@ class DataTransfersControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, departments(:sales).code
   end
 
+  test "書き出した利用者 CSV では数式として解釈され得る値が保護される" do
+    users(:taro).update!(name: %(=1+2";=1+2))
+    sign_in_as users(:taro)
+
+    get users_export_url
+
+    assert_response :success
+    assert_match "text/csv", response.headers["Content-Type"]
+    assert_match "users-#{Date.current.iso8601}.csv", response.headers["Content-Disposition"]
+
+    row = parsed_rows.find { |r| r["email_address"] == users(:taro).email_address }
+
+    assert_equal %('=1+2";=1+2), row["name"]
+    assert_equal UserCsv::HEADERS.length, row.fields.length
+    assert_not_includes parsed_rows.map { |r| r["email_address"] }, users(:outsider).email_address
+  end
+
+  test "書き出した部門 CSV では数式として解釈され得る値が保護される" do
+    departments(:sales).update!(name: "@SUM(1,1)")
+    sign_in_as users(:taro)
+
+    get departments_export_url
+
+    assert_response :success
+    assert_match "text/csv", response.headers["Content-Type"]
+    assert_match "departments-#{Date.current.iso8601}.csv", response.headers["Content-Disposition"]
+
+    row = parsed_rows.find { |r| r["code"] == departments(:sales).code }
+
+    assert_equal "'@SUM(1,1)", row["name"]
+    assert_equal DepartmentCsv::HEADERS.length, row.fields.length
+    assert_not_includes parsed_rows.map { |r| r["code"] }, departments(:other_general).code
+  end
+
   test "一般利用者は扱えない" do
     sign_in_as users(:hanako)
 
@@ -97,6 +131,11 @@ class DataTransfersControllerTest < ActionDispatch::IntegrationTest
   end
 
   private
+    # 保護そのものを確かめるため、応答は標準の CSV として読む。
+    def parsed_rows
+      CSV.parse(response.body, headers: true)
+    end
+
     def csv_file(content)
       Rack::Test::UploadedFile.new(StringIO.new(content), "text/csv", original_filename: "users.csv")
     end
