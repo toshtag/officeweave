@@ -1,3 +1,5 @@
+require "ipaddr"
+
 module Officeweave
   module Configuration
     # APPLICATION_HOST の値の正本。
@@ -23,8 +25,12 @@ module Officeweave
       # 設定に残すと一致しなくなる。
       DNS_NAME = /\A#{LABEL}(?:\.#{LABEL})*\z/
 
-      # IPv6 は Host ヘッダーとして有効な角括弧付きの形式だけを認める。
-      IPV6 = /\A\[[0-9a-f.:]*:[0-9a-f.:]*\]\z/i
+      # IPv6 は Host ヘッダーとして有効な角括弧付きの形式で書く。
+      BRACKETED = /\A\[(.*)\]\z/
+
+      # 数字と点だけで構成される値は、DNS 名ではなく IPv4 として扱う。
+      # DNS 名としても解釈できるが、Host としては IP アドレスと区別が付かない。
+      DOTTED_DIGITS = /\A[\d.]+\z/
 
       MAX_LENGTH = 253
 
@@ -39,11 +45,31 @@ module Officeweave
         end
 
         private
+          # IP アドレスらしい形式を DNS 名へ読み替えない。
+          # 読み替えると、999.999.999.999 や [:::] が DNS 名として通る。
           def valid?(value)
             return false unless value.is_a?(String)
             return false if value.empty? || value.length > MAX_LENGTH
 
-            value.match?(DNS_NAME) || value.match?(IPV6)
+            bracketed = value.match(BRACKETED)
+
+            if bracketed
+              ip_address?(bracketed[1], :ipv6?)
+            elsif value.match?(DOTTED_DIGITS)
+              ip_address?(value, :ipv4?)
+            else
+              value.match?(DNS_NAME)
+            end
+          end
+
+          # 書式は正規表現で判定しない。標準ライブラリへ実際に解釈させる。
+          def ip_address?(value, family)
+            # 範囲の指定は 1 つのホストではない。
+            return false if value.include?("/")
+
+            IPAddr.new(value).public_send(family)
+          rescue IPAddr::Error
+            false
           end
 
           # 環境変数の内容そのものは載せない。設定値だけを inspect で示す。

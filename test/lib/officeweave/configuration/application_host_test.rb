@@ -8,9 +8,37 @@ class Officeweave::Configuration::ApplicationHostTest < ActiveSupport::TestCase
 
   test "ホスト名を加工せずそのまま返す" do
     [ "localhost", "officeweave.example.com", "portal.internal", "OfficeWeave.Example.COM",
-      "xn--eckwd4c7c.example", "192.0.2.10", "[2001:db8::10]" ].each do |host|
+      "xn--eckwd4c7c.example", "192.0.2.10", "[2001:db8::10]", "[::1]" ].each do |host|
       assert_equal host, resolve(host)
     end
+  end
+
+  test "IP アドレスとして成立しない IPv6 を拒否する" do
+    assert_invalid "[:]"
+    assert_invalid "[:::]"
+    assert_invalid "[1....:2]"
+    assert_invalid "[1:2:3:4:5:6:7:8:9]"
+    assert_invalid "[gggg::1]"
+    assert_invalid "[]"
+    assert_invalid "[2001:db8::10"
+    assert_invalid "2001:db8::10]"
+  end
+
+  test "IP アドレスとして成立しない IPv4 を拒否する" do
+    assert_invalid "999.999.999.999"
+    assert_invalid "192.0.2.999"
+    assert_invalid "1.2.3"
+    assert_invalid "1.2.3.4.5"
+    assert_invalid "1.2.3."
+  end
+
+  test "範囲の指定を 1 つのホストとして扱わない" do
+    assert_invalid "[2001:db8::/32]"
+    assert_invalid "192.0.2.0/24"
+  end
+
+  test "括弧のない IPv6 を拒否する" do
+    assert_invalid "2001:db8::10"
   end
 
   test "明示した空文字は既定値へ落とさず拒否する" do
@@ -68,10 +96,6 @@ class Officeweave::Configuration::ApplicationHostTest < ActiveSupport::TestCase
     assert_invalid "officeweave-.example.com"
     assert_invalid "#{'a' * 64}.example.com"
     assert_invalid "#{Array.new(5, 'a' * 60).join('.')}.example.com"
-  end
-
-  test "括弧のない IPv6 を拒否する" do
-    assert_invalid "2001:db8::10"
   end
 
   test "拒否の理由には環境変数名と指定値だけを載せる" do

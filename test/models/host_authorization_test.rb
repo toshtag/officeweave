@@ -43,6 +43,10 @@ class HostAuthorizationTest < ActiveSupport::TestCase
     assert_rejected "officeweave.example.com:443", %("officeweave.example.com:443")
   end
 
+  test "IP アドレスとして成立しない値では起動しない" do
+    assert_rejected "[:::]", %("[:::]")
+  end
+
   private
     # 展開はテスト側ではなく子プロセスで行う。
     RESOLVE = <<~'RUBY'.freeze
