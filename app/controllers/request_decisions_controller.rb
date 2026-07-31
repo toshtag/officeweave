@@ -27,7 +27,7 @@ class RequestDecisionsController < ApplicationController
     # 自分の申請を自分で承認することは認めない。
     #
     # 現在の状態は確かめない。ここで確かめても、実際に処理するまでの間に
-    # 他の決裁が成立し得る。状態は行を占有した模型側だけが判断する。
+    # 他の決裁が成立し得る。状態は行を占有した Request モデルだけが判断する。
     def require_decision_authorized
       return if @request.decision_authorized_for?(Current.user)
 

@@ -43,7 +43,7 @@ class RequestSubmissionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "pending", requests(:hanako_expense_pending).reload.status
   end
 
-  # 取り下げの可否は、行を占有した模型側だけが決める。
+  # 取り下げの可否は、行を占有した Request モデルだけが決める。
   # ここで成功を告げてしまうと、記録は残っていないのに画面だけが成功を示す。
   test "取り下げたものは再び取り下げられず、理由が示される" do
     sign_in_as users(:hanako)

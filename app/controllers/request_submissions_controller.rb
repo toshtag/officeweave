@@ -22,7 +22,7 @@ class RequestSubmissionsController < ApplicationController
   #
   # 受け入れでは申請者本人であることだけを確かめる。
   # 現在の状態は確かめても、実際に取り下げるまでの間に決裁が成立し得る。
-  # 状態は行を占有した模型側だけが判断し、ここはその結果を伝える。
+  # 状態は行を占有した Request モデルだけが判断し、ここはその結果を伝える。
   def destroy
     unless @request.applicant_id == Current.user.id
       return render "shared/forbidden", status: :forbidden, formats: :html
