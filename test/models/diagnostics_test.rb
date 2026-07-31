@@ -154,7 +154,8 @@ class DiagnosticsTest < ActiveSupport::TestCase
   end
 
   # 値の強弱は問わない。強い値でも、これは管理者の平文パスワードである。
-  test "初期利用者のパスワードが実行環境に残っていれば注意として扱う" do
+  # 空白だけの値も、パスワードとしては使えないが環境へは渡っている。
+  test "初期利用者のパスワードが Rails の実行環境へ渡っていれば注意として扱う" do
     [ "r0-t13-strong-seed-password", "change_me" ].each do |value|
       check = with_environment("INITIAL_USER_PASSWORD" => value) { check_named("初期利用者の資格情報") }
 
@@ -164,7 +165,15 @@ class DiagnosticsTest < ActiveSupport::TestCase
     end
   end
 
-  test "初期利用者のパスワードが未設定または空欄なら確認済みとして扱う" do
+  test "空白だけの初期利用者のパスワードも渡っているものとして扱う" do
+    [ " ", "\t", "　" ].each do |value|
+      check = with_environment("INITIAL_USER_PASSWORD" => value) { check_named("初期利用者の資格情報") }
+
+      assert_equal :warning, check[:status], "#{value.inspect} を見逃した"
+    end
+  end
+
+  test "初期利用者のパスワードが未設定または空文字なら確認済みとして扱う" do
     [ nil, "" ].each do |value|
       check = with_environment("INITIAL_USER_PASSWORD" => value) { check_named("初期利用者の資格情報") }
 

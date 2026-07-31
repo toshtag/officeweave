@@ -215,20 +215,26 @@ class Diagnostics
       end
     end
 
-    # 初期利用者のパスワードが実行環境へ残っていないか。
+    # 初期利用者のパスワードが Rails の実行環境へ入り込んでいないか。
     #
     # 値の強弱は問わない。強い値でも、これは管理者の平文パスワードである。
     # 必要なのは初期利用者を作る一瞬だけで、その後は持ち続ける理由がない。
     #
-    # script/seed_initial_user は一時コンテナへだけ渡すため、通常はここへ現れない。
-    # 現れた場合は、常駐するコンテナの環境へ入り込んでいる。
+    # 見えるのは Rails が動いている process の環境だけである。ホスト側の .env に
+    # 値が残っているかどうかは、ここからは分からない。web と worker へ渡していない
+    # ため、渡っていること自体が構成の誤りとなる。
+    #
+    # 空文字だけを未設定と同じに扱う。空白だけの値は、パスワードとして使えない
+    # 一方で、環境へ何かが渡っていることに変わりはない。
     def initial_user_password_environment
-      if ENV[INITIAL_USER_PASSWORD_VARIABLE].present?
+      value = ENV[INITIAL_USER_PASSWORD_VARIABLE]
+
+      if !value.nil? && !value.empty?
         warning("初期利用者の資格情報",
-                "#{INITIAL_USER_PASSWORD_VARIABLE} が実行環境に残っています。" \
+                "#{INITIAL_USER_PASSWORD_VARIABLE} が Rails の実行環境へ渡っています。" \
                 "初期利用者の作成後は取り除いてください。")
       else
-        ok("初期利用者の資格情報", "実行環境には残っていません")
+        ok("初期利用者の資格情報", "Rails の実行環境へは渡っていません")
       end
     end
 
