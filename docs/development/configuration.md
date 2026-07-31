@@ -60,9 +60,37 @@
 | `MAIL_FROM`            | いいえ           | `officeweave@localhost` | 送信元のアドレス            |
 | `APPLICATION_HOST`     | 外部へ公開する場合は必須  | 運用環境では `localhost`       | 利用者が接続するホスト名        |
 | `APPLICATION_PROTOCOL` | いいえ           | `https`                 | メール本文の URL に使うプロトコル |
+| `APPLICATION_PORT`     | いいえ           | なし                      | 公開 URL に明示するポート      |
 
 `APPLICATION_HOST` の用途は 2 つある。メール本文の URL と、運用環境で受け入れる `Host` である。
 詳細は [ホスト名の制限](#ホスト名の制限) を参照。
+
+`APPLICATION_PORT` は `WEB_PORT` とは別物である。
+
+```text
+WEB_PORT          ホストから web コンテナへ公開するポート
+APPLICATION_PORT  利用者が公開 URL から接続するポート
+```
+
+両者は一致する場合もあれば、異なる場合もある。
+
+```text
+逆プロキシで 443 を公開する:
+  WEB_PORT=3210
+  APPLICATION_PORT は未設定
+
+逆プロキシを使わず 3210 を直接公開する:
+  WEB_PORT=3210
+  APPLICATION_PORT=3210
+```
+
+`WEB_PORT` から公開 URL のポートを自動で決めない。
+逆プロキシやポート転送の背後では、内部のポートが利用者の接続先と一致せず、
+自動で決めると内部のポートがメール本文へ混ざる。
+
+値は 1 から 65535 までの整数だけを受け付ける。
+未設定と空文字は「ポートを明示しない」として扱い、それ以外の値では起動しない。
+先頭の 0 や前後の空白は補正せず、誤設定として扱う。
 
 ### 認証
 

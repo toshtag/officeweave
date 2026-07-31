@@ -273,6 +273,9 @@ web と worker への伝播は `script/check_compose_isolation` が、
 9. その有効期限が、記録側の expires_at と一致する
 10. APPLICATION_HOST= と空欄にすると起動しない
 11. スキームやポートを含む値では起動しない
+12. IP アドレスとして成立しない値では起動しない
+13. APPLICATION_PORT を設定するとメールの URL にポートが入る
+14. WEB_PORT だけを変えてもメールの URL にポートが混ざらない
 ```
 
 `docker compose config` で、空欄が `localhost` へ置き換わらないことも確かめる。

@@ -92,6 +92,22 @@ docker compose -f compose.production.yaml up -d --force-recreate web
 curl -fsS -H "Host: officeweave.example.com" http://127.0.0.1:3210/up
 ```
 
+### 公開するポート
+
+逆プロキシを使わず、非標準のポートで利用者が接続する場合は、
+`WEB_PORT` と `APPLICATION_PORT` の両方を設定する。
+
+```text
+WEB_PORT=3210          ホストから web コンテナへ公開する
+APPLICATION_PORT=3210  メール本文の URL へ明示する
+```
+
+`APPLICATION_PORT` を設定しないと、通知メールの URL からポートが落ち、
+利用者は画面へ戻れない。
+
+逆プロキシで 80 または 443 を公開する構成では `APPLICATION_PORT` を設定しない。
+設定すると、逆プロキシの内部ポートがメール本文の URL へ入る。
+
 ### 署名に使う鍵
 
 ```bash
