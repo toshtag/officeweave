@@ -13,8 +13,13 @@
 
   <div class="form__field">
     <%= form.label :password, class: "form__label" %>
-    <%= form.password_field :password, required: user.new_record?, maxlength: 72,
+    <%# 入力欄の制限は入力の助けにとどめる。受理するかどうかは模型の検証が決める。 %>
+    <%= form.password_field :password, required: user.new_record?,
+                            minlength: Authentication::PasswordPolicy::MINIMUM_LENGTH, maxlength: 72,
                             autocomplete: "new-password", class: "form__input" %>
+    <p class="form__hint">
+      <%= t("users.form.password_policy_hint", count: Authentication::PasswordPolicy::MINIMUM_LENGTH) %>
+    </p>
     <% unless user.new_record? %>
       <p class="form__hint"><%= t("users.form.password_hint") %></p>
     <% end %>
@@ -22,7 +27,8 @@
 
   <div class="form__field">
     <%= form.label :password_confirmation, class: "form__label" %>
-    <%= form.password_field :password_confirmation, maxlength: 72,
+    <%= form.password_field :password_confirmation,
+                            minlength: Authentication::PasswordPolicy::MINIMUM_LENGTH, maxlength: 72,
                             autocomplete: "new-password", class: "form__input" %>
   </div>
 

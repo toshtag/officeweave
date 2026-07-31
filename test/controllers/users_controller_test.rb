@@ -55,6 +55,19 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_response :unprocessable_content
+    assert_select ".error-summary", text: /#{Regexp.escape(known_unsafe_message)}/
+  end
+
+  test "英語の画面でも拒む理由が示される" do
+    users(:taro).update!(locale: "en")
+
+    post users_url, params: {
+      user: { name: "Ichiro Suzuki", email_address: "ichiro@example.com",
+              password: "change_me", password_confirmation: "change_me" }
+    }
+
+    assert_response :unprocessable_content
+    assert_select ".error-summary", text: /#{Regexp.escape(known_unsafe_message(:en))}/
   end
 
   test "15 文字に満たないパスワードへは変更できない" do
@@ -148,5 +161,9 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
   private
     def last_active_administrator_message
       I18n.t("activerecord.errors.models.user.attributes.base.last_active_administrator")
+    end
+
+    def known_unsafe_message(locale = I18n.default_locale)
+      I18n.t("activerecord.errors.models.user.attributes.password.known_unsafe", locale: locale)
     end
 end
