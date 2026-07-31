@@ -19,6 +19,9 @@ module Authentication
     # 実装の側が、設定へ書けない識別子を登録しようとした。
     class InvalidProviderName < StandardError; end
 
+    # 形式は正しいが、別の実装が既に使用している識別子だった。
+    class DuplicateProviderName < StandardError; end
+
     PROVIDER_VARIABLE = "AUTHENTICATION_PROVIDER"
 
     @providers = {}
@@ -30,9 +33,18 @@ module Authentication
       # 「空文字と前後に空白を含む値では起動しない」という設定の契約を、
       # 登録の側から迂回できてしまう。
       # 取り除いて登録し直すことはせず、登録そのものを失敗させる。
+      #
+      # 識別子は方式ごとに 1 つとする。後から登録した方式で黙って置き換えると、
+      # 設定に書いた名前と実際に動く実装が食い違う。とりわけ internal を
+      # 奪われると、設定が無い場合の既定まで別の実装に変わる。
       def register(provider)
         name = provider.name_key.to_s
         raise InvalidProviderName, invalid_message(provider, name) unless usable_name?(name)
+
+        existing = @providers[name]
+        if existing && !same_implementation?(existing, provider)
+          raise DuplicateProviderName, duplicate_message(name, existing, provider)
+        end
 
         @providers[name] = provider
       end
@@ -67,6 +79,27 @@ module Authentication
         def invalid_message(provider, name)
           "#{provider} の name_key=#{name.inspect} は使用できません。" \
             "空文字、空白だけ、前後に空白を含む名前は登録できません。"
+        end
+
+        # 再読み込みでは、同じ定数が別のクラスへ入れ替わる。
+        # これを衝突として拒むと、開発中は画面を開くたびに起動できなくなる。
+        # 完全修飾名が同じものは、同じ実装の読み直しとして扱う。
+        def same_implementation?(existing, provider)
+          return true if existing.equal?(provider)
+
+          name = qualified_name(provider)
+          !name.nil? && name == qualified_name(existing)
+        end
+
+        # 名前を持たない実装は、読み直しかどうかを判別できない。別物として扱う。
+        def qualified_name(provider)
+          name = provider.name if provider.respond_to?(:name)
+          name.to_s.empty? ? nil : name
+        end
+
+        def duplicate_message(name, existing, provider)
+          "認証方式の識別子 #{name.inspect} は #{existing} が使用しています。" \
+            "#{provider} は同じ識別子を登録できません。"
         end
 
         # 環境変数全体や資格情報は載せない。原因を読むのに要るのは、
