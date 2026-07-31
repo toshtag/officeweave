@@ -11,8 +11,16 @@ module Authentication
 
     teardown { ProviderRegistry.instance_variable_get(:@providers).delete("stub") }
 
-    test "既定は内部認証になる" do
-      assert_equal InternalProvider, ProviderRegistry.current
+    test "設定が無い場合は内部認証になる" do
+      with_provider(nil) do
+        assert_equal InternalProvider, ProviderRegistry.current
+      end
+    end
+
+    test "内部認証を明示できる" do
+      with_provider("internal") do
+        assert_equal InternalProvider, ProviderRegistry.current
+      end
     end
 
     test "登録した方式を名前で取り出せる" do
@@ -30,9 +38,32 @@ module Authentication
       end
     end
 
-    test "知らない名前が指定された場合は内部認証へ落とす" do
-      with_provider("does-not-exist") do
-        assert_equal InternalProvider, ProviderRegistry.current
+    test "知らない名前が指定された場合は失敗する" do
+      error = assert_raises(ProviderRegistry::UnknownProvider) do
+        with_provider("does-not-exist") { ProviderRegistry.current }
+      end
+
+      assert_includes error.message, "AUTHENTICATION_PROVIDER"
+      assert_includes error.message, "does-not-exist"
+      assert_includes error.message, "internal"
+    end
+
+    test "空文字が指定された場合は失敗する" do
+      error = assert_raises(ProviderRegistry::UnknownProvider) do
+        with_provider("") { ProviderRegistry.current }
+      end
+
+      # 空文字は、そのままでは表示から消える。指定された値として読めるようにする。
+      assert_includes error.message, %(AUTHENTICATION_PROVIDER="")
+    end
+
+    test "前後の空白を取り除かない" do
+      assert_raises(ProviderRegistry::UnknownProvider) do
+        with_provider(" internal ") { ProviderRegistry.current }
+      end
+
+      assert_raises(ProviderRegistry::UnknownProvider) do
+        with_provider(" ") { ProviderRegistry.current }
       end
     end
 
@@ -41,12 +72,21 @@ module Authentication
     end
 
     private
+      # 親プロセスの設定へ依存させない。nil は「設定が無い」を意味する。
       def with_provider(name)
         original = ENV["AUTHENTICATION_PROVIDER"]
-        ENV["AUTHENTICATION_PROVIDER"] = name
+        assign_provider(name)
         yield
       ensure
-        ENV["AUTHENTICATION_PROVIDER"] = original
+        assign_provider(original)
+      end
+
+      def assign_provider(name)
+        if name.nil?
+          ENV.delete("AUTHENTICATION_PROVIDER")
+        else
+          ENV["AUTHENTICATION_PROVIDER"] = name
+        end
       end
   end
 end
