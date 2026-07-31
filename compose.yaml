@@ -19,6 +19,9 @@ x-application-environment: &application_environment
   JOB_THREADS: ${JOB_THREADS:-2}
   JOB_PROCESSES: ${JOB_PROCESSES:-1}
   RAILS_ENV: ${RAILS_ENV:-development}
+  # 認証方式。未設定の場合だけ内部認証を使う。
+  # 空文字は既定値へ置き換えず、そのまま渡す。設定の誤りは起動時に拒否する。
+  AUTHENTICATION_PROVIDER: ${AUTHENTICATION_PROVIDER-internal}
   # メール本文などの URL は、実際に公開しているポートで組み立てる。
   WEB_PORT: ${WEB_PORT:-3210}
 

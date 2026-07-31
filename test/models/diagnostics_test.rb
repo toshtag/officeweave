@@ -52,6 +52,32 @@ class DiagnosticsTest < ActiveSupport::TestCase
     assert_equal :error, Diagnostics.new.run.find { |c| c[:name] == "管理者" }[:status]
   end
 
+  test "稼働中の認証方式を表示する" do
+    check = find("認証方式")
+
+    assert_equal :ok, check[:status]
+    assert_equal "internal", check[:detail]
+  end
+
+  test "解決できない認証方式は失敗として扱う" do
+    # 通常は起動時に拒否されるため、稼働中には現れない。
+    # 診断だけを取り出して使う場合にも、原因が読めるようにする。
+    original = ENV["AUTHENTICATION_PROVIDER"]
+    ENV["AUTHENTICATION_PROVIDER"] = "does-not-exist"
+
+    check = Diagnostics.new.run.find { |c| c[:name] == "認証方式" }
+
+    assert_equal :error, check[:status]
+    assert_includes check[:detail], "AUTHENTICATION_PROVIDER"
+    assert_includes check[:detail], "does-not-exist"
+  ensure
+    if original.nil?
+      ENV.delete("AUTHENTICATION_PROVIDER")
+    else
+      ENV["AUTHENTICATION_PROVIDER"] = original
+    end
+  end
+
   test "送信しない設定は注意として扱う" do
     check = find("メールの送信")
 

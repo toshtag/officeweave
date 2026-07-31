@@ -227,7 +227,34 @@ test -z "$(printf '%s\n' "$ROUTES" | grep 'active_storage' || true)"
 `test/models/user_administrator_concurrency_test.rb` が押さえている。
 ここで確かめるのは、実際に動いている構成でも同じであることである。
 
-## 11. 主要な業務の流れ
+## 11. 認証方式の解決
+
+設定した認証方式が、そのまま稼働中の構成になることを確かめる。
+
+```text
+1. 未設定で起動し、bin/diagnose の「認証方式」が internal になる
+2. AUTHENTICATION_PROVIDER=internal で起動し、同じ結果になる
+3. 未登録の名前を指定すると起動しない
+4. 空文字を指定すると起動しない
+5. 起動しない場合の出力に、環境変数名と指定した値と利用可能な方式がある
+6. 未登録の名前でも空文字でも、内部認証へ切り替わらない
+7. web と worker へ同じ値が渡る
+```
+
+`.env` は書き換えず、コマンド単位で値を与える。
+
+```bash
+AUTHENTICATION_PROVIDER=does-not-exist docker compose run --rm web bin/rails runner 'puts "BOOTED"'
+```
+
+`BOOTED` が出力されず、終了状態が 0 以外になることが正しい。
+
+web と worker への伝播は `script/check_compose_isolation` が、
+解決そのものは `test/models/authentication/provider_registry_test.rb` と
+`test/models/authentication/provider_boot_test.rb` が押さえている。
+ここで確かめるのは、実際に動いている構成でも同じであることである。
+
+## 12. 主要な業務の流れ
 
 `test/system/end_to_end_test.rb` が、次を画面の操作だけで通す。
 
@@ -242,7 +269,7 @@ test -z "$(printf '%s\n' "$ROUTES" | grep 'active_storage' || true)"
 
 自動で実行されるため、手作業での確認は不要とする。
 
-## 12. 自動実行
+## 13. 自動実行
 
 `.github/workflows/verify.yml` が、変更のたびに次を実行する。
 
