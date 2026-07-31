@@ -2,6 +2,9 @@ require "csv"
 
 # 利用者の入出力。
 #
+# 生成と解析は CsvTransfer を通す。数式として解釈され得るセルの保護と、
+# 保護用の文字を戻す処理を、書き出しと取り込みで共有するためである。
+#
 # 取り込みは、1 行でも誤りがあれば何も保存しない。
 # 一部だけ取り込まれると、どこまで反映されたか分からなくなる。
 #
@@ -19,7 +22,7 @@ class UserCsv
   end
 
   def export
-    CSV.generate(headers: HEADERS, write_headers: true) do |csv|
+    CsvTransfer.generate(headers: HEADERS) do |csv|
       @organization.users.ordered.includes(memberships: :department).each do |user|
         csv << [
           user.name,
@@ -71,7 +74,7 @@ class UserCsv
 
   private
     def rows(content)
-      CSV.parse(content, headers: true)
+      CsvTransfer.parse(content)
     end
 
     def find_or_build(email_address)

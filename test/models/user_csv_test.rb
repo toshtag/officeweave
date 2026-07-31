@@ -109,6 +109,36 @@ class UserCsvTest < ActiveSupport::TestCase
     assert_equal "'=1+1", exported_row(users(:taro))["name"]
   end
 
+  test "多様な危険な値を同じ CSV へ混ぜても行と列が変わらず往復できる" do
+    names = [
+      "=1+1", "+SUM(1,1)", "-1+1", "@SUM(1,1)",
+      "\t=1+1", "\r=1+1", "\n=1+1",
+      "＝1+1", "＋1", "－1", "＠SUM",
+      "a,b", %(a"b), "'=literal", "山田 太郎"
+    ]
+    names.each_with_index do |name, index|
+      organizations(:main).users.create!(name: name, email_address: "mixed#{index}@example.com",
+                                         password: SecureRandom.hex(16))
+    end
+
+    output = @csv.export
+    rows = CSV.parse(output, headers: true)
+
+    assert_equal organizations(:main).users.count, rows.length
+    rows.each do |row|
+      assert_equal UserCsv::HEADERS.length, row.fields.length
+      row.fields.each { |field| assert_no_match(/\A[=+\-@\t\r\n＝＋－＠]/, field.to_s) }
+    end
+
+    organizations(:main).users.where("email_address LIKE ?", "mixed%").update_all(name: "別の名前")
+
+    assert_predicate @csv.import(output), :success?
+
+    names.each_with_index do |name, index|
+      assert_equal name, organizations(:main).users.find_by(email_address: "mixed#{index}@example.com").name
+    end
+  end
+
   test "新しい利用者を追加できる" do
     result = @csv.import(<<~CSV)
       name,email_address,role,locale,departments
