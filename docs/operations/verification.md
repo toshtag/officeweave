@@ -379,11 +379,12 @@ curl -s -o /dev/null -w '%{http_code}\n' \
 1. 管理者画面で 14 文字のパスワードを拒否し、理由が画面へ出る
 2. 管理者画面で 15 文字のパスワードを受理する
 3. 大文字・数字・記号の混在を求めない
-4. change_me、password、officeweave を、表記を変えても拒否する
-5. 既存利用者の氏名や権限の更新では、新しいパスワードを求めない
-6. 要件を満たさない INITIAL_USER_PASSWORD では db:seed が失敗し、利用者を作らない
-7. bin/diagnose が、設定に残った既知の初期値を変数名だけで知らせる
-8. bin/diagnose が、既知の初期値を使う利用中の管理者を知らせる
+4. 空白を含む値は受理し、空白だけの値は長さを満たしていても拒否する
+5. change_me、password、officeweave を、表記を変えても拒否する
+6. 既存利用者の氏名や権限の更新では、新しいパスワードを求めない
+7. 要件を満たさない INITIAL_USER_PASSWORD では db:seed が失敗し、利用者を作らない
+8. bin/diagnose が、設定に残った既知の初期値を変数名だけで知らせる
+9. bin/diagnose が、既知の初期値を使う利用中の管理者を知らせる
 ```
 
 判定は `app/models/authentication/password_policy.rb` の 1 か所に置き、

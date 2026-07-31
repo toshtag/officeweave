@@ -37,7 +37,7 @@ class User < ApplicationRecord
   #
   # 保存済みの digest は対象にしない。要件を満たさないパスワードで既に運用して
   # いる利用者を、この検査だけでログインできなくすることはしない。
-  # 経路ごとではなく模型へ置くことで、画面も CSV も初期データも同じ契約を通る。
+  # 経路ごとではなく User モデルへ置くことで、画面も CSV も初期データも同じ契約を通る。
   validate :password_meets_policy, if: :password_assigned?
 
   scope :ordered, -> { order(:name) }

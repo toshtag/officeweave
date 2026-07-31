@@ -13,7 +13,7 @@
 
   <div class="form__field">
     <%= form.label :password, class: "form__label" %>
-    <%# 入力欄の制限は入力の助けにとどめる。受理するかどうかは模型の検証が決める。 %>
+    <%# 入力欄の制限は入力の助けにとどめる。受理するかどうかは User モデルの検証が決める。 %>
     <%= form.password_field :password, required: user.new_record?,
                             minlength: Authentication::PasswordPolicy::MINIMUM_LENGTH, maxlength: 72,
                             autocomplete: "new-password", class: "form__input" %>
