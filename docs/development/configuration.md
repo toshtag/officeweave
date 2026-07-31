@@ -72,16 +72,24 @@ WEB_PORT          ホストから web コンテナへ公開するポート
 APPLICATION_PORT  利用者が公開 URL から接続するポート
 ```
 
-両者は一致する場合もあれば、異なる場合もある。
+`APPLICATION_PORT` は、利用者が 80 または 443 以外のポートへ接続する場合に設定する。
+逆プロキシの有無とは独立している。両者は一致する場合もあれば、異なる場合もある。
 
 ```text
-逆プロキシで 443 を公開する:
+逆プロキシが 443 を公開する:
   WEB_PORT=3210
   APPLICATION_PORT は未設定
+  https://officeweave.example.com
+
+逆プロキシが 8443 を公開する:
+  WEB_PORT=3210
+  APPLICATION_PORT=8443
+  https://officeweave.example.com:8443
 
 逆プロキシを使わず 3210 を直接公開する:
   WEB_PORT=3210
   APPLICATION_PORT=3210
+  http://officeweave.example.com:3210
 ```
 
 `WEB_PORT` から公開 URL のポートを自動で決めない。

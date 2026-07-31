@@ -94,19 +94,33 @@ curl -fsS -H "Host: officeweave.example.com" http://127.0.0.1:3210/up
 
 ### 公開するポート
 
-逆プロキシを使わず、非標準のポートで利用者が接続する場合は、
-`WEB_PORT` と `APPLICATION_PORT` の両方を設定する。
+利用者が 80 または 443 以外のポートへ接続する場合は、
+`APPLICATION_PORT` へその公開ポートを設定する。
+逆プロキシの有無とは関係しない。
 
 ```text
-WEB_PORT=3210          ホストから web コンテナへ公開する
-APPLICATION_PORT=3210  メール本文の URL へ明示する
+WEB_PORT          ホストから web コンテナへ公開する
+APPLICATION_PORT  利用者が接続する公開ポート
+```
+
+直接公開して両者が同じになる場合もあれば、
+逆プロキシが変換して異なる場合もある。
+
+```text
+逆プロキシが 443 を公開する:
+  WEB_PORT=3210 / APPLICATION_PORT は未設定
+逆プロキシが 8443 を公開する:
+  WEB_PORT=3210 / APPLICATION_PORT=8443
+逆プロキシを使わず 3210 を直接公開する:
+  WEB_PORT=3210 / APPLICATION_PORT=3210
 ```
 
 `APPLICATION_PORT` を設定しないと、通知メールの URL からポートが落ち、
-利用者は画面へ戻れない。
+利用者は画面へ戻れない。逆に、利用者が 443 へ接続する構成で設定すると、
+内部のポートがメール本文の URL へ入る。
 
-逆プロキシで 80 または 443 を公開する構成では `APPLICATION_PORT` を設定しない。
-設定すると、逆プロキシの内部ポートがメール本文の URL へ入る。
+設定後は `bin/diagnose` の「メール本文の URL」で、
+利用者が接続する形になっているかを確認する。
 
 ### 署名に使う鍵
 
