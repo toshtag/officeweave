@@ -1,5 +1,6 @@
 require "test_helper"
 require "timeout"
+require "tmpdir"
 
 class DiagnosticsTest < ActiveSupport::TestCase
   # 待機はすべて上限を持たせる。退行を CI の停止ではなく失敗として受け取るため。
@@ -51,27 +52,30 @@ class DiagnosticsTest < ActiveSupport::TestCase
     outcomes = Queue.new
     threads = []
 
-    STORAGE_PROBE_WORKERS.times do
-      threads << Thread.new do
-        ready << :ready
-        start.pop
+    with_isolated_storage_root do |root|
+      STORAGE_PROBE_WORKERS.times do
+        threads << Thread.new do
+          ready << :ready
+          start.pop
 
-        outcomes << Diagnostics.new.send(:storage_writable)
-      rescue StandardError => error
-        outcomes << error
+          outcomes << Diagnostics.new.send(:storage_writable)
+        rescue StandardError => error
+          outcomes << error
+        end
       end
+
+      Timeout.timeout(PREPARATION_TIMEOUT) { STORAGE_PROBE_WORKERS.times { ready.pop } }
+      STORAGE_PROBE_WORKERS.times { start << true }
+      threads.each { |thread| assert thread.join(COMPLETION_TIMEOUT), "確認が終わりませんでした" }
+
+      results = Timeout.timeout(OUTCOME_TIMEOUT) { STORAGE_PROBE_WORKERS.times.map { outcomes.pop } }
+      failures = results.grep(Exception)
+
+      assert_empty failures, failures.map { |error| "#{error.class}: #{error.message}" }.join("\n")
+      assert(results.all? { |result| result[:status] == :ok },
+             results.reject { |result| result[:status] == :ok }.inspect)
+      assert_empty Dir.children(root)
     end
-
-    Timeout.timeout(PREPARATION_TIMEOUT) { STORAGE_PROBE_WORKERS.times { ready.pop } }
-    STORAGE_PROBE_WORKERS.times { start << true }
-    threads.each { |thread| assert thread.join(COMPLETION_TIMEOUT), "確認が終わりませんでした" }
-
-    results = Timeout.timeout(OUTCOME_TIMEOUT) { STORAGE_PROBE_WORKERS.times.map { outcomes.pop } }
-    failures = results.grep(Exception)
-
-    assert_empty failures, failures.map { |error| "#{error.class}: #{error.message}" }.join("\n")
-    assert(results.all? { |result| result[:status] == :ok },
-           results.reject { |result| result[:status] == :ok }.inspect)
   ensure
     threads.select(&:alive?).each { start << true }
     threads.each { |thread| thread.kill unless thread.join(CLEANUP_TIMEOUT) }
@@ -79,12 +83,13 @@ class DiagnosticsTest < ActiveSupport::TestCase
 
   # 正常に終わった確認は、保存先へ何も残さない。
   test "ファイルの保存先の確認はプローブを残さない" do
-    Diagnostics.new.send(:storage_writable)
+    with_isolated_storage_root do |root|
+      result = Diagnostics.new.send(:storage_writable)
 
-    root = ActiveStorage::Blob.service.try(:root).to_s
-
-    assert_empty Dir.glob(File.join(root, ".officeweave-diagnose-*"))
-    assert_not File.exist?(File.join(root, ".officeweave-diagnose"))
+      assert_equal :ok, result[:status]
+      assert_empty Dir.children(root)
+      assert_not File.exist?(root.join(".officeweave-diagnose"))
+    end
   end
 
   test "添付ファイルの取得経路が文書の配下だけであることを確認する" do
@@ -323,6 +328,28 @@ class DiagnosticsTest < ActiveSupport::TestCase
   end
 
   private
+    # 保存先の後片付けは、この試験だけが使うディレクトリで確かめる。
+    #
+    # テストは process 単位で並列に走り、どの process も同じ tmp/storage を使う。
+    # 共有の保存先を丸ごと見ると、別 process が正しく使っている最中のプローブまで
+    # 「残った」と数えてしまう。
+    #
+    # 差し替えのための依存は増やさない。標準の設定を書き換え、ensure で元へ戻す。
+    def with_isolated_storage_root
+      Dir.mktmpdir("officeweave-diagnostics-") do |directory|
+        saved_service = ActiveStorage::Blob.service
+        root = Pathname(directory)
+
+        begin
+          ActiveStorage::Blob.service = Struct.new(:root).new(root)
+
+          yield root
+        ensure
+          ActiveStorage::Blob.service = saved_service
+        end
+      end
+    end
+
     def find(name)
       @checks.find { |check| check[:name] == name }
     end
