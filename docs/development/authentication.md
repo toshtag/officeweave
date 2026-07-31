@@ -24,6 +24,7 @@ password_required? 画面でパスワードの入力を求めるか
 1. 上記 3 つに応える実装を `app/models/authentication/` へ置く
 2. `config/initializers/authentication_providers.rb` へ登録を追加する
 3. 環境変数 `AUTHENTICATION_PROVIDER` へ `name_key` の値を指定する
+4. `bin/diagnose` の「認証方式」で、意図した `name_key` が解決されていることを確かめる
 
 ```ruby
 module Authentication
@@ -44,6 +45,8 @@ end
 
 - `name_key` は空でない識別子とし、先頭または末尾へ空白を含めない。
   不正な `name_key` は登録の時点で拒否する。取り除いて受理することはない
+- `name_key` は他の方式と重複させない。同じ識別子を別の実装へ割り当てた場合は
+  登録の時点で失敗する。登録順による上書きは行わない
 - 該当する利用者がいない場合は `nil` を返す。例外を投げない
 - 無効にされた利用者は認証しない
 - 失敗の理由を呼び出し元へ区別して返さない。利用者の存在を確かめる手段になる
