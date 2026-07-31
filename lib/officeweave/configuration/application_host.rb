@@ -67,7 +67,16 @@ module Officeweave
             # 範囲の指定は 1 つのホストではない。
             return false if value.include?("/")
 
-            IPAddr.new(value).public_send(family)
+            address = IPAddr.new(value)
+            return false unless address.public_send(family)
+
+            # ゾーン識別子は、その端末のネットワークインターフェースに依存する。
+            # この値はサーバーの稼働確認と、利用者へ送る URL で共有するため、
+            # サーバー側のインターフェース名を利用者へ配ることになる。
+            # 取り除いて受理せず、設定そのものを誤りとして扱う。
+            return false if address.ipv6? && address.zone_id
+
+            true
           rescue IPAddr::Error
             false
           end
@@ -78,6 +87,7 @@ module Officeweave
               #{VARIABLE}=#{raw.inspect} は受け入れられません。
               利用者が接続するホスト名だけを指定してください。
               スキーム、経路、ポート、前後の空白は含めません。
+              IPv6 はゾーン識別子（%eth0 など）を含めません。
               例: officeweave.example.com、localhost、192.0.2.10、[2001:db8::10]
             TEXT
           end

@@ -32,6 +32,27 @@ class Officeweave::Configuration::ApplicationHostTest < ActiveSupport::TestCase
     assert_invalid "1.2.3."
   end
 
+  test "IPv6 のゾーン識別子を拒否する" do
+    assert_invalid "[fe80::1%eth0]"
+    assert_invalid "[fe80::1%25eth0]"
+    assert_invalid "[2001:db8::1%en0]"
+  end
+
+  test "ゾーン識別子を取り除いて受理しない" do
+    error = assert_raises(Officeweave::Configuration::ApplicationHost::InvalidApplicationHost) do
+      resolve("[fe80::1%eth0]")
+    end
+
+    assert_includes error.message, %("[fe80::1%eth0]")
+    assert_includes error.message, "ゾーン識別子"
+  end
+
+  test "ゾーン識別子の無い IPv6 は認める" do
+    [ "[fe80::1]", "[::ffff:127.0.0.1]", "[::ffff:192.0.2.10]" ].each do |host|
+      assert_equal host, resolve(host)
+    end
+  end
+
   test "範囲の指定を 1 つのホストとして扱わない" do
     assert_invalid "[2001:db8::/32]"
     assert_invalid "192.0.2.0/24"

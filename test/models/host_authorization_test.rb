@@ -47,6 +47,10 @@ class HostAuthorizationTest < ActiveSupport::TestCase
     assert_rejected "[:::]", %("[:::]")
   end
 
+  test "IPv6 のゾーン識別子を含む値では起動しない" do
+    assert_rejected "[fe80::1%eth0]", %("[fe80::1%eth0]")
+  end
+
   private
     # 展開はテスト側ではなく子プロセスで行う。
     RESOLVE = <<~'RUBY'.freeze
