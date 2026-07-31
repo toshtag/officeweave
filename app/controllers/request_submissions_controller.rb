@@ -19,14 +19,20 @@ class RequestSubmissionsController < ApplicationController
   end
 
   # 取り下げる。
+  #
+  # 受け入れでは申請者本人であることだけを確かめる。
+  # 現在の状態は確かめても、実際に取り下げるまでの間に決裁が成立し得る。
+  # 状態は行を占有した模型側だけが判断し、ここはその結果を伝える。
   def destroy
-    unless @request.withdrawable_by?(Current.user)
+    unless @request.applicant_id == Current.user.id
       return render "shared/forbidden", status: :forbidden, formats: :html
     end
 
-    @request.withdraw(actor: Current.user)
-
-    redirect_to @request, notice: t("requests.withdrawn"), status: :see_other
+    if @request.withdraw(actor: Current.user)
+      redirect_to @request, notice: t("requests.withdrawn"), status: :see_other
+    else
+      redirect_to @request, alert: t("requests.cannot_withdraw"), status: :see_other
+    end
   end
 
   private

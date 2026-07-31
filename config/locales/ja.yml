@@ -431,6 +431,7 @@ ja:
     submitted: 申請を提出しました。
     withdrawn: 申請を取り下げました。
     cannot_submit: この状態からは提出できません。
+    cannot_withdraw: この状態からは取り下げられません。
     submit: 提出する
     withdraw: 取り下げる
     not_submitted: 未提出
