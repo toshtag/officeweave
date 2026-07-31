@@ -367,6 +367,11 @@ jobs:
           docker compose -f compose.production.yaml logs >&2
           exit 1
 
+      - name: 初期利用者を作成する
+        # 資格情報は常駐する web と worker へ渡らない。
+        # 起動時の db:prepare では作られないため、明示的に実行する。
+        run: script/seed_initial_user --production
+
       - name: worker が稼働することを確かめる
         run: |
           for _ in $(seq 1 60); do

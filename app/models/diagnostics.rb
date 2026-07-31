@@ -195,7 +195,7 @@ class Diagnostics
       if count.positive?
         ok("管理者", "#{count} 人")
       else
-        error("管理者", "有効な管理者がいません。bin/rails db:seed で初期利用者を作成してください。")
+        error("管理者", "有効な管理者がいません。script/seed_initial_user で初期利用者を作成してください。")
       end
     rescue StandardError => exception
       error("管理者", exception.message)
