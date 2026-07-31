@@ -1,3 +1,5 @@
+require "ipaddr"
+
 # 運用時の構成を確認する。
 #
 # 「起動している」ことと「正しく動く」ことは別である。
@@ -118,17 +120,40 @@ class Diagnostics
       end
     end
 
+    # 確かめるのは、設定を書いたかどうかではなく、
+    # メールを受け取った利用者の端末からその URL へ戻れる見込みがあるかである。
+    #
+    # 設定元では判定できない。配布用の構成は APPLICATION_HOST が未設定でも
+    # localhost をコンテナへ渡すため、環境変数の有無では
+    # 「設定しなかった」と「localhost を明示した」を区別できない。
     def application_host
       options = ActionMailer::Base.default_url_options
+      host = options[:host].to_s
 
-      # 運用環境の既定は、受け入れる Host と同じ localhost である。
-      # 到達できる値には見えるため、設定していないことを値からは判別できない。
-      # 環境変数そのものの有無で判定する。
-      if options[:host].blank? || (Rails.env.production? && ENV["APPLICATION_HOST"].blank?)
+      if host.blank?
         warning("メール本文の URL", "APPLICATION_HOST を設定してください。通知から画面へ戻れません。")
+      elsif Rails.env.production? && local_only_host?(host)
+        warning("メール本文の URL",
+                "#{public_url_authority(options)} は利用者の端末を指します。" \
+                "利用者が接続できる APPLICATION_HOST を設定してください。")
       else
         ok("メール本文の URL", public_url_authority(options))
       end
+    end
+
+    # 受け取った端末自身へ戻ってしまう公開先か。
+    #
+    # 設定としては正しいため起動は拒否しない。単一端末での試用や、
+    # 逆プロキシを整える前の確認では、この値のまま動かせる必要がある。
+    # 組織内の DNS 名は端末から到達できる場合があるため、名前だけでは注意にしない。
+    def local_only_host?(host)
+      normalized = host.downcase
+      return true if normalized == "localhost" || normalized.end_with?(".localhost")
+
+      IPAddr.new(normalized.delete_prefix("[").delete_suffix("]")).loopback?
+    rescue IPAddr::Error
+      # 起動時に検査済みだが、診断だけを取り出して使う場合にも失敗させない。
+      false
     end
 
     # 公開ポートを指定している場合は、ホスト名と合わせて示す。
