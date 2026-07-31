@@ -66,7 +66,9 @@ SECRET_KEY_BASE        署名に使う鍵
 
 ```text
 正: officeweave.example.com
+正: [2001:db8::10]
 誤: https://officeweave.example.com/
+誤: [fe80::1%eth0]
 ```
 
 スキーム、経路、ポートは含めない。
@@ -80,6 +82,10 @@ SECRET_KEY_BASE        署名に使う鍵
 
 形式が正しくても、利用者が接続するホスト名と違えば正規の要求は 403 になる。
 値を変えたら、web を再起動する。
+
+`localhost`、ループバックの IP、`0.0.0.0` のままでも起動する。
+ただし通知メールの URL としては使えないため、`bin/diagnose` が注意として知らせる。
+公開前に必ず確認する。
 
 ```bash
 docker compose -f compose.production.yaml up -d --force-recreate web
