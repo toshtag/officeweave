@@ -12,7 +12,7 @@
 
 ```text
 現在の Phase: R0
-直近完了 Task: R0-T9
+直近完了 Task: R0-T9A
 進行中:        なし
 次に実行:      R0-T10 セッションへ期限を設け、戻り先と Host を制限する（#57）
 ```
@@ -158,6 +158,7 @@ Issue が大きい場合は分割してよいが、分割した場合は本書�
 | R0-T7  | `r0/t7-unknown-department-codes` | [#60](https://github.com/toshtag/OfficeWeave/issues/60)   | CSV の未知の部門コードを誤りとして扱う          | 完了  |
 | R0-T8  | `r0/t8-active-administrator-invariant` | [#55](https://github.com/toshtag/OfficeWeave/issues/55) | 最後の有効な管理者を失う操作を全経路で拒否する        | 完了  |
 | R0-T9  | `r0/t9-auth-provider-fail-closed` | [#56](https://github.com/toshtag/OfficeWeave/issues/56)  | 未知の認証方式を起動時に失敗させる              | 完了  |
+| R0-T9A | `r0/t9a-auth-provider-name-collision` | [#83](https://github.com/toshtag/OfficeWeave/issues/83) | 認証方式の登録名衝突を拒否する               | 完了  |
 | R0-T10 | —                          | [#57](https://github.com/toshtag/OfficeWeave/issues/57)         | セッションへ期限を設け、戻り先と Host を制限する    | 未着手 |
 | R0-T11 | —                          | [#61](https://github.com/toshtag/OfficeWeave/issues/61)         | CSV 出力を数式インジェクションから守る          | 未着手 |
 | R0-T12 | —                          | [#54](https://github.com/toshtag/OfficeWeave/issues/54)         | 申請の決裁を行ロックで直列化する               | 未着手 |

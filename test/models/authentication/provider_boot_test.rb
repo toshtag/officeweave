@@ -44,15 +44,53 @@ module Authentication
       assert_includes output, %(AUTHENTICATION_PROVIDER="")
     end
 
+    test "同じ識別子を別の実装が名乗る場合は起動しない" do
+      status, output = boot_with_conflicting_provider
+
+      assert_not_predicate status, :success?, output
+      assert_not_includes output, "BOOTED:"
+      assert_includes output, "DuplicateProviderName"
+      assert_includes output, "internal"
+    end
+
     private
+      RESOLVE = 'puts "BOOTED:#{Authentication::ProviderRegistry.current.name_key}"'
+
+      # 内部認証と同じ識別子の方式を、登録の並びへ割り込ませる。
+      #
+      # bin/rails runner の script は初期化を終えてから走るため、
+      # 初期化そのものへは届かない。初期化の前に to_prepare を積む。
+      CONFLICTING_BOOT = <<~RUBY
+        class ConflictingBootProvider
+          def self.name_key = "internal"
+        end
+
+        require_relative "config/application"
+
+        Rails.application.config.to_prepare do
+          Authentication::ProviderRegistry.register(ConflictingBootProvider)
+        end
+
+        Rails.application.initialize!
+
+        #{RESOLVE}
+      RUBY
+
       # 認証方式を指定して Rails を起動する。
       # nil を渡した場合は、環境変数そのものを子プロセスへ渡さない。
       def boot(provider)
+        spawn_boot([ "bin/rails", "runner", RESOLVE ], provider)
+      end
+
+      def boot_with_conflicting_provider
+        spawn_boot([ "ruby", "-e", CONFLICTING_BOOT ], nil)
+      end
+
+      def spawn_boot(command, provider)
         environment = { "RAILS_ENV" => "test", "AUTHENTICATION_PROVIDER" => provider }
-        script = 'puts "BOOTED:#{Authentication::ProviderRegistry.current.name_key}"'
 
         # シェルを介さず引数のまま渡す。設定値が語の区切りとして解釈されない。
-        Open3.popen2e(environment, "bin/rails", "runner", script, chdir: Rails.root.to_s) do |input, output, process|
+        Open3.popen2e(environment, *command, chdir: Rails.root.to_s) do |input, output, process|
           input.close
 
           begin
