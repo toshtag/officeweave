@@ -13,8 +13,8 @@
 ```text
 現在の Phase: R0
 直近完了 Task: R0-T26
-進行中:        なし
-次に実行:      なし（R0 完了。次の Phase の着手は別途決める）
+進行中:        R0-T27 通知の作成を受け手ごとの問い合わせから切り離す（#119）
+次に実行:      R0-T28 部門の階層表示を 1 回の問い合わせで組み立てる（#121）
 ```
 
 ## P0 プロジェクト契約
@@ -183,6 +183,13 @@ Issue が大きい場合は分割してよいが、分割した場合は本書�
 | R0-T24 | `r0/t24-webhook-endpoint-update-audit` | [#112](https://github.com/toshtag/OfficeWeave/issues/112) | Webhook 宛先の変更を監査記録へ残す        | 完了  |
 | R0-T25 | `r0/t25-reservation-event-visibility` | [#113](https://github.com/toshtag/OfficeWeave/issues/113) | 予約に結び付ける予定を参照できるものへ限る     | 完了  |
 | R0-T26 | `r0/t26-security-review-closeout` | —                                                             | セキュリティレビュー分の完了確認。Issue と本書の状態を実装結果へ合わせる | 完了  |
+| R0-T27 | `r0/t27-notification-batch-delivery` | [#119](https://github.com/toshtag/OfficeWeave/issues/119) | 通知の作成を受け手ごとの問い合わせから切り離す | 進行中 |
+| R0-T28 | `r0/t28-department-path-preload` | [#121](https://github.com/toshtag/OfficeWeave/issues/121) | 部門の階層表示を 1 回の問い合わせで組み立てる | 未着手 |
+| R0-T29 | `r0/t29-primary-department-preload` | [#120](https://github.com/toshtag/OfficeWeave/issues/120) | 主たる所属を先読みできる関連にする | 未着手 |
+| R0-T30 | `r0/t30-home-unread-scope` | [#122](https://github.com/toshtag/OfficeWeave/issues/122) | 入口の未読の判定を表示するぶんへ限る | 未着手 |
+| R0-T31 | `r0/t31-activity-write-interval` | [#123](https://github.com/toshtag/OfficeWeave/issues/123) | 最終利用時刻の書き込みを要求ごとから間引く | 未着手 |
+| R0-T32 | `r0/t32-announcement-author-preload` | [#124](https://github.com/toshtag/OfficeWeave/issues/124) | お知らせ一覧の 3 区分で作成者の読み込みをそろえる | 未着手 |
+| R0-T33 | `r0/t33-performance-review-closeout` | —                                                             | 性能レビュー分の完了確認。Issue と本書の状態を実装結果へ合わせる | 未着手 |
 
 ### 実行順の根拠
 
@@ -235,6 +242,30 @@ Issue が大きい場合は分割してよいが、分割した場合は本書�
   関わるもので、実害の到達までに 1 段階の前提を要する。
 - R0-T26 はコードを触らない。R0-T22 から R0-T25 の完了を確かめ、Issue と
   本書とロードマップの状態を実装結果へ合わせる。R0-T13A と同じ形である。
+- R0-T27 から R0-T32 は、R0-T26 の後に行った性能レビューで見つけた。
+  いずれも、1 回の操作が出す問い合わせの件数が、記録の件数や利用者数に
+  比例して増える形の欠陥である。6 件は互いに独立しており、依存関係による
+  制約はない。
+- 並べる順は、1 回の操作あたりに増える問い合わせの多い順とした。実測は
+  次のとおりである。
+
+```text
+R0-T27  受け手 30 名の公開                     69 件
+R0-T28  部門 120 件・深さ 6 の一覧            202 件
+R0-T29  利用者 31 名の一覧                     64 件
+R0-T30  お知らせ 300 件のうち表示 5 件        取り出す識別子 300 件
+R0-T31  認証 1 回                              1 件（全ての要求で起きる）
+R0-T32  下書き 5 件の一覧                       6 件
+```
+
+- R0-T31 は 1 回あたりの件数が最も小さいが、認証済みの全ての要求で起きる。
+  他と性質が違うため、比例して増えるものを先に片付けてから扱う。
+- 一覧のページネーションは扱わない。ロードマップ R4 に計上済みであり、
+  本書とロードマップで管理する範囲と、Issue で管理する範囲を混ぜない。
+  R0-T27 から R0-T32 は、表示する件数を変えずに減らせる問い合わせだけを
+  対象とする。
+- R0-T33 はコードを触らない。R0-T27 から R0-T32 の完了を確かめ、Issue と
+  本書の状態を実装結果へ合わせる。R0-T26 と同じ形である。
 
 ### R0-T21 の監査結果
 
