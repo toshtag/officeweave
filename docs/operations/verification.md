@@ -331,6 +331,24 @@ curl -s -o /dev/null -w '%{http_code}\n' \
 `test/models/session_test.rb` と `test/controllers/sessions_controller_test.rb`
 が押さえている。ここで確かめるのは、実際に動いている構成でも同じであることである。
 
+パスワードを変更した場合は、期限を待たずにセッションが終わる。
+
+```text
+15. 管理者が利用者のパスワードを変更すると、その利用者は変更前の
+    Cookie では画面へ到達できない
+16. 氏名や表示言語だけの更新では、その利用者のログイン状態が続く
+17. パスワードを変更した利用者は、新しいパスワードでログインし直せる
+```
+
+破棄は `app/models/user.rb` の保存と同じトランザクションで確定する。
+判定は保存後の digest の変化で行うため、画面、CSV 取込、初期データの
+いずれの経路でも同じ結果になる。API token は失効させない。token は
+パスワードから導かれる資格情報ではなく、利用者が用途ごとに発行して
+個別に失効できる。
+
+`test/models/user_test.rb` と `test/controllers/password_change_test.rb`
+が押さえている。
+
 ## 14. 主要な業務の流れ
 
 `test/system/end_to_end_test.rb` が、次を画面の操作だけで通す。

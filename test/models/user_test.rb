@@ -284,6 +284,57 @@ class UserTest < ActiveSupport::TestCase
     assert_not user.reload.update(password: "short", password_confirmation: "short")
   end
 
+  test "パスワードを変更すると、その利用者のセッションが破棄される" do
+    user = users(:hanako)
+    session = user.sessions.create!
+
+    user.update!(password: "a-new-long-secret-value", password_confirmation: "a-new-long-secret-value")
+
+    assert_not Session.exists?(session.id)
+  end
+
+  test "パスワードを変更しても、他の利用者のセッションは残る" do
+    other = users(:taro).sessions.create!
+
+    users(:hanako).update!(password: "a-new-long-secret-value",
+                           password_confirmation: "a-new-long-secret-value")
+
+    assert Session.exists?(other.id)
+  end
+
+  test "パスワードを伴わない更新ではセッションが残る" do
+    user = users(:hanako)
+    session = user.sessions.create!
+
+    user.update!(name: "佐藤 花子（更新）")
+    user.update!(locale: "ja")
+    user.update!(role: "administrator")
+
+    assert Session.exists?(session.id)
+  end
+
+  test "保存に失敗した更新ではセッションが残る" do
+    user = users(:hanako)
+    session = user.sessions.create!
+
+    assert_not user.update(email_address: "not-an-email",
+                           password: "a-new-long-secret-value",
+                           password_confirmation: "a-new-long-secret-value")
+
+    assert Session.exists?(session.id)
+  end
+
+  # 検査を検証へ置くと、検証を省いた保存では素通りする。
+  test "検証を省いた保存でもセッションは破棄される" do
+    user = users(:hanako)
+    session = user.sessions.create!
+
+    user.password = "a-new-long-secret-value"
+    user.save(validate: false)
+
+    assert_not Session.exists?(session.id)
+  end
+
   private
     def active_administrator_count
       @organization.users.active.administrator.count
