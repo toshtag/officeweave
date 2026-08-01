@@ -5,12 +5,12 @@ class EventsController < ApplicationController
   before_action :require_editable, only: %i[edit update destroy]
 
   def index
-    @from = params[:from].present? ? Date.parse(params[:from]) : Date.current
+    @from = date_param(:from) || Date.current
     @events = Event.visible_to(Current.user)
                    .starting_from(@from.beginning_of_day)
                    .chronological
                    .includes(:owner)
-  rescue Date::Error
+  rescue TimeParameters::InvalidParameter
     redirect_to events_path
   end
 
