@@ -120,6 +120,11 @@ class RequestConcurrencyTest < ActiveSupport::TestCase
     concurrently(submit, submit, request: draft)
 
     assert_equal 1, Notification.where(user: @approver, subject: draft, event: "request_submitted").count
+
+    # 複数の受け手への送信は、要求の中では 1 件しか積まない。
+    # 受け手ごとの送信はワーカーが積む。
+    perform_enqueued_jobs(only: NotificationMailFanoutJob)
+
     assert_enqueued_emails 1
     assert_equal [ "request_submitted" ], enqueued_webhook_events
   end

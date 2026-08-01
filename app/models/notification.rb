@@ -33,9 +33,61 @@ class Notification < ApplicationRecord
     nil
   end
 
+  # 複数の受け手へまとめて知らせる。作られた通知の識別子を返す。
+  #
+  # 1 件ずつ作らない。受け手の人数は組織の規模で決まるため、受け手ごとに
+  # 問い合わせを出すと、組織全体へのお知らせ 1 件の公開が、そのまま
+  # 利用者数に比例した待ち時間になる。公開は要求の中で行われる。
+  #
+  # 検証は書き込む前に全件へ行う。読み込み済みの利用者と対象を見るだけで
+  # あり、問い合わせは出ない。1 件でも境界を越えていれば何も作らない。
+  # 1 件ずつ作ると、ぶつかるまでの分だけが作られて残る。
+  #
+  # 重複は一意索引が弾く。読み飛ばした行は返らないため、実際に作られた
+  # 通知だけがメールの対象になる。二重に通知しない契約は索引が担保する。
   def self.deliver_to_all(users:, subject:, event:)
-    users.each { |user| deliver(user: user, subject: subject, event: event) }
+    recipients = users.to_a.select(&:active?)
+    return [] if recipients.empty?
+
+    ids = insert_notifications(rows_for(recipients, subject, event))
+    enqueue_mail_delivery(ids, event: event)
+    ids
   end
+
+  # 書き込む値を組み立てる。時刻は 1 つの基準から決める。
+  # 受け手ごとに Time.current を呼ぶと、わずかにずれた並び順になる。
+  def self.rows_for(recipients, subject, event)
+    now = Time.current
+
+    recipients.map do |user|
+      new(user: user, subject: subject, event: event).validate!
+
+      { user_id: user.id, subject_type: subject.class.polymorphic_name, subject_id: subject.id,
+        event: event, created_at: now, updated_at: now }
+    end
+  end
+  private_class_method :rows_for
+
+  def self.insert_notifications(rows)
+    insert_all(rows, unique_by: %i[user_id subject_type subject_id event], returning: %w[id])
+      .rows
+      .flatten
+  end
+  private_class_method :insert_notifications
+
+  # 受け手ごとの送信を要求の外へ出す。積むのは 1 件だけとし、人数のぶんだけ
+  # キューへ書き込むことを避ける。
+  #
+  # 送信そのものは、これまでどおり通知 1 件につき 1 つのジョブが行う。
+  # やり直しの単位は変えない。1 通の失敗が他の通知の送信を止めない。
+  def self.enqueue_mail_delivery(ids, event:)
+    return if ids.empty?
+
+    JobEnqueue.perform("mail_fanout:#{event}") do
+      NotificationMailFanoutJob.perform_later(ids)
+    end
+  end
+  private_class_method :enqueue_mail_delivery
 
   # 出来事を外部の宛先へも送る。
   # 利用者ごとの通知とは独立して、組織につき 1 回だけ送る。
