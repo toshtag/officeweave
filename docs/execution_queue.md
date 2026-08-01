@@ -12,9 +12,9 @@
 
 ```text
 現在の Phase: R0
-直近完了 Task: R0-T24
-進行中:        R0-T25 予約に結び付ける予定を参照できるものへ限る（#113）
-次に実行:      なし（R0-T25 の完了をもって R0 の残りは無くなる）
+直近完了 Task: R0-T26
+進行中:        なし
+次に実行:      なし（R0 完了。次の Phase の着手は別途決める）
 ```
 
 ## P0 プロジェクト契約
@@ -181,7 +181,8 @@ Issue が大きい場合は分割してよいが、分割した場合は本書�
 | R0-T22 | `r0/t22-password-change-session-revocation` | [#110](https://github.com/toshtag/OfficeWeave/issues/110) | パスワードの変更で進行中のセッションを終わらせる | 完了  |
 | R0-T23 | `r0/t23-plain-text-body-rendering` | [#111](https://github.com/toshtag/OfficeWeave/issues/111) | 利用者が入力した本文を平文として描画する      | 完了  |
 | R0-T24 | `r0/t24-webhook-endpoint-update-audit` | [#112](https://github.com/toshtag/OfficeWeave/issues/112) | Webhook 宛先の変更を監査記録へ残す        | 完了  |
-| R0-T25 | `r0/t25-reservation-event-visibility` | [#113](https://github.com/toshtag/OfficeWeave/issues/113) | 予約に結び付ける予定を参照できるものへ限る     | 進行中 |
+| R0-T25 | `r0/t25-reservation-event-visibility` | [#113](https://github.com/toshtag/OfficeWeave/issues/113) | 予約に結び付ける予定を参照できるものへ限る     | 完了  |
+| R0-T26 | `r0/t26-security-review-closeout` | —                                                             | セキュリティレビュー分の完了確認。Issue と本書の状態を実装結果へ合わせる | 完了  |
 
 ### 実行順の根拠
 
@@ -232,6 +233,8 @@ Issue が大きい場合は分割してよいが、分割した場合は本書�
   影響を受ける範囲が最も広い。
 - R0-T24 と R0-T25 は、いずれも管理者または利用者の操作の記録と検証に
   関わるもので、実害の到達までに 1 段階の前提を要する。
+- R0-T26 はコードを触らない。R0-T22 から R0-T25 の完了を確かめ、Issue と
+  本書とロードマップの状態を実装結果へ合わせる。R0-T13A と同じ形である。
 
 ### R0-T21 の監査結果
 
@@ -273,11 +276,54 @@ CI              全ジョブ成功（構成の分離、bin/verify、配布用の
 `bin/diagnose` の注意 1 件は `APPLICATION_HOST=localhost` に対するもので
 あり、確認用の設定に対する正しい指摘である。
 
+### R0-T26 セキュリティレビュー分の完了確認
+
+R0-T21 の後に行ったセキュリティレビューで登録した 4 件を、重大度の順に
+処理した。R0-T26 ではコードを触らず、結果の確認と状態の反映だけを行う。
+
+```text
+#110  パスワードを変更しても既存のセッションが失効しない            CLOSED
+#111  利用者が入力した本文が HTML として描画される                  CLOSED
+#112  Webhook 宛先の変更が監査記録に残らない                        CLOSED
+#113  予約が参照できない予定へ結び付けられ、存在しない指定で 500     CLOSED
+```
+
+```text
+Issue          登録した 34 件すべてが CLOSED
+実行キュー      R0-T0 から R0-T26 まで、未着手なし
+全テスト        1007 runs, 3839 assertions, 0 failures, 0 errors
+bin/rubocop     269 files inspected, no offenses detected
+bin/brakeman    No warnings found
+bin/verify      成功
+CI              4 件の PR すべてで全ジョブ成功（構成の分離、bin/verify、
+                配布用の構成、バックアップと復元、永続キュー）
+文書            CHANGELOG、運用手順、検証手順、README の相互参照に欠落なし
+```
+
+配布構成の実測は、CI の「配布用の構成」「バックアップと復元」「永続キュー」の
+3 ジョブが各 PR で行っている。R0-T21 で手元から行った確認と同じ範囲であり、
+このタスクでは重ねて実行していない。
+
+#### 範囲外として残した確認
+
+Content-Security-Policy を送出していない。
+`config/initializers/content_security_policy.rb` は全文がコメントのままで
+あり、ヘッダーは付かない。
+
+これはロードマップ R5「品質・セキュリティ」に既に計上されている項目で
+あるため、Issue へは登録していない。本書とロードマップで管理する範囲と、
+Issue で管理する範囲を混ぜない。
+
+CSP が無いことは、#111 で直した埋め込みの影響を画面の側から抑えられない
+理由として働いていた。埋め込みそのものは #111 で塞いだため、CSP の不在が
+単独で成立する欠陥にはならない。**R5 の着手条件ではない。**
+
 ### 公開リリースについて
 
 ロードマップは「R0 が完了するまで、GitHub Release による公開リリースは
-作成しない」としている。R0-T22 から R0-T25 が残っているため、この条件は
-まだ満たしていない。既知のセキュリティ上の不具合を残したまま公開しない。
+作成しない」としている。R0-T26 をもって R0 の未着手は無くなった。
+実際に作成するかどうかは、版数と公開範囲の判断を伴うため、別途決める。
+本書では作成していない。
 
 ## 分解の方針
 
