@@ -51,6 +51,21 @@ class User < ApplicationRecord
   # 置くと、経路が増えたときに漏れる。
   before_update :preserve_active_administrator, if: :removing_active_administrator?
 
+  # パスワードが変わったら、その利用者の進行中のセッションを終わらせる。
+  #
+  # パスワードの変更は、資格情報が漏れた疑いに対する最初の対処である。
+  # 変えるだけでは、漏れた資格情報で既に開始された接続は終わらない。
+  # セッションの期限は時間の経過だけで来るため、無操作でも 30 分、
+  # 使い続けていれば最長 8 時間そのまま残る。
+  #
+  # 判定は保存後の digest の変化で行う。経路ごとに置くと、パスワードを
+  # 設定できる経路が増えたときに漏れる。検証ではなくコールバックへ置く
+  # ことで、検証を省いた保存も同じ契約を通る。
+  #
+  # 保存と同じトランザクションで確定する。保存だけが残ると、変えたはずの
+  # 資格情報で接続が続く。
+  after_update :discard_sessions, if: :saved_change_to_password_digest?
+
   def active?
     deactivated_at.nil?
   end
@@ -92,6 +107,18 @@ class User < ApplicationRecord
   end
 
   private
+    # API token はここでは失効させない。
+    #
+    # token はパスワードから導かれる資格情報ではなく、利用者が用途ごとに
+    # 発行し、画面から個別に失効できる。定期的なパスワードの変更で
+    # まとめて失効させると、外部との接続がその都度切れる。
+    #
+    # 無効化が token も失効させるのは、利用そのものを止める操作だからである。
+    # パスワードの変更は利用を止めない。両者を同じ扱いにしない。
+    def discard_sessions
+      sessions.destroy_all
+    end
+
     # 有効な token だけを対象にする。すでに失効している token の時刻を
     # 書き換えると、いつ使えなくなったのかが分からなくなる。
     #
