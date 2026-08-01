@@ -596,7 +596,35 @@ API:   400 と不正なパラメーター名
 `test/controllers/reservations_controller_test.rb` が押さえている。
 ここで確かめるのは、実際に動いている構成でも同じであることである。
 
-## 21. 自動実行
+## 21. 公開待ちのお知らせ
+
+公開日時を先に設定したお知らせが、到来まで隠れ、到来後に知らされることを
+確かめる。
+
+```text
+1. 管理者の一覧に「公開待ち」として並ぶ
+2. 一般利用者の一覧には並ばない
+3. 管理者は公開待ちのものを編集・削除できる
+4. 公開日時の到来後、対象の利用者へ知らせが 1 回だけ届く
+5. 到来前には知らせが届かない
+```
+
+到来を拾うのは定期実行である。配布用の構成では worker が動いている
+必要がある。
+
+```text
+config/recurring.yml  publish_scheduled_announcements（5 分ごと）
+```
+
+送ったことは `announcements.notified_at` に残る。判定と記録の確定は同じ
+占有の中で行うため、定期実行と画面からの更新が同時に走っても、送るのは
+先に確定した側だけになる。
+
+`test/models/scheduled_announcement_test.rb` と
+`test/controllers/announcements_controller_test.rb` が押さえている。
+ここで確かめるのは、実際に動いている構成でも同じであることである。
+
+## 22. 自動実行
 
 `.github/workflows/verify.yml` が、変更のたびに次を実行する。
 
