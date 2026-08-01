@@ -52,14 +52,24 @@ class ApiToken < ApplicationRecord
     # 保持されるため、無効化側の利用者の更新は INSERT の完了まで待つ。
     # 逆に無効化が先に成立していれば、ここで無効な状態を読み取って拒む。
     #
-    # 利用者の行だけを占有する。無効化を組織の行から占有し直すと、
-    # 最後の管理者を守る更新（組織 → 利用者）と取得の順序が逆になり、
-    # 権限の変更と無効化が並行したときに互いを待ち続け得る。
+    # 組織の行を先に取る。api_tokens の INSERT は organization_id の
+    # 外部キー検査で組織の行を KEY SHARE で参照するため、明示しなければ
+    # 利用者 → 組織の順に取ることになる。最後の管理者を守る更新は
+    # 組織 → 利用者の順に取るため、管理者の無効化と発行が同時に走ると
+    # 互いの相手を待つ循環になり、どちらかが Deadlocked で中断される。
     def require_active_user
-      return if User.lock.find(user_id).active?
+      return if lock_issuance_target.active?
 
       errors.add(:user, :inactive)
       throw(:abort)
+    end
+
+    # 組織へ FOR UPDATE は使わない。同じ組織の発行同士まで直列になる。
+    # 外部キー検査と同じ KEY SHARE を先に取れば、組織の行を FOR UPDATE で
+    # 占有する管理者の無効化とだけ競合し、発行同士は並行できる。
+    def lock_issuance_target
+      Organization.lock("FOR KEY SHARE").find(organization_id)
+      User.lock.find(user_id)
     end
 
     def assign_token

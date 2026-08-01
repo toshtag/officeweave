@@ -19,6 +19,8 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
     @organization = Organization.create!(name: "token の同時実行の確認", code: "api-token-concurrency")
     # 無効化を最後の管理者の契約で止めないため、管理者は別に残す。
     create_user("keeper@example.com", role: "administrator")
+    # 無効化が組織の行の占有を通る対象。一般利用者の無効化はそこを通らない。
+    @administrator = create_user("target-administrator@example.com", role: "administrator")
     @user = create_user("holder@example.com")
   end
 
@@ -71,10 +73,42 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
 
   # 有効かどうかの検査だけへ戻ると、並行実行はすり抜けても気付けない。
   # 行ロックが消えたことを、並行の結果とは別に見る。
-  test "token の発行では利用者の行をロックする" do
-    statements = locking_statements { @organization.api_tokens.create!(user: @user, name: "ロックの確認") }
+  #
+  # 順序も併せて見る。組織を先に取ることが、管理者の無効化と
+  # 循環しないための条件そのものである。
+  test "token の発行では組織から利用者の順に行をロックする" do
+    statements = sql_statements { @organization.api_tokens.create!(user: @user, name: "ロック順序の確認") }
 
-    assert_predicate statements, :any?
+    organization_index = statements.index { |sql| sql.match?(/organizations/i) && sql.match?(/FOR KEY SHARE/i) }
+    user_index = statements.index { |sql| sql.match?(/users/i) && sql.match?(/FOR UPDATE/i) }
+
+    assert_not_nil organization_index, "組織の行を KEY SHARE で取得していません"
+    assert_not_nil user_index, "利用者の行を FOR UPDATE で取得していません"
+    assert_operator organization_index, :<, user_index
+  end
+
+  # 管理者の無効化は、最後の管理者を守るために組織の行を占有してから
+  # 利用者を更新する。発行が利用者を先に占有すると、互いの相手を待つ
+  # 循環になり、どちらかが Deadlocked で中断される。
+  test "管理者の無効化と発行が競合しても行き詰まらない" do
+    token = build_token(@administrator)
+
+    outcomes = while_issuance_waits(token) { User.find(@administrator.id).deactivate! }
+
+    assert_empty outcomes.values.compact
+    assert_not_predicate @administrator.reload, :active?
+    assert_empty @administrator.api_tokens.active
+    assert_predicate token, :new_record?
+  end
+
+  # 循環の有無は、発行が組織の行を待っている時点の利用者の行で直接見る。
+  # 待っている間に利用者の行が空いていれば、発行は利用者を先に取っていない。
+  test "発行は利用者より先に組織の行を占有しない" do
+    token = build_token(@administrator)
+
+    outcomes = while_issuance_waits(token) { User.lock("FOR UPDATE NOWAIT").find(@administrator.id) }
+
+    assert_nil outcomes.fetch(:holder), "発行が利用者の行を先に占有していました"
   end
 
   # 準備の段階で失敗した thread は、開始の合図を受け取らないまま終わる。
@@ -147,8 +181,77 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
       )
     end
 
-    def build_token
-      Organization.find(@organization.id).api_tokens.new(user_id: @user.id, name: "同時発行")
+    def build_token(user = @user)
+      Organization.find(@organization.id).api_tokens.new(user_id: user.id, name: "同時発行")
+    end
+
+    def backend_pid
+      ActiveRecord::Base.connection.select_value("SELECT pg_backend_pid()")
+    end
+
+    # 実際にロック待ちへ入ったことを、データベースの待ちグラフで確かめる。
+    # 固定時間の sleep で代用すると、遅い環境では待つ前に先へ進む。
+    def wait_until_blocked(pid)
+      Timeout.timeout(PREPARATION_TIMEOUT) do
+        loop do
+          blockers = ActiveRecord::Base.connection.select_value(
+            "SELECT cardinality(pg_blocking_pids(#{Integer(pid)}))"
+          )
+          break if blockers.to_i.positive?
+
+          Thread.pass
+        end
+      end
+    end
+
+    # 組織の行を占有した状態で発行を始め、発行がロック待ちへ入った時点で
+    # block を実行する。管理者の無効化が最初に取る占有を再現し、
+    # 先後を待ち時間ではなく待ちグラフの観測で固定する。
+    #
+    # block は占有を持つ側の接続で実行する。無効化そのものを渡せば循環の
+    # 有無を、利用者の行の取得を渡せば占有の順序を、同じ足場で確かめられる。
+    def while_issuance_waits(token)
+      locked = Queue.new
+      release = Queue.new
+      pids = Queue.new
+      outcomes = Queue.new
+      threads = []
+      remaining = []
+      results = {}
+
+      begin
+        threads << in_background do
+          collecting(:holder, outcomes) do
+            ActiveRecord::Base.transaction do
+              Organization.lock.find(@organization.id)
+              locked << :locked
+              release.pop
+              yield
+            end
+          end
+        end
+
+        Timeout.timeout(PREPARATION_TIMEOUT) { locked.pop }
+
+        threads << in_background do
+          collecting(:issue, outcomes) do
+            pids << backend_pid
+            token.save
+          end
+        end
+
+        wait_until_blocked(Timeout.timeout(PREPARATION_TIMEOUT) { pids.pop })
+        release << true
+
+        threads.each { |thread| assert thread.join(COMPLETION_TIMEOUT), "処理が終わりませんでした" }
+        results = Timeout.timeout(OUTCOME_TIMEOUT) { %i[holder issue].map { outcomes.pop } }.to_h
+      ensure
+        release << true if threads.any?(&:alive?)
+        remaining = join_or_stop_threads(threads)
+      end
+
+      assert_empty remaining, "停止できない thread が残りました"
+      results
     end
 
     def in_background(&block)
@@ -316,8 +419,9 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
       results
     end
 
-    # SQL 全体の一致は実装の書き方に縛られるため、対象と種類だけを見る。
-    def locking_statements
+    # SQL 全体の一致は実装の書き方に縛られるため、呼出側では対象と種類、
+    # および発行の前後だけを見る。
+    def sql_statements
       statements = []
       subscriber = ActiveSupport::Notifications.subscribe("sql.active_record") do |*, payload|
         statements << payload[:sql]
@@ -325,7 +429,7 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
 
       yield
 
-      statements.grep(/FOR UPDATE/i).grep(/users/i)
+      statements
     ensure
       ActiveSupport::Notifications.unsubscribe(subscriber)
     end

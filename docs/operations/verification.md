@@ -436,11 +436,24 @@ Rails の実行環境に残った既知の初期値
 4. 無効な利用者には token を発行できない
 5. 最後の管理者の無効化が拒否された場合、その管理者の token は失効しない
 6. 利用者の一覧に、無効化の影響が日本語と英語で表示される
+7. 管理者の無効化と token の発行が同時に走っても、どちらも中断されない
 ```
 
 失効は `app/models/user.rb` の無効化と同じトランザクションで確定する。
-発行は `app/models/api_token.rb` が利用者の行を占有してから行うため、
+発行は `app/models/api_token.rb` が組織と利用者の行を占有してから行うため、
 無効化と同時に実行しても、無効な利用者に有効な token は残らない。
+
+行の取得順序は、無効化と発行で揃える。
+
+```text
+組織 KEY SHARE → 利用者 FOR UPDATE
+```
+
+api_tokens の INSERT は organization_id の外部キー検査で組織の行を
+KEY SHARE で参照する。明示せずに利用者を先に取ると、最後の管理者を守る
+更新（組織 → 利用者）と逆順になり、管理者の無効化と発行が同時に走った
+ときに `ActiveRecord::Deadlocked` でどちらかが中断される。
+組織へ FOR UPDATE を使わないのは、同じ組織の発行同士まで直列にしないためである。
 
 失効と巻き戻しは `test/models/user_test.rb` が、発行の拒否と再発行は
 `test/models/api_token_test.rb` が、同時実行と行ロックは
