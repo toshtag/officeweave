@@ -171,6 +171,8 @@ Issue が大きい場合は分割してよいが、分割した場合は本書�
 | R0-T16 | `r0/t16-settings-transaction` | [#62](https://github.com/toshtag/OfficeWeave/issues/62)      | 設定更新をひとつのトランザクションにまとめる         | 完了  |
 | R0-T17 | `r0/t17-api-datetime-validation` | [#63](https://github.com/toshtag/OfficeWeave/issues/63)   | API の不正な日時入力を 400 で返す         | 完了  |
 | R0-T17A | —                         | [#97](https://github.com/toshtag/OfficeWeave/issues/97)         | 画面の一覧で範囲外の日付を拒む             | 未着手 |
+| R0-T17B | —                         | [#98](https://github.com/toshtag/OfficeWeave/issues/98)         | 非トランザクションのテストの後片付けをそろえる      | 未着手 |
+| R0-T17C | —                         | [#99](https://github.com/toshtag/OfficeWeave/issues/99)         | 別プロセスの起動待ちを実行環境の速さから切り離す     | 未着手 |
 | R0-T18 | —                          | [#64](https://github.com/toshtag/OfficeWeave/issues/64)         | 初期利用者の存在判定を組織単位にする             | 未着手 |
 | R0-T19 | —                          | [#59](https://github.com/toshtag/OfficeWeave/issues/59)         | 公開待ちのお知らせを表示し、公開時に通知する         | 未着手 |
 | R0-T20 | —                          | [#67](https://github.com/toshtag/OfficeWeave/issues/67)         | 差し戻し通知の翻訳キーの誤記を修正する            | 未着手 |
@@ -197,6 +199,11 @@ Issue が大きい場合は分割してよいが、分割した場合は本書�
 - R0-T17A は #63 の「他の経路にも同種の入力があるか確認する」から生まれた。
   画面の一覧も同じ値で 500 になる。API とは応答の契約が違うため、
   1 PR へまとめず別のタスクとした。
+- R0-T17B と R0-T17C は、R0-T17 の検証中に観測した。どちらも本番コードでは
+  なく、検証そのものが変更と無関係に失敗する経路である。放置すると、
+  R0-T21 で「全検証が成功する」ことを確かめられない。
+  PR #90 が対象外として残した 2 つの並行実行テストの後片付けも、
+  R0-T17B に含める。
 - R0-T15A は #58 の「同じ観点の抜けが他の模型にないか確認する」から生まれた。
   実測したところ 12 か所で同じ抜けがあった。予約と同じ 1 PR へ入れず、
   別のタスクとした。模型ごとに検証と回帰テストが独立しており、
