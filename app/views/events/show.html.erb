@@ -30,7 +30,7 @@
   </dl>
 
   <% if @event.description.present? %>
-    <div class="prose"><%= simple_format @event.description %></div>
+    <div class="prose"><%= formatted_body @event.description %></div>
   <% end %>
 
   <p><%= link_to t("common.back"), events_path %></p>

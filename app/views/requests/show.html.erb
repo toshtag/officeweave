@@ -37,7 +37,7 @@
     </dl>
 
     <% if @request.body.present? %>
-      <div class="prose"><%= simple_format @request.body %></div>
+      <div class="prose"><%= formatted_body @request.body %></div>
     <% end %>
   </div>
 

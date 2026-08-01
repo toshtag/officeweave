@@ -24,7 +24,7 @@
   </dl>
 
   <% if @resource.description.present? %>
-    <div class="prose"><%= simple_format @resource.description %></div>
+    <div class="prose"><%= formatted_body @resource.description %></div>
   <% end %>
 
   <p><%= link_to t("common.back"), resources_path %></p>
