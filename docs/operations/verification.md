@@ -509,11 +509,18 @@ KEY SHARE で参照する。明示せずに利用者を先に取ると、最後�
 2. 予定を選ばない予約も、従来どおり作成できる
 3. 選択肢に無い別組織の予定の id を送った予約は保存されず、理由が表示される
 4. 別組織の利用者を予約者にした予約は保存されない
+5. 参照できない自組織の予定の id を送った予約も保存されない
+6. 存在しない予定の id を送った予約も、500 にならず理由が表示される
+7. 3、5、6 の応答が、いずれも同じ理由になる
 ```
 
-3 は画面の選択肢を経由しない要求で確かめる。予定の選択肢は
-`Event.visible_to` で組織へ絞られるが、`event_id` は要求から受け取る値
-であるため、選択肢の絞り込みだけでは境界を保証できない。
+3 から 6 は画面の選択肢を経由しない要求で確かめる。予定の選択肢は
+`Event.visible_to` で絞られるが、`event_id` は要求から受け取る値で
+あるため、選択肢の絞り込みだけでは境界を保証できない。
+
+7 を確かめるのは、誤りの内容が分かれると、識別子を順に送るだけで、
+その識別子が自組織のものか、他組織のものか、未使用かを判別できるため
+である。
 
 ```bash
 curl -sS -X POST "$BASE_URL/reservations" \
@@ -530,9 +537,16 @@ curl -sS -X POST "$BASE_URL/reservations" \
 各模型は `belongs_to_same_organization` で対象の関連を宣言する。
 
 ```ruby
-belongs_to_same_organization :resource, :reserver, :event   # 組織を自身が持つ
+belongs_to_same_organization :resource, :reserver           # 組織を自身が持つ
 belongs_to_same_organization :department, of: :announcement # 組織を親から取る
 ```
+
+`Reservation#event` だけは、この宣言ではなく
+`event_must_be_visible_to_reserver` が扱う。組織の一致に加えて、予約者が
+その予定を参照できることまで求めるためである。組織の一致は
+`Event.visible_to` が予約者の組織で絞ることで満たされる。同じ関連へ
+2 つの検証を並べると、別組織の予定だけ誤りが 2 件になり、内容の違いから
+所属組織を判別できてしまう。
 
 対象は次のとおりである。組織を持つ関連を指しながら、この宣言が無い模型は
 残っていない。
@@ -542,7 +556,7 @@ belongs_to_same_organization :department, of: :announcement # 組織を親から
   Announcement#author          Event#owner
   Document#author              Document#document_category
   Request#applicant            Request#request_type
-  Reservation#resource         Reservation#reserver        Reservation#event
+  Reservation#resource         Reservation#reserver
   RequestType#approver_department
   Department#parent
   ApiToken#user                AuditEvent#actor
@@ -558,7 +572,8 @@ belongs_to_same_organization :department, of: :announcement # 組織を親から
 確かめている。こちらは誤りを `department_ids` へ付け、画面の入力欄と
 対応させる。結合の記録を直接作る経路は、上の宣言の側が拒む。
 
-不変条件は `test/models/organization_boundary_test.rb` が、予約の経路は
+不変条件は `test/models/organization_boundary_test.rb` が、予約の予定の
+判定は `test/models/reservation_test.rb` が、予約の経路は
 `test/controllers/reservations_controller_test.rb` が押さえている。
 ここで確かめるのは、実際に動いている構成でも同じであることである。
 
