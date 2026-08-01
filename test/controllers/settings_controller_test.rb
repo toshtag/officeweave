@@ -59,7 +59,9 @@ class SettingsControllerTest < ActionDispatch::IntegrationTest
       patch settings_url, params: { user: { locale: "en" } }
     end
 
-    assert_select ".error-summary", text: /#{Regexp.escape(I18n.t("errors.messages.notification_preferences_not_saved"))}/
+    reason = I18n.t("errors.messages.notification_preferences_not_saved")
+
+    assert_select ".error-summary", text: /#{Regexp.escape(reason)}/
   end
 
   test "途中まで保存された配信設定は残らない" do

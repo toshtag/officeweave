@@ -227,6 +227,7 @@ ja:
       not_after_start: は開始より後にしてください
       cyclic: に自身または下位の部門は指定できません
       different_organization: に別の組織の記録は指定できません
+      notification_preferences_not_saved: 通知の受け取り設定を保存できませんでした
     forbidden:
       title: 権限がありません
       heading: この操作は実行できません
