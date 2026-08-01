@@ -103,7 +103,7 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
 
   # 循環の有無は、発行が組織の行を待っている時点の利用者の行で直接見る。
   # 待っている間に利用者の行が空いていれば、発行は利用者を先に取っていない。
-  test "発行は利用者より先に組織の行を占有しない" do
+  test "発行が組織の行を待つ間は利用者の行を占有しない" do
     token = build_token(@administrator)
 
     outcomes = while_issuance_waits(token) { User.lock("FOR UPDATE NOWAIT").find(@administrator.id) }
@@ -148,6 +148,33 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
     assert_equal "準備の失敗", error.message
   end
 
+  # 待ち合わせの合図は、成功したときだけでは足りない。準備が失敗した側が
+  # 何も送らないと、待つ側は上限まで待ってから上限の経過を理由として
+  # 受け取ることになり、本当の原因が失われる。
+  test "組織の行を占有できない場合は待たずに理由を返す" do
+    define_singleton_method(:lock_organization) { raise "組織の行を占有できません" }
+
+    error = assert_raises(RuntimeError) do
+      Timeout.timeout(PREPARATION_TIMEOUT / 2.0) do
+        while_issuance_waits(build_token) { raise "後段を開始してはならない" }
+      end
+    end
+
+    assert_equal "組織の行を占有できません", error.message
+  end
+
+  test "発行の接続を特定できない場合は待たずに理由を返す" do
+    define_singleton_method(:backend_pid) { raise "接続を特定できません" }
+
+    error = assert_raises(RuntimeError) do
+      Timeout.timeout(PREPARATION_TIMEOUT / 2.0) do
+        while_issuance_waits(build_token) { nil }
+      end
+    end
+
+    assert_equal "接続を特定できません", error.message
+  end
+
   # kill は停止を指示するだけで、終了までは待たない。
   test "終了しない thread は kill のあとに join し直して回収する" do
     blocked = blocked_thread
@@ -185,8 +212,24 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
       Organization.find(@organization.id).api_tokens.new(user_id: user.id, name: "同時発行")
     end
 
+    # 管理者の無効化が最初に取る占有。同じ形で先に取ることで、
+    # 発行が組織の行を待つ状況を作る。
+    def lock_organization
+      Organization.lock.find(@organization.id)
+    end
+
     def backend_pid
       ActiveRecord::Base.connection.select_value("SELECT pg_backend_pid()")
+    end
+
+    # 準備の合図を待つ。合図が理由そのものだった場合は、それを送り直す。
+    # 上限に達するのは、合図が届かない場合だけとする。上限の経過を
+    # 理由として受け取ると、本当の原因が失われる。
+    def await_preparation(queue)
+      result = Timeout.timeout(PREPARATION_TIMEOUT) { queue.pop }
+      raise result if result.is_a?(Exception)
+
+      result
     end
 
     # 実際にロック待ちへ入ったことを、データベースの待ちグラフで確かめる。
@@ -222,25 +265,42 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
       begin
         threads << in_background do
           collecting(:holder, outcomes) do
-            ActiveRecord::Base.transaction do
-              Organization.lock.find(@organization.id)
-              locked << :locked
-              release.pop
-              yield
+            prepared = false
+
+            begin
+              ActiveRecord::Base.transaction do
+                lock_organization
+                prepared = true
+                locked << :locked
+                release.pop
+                yield
+              end
+            rescue StandardError => error
+              locked << error unless prepared
+              raise
             end
           end
         end
 
-        Timeout.timeout(PREPARATION_TIMEOUT) { locked.pop }
+        await_preparation(locked)
 
         threads << in_background do
           collecting(:issue, outcomes) do
-            pids << backend_pid
-            token.save
+            sent = false
+
+            begin
+              pid = backend_pid
+              sent = true
+              pids << pid
+              token.save
+            rescue StandardError => error
+              pids << error unless sent
+              raise
+            end
           end
         end
 
-        wait_until_blocked(Timeout.timeout(PREPARATION_TIMEOUT) { pids.pop })
+        wait_until_blocked(await_preparation(pids))
         release << true
 
         threads.each { |thread| assert thread.join(COMPLETION_TIMEOUT), "処理が終わりませんでした" }
