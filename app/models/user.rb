@@ -5,6 +5,18 @@ class User < ApplicationRecord
   has_many :sessions, dependent: :destroy
   has_many :memberships, dependent: :destroy
   has_many :departments, through: :memberships
+
+  # 主たる所属。連絡先の表示や既定の絞り込みに使う。
+  #
+  # 関連として宣言する。読み込み済みの memberships を絞り込む形にすると、
+  # 絞り込みが新しい関連を作るため、先読みした配列が使われない。一覧は
+  # 行ごとに主たる所属を表示するため、利用者の人数だけ問い合わせが増える。
+  #
+  # 利用者につき 1 件までであることは、部分一意索引
+  # index_memberships_on_primary_user が保証している。
+  has_one :primary_membership, -> { primary }, class_name: "Membership", inverse_of: :user,
+          dependent: nil
+  has_one :primary_department, through: :primary_membership, source: :department
   has_many :announcements, foreign_key: :author_id, dependent: :restrict_with_error, inverse_of: :author
   has_many :announcement_reads, dependent: :destroy
   has_many :events, foreign_key: :owner_id, dependent: :restrict_with_error, inverse_of: :owner
@@ -99,11 +111,6 @@ class User < ApplicationRecord
     preference = notification_preferences.find_by(event: event)
 
     preference.nil? || preference.mail_enabled?
-  end
-
-  # 主たる所属。連絡先の表示や既定の絞り込みに使う。
-  def primary_department
-    memberships.primary.first&.department
   end
 
   private

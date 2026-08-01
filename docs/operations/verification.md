@@ -769,7 +769,38 @@ docker compose exec web bin/jobs_status
 階層の深さを変えて 2 回数え、増えないことを確かめている。
 ここで確かめるのは、実際に動いている構成でも同じであることである。
 
-## 25. 自動実行
+## 25. 主たる所属の表示
+
+利用者の一覧と入口で、主たる所属が表示されることを確かめる。
+
+```text
+1. 主たる所属を持つ利用者は、その部門が並ぶ
+2. 持たない利用者は「上位なし」と同じ表示になる
+3. 所属を切り替えると、表示も切り替わる
+```
+
+主たる所属は `User#primary_department` の関連が返す。読み込み済みの
+`memberships` を絞り込む形にしない。絞り込みは新しい関連を作るため、
+先読みした配列が使われず、行ごとに問い合わせが出る。
+
+```ruby
+has_one :primary_membership, -> { primary }, class_name: "Membership"
+has_one :primary_department, through: :primary_membership, source: :department
+```
+
+利用者につき 1 件までであることは、部分一意索引
+`index_memberships_on_primary_user` が保証している。関連の宣言はこの制約に
+合わせている。
+
+一覧の先読みは、実際に使われる関連へそろえる。使われない先読みを残すと、
+読んだ側は対策済みだと判断する。
+
+問い合わせの件数は `test/controllers/user_list_test.rb` と
+`test/models/user_test.rb` が押さえている。利用者の人数を変えて 2 回数え、
+増えないことを確かめている。ここで確かめるのは、実際に動いている構成でも
+同じであることである。
+
+## 26. 自動実行
 
 `.github/workflows/verify.yml` が、変更のたびに次を実行する。
 
