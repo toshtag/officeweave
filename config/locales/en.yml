@@ -666,6 +666,7 @@ en:
       api_token_issued: Token issued
       api_token_revoked: Token revoked
       webhook_endpoint_created: Endpoint added
+      webhook_endpoint_updated: Endpoint changed
       webhook_endpoint_deleted: Endpoint deleted
       users_imported: Users imported
       users_exported: Users exported
