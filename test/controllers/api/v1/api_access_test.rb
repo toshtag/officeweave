@@ -54,6 +54,49 @@ module Api
         assert_includes titles, events(:company_meeting).title
       end
 
+      test "from を指定すると、その時刻以降の予定だけを返す" do
+        get api_v1_events_url(from: 3.days.from_now.change(hour: 0).iso8601), headers: auth_headers
+
+        assert_response :success
+
+        titles = response.parsed_body["events"].map { |item| item["title"] }
+
+        assert_includes titles, events(:taro_private).title
+        assert_not_includes titles, events(:company_meeting).title
+      end
+
+      test "from を指定しないと現在時刻以降の予定を返す" do
+        get api_v1_events_url, headers: auth_headers
+
+        titles = response.parsed_body["events"].map { |item| item["title"] }
+
+        assert_includes titles, events(:company_meeting).title
+        assert_not_includes titles, events(:past_event).title
+      end
+
+      test "空の from は未指定として扱う" do
+        get api_v1_events_url(from: ""), headers: auth_headers
+
+        assert_response :success
+
+        titles = response.parsed_body["events"].map { |item| item["title"] }
+
+        assert_includes titles, events(:company_meeting).title
+        assert_not_includes titles, events(:past_event).title
+      end
+
+      # 解析できない入力を既定値へ読み替えると、呼び出す側は誤りに
+      # 気付かないまま、意図と異なる結果を受け取る。
+      test "解析できない from は 400 で返す" do
+        [ "2024-13-45", "abc", "9999999999999-01-01" ].each do |value|
+          get api_v1_events_url(from: value), headers: auth_headers
+
+          assert_response :bad_request, "from=#{value} が 400 になっていません"
+          assert_equal "invalid_parameter", response.parsed_body["error"]
+          assert_equal "from", response.parsed_body["parameter"]
+        end
+      end
+
       test "部門を取得できる" do
         get api_v1_departments_url, headers: auth_headers
 
