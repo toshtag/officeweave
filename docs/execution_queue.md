@@ -12,9 +12,9 @@
 
 ```text
 現在の Phase: R0
-直近完了 Task: R0-T19
+直近完了 Task: R0-T20
 進行中:        なし
-次に実行:      R0-T20 差し戻し通知の翻訳キーの誤記を修正する（#67）
+次に実行:      R0-T21 安定化完了監査
 ```
 
 ## P0 プロジェクト契約
@@ -175,7 +175,7 @@ Issue が大きい場合は分割してよいが、分割した場合は本書�
 | R0-T17C | `r0/t17c-boot-wait`       | [#99](https://github.com/toshtag/OfficeWeave/issues/99)         | 別プロセスの起動待ちを実行環境の速さから切り離す     | 完了  |
 | R0-T18 | `r0/t18-initial-user-scope` | [#64](https://github.com/toshtag/OfficeWeave/issues/64)        | 初期利用者の存在判定を組織単位にする             | 完了  |
 | R0-T19 | `r0/t19-scheduled-announcements` | [#59](https://github.com/toshtag/OfficeWeave/issues/59)   | 公開待ちのお知らせを表示し、公開時に通知する         | 完了  |
-| R0-T20 | —                          | [#67](https://github.com/toshtag/OfficeWeave/issues/67)         | 差し戻し通知の翻訳キーの誤記を修正する            | 未着手 |
+| R0-T20 | `r0/t20-returned-translation-key` | [#67](https://github.com/toshtag/OfficeWeave/issues/67)  | 差し戻し通知の翻訳キーの誤記を修正する            | 完了  |
 | R0-T21 | —                          | —                                                               | 安定化完了監査。全 Issue、全検証、文書、配布構成の整合を確認する | 未着手 |
 
 ### 実行順の根拠
