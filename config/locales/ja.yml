@@ -291,6 +291,7 @@ ja:
       heading: 利用者
       new: 利用者を追加
       status: 状態
+      deactivation_hint: 利用者を無効にすると、すべてのセッションが終了し、発行済みの token も失効します。再び有効にしても、失効した token は元に戻りません。
     new:
       title: 利用者の追加
       heading: 利用者の追加

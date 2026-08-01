@@ -271,6 +271,7 @@ en:
       heading: Users
       new: Add user
       status: Status
+      deactivation_hint: Deactivating a user ends every session and revokes all of their issued tokens. Activating the user again does not bring the revoked tokens back.
     new:
       title: Add user
       heading: Add user

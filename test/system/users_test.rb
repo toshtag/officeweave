@@ -52,6 +52,22 @@ class UsersTest < ApplicationSystemTestCase
     assert_text "鈴木 一郎"
   end
 
+  # 無効化は押す前に影響が分からないと取り返しがつかない。
+  # 一覧を開いた時点で読める位置に置く。
+  test "無効化の影響が一覧に示される" do
+    visit users_path
+
+    assert_text I18n.t("users.index.deactivation_hint")
+  end
+
+  test "無効化の影響は英語でも示される" do
+    users(:taro).update!(locale: "en")
+
+    visit users_path
+
+    assert_text I18n.t("users.index.deactivation_hint", locale: :en)
+  end
+
   test "自分自身を無効にしようとすると理由が示される" do
     visit users_path
 
