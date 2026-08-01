@@ -207,6 +207,7 @@ en:
       not_after_start: must be after the start time
       cyclic: cannot be this department or one of its descendants
       different_organization: must belong to the same organization
+      notification_preferences_not_saved: The notification settings could not be saved
     forbidden:
       title: Not permitted
       heading: You cannot perform this action
