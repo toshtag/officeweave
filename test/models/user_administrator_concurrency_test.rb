@@ -7,7 +7,11 @@ require "timeout"
 # それを確かめるには別々の接続から同時に更新する必要があるため、
 # このクラスだけトランザクションで囲む既定を外す。
 class UserAdministratorConcurrencyTest < ActiveSupport::TestCase
+  include IsolatedOrganizationTestHelper
+
   self.use_transactional_tests = false
+
+  ORGANIZATION_CODE = "concurrency-check".freeze
 
   # 待機はすべて上限を持たせる。退行を CI の停止ではなく失敗として受け取るため。
   PREPARATION_TIMEOUT = 10
@@ -16,14 +20,13 @@ class UserAdministratorConcurrencyTest < ActiveSupport::TestCase
   CLEANUP_TIMEOUT = 5
 
   setup do
-    @organization = Organization.create!(name: "同時実行の確認", code: "concurrency-check")
+    @organization = create_isolated_organization(name: "同時実行の確認", code: ORGANIZATION_CODE)
     @first = create_administrator("first@example.com")
     @second = create_administrator("second@example.com")
   end
 
   teardown do
-    @organization.users.destroy_all
-    @organization.destroy
+    discard_organization(@organization)
   end
 
   test "同時に降格しても利用中の管理者が 1 人残る" do
@@ -58,6 +61,19 @@ class UserAdministratorConcurrencyTest < ActiveSupport::TestCase
     assert_equal 2, outcomes.size
     assert_equal 1, outcomes.grep(ActiveRecord::RecordNotFound).size
     assert_equal [ true ], outcomes.grep_v(Exception)
+  end
+
+  # 後片付けが 1 件でも取りこぼすと、組織が残る。残った組織は次の実行の
+  # 作成を識別子の重複で失敗させ、さらに連番の次の値を占めることで、
+  # 無関係なテストの採番まで巻き込む。
+  test "後片付けは読み込んだあとに増えた利用者も取り除く" do
+    @organization.users.load
+    create_administrator("late@example.com")
+
+    discard_organization(@organization)
+
+    assert_nil Organization.find_by(code: ORGANIZATION_CODE)
+    assert_empty User.where(organization_id: @organization.id)
   end
 
   private
