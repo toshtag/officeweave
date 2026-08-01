@@ -12,9 +12,9 @@
 
 ```text
 現在の Phase: R0
-直近完了 Task: R0-T15A
+直近完了 Task: R0-T15B
 進行中:        なし
-次に実行:      R0-T15B 並行実行テストの待ちグラフ観測を安定させる（#93）
+次に実行:      R0-T16 設定更新をひとつのトランザクションにまとめる（#62）
 ```
 
 ## P0 プロジェクト契約
@@ -167,7 +167,7 @@ Issue が大きい場合は分割してよいが、分割した場合は本書�
 | R0-T14 | `r0/t14-api-token-revocation` | [#65](https://github.com/toshtag/OfficeWeave/issues/65)      | 利用者の無効化で API トークンを失効させる        | 完了  |
 | R0-T15 | `r0/t15-reservation-organization-integrity` | [#58](https://github.com/toshtag/OfficeWeave/issues/58) | 予約の組織整合性を検証する                  | 完了  |
 | R0-T15A | `r0/t15a-organization-boundary` | [#91](https://github.com/toshtag/OfficeWeave/issues/91)   | 組織をまたぐ参照の検証を他の模型へ広げる          | 完了  |
-| R0-T15B | —                         | [#93](https://github.com/toshtag/OfficeWeave/issues/93)         | 並行実行テストの待ちグラフ観測を安定させる          | 未着手 |
+| R0-T15B | `r0/t15b-concurrency-wait` | [#93](https://github.com/toshtag/OfficeWeave/issues/93)        | 並行実行テストの待ちグラフ観測を安定させる          | 完了  |
 | R0-T16 | —                          | [#62](https://github.com/toshtag/OfficeWeave/issues/62)         | 設定更新をひとつのトランザクションにまとめる         | 未着手 |
 | R0-T17 | —                          | [#63](https://github.com/toshtag/OfficeWeave/issues/63)         | API の不正な日時入力を 400 で返す         | 未着手 |
 | R0-T18 | —                          | [#64](https://github.com/toshtag/OfficeWeave/issues/64)         | 初期利用者の存在判定を組織単位にする             | 未着手 |
@@ -203,7 +203,9 @@ Issue が大きい場合は分割してよいが、分割した場合は本書�
   手書きの検証もこの宣言へそろえた。
 - R0-T15B は R0-T15 の着手前の検証で観測した。本番コードの不具合ではなく、
   待ち方の問題である。放置すると、変更と無関係な失敗で退行の有無を
-  判断できなくなる。
+  判断できなくなる。原因は待ち時間ではなく、観測がクエリキャッシュから
+  返っていたことだった。相手が待ちへ入る前に 1 度読むと、そのあとは
+  何度読んでも同じ答えしか返らない。
 - R0-T21 で R0 全体の整合を確かめてから、公開リリースの判断へ進む。
 
 ### R0-T21 の監査項目

@@ -9,14 +9,27 @@ require "timeout"
 class ApiTokenConcurrencyTest < ActiveSupport::TestCase
   self.use_transactional_tests = false
 
+  ORGANIZATION_CODE = "api-token-concurrency".freeze
+
   # 待機はすべて上限を持たせる。退行を CI の停止ではなく失敗として受け取るため。
   PREPARATION_TIMEOUT = 10
   COMPLETION_TIMEOUT = 30
   OUTCOME_TIMEOUT = 5
   CLEANUP_TIMEOUT = 5
 
+  # 待ちグラフを見に行く間隔。
+  POLL_INTERVAL = 0.01
+  # 相手がロック待ちへ入るまでの上限。行き詰まりを止めるためだけに置く。
+  # 退行そのものは相手が終わったかどうかで受け取るため、ここは長くてよい。
+  BLOCKING_TIMEOUT = 60
+
   setup do
-    @organization = Organization.create!(name: "token の同時実行の確認", code: "api-token-concurrency")
+    # 前の実行が途中で終わっていた場合、記録が残ったままになる。
+    # 残したまま作ると識別子の重複で失敗し、以降の実行がすべて崩れる。
+    # 最初の 1 件の理由が読めなくなるため、作る前に取り除く。
+    discard(Organization.find_by(code: ORGANIZATION_CODE))
+
+    @organization = Organization.create!(name: "token の同時実行の確認", code: ORGANIZATION_CODE)
     # 無効化を最後の管理者の契約で止めないため、管理者は別に残す。
     create_user("keeper@example.com", role: "administrator")
     # 無効化が組織の行の占有を通る対象。一般利用者の無効化はそこを通らない。
@@ -25,8 +38,7 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
   end
 
   teardown do
-    @organization.users.destroy_all
-    @organization.destroy
+    discard(@organization)
   end
 
   test "発行が先に確定すると無効化がその token を失効させる" do
@@ -175,6 +187,52 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
     assert_equal "接続を特定できません", error.message
   end
 
+  # 他の接続の状態は、問い合わせるたびに読み直す必要がある。
+  # 既定のクエリキャッシュが働くと、相手が待ちへ入る前の答えが返り続け、
+  # 上限をいくら伸ばしても待ちを観測できない。
+  test "待ちグラフの観測は毎回読み直す" do
+    sql = "SELECT to_char(clock_timestamp(), 'HH24:MI:SS.US')"
+
+    cached = Array.new(2) { sleep POLL_INTERVAL; ActiveRecord::Base.connection.select_value(sql) }
+    fresh = Array.new(2) { sleep POLL_INTERVAL; uncached_value(sql) }
+
+    assert_equal 1, cached.uniq.size, "既定ではキャッシュが働くという前提が変わっています"
+    assert_equal 2, fresh.uniq.size, "観測がキャッシュされています"
+  end
+
+  # 待つ相手が終わっていれば、もう待ちへは入らない。
+  # 上限まで待つと、退行の理由が上限の経過へ置き換わる。
+  test "待つ相手が終わっていれば上限を待たずに失敗する" do
+    finished = Thread.new { nil }
+    finished.join
+
+    error = assert_raises(Minitest::Assertion) do
+      Timeout.timeout(BLOCKING_TIMEOUT / 2.0) { wait_until_blocked(backend_pid, finished) }
+    end
+
+    assert_match(/ロック待ちへ入る前に終わりました/, error.message)
+  end
+
+  # 後片付けが 1 件でも取りこぼすと、組織が残る。残った組織は次の実行の
+  # 作成を識別子の重複で失敗させ、以降はこのファイルの全件が別の理由で
+  # 崩れるため、最初の 1 件の理由が読めなくなる。
+  #
+  # 取りこぼしは、読み込み済みの関連を使うと起きる。関連を読んだあとに
+  # 別の接続が利用者を増やした場合、模型は増えた分を見ないまま組織を
+  # 破棄しようとし、データベースの外部キーで止まる。
+  test "後片付けは読み込んだあとに増えた利用者も取り除く" do
+    @organization.users.load
+    User.create!(organization_id: @organization.id, name: "遅れて増えた利用者",
+                 email_address: "late@example.com", password: "a-long-secret-value")
+    @organization.api_tokens.create!(user: @user, name: "残った token")
+
+    discard(@organization)
+
+    assert_nil Organization.find_by(code: ORGANIZATION_CODE)
+    assert_empty User.where(organization_id: @organization.id)
+    assert_empty ApiToken.where(organization_id: @organization.id)
+  end
+
   # kill は停止を指示するだけで、終了までは待たない。
   test "終了しない thread は kill のあとに join し直して回収する" do
     blocked = blocked_thread
@@ -202,6 +260,23 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
   end
 
   private
+    # 検証用の組織と、その配下の記録を取り除く。
+    #
+    # 模型の破棄には利用者を残す契約が入っており、失敗した実行のあとでは
+    # 1 件でも残ると組織を消せない。ここでは契約ではなく後片付けが目的
+    # であるため、参照の順に直接消す。
+    def discard(organization)
+      return if organization.nil?
+
+      user_ids = User.where(organization_id: organization.id).pluck(:id)
+
+      ApiToken.where(organization_id: organization.id).delete_all
+      AuditEvent.where(organization_id: organization.id).delete_all
+      Session.where(user_id: user_ids).delete_all
+      User.where(id: user_ids).delete_all
+      Organization.where(id: organization.id).delete_all
+    end
+
     def create_user(email_address, **attributes)
       @organization.users.create!(
         { name: email_address, email_address: email_address, password: "a-long-secret-value" }.merge(attributes)
@@ -234,17 +309,70 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
 
     # 実際にロック待ちへ入ったことを、データベースの待ちグラフで確かめる。
     # 固定時間の sleep で代用すると、遅い環境では待つ前に先へ進む。
-    def wait_until_blocked(pid)
-      Timeout.timeout(PREPARATION_TIMEOUT) do
-        loop do
-          blockers = ActiveRecord::Base.connection.select_value(
-            "SELECT cardinality(pg_blocking_pids(#{Integer(pid)}))"
-          )
-          break if blockers.to_i.positive?
+    #
+    # 退行は経過時間ではなく、相手が終わったかどうかで受け取る。相手が
+    # 待ちへ入らずに終わったのであれば、待つ相手が違っていたということで
+    # あり、その場で理由を添えて失敗させられる。
+    #
+    # 経過時間だけで受け取ると、上限が実行環境の速さに縛られる。負荷を
+    # 掛けた環境では、相手が BEGIN を送ったあと次の文を送るまでに 60 秒を
+    # 超えた。データベースから見た状態は idle in transaction であり、
+    # 待っていたのは Client、つまり相手の Ruby 側の処理である。退行では
+    # ないため、上限は行き詰まりを止めるためだけに置く。
+    def wait_until_blocked(pid, thread)
+      started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      polls = 0
 
-          Thread.pass
+      until blocked?(pid)
+        polls += 1
+        elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
+
+        flunk "発行がロック待ちへ入る前に終わりました。#{observed(pid, polls, elapsed)}" unless thread.alive?
+
+        if elapsed > BLOCKING_TIMEOUT
+          flunk "発行がロック待ちへ入りませんでした。#{observed(pid, polls, elapsed)}"
         end
+
+        sleep POLL_INTERVAL
       end
+    end
+
+    def observed(pid, polls, elapsed)
+      format("観測 %d 回 / %.2f 秒。%s", polls, elapsed, activity_of(pid))
+    end
+
+    # 失敗した場合に、何を待っていたのかを残す。上限の経過だけでは、
+    # 待ちへ入らなかったのか、待つ相手が違ったのかを後から判別できない。
+    def activity_of(pid)
+      row = uncached_row(<<~SQL.squish)
+        SELECT state, wait_event_type, wait_event,
+               pg_blocking_pids(#{Integer(pid)}) AS blocking_pids, query
+        FROM pg_stat_activity WHERE pid = #{Integer(pid)}
+      SQL
+      return "pid #{pid} は接続の一覧にありません" if row.nil?
+
+      row.map { |name, value| "#{name}=#{value.inspect}" }.join(" ")
+    end
+
+    def uncached_row(sql)
+      ActiveRecord::Base.uncached { ActiveRecord::Base.connection.select_one(sql) }
+    end
+
+    # 他の接続の状態は、問い合わせるたびに読み直す。
+    #
+    # 同じ文を繰り返すため、既定ではクエリキャッシュが働き、最初の結果が
+    # そのまま返り続ける。相手が待ちへ入る前に 1 度でも読んでしまうと、
+    # そのあとは何度読んでも待ちに入っていないという答えしか返らず、
+    # 上限をいくら伸ばしても成立しない。
+    #
+    # 間隔も空ける。観測する側と観測される側は同じデータベースを使うため、
+    # 間隔を詰めると観測そのものが相手の進行を妨げる。
+    def blocked?(pid)
+      uncached_value("SELECT cardinality(pg_blocking_pids(#{Integer(pid)}))").to_i.positive?
+    end
+
+    def uncached_value(sql)
+      ActiveRecord::Base.uncached { ActiveRecord::Base.connection.select_value(sql) }
     end
 
     # 組織の行を占有した状態で発行を始め、発行がロック待ちへ入った時点で
@@ -300,7 +428,7 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
           end
         end
 
-        wait_until_blocked(await_preparation(pids))
+        wait_until_blocked(await_preparation(pids), threads.last)
         release << true
 
         threads.each { |thread| assert thread.join(COMPLETION_TIMEOUT), "処理が終わりませんでした" }
