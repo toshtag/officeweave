@@ -204,6 +204,7 @@ en:
       too_large: "%{filename} is too large (up to %{size} MB)"
       not_active: is not accepting new requests
       not_reservable: is not accepting bookings
+      not_visible: must be an event you can see
       not_after_start: must be after the start time
       cyclic: cannot be this department or one of its descendants
       different_organization: must belong to the same organization
