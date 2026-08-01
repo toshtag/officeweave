@@ -461,7 +461,38 @@ KEY SHARE で参照する。明示せずに利用者を先に取ると、最後�
 `test/controllers/api/v1/api_access_test.rb` が押さえている。
 ここで確かめるのは、実際に動いている構成でも同じであることである。
 
-## 18. 自動実行
+## 18. 予約の組織整合性
+
+予約が、自分の組織の外にある記録を指していないことを確かめる。
+
+```text
+1. 自分の組織の予定を選んだ予約は、従来どおり作成できる
+2. 予定を選ばない予約も、従来どおり作成できる
+3. 選択肢に無い別組織の予定の id を送った予約は保存されず、理由が表示される
+4. 別組織の利用者を予約者にした予約は保存されない
+```
+
+3 は画面の選択肢を経由しない要求で確かめる。予定の選択肢は
+`Event.visible_to` で組織へ絞られるが、`event_id` は要求から受け取る値
+であるため、選択肢の絞り込みだけでは境界を保証できない。
+
+```bash
+curl -sS -X POST "$BASE_URL/reservations" \
+  --cookie "$COOKIE" \
+  --data "reservation[resource_id]=$RESOURCE_ID" \
+  --data "reservation[event_id]=$OTHER_ORGANIZATION_EVENT_ID" \
+  --data "reservation[starts_at]=$STARTS_AT" \
+  --data "reservation[ends_at]=$ENDS_AT"
+```
+
+応答が 422 になり、予約の件数が増えないことが正しい。
+
+判定は `app/models/reservation.rb` に置く。設備・備品と同じ形の検証を
+予定と予約者へも用意した。不変条件は `test/models/reservation_test.rb` が、
+経路は `test/controllers/reservations_controller_test.rb` が押さえている。
+ここで確かめるのは、実際に動いている構成でも同じであることである。
+
+## 19. 自動実行
 
 `.github/workflows/verify.yml` が、変更のたびに次を実行する。
 

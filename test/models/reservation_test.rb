@@ -51,6 +51,36 @@ class ReservationTest < ActiveSupport::TestCase
     assert_not reservation.valid?
   end
 
+  test "別組織の予定は予約に結び付けられない" do
+    reservation = build(event: events(:other_org_event),
+                        starts_at: @base.change(hour: 13), ends_at: @base.change(hour: 14))
+
+    assert_not reservation.valid?
+    assert_includes reservation.errors.details[:event], { error: :different_organization }
+  end
+
+  test "別組織の利用者は予約者に指定できない" do
+    reservation = build(reserver: users(:outsider),
+                        starts_at: @base.change(hour: 13), ends_at: @base.change(hour: 14))
+
+    assert_not reservation.valid?
+    assert_includes reservation.errors.details[:reserver], { error: :different_organization }
+  end
+
+  test "同じ組織の予定と予約者なら予約できる" do
+    reservation = build(event: events(:company_meeting), reserver: users(:taro),
+                        starts_at: @base.change(hour: 13), ends_at: @base.change(hour: 14))
+
+    assert reservation.valid?
+  end
+
+  test "予定を結び付けない予約は従来どおり作れる" do
+    reservation = build(event: nil,
+                        starts_at: @base.change(hour: 13), ends_at: @base.change(hour: 14))
+
+    assert reservation.valid?
+  end
+
   test "終了が開始より後でなければ予約できない" do
     reservation = build(starts_at: @base.change(hour: 14), ends_at: @base.change(hour: 13))
 

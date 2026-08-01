@@ -13,6 +13,8 @@ class Reservation < ApplicationRecord
   validate :ends_at_must_be_after_starts_at
   validate :resource_must_be_reservable
   validate :resource_must_be_in_same_organization
+  validate :event_must_be_in_same_organization
+  validate :reserver_must_be_in_same_organization
   validate :must_not_overlap_existing_reservation
 
   scope :chronological, -> { order(:starts_at, :id) }
@@ -56,6 +58,18 @@ class Reservation < ApplicationRecord
       return if resource.nil? || resource.organization_id == organization_id
 
       errors.add(:resource, :different_organization)
+    end
+
+    def event_must_be_in_same_organization
+      return if event.nil? || event.organization_id == organization_id
+
+      errors.add(:event, :different_organization)
+    end
+
+    def reserver_must_be_in_same_organization
+      return if reserver.nil? || reserver.organization_id == organization_id
+
+      errors.add(:reserver, :different_organization)
     end
 
     def must_not_overlap_existing_reservation
