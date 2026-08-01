@@ -16,6 +16,7 @@ class Notification < ApplicationRecord
   belongs_to :subject, polymorphic: true
 
   validates :event, inclusion: { in: EVENTS }
+  belongs_to_same_organization :user, of: :subject
 
   scope :recent_first, -> { order(created_at: :desc, id: :desc) }
   scope :unread, -> { where(read_at: nil) }

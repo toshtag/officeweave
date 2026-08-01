@@ -31,6 +31,7 @@ class AuditEvent < ApplicationRecord
   belongs_to :target, polymorphic: true, optional: true
 
   validates :action, inclusion: { in: ACTIONS }
+  belongs_to_same_organization :actor
 
   scope :recent_first, -> { order(created_at: :desc, id: :desc) }
   scope :with_action, ->(action) { where(action: action) if action.in?(ACTIONS) }

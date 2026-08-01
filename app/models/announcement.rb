@@ -17,6 +17,7 @@ class Announcement < ApplicationRecord
   validates :title, presence: true, length: { maximum: 200 }
   validates :body, presence: true, length: { maximum: 10_000 }
   validates :visibility, inclusion: { in: VISIBILITIES }
+  belongs_to_same_organization :author
   validate :departments_required_when_limited
   validate :departments_must_be_in_same_organization
 
