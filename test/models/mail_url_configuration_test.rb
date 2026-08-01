@@ -1,6 +1,4 @@
 require "test_helper"
-require "open3"
-require "timeout"
 
 # メール本文の公開 URL を、実際の起動で確かめる。
 #
@@ -8,7 +6,7 @@ require "timeout"
 # ホストから web コンテナへ公開する WEB_PORT は使わない。
 # 逆プロキシの背後では、利用者が接続するポートと内部のポートが一致しない。
 class MailUrlConfigurationTest < ActiveSupport::TestCase
-  BOOT_TIMEOUT = 60
+  include BootProcessTestHelper
 
   test "設定が無い場合は受け入れる Host と同じ既定値になる" do
     status, output = boot
@@ -90,18 +88,6 @@ class MailUrlConfigurationTest < ActiveSupport::TestCase
       }.merge(settings)
 
       # シェルを介さず引数のまま渡す。設定値が語の区切りとして解釈されない。
-      Open3.popen2e(environment, "bin/rails", "runner", RESOLVE, chdir: Rails.root.to_s) do |input, output, process|
-        input.close
-
-        begin
-          captured = Timeout.timeout(BOOT_TIMEOUT) { output.read }
-          [ process.value, captured ]
-        rescue Timeout::Error
-          # 待ち続けるプロセスを残さない。
-          Process.kill("KILL", process.pid)
-          process.join
-          flunk("#{BOOT_TIMEOUT} 秒以内に起動が終わりませんでした")
-        end
-      end
+      boot_process([ "bin/rails", "runner", RESOLVE ], environment)
     end
 end
