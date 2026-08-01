@@ -13,7 +13,11 @@ class RequestConcurrencyTest < ActiveSupport::TestCase
   include ActiveJob::TestHelper
   include ActionMailer::TestHelper
 
+  include IsolatedOrganizationTestHelper
+
   self.use_transactional_tests = false
+
+  ORGANIZATION_CODE = "request-concurrency".freeze
 
   # 決裁ごとに違う理由を渡す。敗れた側の理由が履歴へ残っていないことを見るため。
   DECISION_COMMENTS = { "approved" => "承認の理由", "returned" => "差し戻しの理由" }.freeze
@@ -25,7 +29,7 @@ class RequestConcurrencyTest < ActiveSupport::TestCase
   CLEANUP_TIMEOUT = 5
 
   setup do
-    @organization = Organization.create!(name: "申請の同時実行", code: "request-concurrency")
+    @organization = create_isolated_organization(name: "申請の同時実行", code: ORGANIZATION_CODE)
     @department = @organization.departments.create!(name: "総務部", code: "general-affairs")
     @applicant = create_user("applicant@example.com", role: "member")
     @approver = create_user("approver@example.com", role: "administrator")
@@ -38,17 +42,7 @@ class RequestConcurrencyTest < ActiveSupport::TestCase
   end
 
   teardown do
-    requests = Request.where(organization_id: @organization.id)
-
-    Notification.where(subject_type: "Request", subject_id: requests.select(:id)).delete_all
-    RequestActivity.where(request_id: requests.select(:id)).delete_all
-    requests.delete_all
-    @request_type.destroy
-    @endpoint.destroy
-    @organization.users.each { |user| user.memberships.delete_all }
-    @organization.users.destroy_all
-    @department.destroy
-    @organization.destroy
+    discard_organization(@organization)
   end
 
   test "承認と差し戻しが同時に届いても成立するのは片方だけ" do
@@ -174,6 +168,23 @@ class RequestConcurrencyTest < ActiveSupport::TestCase
     statements = locking_statements { @request.approve(actor: @approver) }
 
     assert_predicate statements, :any?
+  end
+
+  # 後片付けが 1 件でも取りこぼすと、組織が残る。残った組織は次の実行の
+  # 作成を識別子の重複で失敗させ、さらに連番の次の値を占めることで、
+  # 無関係なテストの採番まで巻き込む。
+  test "後片付けは読み込んだあとに増えた記録も取り除く" do
+    @organization.users.load
+    @organization.departments.load
+    create_user("late@example.com", role: "member")
+    @organization.departments.create!(name: "経理部", code: "accounting")
+
+    discard_organization(@organization)
+
+    assert_nil Organization.find_by(code: ORGANIZATION_CODE)
+    assert_empty User.where(organization_id: @organization.id)
+    assert_empty Department.where(organization_id: @organization.id)
+    assert_empty Request.where(organization_id: @organization.id)
   end
 
   private

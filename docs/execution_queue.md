@@ -12,9 +12,9 @@
 
 ```text
 現在の Phase: R0
-直近完了 Task: R0-T17A
+直近完了 Task: R0-T17B
 進行中:        なし
-次に実行:      R0-T17B 非トランザクションのテストの後片付けをそろえる（#98）
+次に実行:      R0-T17C 別プロセスの起動待ちを実行環境の速さから切り離す（#99）
 ```
 
 ## P0 プロジェクト契約
@@ -171,7 +171,7 @@ Issue が大きい場合は分割してよいが、分割した場合は本書�
 | R0-T16 | `r0/t16-settings-transaction` | [#62](https://github.com/toshtag/OfficeWeave/issues/62)      | 設定更新をひとつのトランザクションにまとめる         | 完了  |
 | R0-T17 | `r0/t17-api-datetime-validation` | [#63](https://github.com/toshtag/OfficeWeave/issues/63)   | API の不正な日時入力を 400 で返す         | 完了  |
 | R0-T17A | `r0/t17a-list-date-range` | [#97](https://github.com/toshtag/OfficeWeave/issues/97)         | 画面の一覧で範囲外の日付を拒む             | 完了  |
-| R0-T17B | —                         | [#98](https://github.com/toshtag/OfficeWeave/issues/98)         | 非トランザクションのテストの後片付けをそろえる      | 未着手 |
+| R0-T17B | `r0/t17b-nontransactional-cleanup` | [#98](https://github.com/toshtag/OfficeWeave/issues/98) | 非トランザクションのテストの後片付けをそろえる      | 完了  |
 | R0-T17C | —                         | [#99](https://github.com/toshtag/OfficeWeave/issues/99)         | 別プロセスの起動待ちを実行環境の速さから切り離す     | 未着手 |
 | R0-T18 | —                          | [#64](https://github.com/toshtag/OfficeWeave/issues/64)         | 初期利用者の存在判定を組織単位にする             | 未着手 |
 | R0-T19 | —                          | [#59](https://github.com/toshtag/OfficeWeave/issues/59)         | 公開待ちのお知らせを表示し、公開時に通知する         | 未着手 |

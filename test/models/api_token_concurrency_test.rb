@@ -7,6 +7,8 @@ require "timeout"
 # 無効化が成立し得る。それを確かめるには別々の接続から同時に実行する
 # 必要があるため、このクラスだけトランザクションで囲む既定を外す。
 class ApiTokenConcurrencyTest < ActiveSupport::TestCase
+  include IsolatedOrganizationTestHelper
+
   self.use_transactional_tests = false
 
   ORGANIZATION_CODE = "api-token-concurrency".freeze
@@ -24,12 +26,7 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
   BLOCKING_TIMEOUT = 60
 
   setup do
-    # 前の実行が途中で終わっていた場合、記録が残ったままになる。
-    # 残したまま作ると識別子の重複で失敗し、以降の実行がすべて崩れる。
-    # 最初の 1 件の理由が読めなくなるため、作る前に取り除く。
-    discard(Organization.find_by(code: ORGANIZATION_CODE))
-
-    @organization = Organization.create!(name: "token の同時実行の確認", code: ORGANIZATION_CODE)
+    @organization = create_isolated_organization(name: "token の同時実行の確認", code: ORGANIZATION_CODE)
     # 無効化を最後の管理者の契約で止めないため、管理者は別に残す。
     create_user("keeper@example.com", role: "administrator")
     # 無効化が組織の行の占有を通る対象。一般利用者の無効化はそこを通らない。
@@ -38,7 +35,7 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
   end
 
   teardown do
-    discard(@organization)
+    discard_organization(@organization)
   end
 
   test "発行が先に確定すると無効化がその token を失効させる" do
@@ -226,7 +223,7 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
                  email_address: "late@example.com", password: "a-long-secret-value")
     @organization.api_tokens.create!(user: @user, name: "残った token")
 
-    discard(@organization)
+    discard_organization(@organization)
 
     assert_nil Organization.find_by(code: ORGANIZATION_CODE)
     assert_empty User.where(organization_id: @organization.id)
@@ -260,23 +257,6 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
   end
 
   private
-    # 検証用の組織と、その配下の記録を取り除く。
-    #
-    # 模型の破棄には利用者を残す契約が入っており、失敗した実行のあとでは
-    # 1 件でも残ると組織を消せない。ここでは契約ではなく後片付けが目的
-    # であるため、参照の順に直接消す。
-    def discard(organization)
-      return if organization.nil?
-
-      user_ids = User.where(organization_id: organization.id).pluck(:id)
-
-      ApiToken.where(organization_id: organization.id).delete_all
-      AuditEvent.where(organization_id: organization.id).delete_all
-      Session.where(user_id: user_ids).delete_all
-      User.where(id: user_ids).delete_all
-      Organization.where(id: organization.id).delete_all
-    end
-
     def create_user(email_address, **attributes)
       @organization.users.create!(
         { name: email_address, email_address: email_address, password: "a-long-secret-value" }.merge(attributes)
