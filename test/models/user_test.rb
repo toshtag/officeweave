@@ -69,12 +69,14 @@ class UserTest < ActiveSupport::TestCase
   test "最後の利用中の管理者を無効化できない" do
     administrator = users(:taro)
     administrator.sessions.create!
+    token = issue_api_token(administrator)
 
     assert_raises(ActiveRecord::RecordNotSaved) { administrator.deactivate! }
 
     assert_predicate administrator.reload, :active?
     assert_predicate administrator, :administrator?
     assert_equal 1, administrator.sessions.count
+    assert_not_predicate token.reload, :revoked?
     assert_equal 1, active_administrator_count
   end
 
@@ -95,6 +97,65 @@ class UserTest < ActiveSupport::TestCase
     assert_not_predicate users(:taro).reload, :active?
     assert_empty users(:taro).sessions
     assert_equal 1, active_administrator_count
+  end
+
+  test "無効にすると発行済みの token をすべて失効する" do
+    user = users(:hanako)
+    tokens = [ issue_api_token(user), issue_api_token(user) ]
+
+    user.deactivate!
+
+    assert tokens.all? { |token| token.reload.revoked? }
+    assert_empty user.api_tokens.active
+  end
+
+  # 無効にした時刻と失効の時刻がずれていると、記録からは
+  # 無効化とは別の失効が起きたようにしか見えない。
+  test "無効にした時刻と token を失効した時刻をそろえる" do
+    user = users(:hanako)
+    token = issue_api_token(user)
+
+    user.deactivate!
+
+    assert_equal user.reload.deactivated_at, token.reload.revoked_at
+  end
+
+  test "すでに失効している token の時刻は書き換えない" do
+    user = users(:hanako)
+    token = issue_api_token(user)
+    token.revoke!
+    revoked_at = token.reload.revoked_at
+
+    travel 1.minute
+    user.deactivate!
+
+    assert_equal revoked_at, token.reload.revoked_at
+  end
+
+  # 失効は取り消せない。再び有効にするのは利用者であって、token ではない。
+  test "再び有効にしても失効した token は戻らない" do
+    user = users(:hanako)
+    token = issue_api_token(user)
+
+    user.deactivate!
+    user.activate!
+
+    assert_predicate user.reload, :active?
+    assert_predicate token.reload, :revoked?
+    assert_empty user.api_tokens.active
+  end
+
+  test "token の失効に失敗すると無効化もセッションの削除も巻き戻す" do
+    user = users(:hanako)
+    user.sessions.create!
+    token = issue_api_token(user)
+    user.define_singleton_method(:revoke_api_tokens) { |at:| raise ActiveRecord::StatementInvalid, "失効に失敗" }
+
+    assert_raises(ActiveRecord::StatementInvalid) { user.deactivate! }
+
+    assert_predicate user.reload, :active?
+    assert_equal 1, user.sessions.count
+    assert_not_predicate token.reload, :revoked?
   end
 
   test "無効にした管理者は人数に数えない" do
@@ -226,6 +287,10 @@ class UserTest < ActiveSupport::TestCase
   private
     def active_administrator_count
       @organization.users.active.administrator.count
+    end
+
+    def issue_api_token(user)
+      @organization.api_tokens.create!(user: user, name: "連携用")
     end
 
     def build_user(**attributes)
