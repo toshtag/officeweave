@@ -30,18 +30,34 @@ class PersistentQueueTest < ActiveSupport::TestCase
     end
   end
 
-  test "定期実行には後始末だけを登録する" do
+  # 登録してよいのは、後始末と、時刻の到来だけで成立する状態の変更に限る。
+  # 一覧をここへ書き出し、増やす判断を明示的にする。
+  test "定期実行には後始末と、時刻の到来で成立する処理だけを登録する" do
     recurring = YAML.safe_load_file(Rails.root.join("config/recurring.yml"), aliases: true)
 
     assert_equal %w[production], recurring.keys
-    assert_equal %w[clear_solid_queue_finished_jobs delete_expired_sessions], recurring["production"].keys
+    assert_equal %w[
+      clear_solid_queue_finished_jobs
+      delete_expired_sessions
+      publish_scheduled_announcements
+    ], recurring["production"].keys
   end
 
-  test "後始末は同じ分に重ねない" do
+  test "実行の間隔を重ねない" do
     tasks = YAML.safe_load_file(Rails.root.join("config/recurring.yml"), aliases: true).fetch("production")
     minutes = tasks.values.map { |task| task.fetch("schedule") }
 
-    assert_equal minutes.uniq.size, minutes.size, "同じ時刻に複数の後始末を登録している"
+    assert_equal minutes.uniq.size, minutes.size, "同じ時刻に複数の定期実行を登録している"
+  end
+
+  # お知らせの公開は、日時の到来だけで成立する。誰の操作も待てないため、
+  # 定期実行から拾う。
+  test "公開待ちのお知らせは登録した名前で呼び出せる" do
+    tasks = YAML.safe_load_file(Rails.root.join("config/recurring.yml"), aliases: true).fetch("production")
+
+    assert_equal "PublishScheduledAnnouncementsJob",
+                 tasks.dig("publish_scheduled_announcements", "class")
+    assert_kind_of Class, PublishScheduledAnnouncementsJob
   end
 
   test "期限切れセッションの削除は登録した名前で呼び出せる" do
