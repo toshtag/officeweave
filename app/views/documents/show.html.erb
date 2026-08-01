@@ -27,7 +27,7 @@
   <% end %>
 
   <% if @document.body.present? %>
-    <div class="prose"><%= simple_format @document.body %></div>
+    <div class="prose"><%= formatted_body @document.body %></div>
   <% end %>
 
   <% if @document.attachments.attached? %>

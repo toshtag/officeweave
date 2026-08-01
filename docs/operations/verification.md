@@ -642,7 +642,38 @@ config/recurring.yml  publish_scheduled_announcements（5 分ごと）
 `test/controllers/announcements_controller_test.rb` が押さえている。
 ここで確かめるのは、実際に動いている構成でも同じであることである。
 
-## 22. 自動実行
+## 22. 本文の描画
+
+利用者が入力した本文が、平文として表示されることを確かめる。
+
+```text
+1. 本文へ書いた <img> と <a> が要素にならず、記号のまま読める
+2. 入力した記号が黙って消えない
+3. 空行が段落に、単独の改行が改行になる
+4. 文書、お知らせ、予定、申請、申請の履歴、設備・備品のすべてで同じ
+```
+
+外部の画像が埋め込めると、開いた全員の閲覧環境から外部の宛先へ要求が
+出る。宛先には送信元の IP、ブラウザー、開いた時刻が届く。
+
+```text
+<img src="http://beacon.example/pixel.png">
+<a href="http://phish.example">規程はこちら</a>
+```
+
+これを本文へ書いて保存し、別の利用者で開いて確かめる。要求が出ないことは、
+画面の開発者ツールの通信記録で見る。
+
+描画は `app/helpers/application_helper.rb` の `formatted_body` だけが行う。
+先にすべてを escape し、`simple_format` には解釈させない。取り除く形に
+しないのは、除去すると利用者が入力した文字が黙って消えるためである。
+
+`test/helpers/application_helper_test.rb` と
+`test/controllers/body_rendering_test.rb` が押さえている。前者は、
+`simple_format`、`raw`、`html_safe`、`<%==` が画面に無いことも確かめる。
+ここで確かめるのは、実際に動いている構成でも同じであることである。
+
+## 23. 自動実行
 
 `.github/workflows/verify.yml` が、変更のたびに次を実行する。
 

@@ -12,9 +12,9 @@
 
 ```text
 現在の Phase: R0
-直近完了 Task: R0-T21
-進行中:        R0-T22 パスワードの変更で進行中のセッションを終わらせる（#110）
-次に実行:      R0-T23 利用者が入力した本文を平文として描画する（#111）
+直近完了 Task: R0-T22
+進行中:        R0-T23 利用者が入力した本文を平文として描画する（#111）
+次に実行:      R0-T24 Webhook 宛先の変更を監査記録へ残す（#112）
 ```
 
 ## P0 プロジェクト契約
@@ -178,8 +178,8 @@ Issue が大きい場合は分割してよいが、分割した場合は本書�
 | R0-T20 | `r0/t20-returned-translation-key` | [#67](https://github.com/toshtag/OfficeWeave/issues/67)  | 差し戻し通知の翻訳キーの誤記を修正する            | 完了  |
 | R0-T20A | `r0/t20a-mail-test-constant` | [#106](https://github.com/toshtag/OfficeWeave/issues/106)   | メール送信テストの定数依存を実行順から切り離す      | 完了  |
 | R0-T21 | `r0/t21-stabilization-audit` | —                                                             | 安定化完了監査。全 Issue、全検証、文書、配布構成の整合を確認する | 完了  |
-| R0-T22 | `r0/t22-password-change-session-revocation` | [#110](https://github.com/toshtag/OfficeWeave/issues/110) | パスワードの変更で進行中のセッションを終わらせる | 進行中 |
-| R0-T23 | `r0/t23-plain-text-body-rendering` | [#111](https://github.com/toshtag/OfficeWeave/issues/111) | 利用者が入力した本文を平文として描画する      | 未着手 |
+| R0-T22 | `r0/t22-password-change-session-revocation` | [#110](https://github.com/toshtag/OfficeWeave/issues/110) | パスワードの変更で進行中のセッションを終わらせる | 完了  |
+| R0-T23 | `r0/t23-plain-text-body-rendering` | [#111](https://github.com/toshtag/OfficeWeave/issues/111) | 利用者が入力した本文を平文として描画する      | 進行中 |
 | R0-T24 | `r0/t24-webhook-endpoint-update-audit` | [#112](https://github.com/toshtag/OfficeWeave/issues/112) | Webhook 宛先の変更を監査記録へ残す        | 未着手 |
 | R0-T25 | `r0/t25-reservation-event-visibility` | [#113](https://github.com/toshtag/OfficeWeave/issues/113) | 予約に結び付ける予定を参照できるものへ限る     | 未着手 |
 
