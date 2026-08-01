@@ -28,6 +28,23 @@
     <p><%= t("announcements.index.empty") %></p>
   <% end %>
 
+  <% if @scheduled.any? %>
+    <section class="stack" aria-labelledby="announcement-scheduled">
+      <h2 id="announcement-scheduled"><%= t("announcements.index.scheduled") %></h2>
+      <ul class="list-cards">
+        <% @scheduled.each do |announcement| %>
+          <li class="panel stack">
+            <h3><%= link_to announcement.title, announcement %></h3>
+            <p class="meta">
+              <%= t("announcements.scheduled_for", at: l(announcement.published_at, format: :short)) %> ・
+              <%= announcement.author.name %>
+            </p>
+          </li>
+        <% end %>
+      </ul>
+    </section>
+  <% end %>
+
   <% if @drafts.any? %>
     <section class="stack" aria-labelledby="announcement-drafts">
       <h2 id="announcement-drafts"><%= t("announcements.index.drafts") %></h2>

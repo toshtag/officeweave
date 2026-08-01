@@ -22,6 +22,10 @@ class Announcement < ApplicationRecord
   validate :departments_must_be_in_same_organization
 
   scope :published, -> { where.not(published_at: nil).where(published_at: ..Time.current) }
+  # 公開日時を先に設定したもの。公開済みにも下書きにも入らない。
+  scope :scheduled, -> { where(published_at: Time.current...) }
+  # 公開日時が来ていて、まだ知らせていないもの。
+  scope :awaiting_publication_notice, -> { published.where(notified_at: nil) }
   scope :recent_first, -> { order(published_at: :desc, created_at: :desc) }
 
   # 利用者が読める公開済みのお知らせ。
@@ -70,6 +74,38 @@ class Announcement < ApplicationRecord
 
   def limited_to_departments?
     visibility == "departments"
+  end
+
+  def scheduled?
+    published_at.present? && published_at > Time.current
+  end
+
+  # 公開の知らせを 1 回だけ送る。
+  #
+  # 送ったことを記録しないと、更新のたびに送り直すことになる。記録の確定と
+  # 送るかどうかの判定を、同じ占有の中で行う。定期実行と画面からの更新が
+  # 同時に走っても、送るのは先に確定した側だけになる。
+  #
+  # 送信そのものは占有の外で行う。占有したまま外部を待つと、送信の遅れが
+  # そのまま他の操作の待ち時間になる。
+  def notify_publication
+    claimed = with_lock do
+      next false unless published? && notified_at.nil?
+
+      update!(notified_at: Time.current)
+      true
+    end
+
+    return false unless claimed
+
+    Notification.deliver_to_all(
+      users: recipients.where.not(id: author_id),
+      subject: self,
+      event: "announcement_published"
+    )
+    Notification.publish(organization: organization, subject: self, event: "announcement_published")
+
+    true
   end
 
   private

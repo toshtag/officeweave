@@ -7,7 +7,10 @@ class AnnouncementsController < ApplicationController
   def index
     @announcements = Announcement.visible_to(Current.user).recent_first.includes(:author)
     @unread_ids = Announcement.visible_to(Current.user).unread_for(Current.user).pluck(:id).to_set
-    @drafts = administrator? ? current_organization.announcements.where(published_at: nil).recent_first : []
+    @drafts = manageable.where(published_at: nil).recent_first
+    # 公開待ちは公開済みにも下書きにも入らない。区分を分けないと、
+    # 作成した管理者自身が確認も訂正も取り消しもできない。
+    @scheduled = manageable.scheduled.reorder(published_at: :asc, id: :asc)
   end
 
   def show
@@ -28,7 +31,10 @@ class AnnouncementsController < ApplicationController
     @announcement.author = Current.user
 
     if @announcement.save
-      notify_recipients
+      # 公開待ちの場合はここでは送らない。公開日時が来た時点で
+      # 定期実行が送る。作成の時点で送ると、まだ読めないお知らせの
+      # 知らせだけが先に届く。
+      @announcement.notify_publication
       redirect_to @announcement, notice: t("announcements.created")
     else
       render :new, status: :unprocessable_content
@@ -37,7 +43,7 @@ class AnnouncementsController < ApplicationController
 
   def update
     if @announcement.update(announcement_params)
-      notify_recipients
+      @announcement.notify_publication
       redirect_to @announcement, notice: t("announcements.updated")
     else
       render :edit, status: :unprocessable_content
@@ -51,22 +57,9 @@ class AnnouncementsController < ApplicationController
   end
 
   private
-    # 公開済みになった時点で知らせる。
-    # 二重の通知は模型側で抑えるため、更新のたびに呼んでよい。
-    def notify_recipients
-      return unless @announcement.published?
-
-      Notification.deliver_to_all(
-        users: @announcement.recipients.where.not(id: @announcement.author_id),
-        subject: @announcement,
-        event: "announcement_published"
-      )
-
-      Notification.publish(
-        organization: current_organization,
-        subject: @announcement,
-        event: "announcement_published"
-      )
+    # 管理者だけが扱える区分。一般利用者には空の一覧を返す。
+    def manageable
+      administrator? ? current_organization.announcements : Announcement.none
     end
 
     # 管理者は下書きも参照できる。それ以外は公開範囲に入るものだけを扱う。
