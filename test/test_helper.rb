@@ -4,6 +4,7 @@ require "rails/test_help"
 require_relative "test_helpers/session_test_helper"
 require_relative "test_helpers/isolated_organization_test_helper"
 require_relative "test_helpers/boot_process_test_helper"
+require_relative "test_helpers/query_count_test_helper"
 
 module ActiveSupport
   class TestCase
