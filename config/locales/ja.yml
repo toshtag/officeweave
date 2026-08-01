@@ -320,6 +320,7 @@ ja:
       one: 未読 1 件
       other: 未読 %{count} 件
     draft: 下書き
+    scheduled_for: "%{at} に公開予定"
     limited_to: "公開先: %{names}"
     visibilities:
       organization: 組織全体
@@ -330,6 +331,7 @@ ja:
       new: お知らせを作成
       empty: 表示できるお知らせがありません。
       drafts: 下書き
+      scheduled: 公開待ち
     new:
       title: お知らせの作成
       heading: お知らせの作成

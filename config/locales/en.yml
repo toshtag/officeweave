@@ -300,6 +300,7 @@ en:
       one: 1 unread
       other: "%{count} unread"
     draft: Draft
+    scheduled_for: Scheduled for %{at}
     limited_to: "Shared with: %{names}"
     visibilities:
       organization: Everyone in the organization
@@ -310,6 +311,7 @@ en:
       new: Write an announcement
       empty: There are no announcements to show.
       drafts: Drafts
+      scheduled: Scheduled
     new:
       title: Write an announcement
       heading: Write an announcement
