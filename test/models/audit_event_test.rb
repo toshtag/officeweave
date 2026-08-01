@@ -57,4 +57,15 @@ class AuditEventTest < ActiveSupport::TestCase
 
     assert_equal department.code, event.details["code"]
   end
+
+  # 監査記録の一覧と絞り込みは、ACTIONS のすべてを翻訳して並べる。
+  # 片方だけ足すと、画面に翻訳の欠落がそのまま出る。
+  test "すべての操作に、対応するすべての言語の名前がある" do
+    missing = I18n.available_locales.flat_map do |locale|
+      AuditEvent::ACTIONS.reject { |action| I18n.exists?("audit_events.actions.#{action}", locale) }
+                         .map { |action| "#{locale}: #{action}" }
+    end
+
+    assert_empty missing
+  end
 end

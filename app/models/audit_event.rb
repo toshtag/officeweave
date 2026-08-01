@@ -21,6 +21,7 @@ class AuditEvent < ApplicationRecord
     api_token_issued
     api_token_revoked
     webhook_endpoint_created
+    webhook_endpoint_updated
     webhook_endpoint_deleted
     users_imported
     users_exported

@@ -686,6 +686,7 @@ ja:
       api_token_issued: token の発行
       api_token_revoked: token の無効化
       webhook_endpoint_created: 送信先の登録
+      webhook_endpoint_updated: 送信先の変更
       webhook_endpoint_deleted: 送信先の削除
       users_imported: 利用者の取り込み
       users_exported: 利用者の書き出し
