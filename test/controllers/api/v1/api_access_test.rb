@@ -3,6 +3,8 @@ require "test_helper"
 module Api
   module V1
     class ApiAccessTest < ActionDispatch::IntegrationTest
+      include QueryCountTestHelper
+
       setup do
         @token = organizations(:main).api_tokens.create!(user: users(:taro), name: "連携用")
         @member_token = organizations(:main).api_tokens.create!(user: users(:hanako), name: "一般利用者用")
@@ -106,6 +108,26 @@ module Api
         assert_not_includes codes, departments(:other_general).code
       end
 
+      test "部門の階層を返す" do
+        get api_v1_departments_url, headers: auth_headers
+
+        paths = response.parsed_body["departments"].to_h { |item| [ item["code"], item["path"] ] }
+
+        assert_equal "営業部 / 営業部 東日本課", paths[departments(:sales_east).code]
+        assert_equal "開発部", paths[departments(:development).code]
+      end
+
+      # 部門の件数と階層の深さだけを変えて、同じ取得を 2 回数える。
+      test "部門の取得で出る問い合わせが、件数と階層の深さで増えない" do
+        before = count_queries { get api_v1_departments_url, headers: auth_headers }
+
+        add_department_chain(depth: 5)
+
+        after = count_queries { get api_v1_departments_url, headers: auth_headers }
+
+        assert_equal before, after
+      end
+
       test "利用者の一覧は管理者の token でだけ取得できる" do
         get api_v1_users_url, headers: auth_headers
 
@@ -151,6 +173,16 @@ module Api
       private
         def auth_headers(token = @token)
           { "Authorization" => "Bearer #{token.token}" }
+        end
+
+        def add_department_chain(depth:)
+          parent = nil
+
+          depth.times do |level|
+            parent = organizations(:main).departments.create!(
+              name: "追加の部門 #{level}", code: "extra-#{level}", parent: parent
+            )
+          end
         end
     end
   end
