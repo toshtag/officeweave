@@ -17,6 +17,9 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
   OUTCOME_TIMEOUT = 5
   CLEANUP_TIMEOUT = 5
 
+  # 待ちグラフを見に行く間隔。
+  POLL_INTERVAL = 0.01
+
   setup do
     # 前の実行が途中で終わっていた場合、記録が残ったままになる。
     # 残したまま作ると識別子の重複で失敗し、以降の実行がすべて崩れる。
@@ -181,6 +184,19 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
     assert_equal "接続を特定できません", error.message
   end
 
+  # 他の接続の状態は、問い合わせるたびに読み直す必要がある。
+  # 既定のクエリキャッシュが働くと、相手が待ちへ入る前の答えが返り続け、
+  # 上限をいくら伸ばしても待ちを観測できない。
+  test "待ちグラフの観測は毎回読み直す" do
+    sql = "SELECT to_char(clock_timestamp(), 'HH24:MI:SS.US')"
+
+    cached = Array.new(2) { sleep POLL_INTERVAL; ActiveRecord::Base.connection.select_value(sql) }
+    fresh = Array.new(2) { sleep POLL_INTERVAL; uncached_value(sql) }
+
+    assert_equal 1, cached.uniq.size, "既定ではキャッシュが働くという前提が変わっています"
+    assert_equal 2, fresh.uniq.size, "観測がキャッシュされています"
+  end
+
   # 失敗した実行が記録を残すと、以降の実行がすべて識別子の重複で崩れ、
   # 最初の 1 件の理由が読めなくなる。
   test "後片付けは利用者と token が残っていても組織を取り除く" do
@@ -271,15 +287,25 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
     # 固定時間の sleep で代用すると、遅い環境では待つ前に先へ進む。
     def wait_until_blocked(pid)
       Timeout.timeout(PREPARATION_TIMEOUT) do
-        loop do
-          blockers = ActiveRecord::Base.connection.select_value(
-            "SELECT cardinality(pg_blocking_pids(#{Integer(pid)}))"
-          )
-          break if blockers.to_i.positive?
-
-          Thread.pass
-        end
+        sleep POLL_INTERVAL until blocked?(pid)
       end
+    end
+
+    # 他の接続の状態は、問い合わせるたびに読み直す。
+    #
+    # 同じ文を繰り返すため、既定ではクエリキャッシュが働き、最初の結果が
+    # そのまま返り続ける。相手が待ちへ入る前に 1 度でも読んでしまうと、
+    # そのあとは何度読んでも待ちに入っていないという答えしか返らず、
+    # 上限をいくら伸ばしても成立しない。
+    #
+    # 間隔も空ける。観測する側と観測される側は同じデータベースを使うため、
+    # 間隔を詰めると観測そのものが相手の進行を妨げる。
+    def blocked?(pid)
+      uncached_value("SELECT cardinality(pg_blocking_pids(#{Integer(pid)}))").to_i.positive?
+    end
+
+    def uncached_value(sql)
+      ActiveRecord::Base.uncached { ActiveRecord::Base.connection.select_value(sql) }
     end
 
     # 組織の行を占有した状態で発行を始め、発行がロック待ちへ入った時点で
