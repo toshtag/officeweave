@@ -27,6 +27,11 @@ module QueryCountTestHelper
     capture_queries(&block).sum { |query| query[:row_count].to_i }
   end
 
+  # 数え始める前に、問い合わせのキャッシュを空にする。
+  #
+  # キャッシュは運用では要求ごとに作り直される。テストでは同じ接続を使い
+  # 続けるため、1 回目と同じ問い合わせが 2 回目ではキャッシュから返る。
+  # 空にしないと、2 回数えて比べる形が成立しない。
   def capture_queries
     queries = []
 
@@ -37,6 +42,7 @@ module QueryCountTestHelper
       queries << payload.slice(:sql, :name, :row_count)
     end
 
+    ActiveRecord::Base.connection_pool.clear_query_cache
     yield
 
     queries

@@ -1,6 +1,8 @@
 require "test_helper"
 
 class ApiTokenTest < ActiveSupport::TestCase
+  include QueryCountTestHelper
+
   test "発行すると値が一度だけ参照できる" do
     token = organizations(:main).api_tokens.create!(user: users(:taro), name: "連携用")
 
@@ -29,6 +31,39 @@ class ApiTokenTest < ActiveSupport::TestCase
     ApiToken.authenticate(token.token)
 
     assert_not_nil token.reload.last_used_at
+  end
+
+  test "短い間隔で続けて認証しても最終利用を書き込まない" do
+    token = organizations(:main).api_tokens.create!(user: users(:taro), name: "連携用")
+    value = token.token
+    ApiToken.authenticate(value)
+    recorded_at = token.reload.last_used_at
+
+    ApiToken.authenticate(value)
+
+    assert_equal recorded_at, token.reload.last_used_at
+  end
+
+  test "間隔を超えると最終利用が記録される" do
+    token = organizations(:main).api_tokens.create!(user: users(:taro), name: "連携用")
+    value = token.token
+    ApiToken.authenticate(value)
+
+    travel(ApiToken::USE_WRITE_INTERVAL + 1.second) do
+      ApiToken.authenticate(value)
+
+      assert_in_delta Time.current, token.reload.last_used_at, 1.second
+    end
+  end
+
+  # 利用者の状態は認証のたびに見る。別の問い合わせにすると、外部からの接続
+  # 1 回につき往復が 1 つ増える。
+  test "認証は 1 回の問い合わせで済む" do
+    token = organizations(:main).api_tokens.create!(user: users(:taro), name: "連携用")
+    value = token.token
+    ApiToken.authenticate(value)
+
+    assert_equal 1, count_queries { ApiToken.authenticate(value) }
   end
 
   test "無効にした token では認証できない" do
