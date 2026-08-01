@@ -213,9 +213,17 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
     assert_match(/ロック待ちへ入る前に終わりました/, error.message)
   end
 
-  # 失敗した実行が記録を残すと、以降の実行がすべて識別子の重複で崩れ、
-  # 最初の 1 件の理由が読めなくなる。
-  test "後片付けは利用者と token が残っていても組織を取り除く" do
+  # 後片付けが 1 件でも取りこぼすと、組織が残る。残った組織は次の実行の
+  # 作成を識別子の重複で失敗させ、以降はこのファイルの全件が別の理由で
+  # 崩れるため、最初の 1 件の理由が読めなくなる。
+  #
+  # 取りこぼしは、読み込み済みの関連を使うと起きる。関連を読んだあとに
+  # 別の接続が利用者を増やした場合、模型は増えた分を見ないまま組織を
+  # 破棄しようとし、データベースの外部キーで止まる。
+  test "後片付けは読み込んだあとに増えた利用者も取り除く" do
+    @organization.users.load
+    User.create!(organization_id: @organization.id, name: "遅れて増えた利用者",
+                 email_address: "late@example.com", password: "a-long-secret-value")
     @organization.api_tokens.create!(user: @user, name: "残った token")
 
     discard(@organization)
