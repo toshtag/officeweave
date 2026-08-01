@@ -77,6 +77,15 @@ INITIAL_USER_PASSWORD  必須。既定値はない。15 文字以上とする
 実際に設定した値を、コマンドの例や作業記録へ書き写さない。
 本書と `.env.example` に載る値は、いずれも使用できない値である。
 
+作成の判定は組織ごとに行う。`ORGANIZATION_CODE` を変えて実行すると、
+その組織に利用者がいない限り、その組織の初期管理者が作られる。
+同じ組織に対して繰り返し実行しても、利用者は増えない。
+
+```text
+ORGANIZATION_CODE      導入単位となる組織。既定は default
+ORGANIZATION_NAME      組織を新しく作る場合の表示名。既定は OfficeWeave
+```
+
 ### 資格情報の寿命
 
 `INITIAL_USER_*` は、稼働し続ける web と worker へは渡さない。
