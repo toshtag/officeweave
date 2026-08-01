@@ -1,6 +1,8 @@
 require "test_helper"
 
 class UserTest < ActiveSupport::TestCase
+  include QueryCountTestHelper
+
   setup { @organization = organizations(:main) }
 
   test "氏名とメールアドレスとパスワードがあれば作成できる" do
@@ -55,6 +57,14 @@ class UserTest < ActiveSupport::TestCase
 
   test "主たる所属がない場合は nil を返す" do
     assert_nil users(:hanako).primary_department
+  end
+
+  # 一覧は行ごとに主たる所属を表示する。先読みできない形にすると、
+  # 利用者の人数だけ問い合わせが増える。
+  test "主たる所属は先読みできる" do
+    users = User.where(organization_id: organizations(:main).id).includes(:primary_department).to_a
+
+    assert_equal 0, count_queries { users.each { |user| user.primary_department&.name } }
   end
 
   test "最後の利用中の管理者を一般利用者へ変更できない" do
