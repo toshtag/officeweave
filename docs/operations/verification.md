@@ -547,9 +547,9 @@ belongs_to_same_organization :department, of: :announcement # 組織を親から
 巻き戻しと理由の表示を押さえている。ここで確かめるのは、実際に動いている
 構成でも同じであることである。
 
-## 20. API の日時入力
+## 20. 日時と日付の入力
 
-呼び出す側が直せる誤りとして返ることを確かめる。
+受け取れない入力が、呼び出す側の直せる誤りとして返ることを確かめる。
 
 ```text
 1. from を指定しない場合、現在時刻以降の予定が返る
@@ -576,9 +576,24 @@ curl -sS -H "Authorization: Bearer $TOKEN" "$BASE_URL/api/v1/events?from=9999999
 データベースが扱える範囲を超えて拒み、入力の誤りが 500 になる。
 受け取る年は `Api::BaseController::ACCEPTED_YEARS` で 1000..9999 に限る。
 
-判定は `app/controllers/api/base_controller.rb` の 1 か所に置く。
-これから増える経路も同じ契約を通る。
-`test/controllers/api/v1/api_access_test.rb` が押さえている。
+判定は `app/controllers/concerns/time_parameters.rb` の 1 か所に置く。
+API と画面の双方が同じ入口を通る。応答の形だけが違う。
+
+```text
+API:   400 と不正なパラメーター名
+画面:  一覧への転送。絞り込みが外れたことが URL で分かる
+```
+
+画面側も同じ値で確かめる。
+
+```text
+/events?from=9999999999999-01-01        一覧へ戻る
+/reservations?from=9999999999999-01-01  一覧へ戻る
+```
+
+`test/controllers/api/v1/api_access_test.rb`、
+`test/controllers/events_controller_test.rb`、
+`test/controllers/reservations_controller_test.rb` が押さえている。
 ここで確かめるのは、実際に動いている構成でも同じであることである。
 
 ## 21. 自動実行
