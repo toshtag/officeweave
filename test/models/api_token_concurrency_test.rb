@@ -92,6 +92,54 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
     assert_predicate outcomes.fetch(:issue), :persisted?
   end
 
+  # 順序を固定する側にも、結果を呼出側へ返す義務がある。
+  # 確定したあとの失敗を取りこぼすと、期待した状態だけが残って成功に見える。
+  test "順序を固定した実行で後段の例外を呼出側へ返す" do
+    error = assert_raises(RuntimeError) do
+      in_order(first: -> { User.find(@user.id) }, second: -> { raise "後段の失敗" })
+    end
+
+    assert_equal "後段の失敗", error.message
+  end
+
+  # 先に確定させる側が準備の段階で失敗すると、確定の合図は届かない。
+  # そこで待ち続けると、理由が上限時間の経過に置き換わる。
+  test "順序を固定した実行で準備の失敗を待たずに返す" do
+    error = assert_raises(RuntimeError) do
+      Timeout.timeout(PREPARATION_TIMEOUT / 2.0) do
+        in_order(first: -> { raise "準備の失敗" }, second: -> { raise "後段を開始してはならない" })
+      end
+    end
+
+    assert_equal "準備の失敗", error.message
+  end
+
+  # kill は停止を指示するだけで、終了までは待たない。
+  test "終了しない thread は kill のあとに join し直して回収する" do
+    blocked = blocked_thread
+
+    remaining = join_or_stop_threads([ blocked ], timeout: 0.01)
+
+    assert_empty remaining
+    assert_not_predicate blocked, :alive?
+  end
+
+  # Thread#join は、例外で終わった thread の例外を呼出側へ送出し直す。
+  # 回収の途中でそれを浴びると、残りの thread が回収されないまま残る。
+  test "例外で終わった thread があっても残りの回収を続ける" do
+    # 意図した例外であり、標準エラーへの報告は要らない。
+    failing = Thread.new do
+      Thread.current.report_on_exception = false
+      raise "worker の失敗"
+    end
+    blocked = blocked_thread
+
+    remaining = join_or_stop_threads([ failing, blocked ], timeout: 0.01)
+
+    assert_empty remaining
+    assert_not_predicate blocked, :alive?
+  end
+
   private
     def create_user(email_address, **attributes)
       @organization.users.create!(
@@ -107,6 +155,62 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
       Thread.new { ActiveRecord::Base.connection_pool.with_connection(&block) }
     end
 
+    # 自分からは終わらない thread。固定時間の sleep で待たずに
+    # 待機状態へ入れるため、解放されない Queue を使う。
+    def blocked_thread
+      thread = Thread.new { Queue.new.pop }
+      Thread.pass until thread.alive?
+
+      thread
+    end
+
+    # thread の中で終わった例外を、呼出側が受け取れる形にして残す。
+    # 例外のまま終わらせると、回収のために join し直した側がそれを浴びる。
+    # 報告の内容が、回収と報告のどちらを先に書いたかで変わってしまう。
+    def collecting(name, outcomes)
+      yield
+      outcomes << [ name, nil ]
+    rescue StandardError => error
+      outcomes << [ name, error ]
+    end
+
+    # Thread#kill は停止を指示するだけで、終了までは待たない。
+    # 指示したあとに join し直さないと、接続を持ったままの thread を
+    # 残して teardown の削除へ進み、次のテストが理由の分からない
+    # 失敗を受け取ることになる。
+    #
+    # 2 度目の join でも終わらなかった thread だけを返す。
+    # 回収できなかったことを、呼出側が失敗として扱えるようにする。
+    def join_or_stop_threads(threads, timeout: CLEANUP_TIMEOUT)
+      threads.filter_map do |thread|
+        next if join_quietly(thread, timeout)
+
+        thread.kill
+        join_quietly(thread, timeout)
+
+        thread if thread.alive?
+      end
+    end
+
+    # Thread#join は、その thread が例外で終わっていた場合、呼出側へ
+    # 送出し直す。回収の途中でそれを浴びると、残りの thread を回収しないまま
+    # 抜けることになる。ここは待つことだけを行い、理由の報告は
+    # collecting が記録した結果に任せる。
+    def join_quietly(thread, timeout)
+      thread.join(timeout)
+    rescue StandardError
+      thread
+    end
+
+    # 1 件なら原因をそのまま送出する。複数あるときは、片方だけを
+    # 送出して残りを落とさないよう、両方を並べて失敗させる。
+    def raise_worker_failures(failures)
+      return if failures.empty?
+      raise failures.values.first if failures.size == 1
+
+      flunk failures.map { |name, error| "#{name}: #{error.class}: #{error.message}" }.join(" / ")
+    end
+
     # 先に確定させる側が利用者の行を占有したまま、もう一方を開始する。
     # 占有は確定するまで解けないため、待ち時間ではなく順序そのものを固定できる。
     #
@@ -115,26 +219,48 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
     def in_order(first:, second:)
       held = Queue.new
       release = Queue.new
+      outcomes = Queue.new
       threads = []
+      remaining = []
+      failures = {}
 
-      threads << in_background do
-        ActiveRecord::Base.transaction do
-          first.call
-          held << :held
-          release.pop
+      begin
+        threads << in_background do
+          collecting(:first, outcomes) do
+            prepared = false
+
+            begin
+              ActiveRecord::Base.transaction do
+                first.call
+                prepared = true
+                held << :held
+                release.pop
+              end
+            rescue StandardError
+              # 確定の合図を待つ側へ結果を渡してから、収集する側へ送り直す。
+              held << :failed unless prepared
+              raise
+            end
+          end
         end
+
+        # 先に確定させる側が準備の段階で失敗した場合、後段には
+        # 確かめたい順序が存在しない。開始せず、理由だけを返す。
+        prepared = Timeout.timeout(PREPARATION_TIMEOUT) { held.pop } == :held
+        started = prepared ? %i[first second] : %i[first]
+        threads << in_background { collecting(:second, outcomes) { second.call } } if prepared
+        release << true
+
+        threads.each { |thread| assert thread.join(COMPLETION_TIMEOUT), "処理が終わりませんでした" }
+        failures = Timeout.timeout(OUTCOME_TIMEOUT) { started.map { outcomes.pop } }.to_h.compact
+      ensure
+        # 異常終了では、確定の合図を待ったままの thread が残る。
+        release << true if threads.any?(&:alive?)
+        remaining = join_or_stop_threads(threads)
       end
 
-      Timeout.timeout(PREPARATION_TIMEOUT) { held.pop }
-      threads << in_background { second.call }
-      release << true
-
-      threads.each { |thread| assert thread.join(COMPLETION_TIMEOUT), "処理が終わりませんでした" }
-    ensure
-      # 異常終了では、確定の合図を待ったままの thread が残る。
-      # 解放しても終わらないものだけを止め、次のテストへ持ち越さない。
-      release << true if threads.any?(&:alive?)
-      threads.each { |thread| thread.kill unless thread.join(CLEANUP_TIMEOUT) }
+      assert_empty remaining, "停止できない thread が残りました"
+      raise_worker_failures(failures)
     end
 
     def deactivate_and_issue_concurrently
@@ -154,34 +280,40 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
       start = Queue.new
       outcomes = Queue.new
       threads = []
+      remaining = []
+      results = nil
 
-      operations.each do |name, steps|
-        threads << Thread.new do
-          prepared = false
+      begin
+        operations.each do |name, steps|
+          threads << in_background do
+            prepared = false
 
-          begin
-            ActiveRecord::Base.connection_pool.with_connection do
+            begin
               subject = steps[:prepare].call
               prepared = true
               ready << :ready
               start.pop
               outcomes << [ name, steps[:act].call(subject) ]
+            rescue StandardError => error
+              outcomes << [ name, error ]
+              ready << error unless prepared
             end
-          rescue StandardError => error
-            outcomes << [ name, error ]
-            ready << error unless prepared
           end
         end
+
+        Timeout.timeout(PREPARATION_TIMEOUT) { operations.each { ready.pop } }
+        operations.each { start << true }
+        threads.each { |thread| assert thread.join(COMPLETION_TIMEOUT), "処理が終わりませんでした" }
+
+        results = Timeout.timeout(OUTCOME_TIMEOUT) { operations.map { outcomes.pop }.to_h }
+      ensure
+        # 開始の合図を待ったままの thread を解放してから回収する。
+        threads.count(&:alive?).times { start << true }
+        remaining = join_or_stop_threads(threads)
       end
 
-      Timeout.timeout(PREPARATION_TIMEOUT) { operations.each { ready.pop } }
-      operations.each { start << true }
-      threads.each { |thread| assert thread.join(COMPLETION_TIMEOUT), "処理が終わりませんでした" }
-
-      Timeout.timeout(OUTCOME_TIMEOUT) { operations.map { outcomes.pop }.to_h }
-    ensure
-      threads.select(&:alive?).each { start << true }
-      threads.each { |thread| thread.kill unless thread.join(CLEANUP_TIMEOUT) }
+      assert_empty remaining, "停止できない thread が残りました"
+      results
     end
 
     # SQL 全体の一致は実装の書き方に縛られるため、対象と種類だけを見る。
