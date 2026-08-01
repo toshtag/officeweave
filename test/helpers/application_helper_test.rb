@@ -43,4 +43,59 @@ class ApplicationHelperTest < ActionView::TestCase
   test "描画した結果は安全な文字列として扱える" do
     assert_predicate formatted_body("本文"), :html_safe?
   end
+
+  # 迂回は、本文を出す画面を足したときに入る。書き方を列挙して禁じるのでは
+  # なく、escape を外し得る表現そのものを画面から締め出す。
+  ESCAPE_BYPASSES = {
+    "simple_format" => /\bsimple_format\b/,
+    "raw" => /\braw[\s(]/,
+    "html_safe" => /\.html_safe\b/,
+    "<%==" => /<%==/
+  }.freeze
+
+  # 描画を定義している場所。ここだけが escape を扱う。
+  BODY_RENDERER = "app/helpers/application_helper.rb".freeze
+
+  test "迂回の表現を検出する" do
+    source = <<~ERB
+      <div><%= formatted_body @document.body %></div>
+      <div><%= simple_format @document.body %></div>
+      <div><%== @document.body %></div>
+      <div><%= raw @document.body %></div>
+      <div><%= @document.body.html_safe %></div>
+    ERB
+
+    assert_equal [ 2, 3, 4, 5 ], escape_bypasses(source).map(&:first)
+  end
+
+  test "escape を外し得る表現を画面へ置かない" do
+    offenders = Dir.glob(Rails.root.join("app/views/**/*.erb")).flat_map do |path|
+      relative = Pathname.new(path).relative_path_from(Rails.root)
+
+      escape_bypasses(File.read(path)).map { |line, name| "#{relative}:#{line} #{name}" }
+    end
+
+    assert_empty offenders
+  end
+
+  test "本文の描画を ApplicationHelper の外へ広げない" do
+    allowed = Rails.root.join(BODY_RENDERER).to_s
+
+    offenders = Dir.glob(Rails.root.join("app/**/*.rb")).reject { |path| path == allowed }.flat_map do |path|
+      relative = Pathname.new(path).relative_path_from(Rails.root)
+
+      File.read(path).lines.each_with_index.filter_map do |line, index|
+        "#{relative}:#{index + 1}" if line.match?(ESCAPE_BYPASSES.fetch("simple_format"))
+      end
+    end
+
+    assert_empty offenders
+  end
+
+  private
+    def escape_bypasses(source)
+      source.lines.each_with_index.flat_map do |line, index|
+        ESCAPE_BYPASSES.filter_map { |name, pattern| [ index + 1, name ] if line.match?(pattern) }
+      end
+    end
 end
