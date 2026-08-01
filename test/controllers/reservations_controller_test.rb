@@ -68,6 +68,37 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
     assert_select ".error-summary"
   end
 
+  test "選択肢に無い参照できない予定を送っても予約できない" do
+    sign_in_as users(:hanako)
+
+    assert_no_difference -> { Reservation.count } do
+      post reservations_url, params: {
+        reservation: { resource_id: resources(:meeting_room_a).id, event_id: events(:taro_private).id,
+                       starts_at: @base.change(hour: 13).strftime("%Y-%m-%d %H:%M"),
+                       ends_at: @base.change(hour: 14).strftime("%Y-%m-%d %H:%M") }
+      }
+    end
+
+    assert_response :unprocessable_content
+    assert_select ".error-summary"
+  end
+
+  # 外部キー検査まで届くと、入力の誤りが 500 になる。
+  test "存在しない予定を送っても応答が壊れない" do
+    sign_in_as users(:hanako)
+
+    assert_no_difference -> { Reservation.count } do
+      post reservations_url, params: {
+        reservation: { resource_id: resources(:meeting_room_a).id, event_id: Event.maximum(:id).to_i + 1,
+                       starts_at: @base.change(hour: 13).strftime("%Y-%m-%d %H:%M"),
+                       ends_at: @base.change(hour: 14).strftime("%Y-%m-%d %H:%M") }
+      }
+    end
+
+    assert_response :unprocessable_content
+    assert_select ".error-summary"
+  end
+
   test "予約者でない一般利用者は取り消せない" do
     sign_in_as users(:hanako)
 

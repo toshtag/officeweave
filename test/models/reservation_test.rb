@@ -56,7 +56,57 @@ class ReservationTest < ActiveSupport::TestCase
                         starts_at: @base.change(hour: 13), ends_at: @base.change(hour: 14))
 
     assert_not reservation.valid?
-    assert_includes reservation.errors.details[:event], { error: :different_organization }
+    assert_includes reservation.errors.details[:event], { error: :not_visible }
+  end
+
+  test "予約者が参照できない予定は結び付けられない" do
+    reservation = build(event: events(:taro_private),
+                        starts_at: @base.change(hour: 13), ends_at: @base.change(hour: 14))
+
+    assert_not reservation.valid?
+    assert_includes reservation.errors.details[:event], { error: :not_visible }
+  end
+
+  test "存在しない予定の識別子は結び付けられない" do
+    reservation = build(starts_at: @base.change(hour: 13), ends_at: @base.change(hour: 14))
+    reservation.event_id = Event.maximum(:id).to_i + 1
+
+    assert_not reservation.valid?
+    assert_includes reservation.errors.details[:event], { error: :not_visible }
+  end
+
+  # 誤りの内容が分かれると、識別子を送るだけで予定の存在と所属組織を判別できる。
+  test "参照できない予定は、理由によらず同じ誤りになる" do
+    messages = [
+      events(:other_org_event).id,
+      events(:taro_private).id,
+      Event.maximum(:id).to_i + 1
+    ].map do |event_id|
+      reservation = build(starts_at: @base.change(hour: 13), ends_at: @base.change(hour: 14))
+      reservation.event_id = event_id
+      reservation.valid?
+
+      reservation.errors.full_messages_for(:event)
+    end
+
+    assert_equal 1, messages.uniq.length, messages.inspect
+    assert_predicate messages.first, :present?
+  end
+
+  # 公開範囲が部門指定の予定も、その部門に所属していれば結び付けられる。
+  test "予約者が参照できる予定なら結び付けられる" do
+    reservation = build(event: events(:sales_review), reserver: users(:taro),
+                        starts_at: @base.change(hour: 13), ends_at: @base.change(hour: 14))
+
+    assert reservation.valid?
+  end
+
+  # 持ち主は公開範囲に関わらず自分の予定を参照できる。
+  test "予約者自身の非公開の予定なら結び付けられる" do
+    reservation = build(event: events(:taro_private), reserver: users(:taro),
+                        starts_at: @base.change(hour: 13), ends_at: @base.change(hour: 14))
+
+    assert reservation.valid?
   end
 
   test "別組織の利用者は予約者に指定できない" do
