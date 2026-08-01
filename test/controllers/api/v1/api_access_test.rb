@@ -81,6 +81,30 @@ module Api
         assert_response :unauthorized
       end
 
+      # 値は発行時に一度だけ受け取る。無効化のあとで取り直せる経路は無い。
+      test "再び有効にしても無効化前の token では取得できず、発行し直せば取得できる" do
+        get api_v1_announcements_url, headers: auth_headers(@member_token)
+
+        assert_response :success
+
+        users(:hanako).deactivate!
+        users(:hanako).activate!
+
+        get api_v1_announcements_url, headers: auth_headers(@member_token)
+
+        assert_response :unauthorized
+
+        reissued = organizations(:main).api_tokens.create!(user: users(:hanako), name: "再発行")
+
+        get api_v1_announcements_url, headers: auth_headers(reissued)
+
+        assert_response :success
+
+        get api_v1_announcements_url, headers: auth_headers(@member_token)
+
+        assert_response :unauthorized
+      end
+
       private
         def auth_headers(token = @token)
           { "Authorization" => "Bearer #{token.token}" }

@@ -142,6 +142,7 @@ ja:
         position: 表示順
       api_token:
         name: 名前
+        user: 利用者
         last_used_at: 最終利用
       webhook_endpoint:
         name: 名前
@@ -174,6 +175,10 @@ ja:
               last_active_administrator: 組織には利用中の管理者が少なくとも 1 人必要です
             password:
               known_unsafe: は既知の初期値のため使用できません
+        api_token:
+          attributes:
+            user:
+              inactive: が無効になっているため token を発行できません
         webhook_endpoint:
           attributes:
             url:
