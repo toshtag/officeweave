@@ -24,8 +24,7 @@ class Request < ApplicationRecord
   validates :title, presence: true, length: { maximum: 200 }
   validates :body, length: { maximum: 10_000 }
   validates :status, inclusion: { in: STATUSES }
-  belongs_to_same_organization :applicant
-  validate :request_type_must_be_in_same_organization
+  belongs_to_same_organization :applicant, :request_type
   validate :request_type_must_be_active, on: :create
 
   scope :recent_first, -> { order(created_at: :desc, id: :desc) }
@@ -167,12 +166,6 @@ class Request < ApplicationRecord
       end
 
       changed
-    end
-
-    def request_type_must_be_in_same_organization
-      return if request_type.nil? || request_type.organization_id == organization_id
-
-      errors.add(:request_type, :different_organization)
     end
 
     def request_type_must_be_active

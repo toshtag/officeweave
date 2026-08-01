@@ -4,7 +4,7 @@ class Membership < ApplicationRecord
   belongs_to :department
 
   validates :user_id, uniqueness: { scope: :department_id }
-  validate :user_must_be_in_same_organization
+  belongs_to_same_organization :department, of: :user
 
   # 主たる所属は利用者ごとに 1 件までとする。
   # データベース側にも部分一意索引を置いているが、
@@ -14,13 +14,6 @@ class Membership < ApplicationRecord
   scope :primary, -> { where(primary: true) }
 
   private
-    def user_must_be_in_same_organization
-      return if user.nil? || department.nil?
-      return if user.organization_id == department.organization_id
-
-      errors.add(:department, :different_organization)
-    end
-
     def demote_other_primary_memberships
       Membership.where(user_id: user_id).where.not(id: id).update_all(primary: false)
     end

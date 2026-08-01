@@ -18,7 +18,7 @@ class Department < ApplicationRecord
   validates :code, presence: true, length: { maximum: 50 },
                    format: { with: /\A[a-z0-9][a-z0-9_-]*\z/ },
                    uniqueness: { scope: :organization_id }
-  validate :parent_must_be_in_same_organization
+  belongs_to_same_organization :parent
   validate :parent_must_not_form_a_cycle
 
   scope :ordered, -> { order(:position, :name) }
@@ -42,12 +42,6 @@ class Department < ApplicationRecord
   end
 
   private
-    def parent_must_be_in_same_organization
-      return if parent.nil? || parent.organization_id == organization_id
-
-      errors.add(:parent, :different_organization)
-    end
-
     # 自身を子孫に持つ部門を上位に指定すると、階層をたどる処理が終わらなくなる。
     def parent_must_not_form_a_cycle
       return if parent.nil?
