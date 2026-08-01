@@ -4,7 +4,7 @@ class UsersController < ApplicationController
   before_action :set_user, only: %i[edit update]
 
   def index
-    @users = current_organization.users.ordered.includes(memberships: :department)
+    @users = current_organization.users.ordered.includes(:primary_department)
   end
 
   def new
