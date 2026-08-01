@@ -21,6 +21,33 @@ class RequestDecisionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "領収書を添えてください", request.request_activities.chronological.last.comment
   end
 
+  # 綴りの誤ったキーが残っていると、正しい綴りを足した担当者の追加が
+  # 参照されないまま増える。
+  test "差し戻しの知らせは正しい綴りのキーを引く" do
+    sign_in_as users(:taro)
+
+    post request_decision_url(requests(:hanako_expense_pending)), params: { decision: "return" }
+
+    assert_equal I18n.t("request_decisions.returned"), flash[:notice]
+  end
+
+  test "綴りの誤ったキーを残さない" do
+    I18n.available_locales.each do |locale|
+      assert_not I18n.exists?("request_decisions.returnd", locale),
+                 "#{locale} に returnd が残っています"
+    end
+  end
+
+  # キーを要求の値から組み立てると、想定外の値がそのまま翻訳キーになる。
+  test "想定外の決裁では翻訳キーを組み立てない" do
+    sign_in_as users(:taro)
+
+    post request_decision_url(requests(:hanako_expense_pending)), params: { decision: "returnd" }
+
+    assert_equal I18n.t("request_decisions.failed"), flash[:alert]
+    assert_equal "pending", requests(:hanako_expense_pending).reload.status
+  end
+
   test "自分の申請は自分で承認できない" do
     sign_in_as users(:taro)
 
