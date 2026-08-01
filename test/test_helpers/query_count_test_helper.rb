@@ -18,6 +18,15 @@ module QueryCountTestHelper
     capture_queries(&block).size
   end
 
+  # 読み込んだ行の数を数える。
+  #
+  # 問い合わせの件数が増えなくても、1 回の問い合わせが取り出す行が記録の
+  # 件数に比例することがある。表示に使わない行まで読んでいないかは、
+  # 件数ではなくこちらで確かめる。
+  def count_rows_read(&block)
+    capture_queries(&block).sum { |query| query[:row_count].to_i }
+  end
+
   def capture_queries
     queries = []
 
@@ -25,7 +34,7 @@ module QueryCountTestHelper
       next if IGNORED_NAMES.include?(payload[:name].to_s)
       next if payload[:cached]
 
-      queries << payload[:sql]
+      queries << payload.slice(:sql, :name, :row_count)
     end
 
     yield
