@@ -1,6 +1,4 @@
 require "test_helper"
-require "open3"
-require "timeout"
 
 module Authentication
   # 起動そのものの検査。
@@ -9,7 +7,7 @@ module Authentication
   # 「起動しない」ことは確かめられない。別のプロセスを実際に起動し、
   # 終了状態と出力を外側から見る。
   class ProviderBootTest < ActiveSupport::TestCase
-    BOOT_TIMEOUT = 30
+    include BootProcessTestHelper
 
     test "設定が無い場合は内部認証で起動する" do
       status, output = boot(nil)
@@ -90,19 +88,7 @@ module Authentication
         environment = { "RAILS_ENV" => "test", "AUTHENTICATION_PROVIDER" => provider }
 
         # シェルを介さず引数のまま渡す。設定値が語の区切りとして解釈されない。
-        Open3.popen2e(environment, *command, chdir: Rails.root.to_s) do |input, output, process|
-          input.close
-
-          begin
-            captured = Timeout.timeout(BOOT_TIMEOUT) { output.read }
-            [ process.value, captured ]
-          rescue Timeout::Error
-            # 待ち続けるプロセスを残さない。
-            Process.kill("KILL", process.pid)
-            process.join
-            flunk("#{BOOT_TIMEOUT} 秒以内に起動が終わりませんでした")
-          end
-        end
+        boot_process(command, environment)
       end
   end
 end
