@@ -36,6 +36,16 @@ class EventsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to events_path
   end
 
+  # Date.parse は西暦 13 桁の年を誤りとしない。そのまま問い合わせへ渡すと、
+  # データベースが扱える範囲を超えて拒み、入力の誤りが 500 になる。
+  test "扱える範囲を超えた表示開始日も一覧へ戻す" do
+    sign_in_as users(:taro)
+
+    get events_url(from: "9999999999999-01-01")
+
+    assert_redirected_to events_path
+  end
+
   test "見えない予定は参照できない" do
     sign_in_as users(:hanako)
 

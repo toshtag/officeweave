@@ -3,12 +3,12 @@ class ReservationsController < ApplicationController
   before_action :set_reservation, only: %i[destroy]
 
   def index
-    @from = params[:from].present? ? Date.parse(params[:from]) : Date.current
+    @from = date_param(:from) || Date.current
     @reservations = current_organization.reservations
                                         .starting_from(@from.beginning_of_day)
                                         .chronological
                                         .includes(:resource, :reserver)
-  rescue Date::Error
+  rescue TimeParameters::InvalidParameter
     redirect_to reservations_path
   end
 

@@ -93,4 +93,23 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to reservations_path
   end
+
+  # Date.parse は西暦 13 桁の年を誤りとしない。そのまま問い合わせへ渡すと、
+  # データベースが扱える範囲を超えて拒み、入力の誤りが 500 になる。
+  test "扱える範囲を超えた表示開始日も一覧へ戻す" do
+    sign_in_as users(:taro)
+
+    get reservations_url(from: "9999999999999-01-01")
+
+    assert_redirected_to reservations_path
+  end
+
+  test "表示開始日を指定すると、その日以降の予約だけが並ぶ" do
+    sign_in_as users(:taro)
+
+    get reservations_url(from: 3.days.from_now.to_date.iso8601)
+
+    assert_response :success
+    assert_select "td", text: resources(:meeting_room_a).name, count: 0
+  end
 end
