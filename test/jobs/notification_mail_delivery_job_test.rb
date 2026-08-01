@@ -1,4 +1,7 @@
 require "test_helper"
+# 参照する定数の出どころを、実行順に依存させない。本番側の読み込みに頼ると、
+# このファイルの他のテストが先に走ったかどうかで結果が変わる。
+require "net/smtp"
 
 # メール送信のやり直しの契約を固定する。
 #
@@ -53,13 +56,26 @@ class NotificationMailDeliveryJobTest < ActiveJob::TestCase
     end
   end
 
+  # 実際に起こす失敗。分類の一覧をそのまま使わず、具体的な値で起こす。
+  # Errno::ECONNREFUSED のように、一覧には無く一種として扱われるものがある。
+  TRANSIENT_FAILURES = [
+    Net::SMTPServerBusy.new("450 busy"),
+    Errno::ECONNREFUSED.new,
+    Net::ReadTimeout.new,
+    OpenSSL::SSL::SSLError.new("一時的な失敗")
+  ].freeze
+
+  # 起こす失敗が、本番側の分類から外れていないことを確かめる。
+  # 外れたまま通ると、やり直しの契約ではなく別の理由で成功しうる。
+  test "起こす一時的な失敗は、いずれも本番の分類に入る" do
+    TRANSIENT_FAILURES.each do |exception|
+      assert NotificationMailDeliveryJob::TRANSIENT_ERRORS.any? { |error| exception.is_a?(error) },
+             "#{exception.class} が一時的な失敗として分類されていない"
+    end
+  end
+
   test "一時的な失敗ではやり直しが積まれる" do
-    [
-      Net::SMTPServerBusy.new("450 busy"),
-      Errno::ECONNREFUSED.new,
-      Net::ReadTimeout.new,
-      OpenSSL::SSL::SSLError.new("一時的な失敗")
-    ].each do |exception|
+    TRANSIENT_FAILURES.each do |exception|
       enqueue_notification_mail
 
       with_failing_delivery(exception) do
