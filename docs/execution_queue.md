@@ -12,9 +12,9 @@
 
 ```text
 現在の Phase: R0
-直近完了 Task: R0-T16
+直近完了 Task: R0-T17
 進行中:        なし
-次に実行:      R0-T17 API の不正な日時入力を 400 で返す（#63）
+次に実行:      R0-T17A 画面の一覧で範囲外の日付を拒む（#97）
 ```
 
 ## P0 プロジェクト契約
@@ -169,7 +169,8 @@ Issue が大きい場合は分割してよいが、分割した場合は本書�
 | R0-T15A | `r0/t15a-organization-boundary` | [#91](https://github.com/toshtag/OfficeWeave/issues/91)   | 組織をまたぐ参照の検証を他の模型へ広げる          | 完了  |
 | R0-T15B | `r0/t15b-concurrency-wait` | [#93](https://github.com/toshtag/OfficeWeave/issues/93)        | 並行実行テストの待ちグラフ観測を安定させる          | 完了  |
 | R0-T16 | `r0/t16-settings-transaction` | [#62](https://github.com/toshtag/OfficeWeave/issues/62)      | 設定更新をひとつのトランザクションにまとめる         | 完了  |
-| R0-T17 | —                          | [#63](https://github.com/toshtag/OfficeWeave/issues/63)         | API の不正な日時入力を 400 で返す         | 未着手 |
+| R0-T17 | `r0/t17-api-datetime-validation` | [#63](https://github.com/toshtag/OfficeWeave/issues/63)   | API の不正な日時入力を 400 で返す         | 完了  |
+| R0-T17A | —                         | [#97](https://github.com/toshtag/OfficeWeave/issues/97)         | 画面の一覧で範囲外の日付を拒む             | 未着手 |
 | R0-T18 | —                          | [#64](https://github.com/toshtag/OfficeWeave/issues/64)         | 初期利用者の存在判定を組織単位にする             | 未着手 |
 | R0-T19 | —                          | [#59](https://github.com/toshtag/OfficeWeave/issues/59)         | 公開待ちのお知らせを表示し、公開時に通知する         | 未着手 |
 | R0-T20 | —                          | [#67](https://github.com/toshtag/OfficeWeave/issues/67)         | 差し戻し通知の翻訳キーの誤記を修正する            | 未着手 |
@@ -193,6 +194,9 @@ Issue が大きい場合は分割してよいが、分割した場合は本書�
   先に取る。R0-T8 の管理者の契約が組織 → 利用者の順で取るのに合わせ、
   逆順による循環を避けた。
 - R0-T15 以降は、影響範囲が限定的なものを後段へまとめた。
+- R0-T17A は #63 の「他の経路にも同種の入力があるか確認する」から生まれた。
+  画面の一覧も同じ値で 500 になる。API とは応答の契約が違うため、
+  1 PR へまとめず別のタスクとした。
 - R0-T15A は #58 の「同じ観点の抜けが他の模型にないか確認する」から生まれた。
   実測したところ 12 か所で同じ抜けがあった。予約と同じ 1 PR へ入れず、
   別のタスクとした。模型ごとに検証と回帰テストが独立しており、
