@@ -6,9 +6,16 @@ class HomeController < ApplicationController
   def show
     visible = Announcement.visible_to(Current.user)
 
-    @announcements = visible.recent_first.limit(RECENT_ANNOUNCEMENT_COUNT)
-    @unread_ids = visible.unread_for(Current.user).pluck(:id).to_set
-    @unread_count = @unread_ids.size
+    @announcements = visible.recent_first.limit(RECENT_ANNOUNCEMENT_COUNT).to_a
+
+    # 未読の判定は、画面へ並べる分だけで足りる。参照できる未読を全件取り出すと、
+    # 5 件の表示のために蓄積した全件を読むことになる。読まない利用者ほど重くなる。
+    unread = visible.unread_for(Current.user)
+    @unread_ids = unread.where(id: @announcements.map(&:id)).pluck(:id).to_set
+
+    # 件数は数え上げで求める。取り出した集合の大きさから求めると、
+    # 数だけを表示するために識別子を全件持つことになる。
+    @unread_count = unread.count
 
     @awaiting_requests = Request.awaiting_decision_by(Current.user)
                                 .recent_first
