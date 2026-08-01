@@ -825,7 +825,48 @@ has_one :primary_department, through: :primary_membership, source: :department
 並べる件数を超える分だけを増やして 2 回数え、増えないことを確かめている。
 ここで確かめるのは、実際に動いている構成でも同じであることである。
 
-## 27. 自動実行
+## 27. 最終利用日時の記録
+
+認証のたびに書き込みが起きないことを確かめる。第 13 節の期限の判定は
+変わらない。
+
+```text
+1. 続けて画面を開いても sessions への UPDATE が毎回は出ない
+2. 間隔を超えて開くと記録される
+3. 無操作 30 分を過ぎればログインを求められる
+4. 開始から 8 時間を過ぎればログインを求められる
+5. API トークンでも同じように間引かれる
+```
+
+記録が遅れる向きにしか働かない。書かなかった分だけ時刻は過去のままに
+なるため、時刻を起点にする無操作の期限は早く来ることはあっても、遅く来る
+ことはない。認証が緩む向きには働かない。
+
+間隔は模型に置く。無操作の判定に使う 30 分に対して十分小さくとる。
+
+```text
+Session::ACTIVITY_WRITE_INTERVAL   1 分
+ApiToken::USE_WRITE_INTERVAL       1 分
+```
+
+判定は `ActivityRecording` へ集めている。2 か所へ同じ条件を書くと、片方
+だけが変わったときに気付けない。
+
+token の認証は、利用者を同じ問い合わせで読む。別の問い合わせにすると、
+外部からの接続 1 回につき往復が 1 つ増える。無効にされた利用者の token が
+使えないことは変わらない。
+
+```text
+docker compose logs -f web
+```
+
+画面を続けて開き、`UPDATE "sessions"` が毎回は出ないことを見る。
+
+`test/controllers/session_activity_test.rb`、`test/models/session_test.rb`、
+`test/models/api_token_test.rb` が押さえている。ここで確かめるのは、実際に
+動いている構成でも同じであることである。
+
+## 28. 自動実行
 
 `.github/workflows/verify.yml` が、変更のたびに次を実行する。
 
