@@ -23,6 +23,17 @@ module Authentication
       def self.name_key = " internal "
     end
 
+    # 契約の一部だけを持つ方式。登録の時点で拒否されることを確かめる。
+    class MissingAuthenticateProvider
+      def self.name_key = "missing-authenticate"
+      def self.password_required? = false
+    end
+
+    class MissingPasswordRequiredProvider
+      def self.name_key = "missing-password-required"
+      def self.authenticate(email_address:, password:) = nil
+    end
+
     # 既に使われている識別子を、別の実装が名乗る場合を再現する。
     class ConflictingInternalProvider
       def self.name_key = "internal"
@@ -42,6 +53,8 @@ module Authentication
       providers = ProviderRegistry.instance_variable_get(:@providers)
       providers.delete("stub")
       providers.delete("reloadable")
+      providers.delete("missing-authenticate")
+      providers.delete("missing-password-required")
       providers["internal"] = InternalProvider
     end
 
@@ -161,6 +174,30 @@ module Authentication
       assert_equal before, ProviderRegistry.registered
     end
 
+    # 呼び出しの欠けは、登録の時点では表に出ず、ログイン画面を開いた時点で
+    # 初めて失敗する。設定が正しくても、認証そのものが成り立たない。
+    test "authenticate を持たない実装は登録できない" do
+      error = assert_raises(ProviderRegistry::IncompleteProvider) do
+        ProviderRegistry.register(MissingAuthenticateProvider)
+      end
+
+      assert_includes error.message, "authenticate"
+      assert_not_includes ProviderRegistry.registered, "missing-authenticate"
+    end
+
+    test "password_required? を持たない実装は登録できない" do
+      error = assert_raises(ProviderRegistry::IncompleteProvider) do
+        ProviderRegistry.register(MissingPasswordRequiredProvider)
+      end
+
+      assert_includes error.message, "password_required?"
+      assert_not_includes ProviderRegistry.registered, "missing-password-required"
+    end
+
+    test "既定の内部認証は契約を満たす" do
+      assert_nothing_raised { ProviderRegistry.register(InternalProvider) }
+    end
+
     test "同じ実装の再登録は成功する" do
       ProviderRegistry.register(StubProvider)
       ProviderRegistry.register(StubProvider)
@@ -192,6 +229,8 @@ module Authentication
         remove_reloadable_provider
         provider = Class.new do
           def self.name_key = "reloadable"
+          def self.password_required? = false
+          def self.authenticate(email_address:, password:) = nil
         end
         self.class.const_set(RELOADABLE, provider)
         provider
