@@ -21,7 +21,7 @@ when :missing_credentials
   puts "INITIAL_USER_EMAIL と INITIAL_USER_PASSWORD を設定してから、もう一度実行してください。"
   puts "パスワードは #{Authentication::PasswordPolicy::MINIMUM_LENGTH} 文字以上にします。"
 when :already_present
-  puts "利用者が既に存在するため、初期利用者は作成していません。"
+  puts "この組織には既に利用者が存在するため、初期利用者は作成していません。"
 when :created
   puts "初期利用者 #{email_address} を作成しました。"
 end

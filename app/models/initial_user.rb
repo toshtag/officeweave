@@ -32,7 +32,10 @@ class InitialUser
 
     organization = find_or_create_organization
 
-    return :already_present if User.exists?
+    # 判定は組織の中で閉じる。全体で見ると、2 つ目の組織を足したときに、
+    # その組織へ誰もログインできない状態になる。組織は作られるため、
+    # 一見成功したように見える。
+    return :already_present if organization.users.exists?
 
     organization.users.create!(
       name: @name,
