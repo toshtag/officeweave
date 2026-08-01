@@ -463,7 +463,7 @@ en:
     approve: Approve
     return: Return
     approved: The request has been approved.
-    returnd: The request has been returned.
+    returned: The request has been returned.
     failed: This request cannot be processed in its current state.
     comment: Comment
     comment_hint: When returning a request, explain what needs to change.
