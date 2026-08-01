@@ -461,9 +461,9 @@ KEY SHARE で参照する。明示せずに利用者を先に取ると、最後�
 `test/controllers/api/v1/api_access_test.rb` が押さえている。
 ここで確かめるのは、実際に動いている構成でも同じであることである。
 
-## 18. 予約の組織整合性
+## 18. 組織の境界
 
-予約が、自分の組織の外にある記録を指していないことを確かめる。
+記録が、自分の組織の外にある記録を指していないことを確かめる。
 
 ```text
 1. 自分の組織の予定を選んだ予約は、従来どおり作成できる
@@ -487,9 +487,40 @@ curl -sS -X POST "$BASE_URL/reservations" \
 
 応答が 422 になり、予約の件数が増えないことが正しい。
 
-判定は `app/models/reservation.rb` に置く。設備・備品と同じ形の検証を
-予定と予約者へも用意した。不変条件は `test/models/reservation_test.rb` が、
-経路は `test/controllers/reservations_controller_test.rb` が押さえている。
+判定は `app/models/concerns/organization_boundary.rb` の 1 か所に置き、
+各模型は `belongs_to_same_organization` で対象の関連を宣言する。
+
+```ruby
+belongs_to_same_organization :resource, :reserver, :event   # 組織を自身が持つ
+belongs_to_same_organization :department, of: :announcement # 組織を親から取る
+```
+
+対象は次のとおりである。組織を持つ関連を指しながら、この宣言が無い模型は
+残っていない。
+
+```text
+自身の組織を基準にする:
+  Announcement#author          Event#owner
+  Document#author              Document#document_category
+  Request#applicant            Request#request_type
+  Reservation#resource         Reservation#reserver        Reservation#event
+  RequestType#approver_department
+  Department#parent
+  ApiToken#user                AuditEvent#actor
+
+親の組織を基準にする:
+  Membership#department（利用者の組織）
+  AnnouncementRead#user         AnnouncementDepartment#department
+  EventDepartment#department    DocumentDepartment#department
+  RequestActivity#actor         Notification#user（通知の対象の組織）
+```
+
+`Announcement`、`Event`、`Document` は `departments` についても組織の一致を
+確かめている。こちらは誤りを `department_ids` へ付け、画面の入力欄と
+対応させる。結合の記録を直接作る経路は、上の宣言の側が拒む。
+
+不変条件は `test/models/organization_boundary_test.rb` が、予約の経路は
+`test/controllers/reservations_controller_test.rb` が押さえている。
 ここで確かめるのは、実際に動いている構成でも同じであることである。
 
 ## 19. 自動実行

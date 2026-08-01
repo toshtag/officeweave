@@ -12,9 +12,9 @@
 
 ```text
 現在の Phase: R0
-直近完了 Task: R0-T15
+直近完了 Task: R0-T15A
 進行中:        なし
-次に実行:      R0-T15A 組織をまたぐ参照の検証を他の模型へ広げる（#91）
+次に実行:      R0-T15B 並行実行テストの待ちグラフ観測を安定させる（#93）
 ```
 
 ## P0 プロジェクト契約
@@ -166,7 +166,8 @@ Issue が大きい場合は分割してよいが、分割した場合は本書�
 | R0-T13A | `r0/t13a-diagnostics-closeout` | [#81](https://github.com/toshtag/OfficeWeave/issues/81)     | 保存先診断の修正を検証し、Issue と実行キューを完了状態へ揃える | 完了  |
 | R0-T14 | `r0/t14-api-token-revocation` | [#65](https://github.com/toshtag/OfficeWeave/issues/65)      | 利用者の無効化で API トークンを失効させる        | 完了  |
 | R0-T15 | `r0/t15-reservation-organization-integrity` | [#58](https://github.com/toshtag/OfficeWeave/issues/58) | 予約の組織整合性を検証する                  | 完了  |
-| R0-T15A | —                         | [#91](https://github.com/toshtag/OfficeWeave/issues/91)         | 組織をまたぐ参照の検証を他の模型へ広げる          | 未着手 |
+| R0-T15A | `r0/t15a-organization-boundary` | [#91](https://github.com/toshtag/OfficeWeave/issues/91)   | 組織をまたぐ参照の検証を他の模型へ広げる          | 完了  |
+| R0-T15B | —                         | [#93](https://github.com/toshtag/OfficeWeave/issues/93)         | 並行実行テストの待ちグラフ観測を安定させる          | 未着手 |
 | R0-T16 | —                          | [#62](https://github.com/toshtag/OfficeWeave/issues/62)         | 設定更新をひとつのトランザクションにまとめる         | 未着手 |
 | R0-T17 | —                          | [#63](https://github.com/toshtag/OfficeWeave/issues/63)         | API の不正な日時入力を 400 で返す         | 未着手 |
 | R0-T18 | —                          | [#64](https://github.com/toshtag/OfficeWeave/issues/64)         | 初期利用者の存在判定を組織単位にする             | 未着手 |
@@ -196,6 +197,13 @@ Issue が大きい場合は分割してよいが、分割した場合は本書�
   実測したところ 12 か所で同じ抜けがあった。予約と同じ 1 PR へ入れず、
   別のタスクとした。模型ごとに検証と回帰テストが独立しており、
   トランザクション境界も回帰テスト群も共有しないためである。
+- R0-T15A では、判定を `OrganizationBoundary` へ集め、各模型には宣言だけを
+  置いた。同じ契約に 2 通りの書き方が並ぶと、新しい模型を足す人は目に入った
+  方を写す。#58 が生まれたのはその形のままにしていたためであり、既存の
+  手書きの検証もこの宣言へそろえた。
+- R0-T15B は R0-T15 の着手前の検証で観測した。本番コードの不具合ではなく、
+  待ち方の問題である。放置すると、変更と無関係な失敗で退行の有無を
+  判断できなくなる。
 - R0-T21 で R0 全体の整合を確かめてから、公開リリースの判断へ進む。
 
 ### R0-T21 の監査項目
