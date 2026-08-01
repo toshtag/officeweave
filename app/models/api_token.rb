@@ -6,6 +6,14 @@
 # 権限は発行した利用者から引き継ぐ。
 # token に独自の権限を持たせると、利用者の権限を変えても接続だけが残る。
 class ApiToken < ApplicationRecord
+  include ActivityRecording
+
+  # 最終利用時刻を書き込む間隔。
+  #
+  # この時刻は利用の記録であり、認証の判定には使わない。要求ごとに書くと、
+  # 外部からの接続の回数だけ書き込みが起きる。
+  USE_WRITE_INTERVAL = 1.minute
+
   belongs_to :organization
   belongs_to :user
 
@@ -23,18 +31,28 @@ class ApiToken < ApplicationRecord
 
   # 送られてきた値から、使える token を探す。
   # 無効にされた利用者の token は使えない。
+  # 利用者は同じ問い合わせで読む。別の問い合わせにすると、外部からの接続
+  # 1 回につき往復が 1 つ増える。
   def self.authenticate(value)
     return nil if value.blank?
 
-    token = active.find_by(token_digest: digest(value))
+    token = active.eager_load(:user).find_by(token_digest: digest(value))
     return nil if token.nil? || !token.user.active?
 
-    token.touch(:last_used_at)
+    token.record_use!
     token
   end
 
   def self.digest(value)
     Digest::SHA256.hexdigest(value)
+  end
+
+  # 直前に記録していれば書かない。いつ頃まで使われていたかが分かればよく、
+  # 1 分より細かい精度は要らない。
+  def record_use!(at: Time.current)
+    return if recorded_recently?(last_used_at, at, USE_WRITE_INTERVAL)
+
+    touch(:last_used_at, time: at)
   end
 
   def revoke!
