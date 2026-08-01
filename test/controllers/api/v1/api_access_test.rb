@@ -119,6 +119,10 @@ module Api
 
       # 部門の件数と階層の深さだけを変えて、同じ取得を 2 回数える。
       test "部門の取得で出る問い合わせが、件数と階層の深さで増えない" do
+        # 最初の取得は token の最終利用を記録する。2 回目以降は間隔で
+        # 間引かれるため、数える前に 1 度通しておく。
+        get api_v1_departments_url, headers: auth_headers
+
         before = count_queries { get api_v1_departments_url, headers: auth_headers }
 
         add_department_chain(depth: 5)
