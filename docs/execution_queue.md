@@ -12,9 +12,9 @@
 
 ```text
 現在の Phase: R0
-直近完了 Task: R0-T14
+直近完了 Task: R0-T15
 進行中:        なし
-次に実行:      R0-T15 予約の組織整合性を検証する（#58）
+次に実行:      R0-T15A 組織をまたぐ参照の検証を他の模型へ広げる（#91）
 ```
 
 ## P0 プロジェクト契約
@@ -165,7 +165,8 @@ Issue が大きい場合は分割してよいが、分割した場合は本書�
 | R0-T13 | `r0/t13-password-policy`   | [#66](https://github.com/toshtag/OfficeWeave/issues/66)         | パスワードの最低要件と初期値検査を追加する          | 完了  |
 | R0-T13A | `r0/t13a-diagnostics-closeout` | [#81](https://github.com/toshtag/OfficeWeave/issues/81)     | 保存先診断の修正を検証し、Issue と実行キューを完了状態へ揃える | 完了  |
 | R0-T14 | `r0/t14-api-token-revocation` | [#65](https://github.com/toshtag/OfficeWeave/issues/65)      | 利用者の無効化で API トークンを失効させる        | 完了  |
-| R0-T15 | —                          | [#58](https://github.com/toshtag/OfficeWeave/issues/58)         | 予約の組織整合性を検証する                  | 未着手 |
+| R0-T15 | `r0/t15-reservation-organization-integrity` | [#58](https://github.com/toshtag/OfficeWeave/issues/58) | 予約の組織整合性を検証する                  | 完了  |
+| R0-T15A | —                         | [#91](https://github.com/toshtag/OfficeWeave/issues/91)         | 組織をまたぐ参照の検証を他の模型へ広げる          | 未着手 |
 | R0-T16 | —                          | [#62](https://github.com/toshtag/OfficeWeave/issues/62)         | 設定更新をひとつのトランザクションにまとめる         | 未着手 |
 | R0-T17 | —                          | [#63](https://github.com/toshtag/OfficeWeave/issues/63)         | API の不正な日時入力を 400 で返す         | 未着手 |
 | R0-T18 | —                          | [#64](https://github.com/toshtag/OfficeWeave/issues/64)         | 初期利用者の存在判定を組織単位にする             | 未着手 |
@@ -191,6 +192,10 @@ Issue が大きい場合は分割してよいが、分割した場合は本書�
   先に取る。R0-T8 の管理者の契約が組織 → 利用者の順で取るのに合わせ、
   逆順による循環を避けた。
 - R0-T15 以降は、影響範囲が限定的なものを後段へまとめた。
+- R0-T15A は #58 の「同じ観点の抜けが他の模型にないか確認する」から生まれた。
+  実測したところ 12 か所で同じ抜けがあった。予約と同じ 1 PR へ入れず、
+  別のタスクとした。模型ごとに検証と回帰テストが独立しており、
+  トランザクション境界も回帰テスト群も共有しないためである。
 - R0-T21 で R0 全体の整合を確かめてから、公開リリースの判断へ進む。
 
 ### R0-T21 の監査項目
