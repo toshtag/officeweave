@@ -61,6 +61,8 @@ module Authentication
       CONFLICTING_BOOT = <<~RUBY
         class ConflictingBootProvider
           def self.name_key = "internal"
+          def self.password_required? = false
+          def self.authenticate(email_address:, password:) = nil
         end
 
         require_relative "config/application"

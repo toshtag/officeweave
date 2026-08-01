@@ -22,7 +22,13 @@ module Authentication
     # 形式は正しいが、別の実装が既に使用している識別子だった。
     class DuplicateProviderName < StandardError; end
 
+    # 求める呼び出しの一部を持たない実装だった。
+    class IncompleteProvider < StandardError; end
+
     PROVIDER_VARIABLE = "AUTHENTICATION_PROVIDER"
+
+    # 実装へ求める呼び出し。name_key は登録の入口で使うため別に見る。
+    REQUIRED_CALLS = %i[authenticate password_required?].freeze
 
     @providers = {}
 
@@ -37,9 +43,17 @@ module Authentication
       # 識別子は方式ごとに 1 つとする。後から登録した方式で黙って置き換えると、
       # 設定に書いた名前と実際に動く実装が食い違う。とりわけ internal を
       # 奪われると、設定が無い場合の既定まで別の実装に変わる。
+      # 呼び出しの欠けも登録の時点で拒む。
+      #
+      # 欠けたまま登録できると、設定が正しくてもログイン画面を開いた時点で
+      # 初めて失敗する。認証は他の経路の前提であり、成り立たない構成のまま
+      # 起動させない。
       def register(provider)
         name = provider.name_key.to_s
         raise InvalidProviderName, invalid_message(provider, name) unless usable_name?(name)
+
+        missing = REQUIRED_CALLS.reject { |call| provider.respond_to?(call) }
+        raise IncompleteProvider, incomplete_message(provider, missing) if missing.any?
 
         existing = @providers[name]
         if existing && !same_implementation?(existing, provider)
@@ -95,6 +109,11 @@ module Authentication
         def qualified_name(provider)
           name = provider.name if provider.respond_to?(:name)
           name.to_s.empty? ? nil : name
+        end
+
+        def incomplete_message(provider, missing)
+          "#{provider} は認証方式に求める呼び出しを持ちません: #{missing.join(', ')}。" \
+            "name_key、authenticate、password_required? の 3 つに応える必要があります。"
         end
 
         def duplicate_message(name, existing, provider)
