@@ -28,6 +28,40 @@ class AnnouncementsControllerTest < ActionDispatch::IntegrationTest
     assert_select "h3 a", text: announcements(:draft).title
   end
 
+  # 公開待ちは、下書きにも公開済みにも入らない。区分を分けないと、
+  # 作成した管理者自身が確認も訂正も取り消しもできない。
+  test "管理者には公開待ちも並ぶ" do
+    sign_in_as users(:taro)
+
+    get announcements_url
+
+    assert_select "h3 a", text: announcements(:scheduled).title
+  end
+
+  test "一般利用者には公開待ちが並ばない" do
+    sign_in_as users(:hanako)
+
+    get announcements_url
+
+    assert_select "a", text: announcements(:scheduled).title, count: 0
+  end
+
+  test "管理者は公開待ちのお知らせを編集できる" do
+    sign_in_as users(:taro)
+
+    get edit_announcement_url(announcements(:scheduled))
+
+    assert_response :success
+  end
+
+  test "管理者は公開待ちのお知らせを削除できる" do
+    sign_in_as users(:taro)
+
+    assert_difference -> { Announcement.count }, -1 do
+      delete announcement_url(announcements(:scheduled))
+    end
+  end
+
   test "公開範囲外のお知らせは参照できない" do
     sign_in_as users(:hanako)
 
