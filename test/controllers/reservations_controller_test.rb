@@ -53,6 +53,21 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
     assert_equal events(:company_meeting), Reservation.last.event
   end
 
+  test "選択肢に無い別組織の予定を送っても予約できない" do
+    sign_in_as users(:hanako)
+
+    assert_no_difference -> { Reservation.count } do
+      post reservations_url, params: {
+        reservation: { resource_id: resources(:meeting_room_a).id, event_id: events(:other_org_event).id,
+                       starts_at: @base.change(hour: 13).strftime("%Y-%m-%d %H:%M"),
+                       ends_at: @base.change(hour: 14).strftime("%Y-%m-%d %H:%M") }
+      }
+    end
+
+    assert_response :unprocessable_content
+    assert_select ".error-summary"
+  end
+
   test "予約者でない一般利用者は取り消せない" do
     sign_in_as users(:hanako)
 
