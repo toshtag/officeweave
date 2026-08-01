@@ -665,6 +665,19 @@ API:   400 と不正なパラメーター名
 config/recurring.yml  publish_scheduled_announcements（5 分ごと）
 ```
 
+3 つの区分は同じ読み込み方を通す。どれも作成者の氏名を表示するため、
+区分ごとに書くと、区分を足したときに先読みの有無が分かれる。実際、公開待ちは
+後から足した区分であり、そのときに先読みが欠けた。
+
+```ruby
+def listed(announcements)
+  announcements.includes(:author)
+end
+```
+
+問い合わせの件数は `test/controllers/announcement_list_test.rb` が押さえて
+いる。区分ごとに件数を増やして 2 回数え、増えないことを確かめている。
+
 送ったことは `announcements.notified_at` に残る。判定と記録の確定は同じ
 占有の中で行うため、定期実行と画面からの更新が同時に走っても、送るのは
 先に確定した側だけになる。

@@ -5,12 +5,14 @@ class AnnouncementsController < ApplicationController
   before_action :set_announcement, only: %i[show edit update destroy]
 
   def index
-    @announcements = Announcement.visible_to(Current.user).recent_first.includes(:author)
-    @unread_ids = Announcement.visible_to(Current.user).unread_for(Current.user).pluck(:id).to_set
-    @drafts = manageable.where(published_at: nil).recent_first
+    visible = Announcement.visible_to(Current.user)
+
+    @announcements = listed(visible.recent_first)
+    @unread_ids = visible.unread_for(Current.user).pluck(:id).to_set
+    @drafts = listed(manageable.where(published_at: nil).recent_first)
     # 公開待ちは公開済みにも下書きにも入らない。区分を分けないと、
     # 作成した管理者自身が確認も訂正も取り消しもできない。
-    @scheduled = manageable.scheduled.reorder(published_at: :asc, id: :asc)
+    @scheduled = listed(manageable.scheduled.reorder(published_at: :asc, id: :asc))
   end
 
   def show
@@ -57,6 +59,15 @@ class AnnouncementsController < ApplicationController
   end
 
   private
+    # 一覧へ並べる区分の読み込み方。
+    #
+    # 3 つの区分はいずれも作成者の氏名を表示する。区分ごとに書くと、
+    # 区分を足したときに先読みの有無が分かれ、片方だけ件数だけ問い合わせが
+    # 出る状態になる。実際、公開済みだけが先読みを持っていた。
+    def listed(announcements)
+      announcements.includes(:author)
+    end
+
     # 管理者だけが扱える区分。一般利用者には空の一覧を返す。
     def manageable
       administrator? ? current_organization.announcements : Announcement.none
