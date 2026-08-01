@@ -4,7 +4,11 @@ class RequestTypesController < ApplicationController
   before_action :set_request_type, only: %i[edit update]
 
   def index
-    @request_types = current_organization.request_types.ordered.includes(:approver_department)
+    @request_types = current_organization.request_types.ordered.includes(:approver_department).to_a
+
+    # 承認部門の階層を先に読む。行ごとに display_path を呼ぶと、
+    # 件数と階層の深さの積だけ問い合わせが出る。
+    Department.with_ancestors(@request_types.filter_map(&:approver_department))
   end
 
   def new

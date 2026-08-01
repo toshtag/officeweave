@@ -24,7 +24,7 @@
     <dd>
       <%= t("events.visibilities.#{@event.visibility}") %>
       <% if @event.limited_to_departments? %>
-        （<%= @event.departments.ordered.map(&:display_path).to_sentence %>）
+        （<%= Department.with_ancestors(@event.departments.ordered).map(&:display_path).to_sentence %>）
       <% end %>
     </dd>
   </dl>

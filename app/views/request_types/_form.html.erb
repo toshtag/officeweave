@@ -18,7 +18,7 @@
 
   <div class="form__field">
     <%= form.label :approver_department_id, class: "form__label" %>
-    <%= form.collection_select :approver_department_id, current_organization.departments.ordered,
+    <%= form.collection_select :approver_department_id, Department.with_ancestors(current_organization.departments.ordered),
                                :id, :display_path,
                                { include_blank: t("request_types.form.approver_unset") }, class: "form__input" %>
     <p class="form__hint"><%= t("request_types.form.approver_hint") %></p>

@@ -26,7 +26,7 @@
     <legend class="form__label"><%= Announcement.human_attribute_name(:department_ids) %></legend>
     <p class="form__hint"><%= t("announcements.form.departments_hint") %></p>
 
-    <% current_organization.departments.ordered.each do |department| %>
+    <% Department.with_ancestors(current_organization.departments.ordered).each do |department| %>
       <div class="form__field form__field--inline">
         <%= check_box_tag "announcement[department_ids][]", department.id,
                           announcement.department_ids.include?(department.id),
