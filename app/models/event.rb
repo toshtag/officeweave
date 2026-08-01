@@ -15,6 +15,7 @@ class Event < ApplicationRecord
   validates :description, length: { maximum: 10_000 }
   validates :starts_at, :ends_at, presence: true
   validates :visibility, inclusion: { in: VISIBILITIES }
+  belongs_to_same_organization :owner
   validate :ends_at_must_be_after_starts_at
   validate :departments_required_when_limited
   validate :departments_must_be_in_same_organization

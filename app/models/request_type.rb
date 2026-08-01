@@ -15,7 +15,7 @@ class RequestType < ApplicationRecord
                    format: { with: /\A[a-z0-9][a-z0-9_-]*\z/ },
                    uniqueness: { scope: :organization_id }
   validates :description, length: { maximum: 2_000 }
-  validate :approver_department_must_be_in_same_organization
+  belongs_to_same_organization :approver_department
 
   scope :ordered, -> { order(:position, :name) }
   scope :active, -> { where(active: true) }
@@ -28,11 +28,4 @@ class RequestType < ApplicationRecord
 
     user.memberships.exists?(department_id: approver_department_id)
   end
-
-  private
-    def approver_department_must_be_in_same_organization
-      return if approver_department.nil? || approver_department.organization_id == organization_id
-
-      errors.add(:approver_department, :different_organization)
-    end
 end

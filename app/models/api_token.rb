@@ -13,6 +13,7 @@ class ApiToken < ApplicationRecord
   attr_reader :token
 
   validates :name, presence: true, length: { maximum: 100 }
+  belongs_to_same_organization :user
 
   scope :active, -> { where(revoked_at: nil) }
   scope :recent_first, -> { order(created_at: :desc, id: :desc) }

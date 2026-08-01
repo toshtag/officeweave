@@ -19,7 +19,7 @@ class Document < ApplicationRecord
   validates :title, presence: true, length: { maximum: 200 }
   validates :body, length: { maximum: 100_000 }
   validates :visibility, inclusion: { in: VISIBILITIES }
-  validate :category_must_be_in_same_organization
+  belongs_to_same_organization :author, :document_category
   validate :departments_required_when_limited
   validate :departments_must_be_in_same_organization
   validate :attachments_must_be_within_limits
@@ -89,11 +89,5 @@ class Document < ApplicationRecord
       return if departments.all? { |department| department.organization_id == organization_id }
 
       errors.add(:department_ids, :different_organization)
-    end
-
-    def category_must_be_in_same_organization
-      return if document_category.nil? || document_category.organization_id == organization_id
-
-      errors.add(:document_category, :different_organization)
     end
 end

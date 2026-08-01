@@ -10,6 +10,7 @@ class RequestActivity < ApplicationRecord
 
   validates :action, inclusion: { in: ACTIONS }
   validates :comment, length: { maximum: 2_000 }
+  belongs_to_same_organization :actor, of: :request
 
   scope :chronological, -> { order(:created_at, :id) }
 end
