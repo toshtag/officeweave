@@ -483,7 +483,7 @@ ja:
     approve: 承認する
     return: 差し戻す
     approved: 申請を承認しました。
-    returnd: 申請を差し戻しました。
+    returned: 申請を差し戻しました。
     failed: この申請は現在の状態では処理できません。
     comment: コメント
     comment_hint: 差し戻す場合は、何を直せばよいかを書いてください。

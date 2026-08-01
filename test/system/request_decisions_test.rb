@@ -8,7 +8,7 @@ class RequestDecisionsTest < ApplicationSystemTestCase
     fill_in I18n.t("request_decisions.comment"), with: "領収書を添えてください"
     click_button I18n.t("request_decisions.return")
 
-    assert_text I18n.t("request_decisions.returnd")
+    assert_text I18n.t("request_decisions.returned")
     assert_text I18n.t("requests.statuses.returned")
     assert_text "領収書を添えてください"
 
