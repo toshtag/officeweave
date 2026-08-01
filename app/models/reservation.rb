@@ -12,7 +12,8 @@ class Reservation < ApplicationRecord
   validates :purpose, length: { maximum: 200 }
   validate :ends_at_must_be_after_starts_at
   validate :resource_must_be_reservable
-  belongs_to_same_organization :resource, :reserver, :event
+  belongs_to_same_organization :resource, :reserver
+  validate :event_must_be_visible_to_reserver
   validate :must_not_overlap_existing_reservation
 
   scope :chronological, -> { order(:starts_at, :id) }
@@ -40,6 +41,32 @@ class Reservation < ApplicationRecord
   end
 
   private
+    # 結び付けられる予定を、予約する利用者が参照できるものに限る。
+    #
+    # 画面は参照できる予定だけを選択肢に並べるが、受け入れ側に同じ判定が
+    # ないと、選択肢に無い識別子をそのまま送れる。判定は模型へ置く。
+    # 画面へ置くと、予約を作る経路が増えたときに漏れる。
+    #
+    # 組織の一致は Event.visible_to が予約者の組織で絞ることで満たされる。
+    # 予約者が予約と同じ組織にいることは belongs_to_same_organization が
+    # 確かめるため、belongs_to_same_organization からは :event を外した。
+    # 同じ関連へ 2 つの検証を並べると、別組織の予定だけ誤りが 2 件になり、
+    # 内容の違いから所属組織を判別できてしまう。
+    #
+    # 存在しない識別子もここで拒む。optional な関連は模型の検証では
+    # 拒まれず、そのまま外部キー検査へ届いて応答が壊れる。
+    #
+    # 予約者が決まらない場合は何も言わない。予約者そのものの検証が扱う。
+    #
+    # 予定の日時は見ない。画面の選択肢は今より後のものに絞っているが、
+    # それは選びやすさのためであり、参照できる範囲の判断ではない。
+    def event_must_be_visible_to_reserver
+      return if event_id.blank? || reserver.nil?
+      return if Event.visible_to(reserver).exists?(id: event_id)
+
+      errors.add(:event, :not_visible)
+    end
+
     def ends_at_must_be_after_starts_at
       return if starts_at.blank? || ends_at.blank? || ends_at > starts_at
 

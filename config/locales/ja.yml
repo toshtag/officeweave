@@ -224,6 +224,7 @@ ja:
       too_large: "%{filename} が大きすぎます（%{size} MB まで）"
       not_active: は新しい申請を受け付けていません
       not_reservable: は予約を受け付けていません
+      not_visible: には参照できる予定だけを指定できます
       not_after_start: は開始より後にしてください
       cyclic: に自身または下位の部門は指定できません
       different_organization: に別の組織の記録は指定できません
