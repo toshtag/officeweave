@@ -142,6 +142,7 @@ en:
         position: Display order
       api_token:
         name: Name
+        user: User
         last_used_at: Last used
       webhook_endpoint:
         name: Name
@@ -170,6 +171,10 @@ en:
               last_active_administrator: At least one active administrator must remain in the organization
             password:
               known_unsafe: is a known default value and cannot be used
+        api_token:
+          attributes:
+            user:
+              inactive: is deactivated, so no token can be issued
         webhook_endpoint:
           attributes:
             url:
@@ -266,6 +271,7 @@ en:
       heading: Users
       new: Add user
       status: Status
+      deactivation_hint: Deactivating a user ends every session and revokes all of their issued tokens. Activating the user again does not bring the revoked tokens back.
     new:
       title: Add user
       heading: Add user

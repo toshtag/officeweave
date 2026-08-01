@@ -56,11 +56,21 @@ class User < ApplicationRecord
   end
 
   # 利用を止める。記録は残したまま、ログインと新たな割り当てを止める。
-  # 進行中のセッションもここで終わらせる。
+  # 進行中のセッションと発行済みの token もここで終わらせる。
+  #
+  # ログインの経路だけを止めても、外部からの接続は残る。
+  # 認証のたびに利用者の状態を見るだけでは、再び有効にした時点で
+  # 無効化前の token がそのまま使えるようになる。
+  #
+  # 3 つを同じトランザクションで確定する。どれか 1 つでも失敗した場合に
+  # 無効化だけが残ると、止めたはずの経路が開いたままになる。
   def deactivate!
     transaction do
-      update!(deactivated_at: Time.current)
+      at = Time.current
+
+      update!(deactivated_at: at)
       sessions.destroy_all
+      revoke_api_tokens(at: at)
     end
   end
 
@@ -82,6 +92,15 @@ class User < ApplicationRecord
   end
 
   private
+    # 有効な token だけを対象にする。すでに失効している token の時刻を
+    # 書き換えると、いつ使えなくなったのかが分からなくなる。
+    #
+    # 1 件ずつ revoke! を呼ぶと、token の件数だけ UPDATE が増える。
+    # 失効の時刻はすべて同じであり、1 文で足りる。
+    def revoke_api_tokens(at:)
+      api_tokens.active.update_all(revoked_at: at, updated_at: at)
+    end
+
     # 空欄での送信は「変更しない」を意味する。未入力を要件の違反にしない。
     # 値そのものの必須は has_secure_password が確かめる。
     def password_assigned?

@@ -18,12 +18,29 @@ class UserActivationsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "無効にすると発行済みの token も失効する" do
+    token = organizations(:main).api_tokens.create!(user: users(:hanako), name: "連携用")
+
+    delete user_activation_url(users(:hanako))
+
+    assert_predicate token.reload, :revoked?
+  end
+
   test "無効にした利用者を再び有効にできる" do
     users(:hanako).deactivate!
 
     post user_activation_url(users(:hanako))
 
     assert_predicate users(:hanako).reload, :active?
+  end
+
+  test "再び有効にしても失効した token は戻らない" do
+    token = organizations(:main).api_tokens.create!(user: users(:hanako), name: "連携用")
+    users(:hanako).deactivate!
+
+    post user_activation_url(users(:hanako))
+
+    assert_predicate token.reload, :revoked?
   end
 
   test "自分自身は無効にできない" do
