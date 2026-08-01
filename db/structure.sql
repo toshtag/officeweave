@@ -219,7 +219,8 @@ CREATE TABLE public.announcements (
     visibility character varying DEFAULT 'organization'::character varying NOT NULL,
     published_at timestamp(6) without time zone,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    notified_at timestamp(6) without time zone
 );
 
 
@@ -1523,6 +1524,13 @@ CREATE INDEX index_announcements_on_organization_id_and_published_at ON public.a
 
 
 --
+-- Name: index_announcements_on_published_at_and_notified_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_announcements_on_published_at_and_notified_at ON public.announcements USING btree (published_at, notified_at);
+
+
+--
 -- Name: index_api_tokens_on_organization_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2350,6 +2358,7 @@ ALTER TABLE ONLY public.announcement_departments
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260801000000'),
 ('20260731000000'),
 ('20260730000000'),
 ('20260729084654'),
