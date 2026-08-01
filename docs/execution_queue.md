@@ -12,9 +12,9 @@
 
 ```text
 現在の Phase: R0
-直近完了 Task: R0-T13A
+直近完了 Task: R0-T14
 進行中:        なし
-次に実行:      R0-T14 利用者の無効化で API トークンを失効させる（#65）
+次に実行:      R0-T15 予約の組織整合性を検証する（#58）
 ```
 
 ## P0 プロジェクト契約
@@ -164,7 +164,7 @@ Issue が大きい場合は分割してよいが、分割した場合は本書�
 | R0-T12 | `r0/t12-request-transition-lock` | [#54](https://github.com/toshtag/OfficeWeave/issues/54)   | 申請の決裁を行ロックで直列化する               | 完了  |
 | R0-T13 | `r0/t13-password-policy`   | [#66](https://github.com/toshtag/OfficeWeave/issues/66)         | パスワードの最低要件と初期値検査を追加する          | 完了  |
 | R0-T13A | `r0/t13a-diagnostics-closeout` | [#81](https://github.com/toshtag/OfficeWeave/issues/81)     | 保存先診断の修正を検証し、Issue と実行キューを完了状態へ揃える | 完了  |
-| R0-T14 | —                          | [#65](https://github.com/toshtag/OfficeWeave/issues/65)         | 利用者の無効化で API トークンを失効させる        | 未着手 |
+| R0-T14 | `r0/t14-api-token-revocation` | [#65](https://github.com/toshtag/OfficeWeave/issues/65)      | 利用者の無効化で API トークンを失効させる        | 完了  |
 | R0-T15 | —                          | [#58](https://github.com/toshtag/OfficeWeave/issues/58)         | 予約の組織整合性を検証する                  | 未着手 |
 | R0-T16 | —                          | [#62](https://github.com/toshtag/OfficeWeave/issues/62)         | 設定更新をひとつのトランザクションにまとめる         | 未着手 |
 | R0-T17 | —                          | [#63](https://github.com/toshtag/OfficeWeave/issues/63)         | API の不正な日時入力を 400 で返す         | 未着手 |
@@ -185,6 +185,9 @@ Issue が大きい場合は分割してよいが、分割した場合は本書�
 - R0-T13A はコードを触らない。#81 は R0-T13 のレビュー中に見つかり、本番実装と回帰テストを
   同じ PR へ入れた。実装をやり直さず、main 上で完了条件を確かめ、Issue と本書の状態を
   実装結果へ合わせる。
+- R0-T14 は、無効化と token の発行を利用者の行で直列化した。どちらが先でも、
+  無効な利用者に有効な token が残らない。無効化を組織の行から占有し直すと、
+  R0-T8 の管理者の契約とロックの取得順序が逆になるため、その形は採らなかった。
 - R0-T15 以降は、影響範囲が限定的なものを後段へまとめた。
 - R0-T21 で R0 全体の整合を確かめてから、公開リリースの判断へ進む。
 
