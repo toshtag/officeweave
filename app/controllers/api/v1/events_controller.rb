@@ -11,8 +11,9 @@ module Api
       end
 
       private
+        # 未指定の場合だけ現在時刻を使う。誤った指定は入口が拒む。
         def from_time
-          params[:from].present? ? Time.zone.parse(params[:from]) || Time.current : Time.current
+          time_param(:from) || Time.current
         end
 
         def serialize(event)

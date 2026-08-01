@@ -547,7 +547,41 @@ belongs_to_same_organization :department, of: :announcement # 組織を親から
 巻き戻しと理由の表示を押さえている。ここで確かめるのは、実際に動いている
 構成でも同じであることである。
 
-## 20. 自動実行
+## 20. API の日時入力
+
+呼び出す側が直せる誤りとして返ることを確かめる。
+
+```text
+1. from を指定しない場合、現在時刻以降の予定が返る
+2. from が空文字の場合も、未指定と同じ結果になる
+3. 正しい from を指定すると、その時刻以降だけが返る
+4. 解析できない from は 400 になり、本文に不正なパラメーター名が入る
+5. 400 の本文へ、送った値そのものは含まれない
+```
+
+```bash
+curl -sS -o /dev/null -w '%{http_code}\n' \
+  -H "Authorization: Bearer $TOKEN" "$BASE_URL/api/v1/events?from=2024-13-45"
+curl -sS -H "Authorization: Bearer $TOKEN" "$BASE_URL/api/v1/events?from=abc"
+curl -sS -H "Authorization: Bearer $TOKEN" "$BASE_URL/api/v1/events?from=9999999999999-01-01"
+```
+
+いずれも 400 と次の本文が返ることが正しい。
+
+```json
+{"error":"invalid_parameter","parameter":"from"}
+```
+
+3 つ目は Ruby が解析できる値である。そのまま問い合わせへ渡すと、
+データベースが扱える範囲を超えて拒み、入力の誤りが 500 になる。
+受け取る年は `Api::BaseController::ACCEPTED_YEARS` で 1000..9999 に限る。
+
+判定は `app/controllers/api/base_controller.rb` の 1 か所に置く。
+これから増える経路も同じ契約を通る。
+`test/controllers/api/v1/api_access_test.rb` が押さえている。
+ここで確かめるのは、実際に動いている構成でも同じであることである。
+
+## 21. 自動実行
 
 `.github/workflows/verify.yml` が、変更のたびに次を実行する。
 
