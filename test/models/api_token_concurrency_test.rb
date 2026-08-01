@@ -19,6 +19,9 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
 
   # 待ちグラフを見に行く間隔。
   POLL_INTERVAL = 0.01
+  # 相手がロック待ちへ入るまでの上限。行き詰まりを止めるためだけに置く。
+  # 退行そのものは相手が終わったかどうかで受け取るため、ここは長くてよい。
+  BLOCKING_TIMEOUT = 60
 
   setup do
     # 前の実行が途中で終わっていた場合、記録が残ったままになる。
@@ -197,6 +200,19 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
     assert_equal 2, fresh.uniq.size, "観測がキャッシュされています"
   end
 
+  # 待つ相手が終わっていれば、もう待ちへは入らない。
+  # 上限まで待つと、退行の理由が上限の経過へ置き換わる。
+  test "待つ相手が終わっていれば上限を待たずに失敗する" do
+    finished = Thread.new { nil }
+    finished.join
+
+    error = assert_raises(Minitest::Assertion) do
+      Timeout.timeout(BLOCKING_TIMEOUT / 2.0) { wait_until_blocked(backend_pid, finished) }
+    end
+
+    assert_match(/ロック待ちへ入る前に終わりました/, error.message)
+  end
+
   # 失敗した実行が記録を残すと、以降の実行がすべて識別子の重複で崩れ、
   # 最初の 1 件の理由が読めなくなる。
   test "後片付けは利用者と token が残っていても組織を取り除く" do
@@ -285,10 +301,53 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
 
     # 実際にロック待ちへ入ったことを、データベースの待ちグラフで確かめる。
     # 固定時間の sleep で代用すると、遅い環境では待つ前に先へ進む。
-    def wait_until_blocked(pid)
-      Timeout.timeout(PREPARATION_TIMEOUT) do
-        sleep POLL_INTERVAL until blocked?(pid)
+    #
+    # 退行は経過時間ではなく、相手が終わったかどうかで受け取る。相手が
+    # 待ちへ入らずに終わったのであれば、待つ相手が違っていたということで
+    # あり、その場で理由を添えて失敗させられる。
+    #
+    # 経過時間だけで受け取ると、上限が実行環境の速さに縛られる。負荷を
+    # 掛けた環境では、相手が BEGIN を送ったあと次の文を送るまでに 60 秒を
+    # 超えた。データベースから見た状態は idle in transaction であり、
+    # 待っていたのは Client、つまり相手の Ruby 側の処理である。退行では
+    # ないため、上限は行き詰まりを止めるためだけに置く。
+    def wait_until_blocked(pid, thread)
+      started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      polls = 0
+
+      until blocked?(pid)
+        polls += 1
+        elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
+
+        flunk "発行がロック待ちへ入る前に終わりました。#{observed(pid, polls, elapsed)}" unless thread.alive?
+
+        if elapsed > BLOCKING_TIMEOUT
+          flunk "発行がロック待ちへ入りませんでした。#{observed(pid, polls, elapsed)}"
+        end
+
+        sleep POLL_INTERVAL
       end
+    end
+
+    def observed(pid, polls, elapsed)
+      format("観測 %d 回 / %.2f 秒。%s", polls, elapsed, activity_of(pid))
+    end
+
+    # 失敗した場合に、何を待っていたのかを残す。上限の経過だけでは、
+    # 待ちへ入らなかったのか、待つ相手が違ったのかを後から判別できない。
+    def activity_of(pid)
+      row = uncached_row(<<~SQL.squish)
+        SELECT state, wait_event_type, wait_event,
+               pg_blocking_pids(#{Integer(pid)}) AS blocking_pids, query
+        FROM pg_stat_activity WHERE pid = #{Integer(pid)}
+      SQL
+      return "pid #{pid} は接続の一覧にありません" if row.nil?
+
+      row.map { |name, value| "#{name}=#{value.inspect}" }.join(" ")
+    end
+
+    def uncached_row(sql)
+      ActiveRecord::Base.uncached { ActiveRecord::Base.connection.select_one(sql) }
     end
 
     # 他の接続の状態は、問い合わせるたびに読み直す。
@@ -361,7 +420,7 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
           end
         end
 
-        wait_until_blocked(await_preparation(pids))
+        wait_until_blocked(await_preparation(pids), threads.last)
         release << true
 
         threads.each { |thread| assert thread.join(COMPLETION_TIMEOUT), "処理が終わりませんでした" }
