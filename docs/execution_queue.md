@@ -12,9 +12,9 @@
 
 ```text
 現在の Phase: R0
-直近完了 Task: R0-T15B
+直近完了 Task: R0-T16
 進行中:        なし
-次に実行:      R0-T16 設定更新をひとつのトランザクションにまとめる（#62）
+次に実行:      R0-T17 API の不正な日時入力を 400 で返す（#63）
 ```
 
 ## P0 プロジェクト契約
@@ -168,7 +168,7 @@ Issue が大きい場合は分割してよいが、分割した場合は本書�
 | R0-T15 | `r0/t15-reservation-organization-integrity` | [#58](https://github.com/toshtag/OfficeWeave/issues/58) | 予約の組織整合性を検証する                  | 完了  |
 | R0-T15A | `r0/t15a-organization-boundary` | [#91](https://github.com/toshtag/OfficeWeave/issues/91)   | 組織をまたぐ参照の検証を他の模型へ広げる          | 完了  |
 | R0-T15B | `r0/t15b-concurrency-wait` | [#93](https://github.com/toshtag/OfficeWeave/issues/93)        | 並行実行テストの待ちグラフ観測を安定させる          | 完了  |
-| R0-T16 | —                          | [#62](https://github.com/toshtag/OfficeWeave/issues/62)         | 設定更新をひとつのトランザクションにまとめる         | 未着手 |
+| R0-T16 | `r0/t16-settings-transaction` | [#62](https://github.com/toshtag/OfficeWeave/issues/62)      | 設定更新をひとつのトランザクションにまとめる         | 完了  |
 | R0-T17 | —                          | [#63](https://github.com/toshtag/OfficeWeave/issues/63)         | API の不正な日時入力を 400 で返す         | 未着手 |
 | R0-T18 | —                          | [#64](https://github.com/toshtag/OfficeWeave/issues/64)         | 初期利用者の存在判定を組織単位にする             | 未着手 |
 | R0-T19 | —                          | [#59](https://github.com/toshtag/OfficeWeave/issues/59)         | 公開待ちのお知らせを表示し、公開時に通知する         | 未着手 |
