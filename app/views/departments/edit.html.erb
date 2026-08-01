@@ -3,6 +3,6 @@
 <div class="panel panel--narrow stack">
   <h1><%= t("departments.edit.heading") %></h1>
   <%= render "form", department: @department,
-                     parent_candidates: current_organization.departments.ordered.where.not(id: @department.id) %>
+                     parent_candidates: Department.with_ancestors(current_organization.departments.ordered.where.not(id: @department.id)) %>
   <%= link_to t("common.back"), @department %>
 </div>

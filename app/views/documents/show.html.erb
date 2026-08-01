@@ -22,7 +22,7 @@
 
   <% if @document.limited_to_departments? %>
     <p class="meta">
-      <%= t("documents.limited_to", names: @document.departments.ordered.map(&:display_path).to_sentence) %>
+      <%= t("documents.limited_to", names: Department.with_ancestors(@document.departments.ordered).map(&:display_path).to_sentence) %>
     </p>
   <% end %>
 

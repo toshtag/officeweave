@@ -85,9 +85,9 @@
     <section class="panel stack" aria-labelledby="home-departments">
       <h2 id="home-departments"><%= t("home.departments.heading") %></h2>
 
-      <% if Current.user.departments.any? %>
+      <% if @departments.any? %>
         <ul>
-          <% Current.user.departments.ordered.each do |department| %>
+          <% @departments.each do |department| %>
             <li><%= link_to department.display_path, department %></li>
           <% end %>
         </ul>

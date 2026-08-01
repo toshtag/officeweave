@@ -12,9 +12,9 @@
 
 ```text
 現在の Phase: R0
-直近完了 Task: R0-T26
-進行中:        R0-T27 通知の作成を受け手ごとの問い合わせから切り離す（#119）
-次に実行:      R0-T28 部門の階層表示を 1 回の問い合わせで組み立てる（#121）
+直近完了 Task: R0-T27
+進行中:        R0-T28 部門の階層表示を 1 回の問い合わせで組み立てる（#121）
+次に実行:      R0-T29 主たる所属を先読みできる関連にする（#120）
 ```
 
 ## P0 プロジェクト契約
@@ -183,8 +183,8 @@ Issue が大きい場合は分割してよいが、分割した場合は本書�
 | R0-T24 | `r0/t24-webhook-endpoint-update-audit` | [#112](https://github.com/toshtag/OfficeWeave/issues/112) | Webhook 宛先の変更を監査記録へ残す        | 完了  |
 | R0-T25 | `r0/t25-reservation-event-visibility` | [#113](https://github.com/toshtag/OfficeWeave/issues/113) | 予約に結び付ける予定を参照できるものへ限る     | 完了  |
 | R0-T26 | `r0/t26-security-review-closeout` | —                                                             | セキュリティレビュー分の完了確認。Issue と本書の状態を実装結果へ合わせる | 完了  |
-| R0-T27 | `r0/t27-notification-batch-delivery` | [#119](https://github.com/toshtag/OfficeWeave/issues/119) | 通知の作成を受け手ごとの問い合わせから切り離す | 進行中 |
-| R0-T28 | `r0/t28-department-path-preload` | [#121](https://github.com/toshtag/OfficeWeave/issues/121) | 部門の階層表示を 1 回の問い合わせで組み立てる | 未着手 |
+| R0-T27 | `r0/t27-notification-batch-delivery` | [#119](https://github.com/toshtag/OfficeWeave/issues/119) | 通知の作成を受け手ごとの問い合わせから切り離す | 完了  |
+| R0-T28 | `r0/t28-department-path-preload` | [#121](https://github.com/toshtag/OfficeWeave/issues/121) | 部門の階層表示を 1 回の問い合わせで組み立てる | 進行中 |
 | R0-T29 | `r0/t29-primary-department-preload` | [#120](https://github.com/toshtag/OfficeWeave/issues/120) | 主たる所属を先読みできる関連にする | 未着手 |
 | R0-T30 | `r0/t30-home-unread-scope` | [#122](https://github.com/toshtag/OfficeWeave/issues/122) | 入口の未読の判定を表示するぶんへ限る | 未着手 |
 | R0-T31 | `r0/t31-activity-write-interval` | [#123](https://github.com/toshtag/OfficeWeave/issues/123) | 最終利用時刻の書き込みを要求ごとから間引く | 未着手 |
