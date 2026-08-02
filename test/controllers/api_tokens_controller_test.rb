@@ -5,14 +5,14 @@ class ApiTokensControllerTest < ActionDispatch::IntegrationTest
 
   test "token を発行できる" do
     assert_difference -> { ApiToken.count }, 1 do
-      post api_tokens_url, params: { api_token: { name: "連携用" } }
+      post api_tokens_url, params: { api_token: { name: "連携用", scopes: ApiToken::SCOPES } }
     end
 
     assert_equal users(:hanako), ApiToken.last.user
   end
 
   test "発行した値は一度だけ表示される" do
-    post api_tokens_url, params: { api_token: { name: "連携用" } }
+    post api_tokens_url, params: { api_token: { name: "連携用", scopes: ApiToken::SCOPES } }
     follow_redirect!
 
     assert_select ".token"

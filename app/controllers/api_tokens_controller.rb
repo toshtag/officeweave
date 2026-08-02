@@ -14,6 +14,9 @@ class ApiTokensController < ApplicationController
     @api_token = Current.user.api_tokens.new(name: api_token_params[:name])
     @api_token.organization = current_organization
     @api_token.expires_at = requested_expiry
+    # 画面では必ず選ぶ。指定が無いことを「すべて」として扱うのは、
+    # この版より前に発行した token のためである。
+    @api_token.scopes = Array(api_token_params[:scopes])
 
     if @expiry_days_invalid
       # 候補にない日数は、期限の指定として受け取らない。
@@ -23,7 +26,8 @@ class ApiTokensController < ApplicationController
       flash[:issued_token] = @api_token.token
       record_audit_event("api_token_issued", target: @api_token,
                                              details: { name: @api_token.name,
-                                                        expires_in_days: @expiry_days }.compact)
+                                                        expires_in_days: @expiry_days,
+                                                        scopes: @api_token.scopes }.compact)
       return redirect_to api_tokens_path, notice: t("api_tokens.created")
     end
 
@@ -44,7 +48,7 @@ class ApiTokensController < ApplicationController
     end
 
     def api_token_params
-      params.expect(api_token: %i[name expires_in_days])
+      params.expect(api_token: [ :name, :expires_in_days, { scopes: [] } ])
     end
 
     # 期限は日数で受け取り、決めた候補だけを認める。

@@ -7,6 +7,7 @@ module Api
     include TimeParameters
 
     before_action :authenticate_with_token
+    before_action :authorize_scope
 
     rescue_from InvalidParameter, with: :render_invalid_parameter
 
@@ -25,6 +26,21 @@ module Api
         # 認証方式を示し、呼び出す側が対処できるようにする。
         headers["WWW-Authenticate"] = %(Bearer realm="OfficeWeave")
         render json: { error: "unauthorized" }, status: :unauthorized
+      end
+
+      # token が許可された範囲かを確かめる。
+      #
+      # 判定は認証の後に行う。値が違う場合は、範囲の話をする前に 401 とする。
+      #
+      # 範囲の名前は制御部の名前から決める。経路ごとに書くと、資源を足した
+      # ときに書き忘れた経路が、すべての token へ開く。
+      def authorize_scope
+        scope = controller_name
+
+        return if @api_token.permits?(scope)
+
+        # どの範囲が足りないのかを示す。呼び出す側が、発行し直す判断をできる。
+        render json: { error: "forbidden_scope", scope: scope }, status: :forbidden
       end
 
       def bearer_token

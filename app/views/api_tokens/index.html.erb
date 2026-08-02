@@ -25,6 +25,18 @@
                        selected: ApiToken::DEFAULT_EXPIRY_DAYS },
                      hint: t("api_tokens.new.expires_hint") %>
 
+      <fieldset class="form__fieldset">
+        <legend class="form__label"><%= ApiToken.human_attribute_name(:scopes) %></legend>
+        <%= form_hints t("api_tokens.new.scopes_hint") %>
+
+        <% ApiToken::SCOPES.each do |scope| %>
+          <%= inline_field do %>
+            <%= check_box_tag "api_token[scopes][]", scope, true, id: "api_token_scopes_#{scope}" %>
+            <%= label_tag "api_token_scopes_#{scope}", t("api_tokens.scopes.#{scope}") %>
+          <% end %>
+        <% end %>
+      </fieldset>
+
       <%= form.submit t("api_tokens.new.submit"), class: "button button--primary" %>
     <% end %>
   </div>
@@ -37,6 +49,7 @@
             <th scope="col"><%= ApiToken.human_attribute_name(:name) %></th>
             <th scope="col"><%= ApiToken.human_attribute_name(:last_used_at) %></th>
             <th scope="col"><%= ApiToken.human_attribute_name(:expires_at) %></th>
+            <th scope="col"><%= ApiToken.human_attribute_name(:scopes) %></th>
             <th scope="col"><%= t("api_tokens.index.status") %></th>
             <th scope="col"><span class="visually-hidden"><%= t("common.actions") %></span></th>
           </tr>
@@ -47,6 +60,13 @@
               <td><%= api_token.name %></td>
               <td><%= api_token.last_used_at ? l(api_token.last_used_at, format: :short) : t("api_tokens.never_used") %></td>
               <td><%= api_token.expires_at ? l(api_token.expires_at.to_date, format: :long) : t("api_tokens.no_expiry") %></td>
+              <td>
+                <%= if api_token.scopes.nil?
+                      t("api_tokens.all_scopes")
+                    else
+                      api_token.scopes.map { |scope| t("api_tokens.scopes.#{scope}") }.join("、")
+                    end %>
+              </td>
               <td>
                 <% if api_token.revoked? %>
                   <span class="status status--muted"><%= t("api_tokens.status.revoked") %></span>
