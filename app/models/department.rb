@@ -12,12 +12,9 @@ class Department < ApplicationRecord
            dependent: :restrict_with_error, inverse_of: :approver_department
   has_many :users, through: :memberships
 
-  normalizes :code, with: ->(value) { value.strip.downcase }
+  include OrganizationScopedCode
 
   validates :name, presence: true, length: { maximum: 100 }
-  validates :code, presence: true, length: { maximum: 50 },
-                   format: { with: /\A[a-z0-9][a-z0-9_-]*\z/ },
-                   uniqueness: { scope: :organization_id }
   belongs_to_same_organization :parent
   validate :parent_must_not_form_a_cycle
 

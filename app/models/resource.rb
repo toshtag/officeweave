@@ -6,12 +6,9 @@ class Resource < ApplicationRecord
   belongs_to :organization
   has_many :reservations, dependent: :restrict_with_error
 
-  normalizes :code, with: ->(value) { value.strip.downcase }
+  include OrganizationScopedCode
 
   validates :name, presence: true, length: { maximum: 100 }
-  validates :code, presence: true, length: { maximum: 50 },
-                   format: { with: /\A[a-z0-9][a-z0-9_-]*\z/ },
-                   uniqueness: { scope: :organization_id }
   validates :description, length: { maximum: 2_000 }
   validates :capacity, numericality: { only_integer: true, greater_than: 0 }, allow_nil: true
 
