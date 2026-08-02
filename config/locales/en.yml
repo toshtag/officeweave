@@ -211,6 +211,7 @@ en:
       cyclic: cannot be this department or one of its descendants
       different_organization: must belong to the same organization
       notification_preferences_not_saved: The notification settings could not be saved
+      current_password_invalid: The current password is incorrect
     forbidden:
       title: Not permitted
       heading: You cannot perform this action
@@ -562,6 +563,16 @@ en:
       open: You can review it here.
       settings_hint: This message was sent automatically by OfficeWeave.
 
+  passwords:
+    updated: Your password has been changed. Sessions on other devices have ended.
+    edit:
+      title: Change password
+      heading: Change password
+      current_password: Current password
+      new_password: New password
+      confirmation: New password (confirmation)
+      other_sessions_hint: Changing your password ends every session except this device.
+      submit: Change
   settings:
     title: Your settings
     heading: Your settings
@@ -678,6 +689,7 @@ en:
       user_created: User added
       user_updated: User updated
       user_deactivated: User deactivated
+      password_changed: Password changed
       user_activated: User activated
       department_created: Department added
       department_updated: Department updated

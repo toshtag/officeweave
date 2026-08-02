@@ -1,0 +1,32 @@
+<% content_for :title, t("passwords.edit.title") %>
+
+<div class="panel panel--narrow stack">
+  <h1><%= t("passwords.edit.heading") %></h1>
+
+  <%= form_with model: @user, url: password_path, method: :patch, class: "form stack" do |form| %>
+    <%= render "shared/error_messages", record: @user %>
+
+    <%# 今のパスワードは利用者の属性ではない。入力欄だけを組み立てる。 %>
+    <%= form_field do %>
+      <%= label_tag :current_password, t("passwords.edit.current_password"),
+                    class: ApplicationFormBuilder::LABEL_CLASS %>
+      <%= password_field_tag :current_password, nil, class: ApplicationFormBuilder::INPUT_CLASS,
+                             required: true, autocomplete: "current-password" %>
+    <% end %>
+
+    <%# 入力欄の制限は入力の助けにとどめる。受理するかどうかは User モデルの検証が決める。 %>
+    <%= form.field :password, :password_field, required: true,
+                   minlength: Authentication::PasswordPolicy::MINIMUM_LENGTH, maxlength: 72,
+                   autocomplete: "new-password",
+                   label: t("passwords.edit.new_password"),
+                   hint: t("users.form.password_policy_hint",
+                           count: Authentication::PasswordPolicy::MINIMUM_LENGTH) %>
+    <%= form.field :password_confirmation, :password_field, required: true,
+                   minlength: Authentication::PasswordPolicy::MINIMUM_LENGTH, maxlength: 72,
+                   autocomplete: "new-password" %>
+
+    <%= form_hints t("passwords.edit.other_sessions_hint") %>
+
+    <%= form.submit t("passwords.edit.submit"), class: "button button--primary" %>
+  <% end %>
+</div>

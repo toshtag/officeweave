@@ -7,6 +7,9 @@ Rails.application.routes.draw do
   get "up" => "rails/health#show", as: :rails_health_check
   get "health" => "health#show", as: :health
 
+  # 自分のパスワードの変更。管理者による変更とは別の経路とする。
+  resource :password, only: %i[edit update]
+
   # 表示言語の切り替え。状態を変えるため GET では受け付けない。
   patch "locale" => "locales#update", as: :locale
 
