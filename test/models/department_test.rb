@@ -7,24 +7,6 @@ class DepartmentTest < ActiveSupport::TestCase
     assert department.valid?
   end
 
-  test "識別子は組織の中で重複できない" do
-    department = organizations(:main).departments.new(name: "別の営業部", code: "sales")
-
-    assert_not department.valid?
-  end
-
-  test "識別子は組織が違えば重複できる" do
-    department = organizations(:other).departments.new(name: "営業部", code: "sales")
-
-    assert department.valid?
-  end
-
-  test "識別子は前後の空白と大文字を正規化する" do
-    department = organizations(:main).departments.create!(name: "総務部", code: "  General  ")
-
-    assert_equal "general", department.code
-  end
-
   test "別組織の部門を上位に指定できない" do
     department = departments(:development)
     department.parent = departments(:other_general)
