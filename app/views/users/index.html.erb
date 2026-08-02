@@ -8,6 +8,32 @@
 
   <p class="form__hint"><%= t("users.index.deactivation_hint") %></p>
 
+  <form class="form form--inline" method="get" action="<%= users_path %>">
+    <%= form_field do %>
+      <%= label_tag :query, t("users.index.query"), class: "form__label" %>
+      <%= search_field_tag :query, @query, class: "form__input" %>
+    <% end %>
+
+    <%= form_field do %>
+      <%= label_tag :department_id, Department.model_name.human, class: "form__label" %>
+      <%= select_tag :department_id,
+                     options_from_collection_for_select(@departments, :id, :display_path, @department_id),
+                     include_blank: t("users.index.all_departments"), class: "form__input" %>
+    <% end %>
+
+    <%= form_field do %>
+      <%= label_tag :state, t("users.index.state"), class: "form__label" %>
+      <%= select_tag :state,
+                     options_for_select([ [ t("users.index.states.active"), "active" ],
+                                          [ t("users.index.states.deactivated"), "deactivated" ] ], @state),
+                     include_blank: t("users.index.all_states"), class: "form__input" %>
+    <% end %>
+
+    <%= submit_tag t("events.index.filter"), class: "button", name: nil %>
+  </form>
+
+  <p role="status"><%= t("pagination.total", count: @page.total_count) %></p>
+
   <div class="panel">
     <table>
       <thead>
@@ -50,5 +76,6 @@
     </table>
   </div>
 
-  <%= render "shared/pagination", page: @page, parameters: {} %>
+  <%= render "shared/pagination", page: @page,
+             parameters: { query: @query, department_id: @department_id, state: @state } %>
 </div>

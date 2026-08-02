@@ -13,7 +13,12 @@ class RequestsController < ApplicationController
   def index
     @scope = params[:scope].presence_in(SCOPES)
     @status = params[:status]
-    @page = Pagination.new(scoped_requests.with_status(@status).recent_first
+    @request_type_id = params[:request_type_id]
+    @request_types = current_organization.request_types.ordered
+
+    @page = Pagination.new(scoped_requests.with_status(@status)
+                                          .with_request_type(@request_type_id)
+                                          .recent_first
                                           .includes(:request_type, :applicant),
                           page: params[:page])
     @requests = @page.records

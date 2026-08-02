@@ -245,6 +245,7 @@ en:
     updated: The department has been updated.
     destroyed: The department has been deleted.
     index:
+      all_request_types: All request types
       title: Departments
       heading: Departments
       new: Add department
@@ -290,6 +291,13 @@ en:
     activate: Activate
     deactivate: Deactivate
     index:
+      query: Name or email address
+      all_departments: All departments
+      state: State
+      all_states: All states
+      states:
+        active: Active
+        deactivated: Deactivated
       title: Users
       heading: Users
       new: Add user
@@ -585,6 +593,10 @@ en:
 
   notifications:
     index:
+      filters:
+        label: Filter
+        all: All
+        unread: Unread only
       title: Notifications
       heading: Notifications
       empty: You have no notifications.

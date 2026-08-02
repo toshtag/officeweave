@@ -28,6 +28,12 @@
                      options_for_select(Request::STATUSES.map { |s| [ t("requests.statuses.#{s}"), s ] }, @status),
                      include_blank: t("requests.index.all_statuses"), class: "form__input" %>
     <% end %>
+    <%= form_field do %>
+      <%= label_tag :request_type_id, Request.human_attribute_name(:request_type), class: "form__label" %>
+      <%= select_tag :request_type_id,
+                     options_from_collection_for_select(@request_types, :id, :name, @request_type_id),
+                     include_blank: t("requests.index.all_request_types"), class: "form__input" %>
+    <% end %>
     <%= submit_tag t("events.index.filter"), class: "button", name: nil %>
   </form>
 
@@ -55,7 +61,8 @@
       </table>
     </div>
 
-    <%= render "shared/pagination", page: @page, parameters: { scope: @scope, status: @status } %>
+    <%= render "shared/pagination", page: @page,
+               parameters: { scope: @scope, status: @status, request_type_id: @request_type_id } %>
   <% else %>
     <p><%= t("requests.index.empty") %></p>
   <% end %>

@@ -1,7 +1,12 @@
 # 自分宛の通知の一覧と、通知からの移動。
 class NotificationsController < ApplicationController
   def index
-    @page = Pagination.new(Current.user.notifications.recent_first.includes(:subject),
+    @read_state = params[:read_state].presence_in(%w[unread])
+
+    @page = Pagination.new(Current.user.notifications
+                                       .with_read_state(@read_state)
+                                       .recent_first
+                                       .includes(:subject),
                           page: params[:page])
     @notifications = @page.records
   end

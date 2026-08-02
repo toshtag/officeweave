@@ -265,6 +265,7 @@ ja:
     updated: 部門を更新しました。
     destroyed: 部門を削除しました。
     index:
+      all_request_types: すべての種別
       title: 部門
       heading: 部門
       new: 部門を追加
@@ -310,6 +311,13 @@ ja:
     activate: 有効にする
     deactivate: 無効にする
     index:
+      query: 名前・メールアドレス
+      all_departments: すべての部門
+      state: 状態
+      all_states: すべての状態
+      states:
+        active: 有効
+        deactivated: 無効
       title: 利用者
       heading: 利用者
       new: 利用者を追加
@@ -605,6 +613,10 @@ ja:
 
   notifications:
     index:
+      filters:
+        label: 絞り込み
+        all: すべて
+        unread: 未読だけ
       title: 通知
       heading: 通知
       empty: 通知はありません。
