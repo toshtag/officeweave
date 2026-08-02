@@ -23,6 +23,11 @@ Bundler.require(*Rails.groups)
 require_relative "../lib/officeweave/configuration/application_host"
 require_relative "../lib/officeweave/configuration/application_port"
 require_relative "../lib/officeweave/configuration/audit_retention"
+require_relative "../lib/officeweave/configuration/log_format"
+
+# 記録の形式は、初期化処理から使う。autoload の順序へ依存させない。
+require_relative "../lib/officeweave/logging"
+require_relative "../lib/officeweave/logging/json_formatter"
 
 module Officeweave
   class Application < Rails::Application
@@ -34,7 +39,7 @@ module Officeweave
     # Common ones are `templates`, `generators`, or `middleware`, for example.
     # configuration は環境設定より前に明示的に読み込む。
     # autoload の対象に残すと、同じ定数を二重に定義することになる。
-    config.autoload_lib(ignore: %w[assets tasks officeweave/configuration])
+    config.autoload_lib(ignore: %w[assets tasks officeweave/configuration officeweave/logging])
 
     # 利用者向け画面は日本語と英語に対応する。
     # 既定は日本語とし、対応していない言語が指定された場合も既定へ落とす。
