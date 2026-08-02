@@ -33,6 +33,7 @@ class EventsController < ApplicationController
     @event.owner = Current.user
 
     if @event.save
+      invite_participants
       redirect_to @event, notice: t("events.created")
     else
       render :new, status: :unprocessable_content
@@ -41,6 +42,7 @@ class EventsController < ApplicationController
 
   def update
     if @event.update(event_params)
+      invite_participants
       redirect_to @event, notice: t("events.updated")
     else
       render :edit, status: :unprocessable_content
@@ -66,10 +68,23 @@ class EventsController < ApplicationController
 
     def event_params
       attributes = params.expect(
-        event: [ :title, :description, :starts_at, :ends_at, :all_day, :visibility, { department_ids: [] } ]
+        event: [ :title, :description, :starts_at, :ends_at, :all_day, :visibility,
+                { department_ids: [], participant_ids: [] } ]
       )
 
       attributes[:department_ids] = [] unless attributes[:visibility] == "departments"
-      attributes
+      # 参加者は保存のあとで指名する。指名した相手へだけ知らせるためである。
+      attributes.except(:participant_ids)
+    end
+
+    # 参加者は自組織の有効な利用者だけから選ぶ。
+    #
+    # 画面は選択肢をその範囲に絞るが、受け入れ側に同じ判定がないと、
+    # 選択肢に無い識別子をそのまま送れる。
+    def invite_participants
+      requested = params.dig(:event, :participant_ids).to_a.compact_blank
+
+      @event.invite(users: current_organization.users.active.where(id: requested).to_a,
+                    actor: Current.user)
     end
 end

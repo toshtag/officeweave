@@ -106,6 +106,7 @@ en:
         visibility: Visibility
         department_ids: Departments
         owner: Owner
+        participant_ids: Participants
       resource:
         name: Name
         code: Code
@@ -374,6 +375,7 @@ en:
       heading: Edit event
     form:
       departments_hint: These are used only when the visibility is set to selected departments.
+      participants_hint: Selected users can see this event regardless of its visibility.
 
   resources:
     created: The resource has been added.
@@ -647,6 +649,7 @@ en:
     mail_notifications_hint: Unchecked types still appear on screen, but no email is sent.
     events:
       announcement_published: When an announcement is published
+      event_invited: When you are added to an event
       request_submitted: When a request is submitted
       request_approved: When your request is approved
       request_returned: When your request is returned

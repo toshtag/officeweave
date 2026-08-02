@@ -11,6 +11,10 @@ class Event < ApplicationRecord
   has_many :event_departments, dependent: :destroy
   has_many :departments, through: :event_departments
 
+  # 指名した参加者。公開範囲とは別に、見られる相手を増やす。
+  has_many :event_participants, dependent: :destroy
+  has_many :participants, through: :event_participants, source: :user
+
   validates :title, presence: true, length: { maximum: 200 }
   validates :description, length: { maximum: 10_000 }
   validates :starts_at, :ends_at, presence: true
@@ -21,6 +25,26 @@ class Event < ApplicationRecord
   validate :departments_must_be_in_same_organization
 
   scope :starting_from, ->(time) { where(ends_at: time..) }
+
+  # 参加者を指名し直す。新しく指名した相手だけへ知らせる。
+  #
+  # 既に参加者である利用者へ重ねて知らせない。予定を直すたびに同じ知らせが
+  # 届くことになる。外した相手へも知らせない。
+  def invite(users:, actor:)
+    added = nil
+
+    transaction do
+      existing = participants.to_a
+      self.participants = users.reject { |user| user.id == owner_id }
+      added = participants.reload.to_a - existing
+    end
+
+    return added if added.empty?
+
+    Notification.deliver_to_all(users: added.reject { |user| user.id == actor.id },
+                                subject: self, event: "event_invited")
+    added
+  end
   scope :chronological, -> { order(:starts_at, :id) }
 
   # 利用者が見られる予定。
@@ -36,6 +60,10 @@ class Event < ApplicationRecord
                 .where(department_id: Membership.where(user_id: user.id).select(:department_id))
                 .select(:event_id).arel
             )
+          )
+          .or(
+            # 指名された参加者は、公開範囲に関わらず見られる。
+            arel_table[:id].in(EventParticipant.where(user_id: user.id).select(:event_id).arel)
           )
       )
   }

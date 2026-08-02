@@ -7,6 +7,7 @@ class Notification < ApplicationRecord
 
   EVENTS = %w[
     announcement_published
+    event_invited
     request_submitted
     request_approved
     request_returned
