@@ -31,4 +31,20 @@ module ApplicationHelper
   def formatted_body(text, html_options = {})
     simple_format(CGI.escapeHTML(text.to_s), html_options, sanitize: false)
   end
+
+  # 横に並べる入力欄。選択肢そのものが操作の対象になる場合に使う。
+  #
+  # 補足は包みの外へ置く。包みは横並びであり、内側へ入れると補足が
+  # ラベルの隣に来る。縦に並べる入力欄とは位置が違うが、どちらの位置も
+  # 書く人ではなくここが決める。
+  def inline_field(hint: nil, &block)
+    safe_join([ tag.div(capture(&block), class: "#{ApplicationFormBuilder::FIELD_CLASS} form__field--inline"),
+                *form_hints(hint) ])
+  end
+
+  # 入力欄と選択肢の群へ添える補足。
+  # 複数渡せる。条件によって出し分ける補足は、nil を混ぜて渡す。
+  def form_hints(hint)
+    Array(hint).compact_blank.map { |text| tag.p(text, class: "form__hint") }
+  end
 end
