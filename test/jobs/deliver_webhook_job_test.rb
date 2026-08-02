@@ -1,8 +1,10 @@
 require "test_helper"
 require_relative "../test_helpers/local_http_server_test_helper"
+require_relative "../test_helpers/local_certificate_test_helper"
 
 class DeliverWebhookJobTest < ActiveJob::TestCase
   include LocalHttpServerTestHelper
+  include LocalCertificateTestHelper
 
   setup do
     @endpoint = organizations(:main).webhook_endpoints.create!(name: "連携先", url: "https://example.com/hook")
@@ -447,6 +449,137 @@ class DeliverWebhookJobTest < ActiveJob::TestCase
     assert delivery.delivered_at.present?
   end
 
+  # --- HTTPS の経路 ---
+  #
+  # 運用で使うのは HTTPS である。読み取りの上限は Net::HTTP の内側の
+  # ソケットを包んで効かせているため、TLS を挟んでも同じように働くことを
+  # 確かめる。証明書はその場で作り、この接続だけへ渡す。
+  # 実行環境の信頼設定にも OpenSSL の既定にも足さない。
+
+  TLS_ORIGIN = "https://hooks.internal.example:443".freeze
+
+  test "HTTPS で正常に配送して記録する" do
+    request = nil
+
+    with_tls_server(status: "204 応答") do |received, _written|
+      perform_over_tls
+      request = received.call.first
+    end
+
+    delivery = @endpoint.webhook_deliveries.recent_first.first
+
+    assert_equal 204, delivery.response_status
+    assert_nil delivery.error_message
+    assert delivery.delivered_at.present?
+    # Host は接続先の IP ではなく、証明書と同じホスト名になる。
+    assert_equal "hooks.internal.example", request.headers["host"]
+    assert_equal "identity", request.headers["accept-encoding"]
+  end
+
+  test "ホスト名の合わない証明書を拒否する" do
+    with_tls_server(status: "204 応答", bundle: mismatched_certificate) do
+      assert_raises(DeliverWebhookJob::TransientDeliveryError) { perform_over_tls(bundle: mismatched_certificate) }
+    end
+
+    assert_recorded_safely(message_for(:tls_failed), tls_address)
+  end
+
+  test "信頼していない認証局の証明書を拒否する" do
+    with_tls_server(status: "204 応答", bundle: untrusted_certificate) do
+      assert_raises(DeliverWebhookJob::TransientDeliveryError) { perform_over_tls(bundle: untrusted_certificate) }
+    end
+
+    assert_recorded_safely(message_for(:tls_failed), tls_address)
+  end
+
+  test "HTTPS でも受け取る量の上限が効く" do
+    {
+      { status_line_bytes: OVERSIZED_BYTES } => nil,
+      { single_header_bytes: OVERSIZED_BYTES } => nil,
+      { header_bytes: OVERSIZED_BYTES } => nil
+    }.each_key do |plan|
+      written = with_tls_server(status: "200 応答", **plan) do |_received, count|
+        perform_over_tls
+        count.call
+      end
+
+      assert_operator written, :<, TRUNCATED_BYTES, "#{plan.keys.first} を読み進めている"
+      assert_oversized_failure
+    end
+  end
+
+  test "HTTPS でも上限を超える本文は打ち切り、状態は記録する" do
+    written = with_tls_server(status: "200 応答", body_bytes: OVERSIZED_BYTES) do |_received, count|
+      perform_over_tls
+      count.call
+    end
+
+    assert_operator written, :<, TRUNCATED_BYTES, "本文を読み進めている"
+    assert_equal 200, @endpoint.webhook_deliveries.recent_first.first.response_status
+  end
+
+  test "HTTPS で打ち切った後も配送できる" do
+    skip "/proc を読めない環境では測れない" unless File.directory?("/proc/self/fd")
+
+    with_tls_server(status: "200 応答", status_line_bytes: 1024 * 1024) do
+      3.times { perform_over_tls }
+      before = process_resources
+      10.times { perform_over_tls }
+
+      assert_equal before, process_resources, "打ち切りのたびに資源が残っている"
+    end
+
+    with_tls_server(status: "204 応答") { perform_over_tls }
+
+    assert_equal 204, @endpoint.webhook_deliveries.recent_first.first.response_status
+  end
+
+  test "読み取りには上限つきの口が入る" do
+    # 上限は Net::HTTP の内側のソケットを包んで効かせている。
+    # 包みが外れても、応答が小さいうちは他のテストが気付けない。
+    { "http" => [ loopback_address(2), 80, {} ],
+      "https" => [ tls_address, 443, { tls: trusted_certificate } ] }.each do |scheme, (address, port, options)|
+      @endpoint.update_column(:url, "#{scheme}://hooks.internal.example/events")
+
+      with_local_server(address, port: port, status: "204 応答", **options) do
+        job = build_job(address, "#{scheme}://hooks.internal.example:#{port}")
+        job.certificate_store = trusted_certificate.store if options[:tls]
+        destination = WebhookDestination.resolve!(@endpoint.url,
+                                                  resolver: ->(_hostname, _port) { [ address ] },
+                                                  allowlist: Set["#{scheme}://hooks.internal.example:#{port}"])
+
+        job.send(:build_connection, destination).start do |connection|
+          assert_kind_of DeliverWebhookJob::BoundedSocket,
+                         connection.instance_variable_get(:@socket).io, scheme
+        end
+      end
+    end
+  end
+
+  # --- 受け取りの上限の境目 ---
+  #
+  # 上限ちょうどの応答が、終わりを確かめるための読み取りだけを理由に
+  # 超過として扱われないことを見る。終わり方は 3 通りある。
+
+  test "上限の境目を、終わり方ごとに確かめる" do
+    %i[length chunked close].each do |termination|
+      [ -1, 0, 1 ].each do |delta|
+        total = DeliverWebhookJob::MAXIMUM_RESPONSE_BYTES + delta
+
+        with_local_server(loopback_address(2), status: "200 応答", body_bytes: 16,
+                          total_bytes: total, termination: termination) do
+          @endpoint.update_column(:url, "http://hooks.internal.example/events")
+          perform_to(loopback_address(2))
+        end
+
+        delivery = @endpoint.webhook_deliveries.recent_first.first
+
+        assert_equal 200, delivery.response_status, "#{termination} / 上限#{format('%+d', delta)} で状態を残していない"
+        assert_nil delivery.failure_code
+      end
+    end
+  end
+
   # --- 失敗の記録 ---
   #
   # 例外の文面をそのまま残さない。Net::HTTP は接続に失敗すると、宛先と
@@ -669,6 +802,28 @@ class DeliverWebhookJobTest < ActiveJob::TestCase
       job = DeliverWebhookJob.new
       job.resolver = ->(_hostname, _port) { [ address ] }
       job.allowlist = Set[origin]
+      job.perform(@endpoint.id, "request_submitted", { subject_id: 1 })
+    end
+
+    def tls_address
+      loopback_address(6)
+    end
+
+    def build_job(address, origin)
+      job = DeliverWebhookJob.new
+      job.resolver = ->(_hostname, _port) { [ address ] }
+      job.allowlist = Set[origin]
+      job
+    end
+
+    def with_tls_server(bundle: trusted_certificate, **options, &block)
+      @endpoint.update_column(:url, "https://hooks.internal.example/events")
+      with_local_server(tls_address, port: 443, tls: bundle, **options, &block)
+    end
+
+    def perform_over_tls(bundle: trusted_certificate)
+      job = build_job(tls_address, TLS_ORIGIN)
+      job.certificate_store = bundle.store
       job.perform(@endpoint.id, "request_submitted", { subject_id: 1 })
     end
 
