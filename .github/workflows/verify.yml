@@ -332,6 +332,58 @@ jobs:
             end
           '
 
+      - name: 暗号化して取得する
+        run: |
+          printf '検証用の合言葉\n' > /tmp/officeweave-passphrase
+          chmod 600 /tmp/officeweave-passphrase
+          BACKUP_PASSPHRASE_FILE=/tmp/officeweave-passphrase script/production_backup
+
+      - name: 暗号化された書庫であることを確かめる
+        run: |
+          archive="$(ls -1 backups/officeweave-*.tar.gz.enc | head -1)"
+          test -f "${archive}"
+          # 先頭の印が付いていること。
+          test "$(head -c 8 "${archive}")" = "Salted__"
+          # そのままでは書庫として読めないこと。
+          if tar --list --gzip --file="${archive}" >/dev/null 2>&1; then
+            echo "暗号化した書庫がそのまま読める" >&2
+            exit 1
+          fi
+          # 製品を通さず、openssl だけで取り出せること。
+          openssl enc -d -aes-256-cbc -md sha256 -pbkdf2 -iter 600000 \
+            -pass file:/tmp/officeweave-passphrase -in "${archive}" |
+            tar --list --gzip | grep -qx "./database.sql"
+
+      - name: 復元の前に状態を変える
+        run: |
+          docker compose -f compose.production.yaml exec -T web \
+            bin/rails runner 'Organization.create!(code: "before-encrypted", name: "暗号化復元前の組織")'
+
+      - name: パスフレーズなしでは復元しないことを確かめる
+        run: |
+          archive="$(ls -1 backups/officeweave-*.tar.gz.enc | head -1)"
+          if FORCE=1 script/production_restore "${archive}"; then
+            echo "パスフレーズなしで復元が成功してしまった" >&2
+            exit 1
+          fi
+          # web は止まっていない。停止の前に拒否する契約である。
+          curl -sf -H 'Host: localhost' http://127.0.0.1:3212/up > /dev/null
+          docker compose -f compose.production.yaml exec -T web \
+            bin/rails runner 'raise "復元前のデータが失われた" unless Organization.exists?(code: "before-encrypted")'
+
+      - name: 暗号化された書庫から復元する
+        run: |
+          archive="$(ls -1 backups/officeweave-*.tar.gz.enc | head -1)"
+          BACKUP_PASSPHRASE_FILE=/tmp/officeweave-passphrase FORCE=1 \
+            script/production_restore "${archive}"
+
+      - name: 暗号化された書庫の内容が戻ることを確かめる
+        run: |
+          docker compose -f compose.production.yaml exec -T web bin/rails runner '
+            raise "取得時点のデータが戻っていない" unless Organization.exists?(code: "backup-check")
+            raise "復元前のデータが残っている" if Organization.exists?(code: "before-encrypted")
+          '
+
       - name: 依存先まで含めて確認する
         run: |
           response="$(curl -sf -H 'Host: localhost' http://127.0.0.1:3212/health)"
@@ -351,6 +403,7 @@ jobs:
           docker compose -f compose.production.yaml down -v
           # 書庫には検証用とはいえ組織のデータが入る。成果物として残さない。
           rm -rf backups
+          rm -f /tmp/officeweave-passphrase
 
   queue:
     name: 永続キュー
