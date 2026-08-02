@@ -68,7 +68,7 @@ docker compose exec web bin/diagnose
 
 雛形に無い必須の変数があると、この手順は 3 で止まる。
 どの変数が足りないかは、構成ファイルが名前を挙げて知らせる。
-雛形と設定の文書の側は `test/models/environment_template_test.rb` が押さえている。
+雛形と設定の文書の側は `test/configuration/environment_template_test.rb` が押さえている。
 
 ```bash
 docker compose -f compose.production.yaml up -d --build
@@ -202,7 +202,7 @@ test -z "$(printf '%s\n' "$ROUTES" | grep 'active_storage' || true)"
 7. 参照できる状態で得た添付の URL が、公開範囲を狭めた後は取得できない
 ```
 
-経路が存在しないことは `test/models/attachment_routes_test.rb` が、
+経路が存在しないことは `test/configuration/attachment_routes_test.rb` が、
 取得できる範囲は `test/controllers/attachment_delivery_test.rb` が押さえている。
 ここで確かめるのは、実際に動いている構成でも同じであることである。
 
@@ -451,7 +451,7 @@ curl -s -o /dev/null -w '%{http_code}\n' \
 `script/seed_initial_user` が作る一時コンテナにだけ渡す。
 値の入力元は `.env` または `--env-file` だけとし、同名のホスト環境変数は使わない。
 非伝播は `script/check_compose_isolation` が、スクリプトの契約は
-`test/models/seed_initial_user_script_test.rb` が押さえている。
+`test/scripts/seed_initial_user_script_test.rb` が押さえている。
 
 最低要件は `test/models/authentication/password_policy_test.rb` と
 `test/models/user_test.rb` が、画面での拒否は
