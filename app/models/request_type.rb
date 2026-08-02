@@ -8,12 +8,9 @@ class RequestType < ApplicationRecord
 
   has_many :requests, dependent: :restrict_with_error
 
-  normalizes :code, with: ->(value) { value.strip.downcase }
+  include OrganizationScopedCode
 
   validates :name, presence: true, length: { maximum: 100 }
-  validates :code, presence: true, length: { maximum: 50 },
-                   format: { with: /\A[a-z0-9][a-z0-9_-]*\z/ },
-                   uniqueness: { scope: :organization_id }
   validates :description, length: { maximum: 2_000 }
   belongs_to_same_organization :approver_department
 

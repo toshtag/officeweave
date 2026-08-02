@@ -4,12 +4,9 @@ class DocumentCategory < ApplicationRecord
 
   has_many :documents, dependent: :nullify
 
-  normalizes :code, with: ->(value) { value.strip.downcase }
+  include OrganizationScopedCode
 
   validates :name, presence: true, length: { maximum: 100 }
-  validates :code, presence: true, length: { maximum: 50 },
-                   format: { with: /\A[a-z0-9][a-z0-9_-]*\z/ },
-                   uniqueness: { scope: :organization_id }
 
   scope :ordered, -> { order(:position, :name) }
 end

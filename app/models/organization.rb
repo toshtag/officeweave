@@ -16,6 +16,9 @@ class Organization < ApplicationRecord
   has_many :webhook_endpoints, dependent: :destroy
   has_many :audit_events, dependent: :destroy
 
+  # 識別子は全体で一意とする。組織の配下に置く識別子（OrganizationScopedCode）
+  # とは書式も正規化も同じだが、一意性の範囲だけが違う。同じ形の宣言が並ぶため、
+  # ここは共通化せず、範囲が違うことをこの場所で読めるようにしておく。
   normalizes :code, with: ->(value) { value.strip.downcase }
 
   validates :name, presence: true, length: { maximum: 100 }
