@@ -29,10 +29,19 @@
       <dt><%= Request.human_attribute_name(:submitted_at) %></dt>
       <dd><%= @request.submitted_at ? l(@request.submitted_at, format: :short) : t("requests.not_submitted") %></dd>
 
-      <dt><%= RequestType.human_attribute_name(:approver_department) %></dt>
+      <dt><%= t("requests.approval_route") %></dt>
       <dd>
-        <%= @request.request_type.approver_department&.display_path ||
-              t("request_types.approver_administrators") %>
+        <ol class="list-plain">
+          <% @request.request_type.approval_steps.each do |step| %>
+            <li>
+              <%= step.approver_department&.display_path || t("request_types.approver_administrators") %>
+              <%# 待っている段を示す。多段では、どこで止まっているかが要る。 %>
+              <% if @request.status == "pending" && step.position == @request.current_step_position %>
+                <span class="status status--muted"><%= t("requests.awaiting_step") %></span>
+              <% end %>
+            </li>
+          <% end %>
+        </ol>
       </dd>
     </dl>
 

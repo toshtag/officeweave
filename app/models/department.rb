@@ -8,7 +8,9 @@ class Department < ApplicationRecord
   has_many :announcement_departments, dependent: :destroy
   has_many :event_departments, dependent: :destroy
   has_many :document_departments, dependent: :destroy
-  has_many :approvable_request_types, class_name: "RequestType", foreign_key: :approver_department_id,
+  # 承認の段から参照されている部門は削除できない。
+  # 削除すると、その段を誰も担当しない状態になる。
+  has_many :approval_steps, foreign_key: :approver_department_id,
            dependent: :restrict_with_error, inverse_of: :approver_department
   has_many :users, through: :memberships
 

@@ -10,7 +10,11 @@ class MultiStepApprovalTest < ActiveSupport::TestCase
   setup do
     @request_type = request_types(:leave)
     @first = @request_type.approval_steps.first
-    @second = @request_type.approval_steps.create!(position: 20, approver_department: nil)
+    # 2 段目は 1 段目と別の部門とする。同じ部門にすると、段を進めたかどうかが
+    # 担当の違いに現れない。
+    @second = @request_type.approval_steps.create!(position: 20, approver_department: departments(:development))
+    @second_approver = users(:outsider_free)
+    @second_approver.memberships.create!(department: departments(:development))
     @request = @request_type.requests.create!(
       organization: organizations(:main), applicant: users(:hanako), title: "多段の申請"
     )
@@ -37,7 +41,7 @@ class MultiStepApprovalTest < ActiveSupport::TestCase
     @request.submit(actor: users(:hanako))
     @request.approve(actor: users(:approver))
 
-    assert @request.approve(actor: users(:taro))
+    assert @request.approve(actor: @second_approver)
 
     assert_equal "approved", @request.reload.status
     assert_not_nil @request.decided_at
@@ -47,15 +51,15 @@ class MultiStepApprovalTest < ActiveSupport::TestCase
     @request.submit(actor: users(:hanako))
     @request.approve(actor: users(:approver))
 
-    # 2 段目は管理者が担当する。1 段目の担当は次の段を承認できない。
+    # 2 段目は開発部が担当する。1 段目の担当は次の段を承認できない。
     refute @request.reload.decision_authorized_for?(users(:approver))
   end
 
   test "先の段の担当は、まだ承認できない" do
     @request.submit(actor: users(:hanako))
 
-    # 1 段目は営業部が担当する。営業部に属さない一般利用者は担当ではない。
-    refute @request.decision_authorized_for?(users(:outsider_free))
+    # 1 段目は営業部が担当する。2 段目の担当は、まだ決裁できない。
+    refute @request.decision_authorized_for?(@second_approver)
   end
 
   test "段ごとの承認を記録へ残す" do
@@ -73,7 +77,7 @@ class MultiStepApprovalTest < ActiveSupport::TestCase
     @request.submit(actor: users(:hanako))
     @request.approve(actor: users(:approver))
 
-    assert @request.return_to_applicant(actor: users(:taro))
+    assert @request.return_to_applicant(actor: @second_approver)
 
     assert_equal "returned", @request.reload.status
   end
@@ -81,7 +85,7 @@ class MultiStepApprovalTest < ActiveSupport::TestCase
   test "差し戻したあとの再提出は 1 段目から始める" do
     @request.submit(actor: users(:hanako))
     @request.approve(actor: users(:approver))
-    @request.return_to_applicant(actor: users(:taro))
+    @request.return_to_applicant(actor: @second_approver)
 
     @request.submit(actor: users(:hanako))
 
@@ -96,20 +100,20 @@ class MultiStepApprovalTest < ActiveSupport::TestCase
     @request.approve(actor: users(:approver))
 
     refute_includes Request.awaiting_decision_by(users(:approver)).reload, @request
-    assert_includes Request.awaiting_decision_by(users(:taro)), @request
+    assert_includes Request.awaiting_decision_by(@second_approver), @request
   end
 
   test "通知は現在の段の担当へ送る" do
     @request.submit(actor: users(:hanako))
 
     assert_includes @request.approvers, users(:approver)
-    refute_includes @request.approvers, users(:outsider_free)
+    refute_includes @request.approvers, @second_approver
   end
 
   test "段を進めると、次の段の担当へ知らせる" do
     @request.submit(actor: users(:hanako))
 
-    assert_difference -> { Notification.where(user: users(:taro), event: "request_submitted").count }, 1 do
+    assert_difference -> { Notification.where(user: @second_approver, event: "request_submitted").count }, 1 do
       @request.approve(actor: users(:approver))
     end
   end
@@ -119,7 +123,7 @@ class MultiStepApprovalTest < ActiveSupport::TestCase
     @request.approve(actor: users(:approver))
 
     assert_no_difference -> { Notification.where(event: "request_submitted").count } do
-      @request.approve(actor: users(:taro))
+      @request.approve(actor: @second_approver)
     end
   end
 

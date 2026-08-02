@@ -41,6 +41,7 @@ module IsolatedOrganizationTestHelper
       Notification.where(subject_type: "Request", subject_id: ids.requests).delete_all
       Notification.where(subject_type: "Announcement", subject_id: ids.announcements).delete_all
       RequestActivity.where(request_id: ids.requests).delete_all
+      ApprovalStep.where(request_type_id: ids.request_types).delete_all
       AnnouncementRead.where(user_id: ids.users).delete_all
       AnnouncementDepartment.where(announcement_id: ids.announcements).delete_all
       EventDepartment.where(event_id: ids.events).delete_all
@@ -71,13 +72,14 @@ module IsolatedOrganizationTestHelper
     # 消す対象の id を、消し始める前に読み出しておく。
     # 途中で親を消すと、あとから子をたどれなくなる。
     class ScopedIds
-      attr_reader :organization, :users, :requests, :announcements, :events, :documents,
+      attr_reader :organization, :users, :requests, :request_types, :announcements, :events, :documents,
                   :webhook_endpoints
 
       def initialize(organization)
         @organization = organization.id
         @users = User.where(organization_id: @organization).pluck(:id)
         @requests = Request.where(organization_id: @organization).pluck(:id)
+        @request_types = RequestType.where(organization_id: @organization).pluck(:id)
         @announcements = Announcement.where(organization_id: @organization).pluck(:id)
         @events = Event.where(organization_id: @organization).pluck(:id)
         @documents = Document.where(organization_id: @organization).pluck(:id)

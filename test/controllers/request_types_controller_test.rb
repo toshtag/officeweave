@@ -33,7 +33,11 @@ class RequestTypesControllerTest < ActionDispatch::IntegrationTest
     sign_in_as users(:taro)
 
     post request_types_url, params: {
-      request_type: { name: "残業申請", code: "overtime", approver_department_id: departments(:other_general).id }
+      request_type: {
+        name: "残業申請", code: "overtime",
+        approval_steps_attributes: { "0" => { position: 10,
+                                              approver_department_id: departments(:other_general).id } }
+      }
     }
 
     assert_response :unprocessable_content

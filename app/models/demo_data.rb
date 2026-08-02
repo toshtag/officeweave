@@ -118,7 +118,10 @@ class DemoData
         request_type = organization.request_types.find_or_initialize_by(code: attributes[:code])
         request_type.name = attributes[:name]
         request_type.position = attributes[:position]
-        request_type.approver_department = departments[attributes[:approver_code]]
+        # 承認の段は 1 段だけ用意する。動作確認では多段の必要が無く、
+        # 段の構成そのものは画面から確かめられる。
+        step = request_type.approval_steps.first || request_type.approval_steps.build(position: 10)
+        step.approver_department = departments[attributes[:approver_code]]
         request_type.save!
 
         result[attributes[:code]] = request_type

@@ -282,6 +282,39 @@ ALTER SEQUENCE public.api_tokens_id_seq OWNED BY public.api_tokens.id;
 
 
 --
+-- Name: approval_steps; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.approval_steps (
+    id bigint NOT NULL,
+    request_type_id bigint NOT NULL,
+    approver_department_id bigint,
+    "position" integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: approval_steps_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.approval_steps_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: approval_steps_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.approval_steps_id_seq OWNED BY public.approval_steps.id;
+
+
+--
 -- Name: ar_internal_metadata; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -681,7 +714,8 @@ CREATE TABLE public.request_activities (
     action character varying NOT NULL,
     comment text,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    step_position integer
 );
 
 
@@ -714,7 +748,6 @@ CREATE TABLE public.request_types (
     name character varying NOT NULL,
     code character varying NOT NULL,
     description text,
-    approver_department_id bigint,
     active boolean DEFAULT true NOT NULL,
     "position" integer DEFAULT 0 NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
@@ -756,7 +789,8 @@ CREATE TABLE public.requests (
     submitted_at timestamp(6) without time zone,
     decided_at timestamp(6) without time zone,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    current_step_position integer DEFAULT 10 NOT NULL
 );
 
 
@@ -1055,6 +1089,13 @@ ALTER TABLE ONLY public.api_tokens ALTER COLUMN id SET DEFAULT nextval('public.a
 
 
 --
+-- Name: approval_steps id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.approval_steps ALTER COLUMN id SET DEFAULT nextval('public.approval_steps_id_seq'::regclass);
+
+
+--
 -- Name: audit_events id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1248,6 +1289,14 @@ ALTER TABLE ONLY public.announcements
 
 ALTER TABLE ONLY public.api_tokens
     ADD CONSTRAINT api_tokens_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: approval_steps approval_steps_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.approval_steps
+    ADD CONSTRAINT approval_steps_pkey PRIMARY KEY (id);
 
 
 --
@@ -1554,6 +1603,27 @@ CREATE INDEX index_api_tokens_on_user_id ON public.api_tokens USING btree (user_
 
 
 --
+-- Name: index_approval_steps_on_approver_department_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_approval_steps_on_approver_department_id ON public.approval_steps USING btree (approver_department_id);
+
+
+--
+-- Name: index_approval_steps_on_request_type_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_approval_steps_on_request_type_id ON public.approval_steps USING btree (request_type_id);
+
+
+--
+-- Name: index_approval_steps_on_request_type_id_and_position; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_approval_steps_on_request_type_id_and_position ON public.approval_steps USING btree (request_type_id, "position");
+
+
+--
 -- Name: index_audit_events_on_actor_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1841,13 +1911,6 @@ CREATE INDEX index_request_activities_on_request_id_and_created_at ON public.req
 
 
 --
--- Name: index_request_types_on_approver_department_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_request_types_on_approver_department_id ON public.request_types USING btree (approver_department_id);
-
-
---
 -- Name: index_request_types_on_organization_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2047,14 +2110,6 @@ ALTER TABLE ONLY public.events
 
 
 --
--- Name: request_types fk_rails_1e1169f43a; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.request_types
-    ADD CONSTRAINT fk_rails_1e1169f43a FOREIGN KEY (approver_department_id) REFERENCES public.departments(id);
-
-
---
 -- Name: webhook_endpoints fk_rails_21808fa528; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2239,6 +2294,14 @@ ALTER TABLE ONLY public.memberships
 
 
 --
+-- Name: approval_steps fk_rails_a7428c09ac; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.approval_steps
+    ADD CONSTRAINT fk_rails_a7428c09ac FOREIGN KEY (request_type_id) REFERENCES public.request_types(id);
+
+
+--
 -- Name: reservations fk_rails_af7a37539f; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2327,6 +2390,14 @@ ALTER TABLE ONLY public.audit_events
 
 
 --
+-- Name: approval_steps fk_rails_e628977c60; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.approval_steps
+    ADD CONSTRAINT fk_rails_e628977c60 FOREIGN KEY (approver_department_id) REFERENCES public.departments(id);
+
+
+--
 -- Name: document_departments fk_rails_e676903eef; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2381,6 +2452,7 @@ ALTER TABLE ONLY public.announcement_departments
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260803020000'),
 ('20260803010000'),
 ('20260803000000'),
 ('20260802020000'),

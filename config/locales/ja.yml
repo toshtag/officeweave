@@ -120,7 +120,7 @@ ja:
         name: 名称
         code: 識別子
         description: 説明
-        approver_department: 承認する部門
+        approval_steps: 承認の段
         approver_department_id: 承認する部門
         active: 新しい申請を受け付ける
         position: 表示順
@@ -433,6 +433,7 @@ ja:
     updated: 申請種別を更新しました。
     approver_administrators: 管理者
     index:
+      approval_steps: 承認の段
       title: 申請種別
       heading: 申請種別
       new: 申請種別を登録
@@ -449,11 +450,16 @@ ja:
       active: 受付中
       inactive: 受付停止
     form:
+      approval_steps: 承認の段
+      approval_steps_hint: 上から順に承認します。部門を選ばない段は管理者が担当します。並びの数字が小さい段から進みます。段を増やす場合は、空の段へ部門を選んで保存し、もう一度開きます。
+      remove_step: この段を削除する
       approver_unset: 管理者が承認する
       approver_hint: 指定した部門の所属者が承認できます。未指定の場合は管理者だけが承認します。
       active_hint: 使わなくなった種別は、削除せずにここを外してください。過去の申請の記録が残ります。
 
   requests:
+    approval_route: 承認の経路
+    awaiting_step: 承認待ち
     created: 申請を作成しました。
     updated: 申請を更新しました。
     submitted: 申請を提出しました。
