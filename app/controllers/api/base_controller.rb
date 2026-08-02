@@ -6,6 +6,16 @@ module Api
   class BaseController < ActionController::API
     include TimeParameters
 
+    # 配信する内容の出所の制限は付けない。
+    #
+    # 方針はブラウザーが文書を読み込むときに効く。応答は JSON であり、
+    # 読み込む相手は呼び出す側のプログラムである。すべての応答へ付けても、
+    # 守るものが増えず、量だけが増える。
+    #
+    # ActionController::API は方針の仕組みを持たない。外すために取り込む。
+    include ActionController::ContentSecurityPolicy
+    content_security_policy false
+
     # 1 つの token が一定の時間に送れる要求の数。
     #
     # 外部からの接続は、画面の操作と違って待たずに繰り返せる。上限が無いと、
