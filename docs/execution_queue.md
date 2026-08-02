@@ -12,9 +12,9 @@
 
 ```text
 現在の Phase: R2
-直近完了 Task: R3-T2
+直近完了 Task: R3-T3
 進行中:        なし
-次に実行:      R3-T3
+次に実行:      R3-T4
 ```
 
 ## P0 プロジェクト契約
@@ -259,7 +259,7 @@ OIDC 連携は 3 つに分ける。設定と id_token の検証、認可サー�
 | ----- | -------------------------------- | -------- | ------------------------- | --- |
 | R3-T1 | `r3/t1-department-csv-import`    | —        | 部門の CSV 取り込みを用意する         | 完了  |
 | R3-T2 | `r3/t2-approval-steps`           | —        | 多段承認を用意する                 | 完了  |
-| R3-T3 | `r3/t3-approval-route-snapshot`  | —        | 承認経路の記録を残す                | 未着手 |
+| R3-T3 | `r3/t3-approval-route-snapshot`  | —        | 承認経路の記録を残す                | 完了  |
 | R3-T4 | `r3/t4-delegated-approval`       | —        | 代理承認を用意する                 | 未着手 |
 | R3-T5 | `r3/t5-reservation-change`       | —        | 予約の変更を用意する                | 未着手 |
 | R3-T6 | `r3/t6-event-participants`       | —        | 予定の参加者を用意する               | 未着手 |
