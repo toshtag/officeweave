@@ -44,12 +44,25 @@ class Request < ApplicationRecord
     where(status: values) if values.any?
   }
 
+  # 一度でも提出されたもの。
+  #
+  # 提出は、申請者が内容を承認担当者へ渡す操作である。submitted_at は提出で
+  # 一度だけ入り、その後の差し戻しでも取り下げでも消えない。
+  #
+  # status では判断しない。差し戻しと取り下げは、提出を経た場合と経ていない
+  # 場合の両方があり、status は同じ値になる。
+  scope :submitted, -> { where.not(submitted_at: nil) }
+
   # 申請者本人と、承認できる利用者だけが参照できる。
+  #
+  # 申請者は、提出の有無に関わらず自分の申請を参照できる。
+  # 承認担当者と管理者は、提出されたものだけを参照できる。提出前の下書きは、
+  # 申請者がまだ渡していない内容であり、渡す操作より前から見せない。
   scope :visible_to, ->(user) {
     in_organization = where(organization_id: user.organization_id)
 
     in_organization.applied_by(user).or(
-      in_organization.where(request_type_id: approvable_request_types(user))
+      in_organization.submitted.where(request_type_id: approvable_request_types(user))
     )
   }
 

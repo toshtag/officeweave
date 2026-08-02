@@ -67,22 +67,36 @@ class RequestDecisionsControllerTest < ActionDispatch::IntegrationTest
 
   # 立場のない利用者と、立場はあるが状態が変わっていた場合とを分けて扱う。
   # 前者は表示そのものを拒み、後者は操作の失敗として理由を返す。
+  #
+  # 対象は提出済みで承認待ちでないものとする。提出していない申請は参照範囲の
+  # 外にあり、状態を確かめる前に見つからない扱いになる。
   test "承認待ちでない申請は処理できず、理由が示される" do
     sign_in_as users(:taro)
 
-    post request_decision_url(requests(:hanako_leave_draft)), params: { decision: "approve" }
+    post request_decision_url(requests(:hanako_leave_returned)), params: { decision: "approve" }
 
-    assert_redirected_to requests(:hanako_leave_draft)
+    assert_redirected_to requests(:hanako_leave_returned)
     assert_equal I18n.t("request_decisions.failed"), flash[:alert]
-    assert_equal "draft", requests(:hanako_leave_draft).reload.status
+    assert_equal "returned", requests(:hanako_leave_returned).reload.status
   end
 
   test "承認待ちでない申請では履歴も通知も監査も残らない" do
     sign_in_as users(:taro)
 
     assert_no_difference [ -> { RequestActivity.count }, -> { Notification.count }, -> { AuditEvent.count } ] do
-      post request_decision_url(requests(:hanako_leave_draft)), params: { decision: "approve" }
+      post request_decision_url(requests(:hanako_leave_returned)), params: { decision: "approve" }
     end
+  end
+
+  # 参照できないものは、立場の判定より前に見つからない扱いにする。
+  # 立場を先に判定すると、403 と 404 の違いから存在が分かる。
+  test "提出していない申請は、決裁の経路からも見つからない" do
+    sign_in_as users(:taro)
+
+    post request_decision_url(requests(:hanako_leave_draft)), params: { decision: "approve" }
+
+    assert_response :not_found
+    assert_equal "draft", requests(:hanako_leave_draft).reload.status
   end
 
   test "承認する部門に属さない利用者では履歴も通知も監査も残らない" do

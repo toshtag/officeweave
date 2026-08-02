@@ -9,12 +9,24 @@ class RequestSubmissionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "pending", requests(:hanako_leave_draft).reload.status
   end
 
+  # 対象は提出済みで、差し戻されて再提出できる状態のものとする。
+  # 提出していない申請は参照範囲の外にあり、申請者かどうかを確かめる前に
+  # 見つからない扱いになる。
   test "申請者以外は提出できない" do
+    sign_in_as users(:taro)
+
+    post request_submission_url(requests(:hanako_leave_returned))
+
+    assert_response :forbidden
+    assert_equal "returned", requests(:hanako_leave_returned).reload.status
+  end
+
+  test "提出していない他人の申請は、提出の経路からも見つからない" do
     sign_in_as users(:taro)
 
     post request_submission_url(requests(:hanako_leave_draft))
 
-    assert_response :forbidden
+    assert_response :not_found
     assert_equal "draft", requests(:hanako_leave_draft).reload.status
   end
 
