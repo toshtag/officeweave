@@ -14,6 +14,17 @@ class ApiToken < ApplicationRecord
   # 外部からの接続の回数だけ書き込みが起きる。
   USE_WRITE_INTERVAL = 1.minute
 
+  # 発行のときに選べる期限。日数で示す。
+  #
+  # 任意の日数を受け取らない。受け取ると、1 日や 10 年といった値が画面から
+  # 入る。用途が終わったあとに残る時間の長さを、この 3 つに絞る。
+  EXPIRY_CHOICES = [ 30, 90, 365 ].freeze
+
+  # 期限を選ばなかった場合に使う日数。
+  #
+  # 期限なしを既定にすると、期限を選べることに気付かないまま発行される。
+  DEFAULT_EXPIRY_DAYS = 90
+
   belongs_to :organization
   belongs_to :user
 
@@ -21,22 +32,33 @@ class ApiToken < ApplicationRecord
   attr_reader :token
 
   validates :name, presence: true, length: { maximum: 100 }
+  # 過去の期限で発行させない。発行した時点で使えない token ができる。
+  validate :expires_in_future, if: -> { expires_at.present? && will_save_change_to_expires_at? }
   belongs_to_same_organization :user
 
   scope :active, -> { where(revoked_at: nil) }
+
+  # まだ使える token。失効しておらず、期限も過ぎていないもの。
+  #
+  # 期限を持たない token は含める。既に発行した token の使える範囲を
+  # 後から狭めない。
+  scope :usable, ->(at: Time.current) do
+    active.where(expires_at: nil).or(active.where(arel_table[:expires_at].gt(at)))
+  end
+
   scope :recent_first, -> { order(created_at: :desc, id: :desc) }
 
   before_validation :assign_token, on: :create
   before_create :require_active_user
 
   # 送られてきた値から、使える token を探す。
-  # 無効にされた利用者の token は使えない。
+  # 失効した token、期限を過ぎた token、無効にされた利用者の token は使えない。
   # 利用者は同じ問い合わせで読む。別の問い合わせにすると、外部からの接続
   # 1 回につき往復が 1 つ増える。
   def self.authenticate(value)
     return nil if value.blank?
 
-    token = active.eager_load(:user).find_by(token_digest: digest(value))
+    token = usable.eager_load(:user).find_by(token_digest: digest(value))
     return nil if token.nil? || !token.user.active?
 
     token.record_use!
@@ -63,7 +85,21 @@ class ApiToken < ApplicationRecord
     revoked_at.present?
   end
 
+  # 期限を過ぎている。失効とは分ける。
+  # 失効は人が止めたことであり、期限は発行のときに決めた条件である。
+  def expired?(at: Time.current)
+    expires_at.present? && expires_at <= at
+  end
+
+  def usable?(at: Time.current)
+    !revoked? && !expired?(at: at)
+  end
+
   private
+    def expires_in_future
+      errors.add(:expires_at, :not_in_future) if expires_at <= Time.current
+    end
+
     # 発行の直前に、データベース上の利用者を占有して確かめる。
     #
     # 画面や読み込み済みの関連で確かめても、確かめてから INSERT するまでの
