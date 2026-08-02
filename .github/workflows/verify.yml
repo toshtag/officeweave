@@ -72,6 +72,47 @@ jobs:
         if: always()
         run: docker compose down -v
 
+  browser:
+    name: 実ブラウザー
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # 同じホストで複数の検証が並行しうる。
+    # 構成ファイルの name をそのまま使うと、互いのコンテナとボリュームを掴む。
+    env:
+      COMPOSE_PROJECT_NAME: officeweave_ci_${{ github.run_id }}_browser
+      COMPOSE_FILE: compose.yaml:compose.browser.yaml
+
+    steps:
+      - name: ソースを取得する
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: 実行環境を組み立てる
+        run: docker compose build web
+
+      - name: データベースとブラウザーを起動する
+        run: docker compose up -d db browser
+
+      - name: 主要な流れを実ブラウザーで確かめる
+        run: docker compose run --rm web bin/rails test:browser
+
+      - name: 失敗した場合の画面を残す
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: officeweave-browser-screenshots
+          path: tmp/screenshots/
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: 失敗した場合の記録を出す
+        if: failure()
+        run: docker compose logs
+
+      - name: 後片付け
+        if: always()
+        run: docker compose down -v
+
   image_scan:
     name: コンテナの脆弱性
     runs-on: ubuntu-latest
