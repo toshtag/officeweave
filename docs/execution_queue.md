@@ -12,9 +12,9 @@
 
 ```text
 現在の Phase: R2
-直近完了 Task: R3-T6
+直近完了 Task: R3-T7
 進行中:        なし
-次に実行:      R3-T7
+次に実行:      R4-T1（R3 完了。R4 のタスク表は着手時に登録する）
 ```
 
 ## P0 プロジェクト契約
@@ -263,7 +263,7 @@ OIDC 連携は 3 つに分ける。設定と id_token の検証、認可サー�
 | R3-T4 | `r3/t4-delegated-approval`       | —        | 代理承認を用意する                 | 完了  |
 | R3-T5 | `r3/t5-reservation-change`       | —        | 予約の変更を用意する                | 完了  |
 | R3-T6 | `r3/t6-event-participants`       | —        | 予定の参加者を用意する               | 完了  |
-| R3-T7 | `r3/t7-recurring-events`         | —        | 繰り返し予定を用意する               | 未着手 |
+| R3-T7 | `r3/t7-recurring-events`         | —        | 繰り返し予定を用意する               | 完了  |
 
 ## R6 保守性
 
