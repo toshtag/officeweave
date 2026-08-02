@@ -34,6 +34,23 @@ class HealthControllerTest < ActionDispatch::IntegrationTest
     service&.singleton_class&.remove_method(:root)
   end
 
+  test "保存先がまだ作られていなくても、作れるなら ok とする" do
+    # 保存先は最初の保存で作られる。1 度も保存していない環境で、
+    # 稼働確認だけが失敗する状態にしない。
+    service = ActiveStorage::Blob.service
+    absent = Rails.root.join("tmp/storage-not-created-yet")
+    FileUtils.rm_rf(absent)
+    service.define_singleton_method(:root) { absent.to_s }
+
+    get health_url
+
+    assert_response :success
+    assert_equal "ok", response.parsed_body.dig("checks", "storage")
+    refute File.exist?(absent), "稼働確認が保存先を作っている"
+  ensure
+    service&.singleton_class&.remove_method(:root)
+  end
+
   test "確かめる先を毎回書き込みで試さない" do
     # 稼働確認は監視から繰り返し呼ばれる。1 回ごとにファイルを作ると、
     # 監視の間隔がそのまま書き込みの回数になる。
