@@ -285,7 +285,31 @@ R8 で個別に足した各一覧のテストが持つ。
 
 ### 応答の速さ
 
-動かす機械によって変わるため、合否には使わない。測り方は R5-T8 で扱う。
+動かす機械によって変わるため、合否には使わない。報告として残す。
+
+```bash
+docker compose -f compose.production.yaml exec web \
+  env LOAD_SAMPLE_SCALE=20 bin/rails officeweave:load_sample
+```
+
+```bash
+BASE_URL=http://127.0.0.1:3210 \
+LOAD_MEASUREMENT_EMAIL=measure@load-sample.invalid \
+LOAD_MEASUREMENT_PASSWORD=... \
+script/measure_load
+```
+
+測る前にデータを積む。空のデータベースへ要求を投げても、応答の速さは
+分からない。積むのは専用の組織であり、既にある組織の記録には触れない。
+
+測るのは、同時に要求が来たときに応答が返り続けるかである。
+200 以外が混ざっていれば測定は成立しない。混ざったままの値は意味を持たない。
+
+報告は `load_report/` へ書き出す。リポジトリへは含めない。
+継続的インテグレーションでは、配布用の構成を起こしている仕事の中で測り、
+成果物として 30 日残す。
+
+起動している構成と積んだデータが前提になるため、一括検証へは入れない。
 
 ## 8. 実ブラウザーでの検証
 
