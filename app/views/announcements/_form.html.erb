@@ -1,47 +1,36 @@
 <%= form_with model: announcement, class: "form stack" do |form| %>
   <%= render "shared/error_messages", record: announcement %>
 
-  <div class="form__field">
-    <%= form.label :title, class: "form__label" %>
-    <%= form.text_field :title, required: true, class: "form__input" %>
-  </div>
-
-  <div class="form__field">
-    <%= form.label :body, class: "form__label" %>
-    <%= form.text_area :body, required: true, rows: 10, class: "form__input" %>
-  </div>
+  <%= form.field :title, :text_field, required: true %>
+  <%= form.field :body, :text_area, required: true, rows: 10 %>
 
   <fieldset class="form__fieldset">
     <legend class="form__label"><%= Announcement.human_attribute_name(:visibility) %></legend>
 
     <% Announcement::VISIBILITIES.each do |visibility| %>
-      <div class="form__field form__field--inline">
+      <%= inline_field do %>
         <%= form.radio_button :visibility, visibility %>
         <%= form.label :"visibility_#{visibility}", t("announcements.visibilities.#{visibility}") %>
-      </div>
+      <% end %>
     <% end %>
   </fieldset>
 
   <fieldset class="form__fieldset">
     <legend class="form__label"><%= Announcement.human_attribute_name(:department_ids) %></legend>
-    <p class="form__hint"><%= t("announcements.form.departments_hint") %></p>
+    <%= form_hints t("announcements.form.departments_hint") %>
 
     <% Department.with_ancestors(current_organization.departments.ordered).each do |department| %>
-      <div class="form__field form__field--inline">
+      <%= inline_field do %>
         <%= check_box_tag "announcement[department_ids][]", department.id,
                           announcement.department_ids.include?(department.id),
                           id: "announcement_department_#{department.id}" %>
         <%= label_tag "announcement_department_#{department.id}", department.display_path %>
-      </div>
+      <% end %>
     <% end %>
     <%= hidden_field_tag "announcement[department_ids][]", "", id: nil %>
   </fieldset>
 
-  <div class="form__field">
-    <%= form.label :published_at, class: "form__label" %>
-    <%= form.datetime_field :published_at, class: "form__input" %>
-    <p class="form__hint"><%= t("announcements.form.published_at_hint") %></p>
-  </div>
+  <%= form.field :published_at, :datetime_field, hint: t("announcements.form.published_at_hint") %>
 
   <%= form.submit class: "button button--primary" %>
 <% end %>

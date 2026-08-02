@@ -39,12 +39,12 @@ module ApplicationHelper
   # 書く人ではなくここが決める。
   def inline_field(hint: nil, &block)
     safe_join([ tag.div(capture(&block), class: "#{ApplicationFormBuilder::FIELD_CLASS} form__field--inline"),
-                *form_hints(hint) ])
+                form_hints(hint) ])
   end
 
   # 入力欄と選択肢の群へ添える補足。
   # 複数渡せる。条件によって出し分ける補足は、nil を混ぜて渡す。
   def form_hints(hint)
-    Array(hint).compact_blank.map { |text| tag.p(text, class: "form__hint") }
+    safe_join(Array(hint).compact_blank.map { |text| tag.p(text, class: "form__hint") })
   end
 end

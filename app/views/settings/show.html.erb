@@ -6,24 +6,21 @@
   <%= form_with model: @user, url: settings_path, method: :patch, class: "form stack" do |form| %>
     <%= render "shared/error_messages", record: @user %>
 
-    <div class="form__field">
-      <%= form.label :locale, class: "form__label" %>
-      <%= form.select :locale,
-                      I18n.available_locales.map { |locale| [ t("locale_switcher.names.#{locale}"), locale ] },
-                      { include_blank: t("users.form.locale_unset") }, class: "form__input" %>
-      <p class="form__hint"><%= t("users.form.locale_hint") %></p>
-    </div>
+    <%= form.field :locale, :select,
+                   I18n.available_locales.map { |locale| [ t("locale_switcher.names.#{locale}"), locale ] },
+                   { include_blank: t("users.form.locale_unset") },
+                   hint: t("users.form.locale_hint") %>
 
     <fieldset class="form__fieldset">
       <legend class="form__label"><%= t("settings.mail_notifications") %></legend>
-      <p class="form__hint"><%= t("settings.mail_notifications_hint") %></p>
+      <%= form_hints t("settings.mail_notifications_hint") %>
 
       <% Notification::EVENTS.each do |event| %>
-        <div class="form__field form__field--inline">
+        <%= inline_field do %>
           <%= check_box_tag "mail_notifications[]", event, @user.mail_notifications_for?(event),
                             id: "mail_notifications_#{event}" %>
           <%= label_tag "mail_notifications_#{event}", t("settings.events.#{event}") %>
-        </div>
+        <% end %>
       <% end %>
     </fieldset>
 

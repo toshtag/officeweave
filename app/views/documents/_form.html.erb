@@ -4,69 +4,54 @@
 <%= form_with model: document, class: "form stack" do |form| %>
   <%= render "shared/error_messages", record: document %>
 
-  <div class="form__field">
-    <%= form.label :title, class: "form__label" %>
-    <%= form.text_field :title, required: true, class: "form__input" %>
-  </div>
-
-  <div class="form__field">
-    <%= form.label :document_category_id, class: "form__label" %>
-    <%= form.collection_select :document_category_id, current_organization.document_categories.ordered,
-                               :id, :name, { include_blank: t("documents.no_category") }, class: "form__input" %>
-  </div>
-
-  <div class="form__field">
-    <%= form.label :body, class: "form__label" %>
-    <%= form.text_area :body, rows: 16, class: "form__input" %>
-  </div>
+  <%= form.field :title, :text_field, required: true %>
+  <%= form.field :document_category_id, :collection_select,
+                 current_organization.document_categories.ordered, :id, :name,
+                 { include_blank: t("documents.no_category") } %>
+  <%= form.field :body, :text_area, rows: 16 %>
 
   <fieldset class="form__fieldset">
     <legend class="form__label"><%= Document.human_attribute_name(:visibility) %></legend>
 
     <% Document::VISIBILITIES.each do |visibility| %>
-      <div class="form__field form__field--inline">
+      <%= inline_field do %>
         <%= form.radio_button :visibility, visibility %>
         <%= form.label :"visibility_#{visibility}", t("documents.visibilities.#{visibility}") %>
-      </div>
+      <% end %>
     <% end %>
   </fieldset>
 
   <fieldset class="form__fieldset">
     <legend class="form__label"><%= Document.human_attribute_name(:department_ids) %></legend>
-    <p class="form__hint"><%= t("documents.form.departments_hint") %></p>
+    <%= form_hints t("documents.form.departments_hint") %>
 
     <% Department.with_ancestors(current_organization.departments.ordered).each do |department| %>
-      <div class="form__field form__field--inline">
+      <%= inline_field do %>
         <%= check_box_tag "document[department_ids][]", department.id,
                           selected_department_ids.include?(department.id),
                           id: "document_department_#{department.id}" %>
         <%= label_tag "document_department_#{department.id}", department.display_path %>
-      </div>
+      <% end %>
     <% end %>
     <%= hidden_field_tag "document[department_ids][]", "", id: nil %>
   </fieldset>
 
-  <div class="form__field">
-    <%= form.label :attachments, class: "form__label" %>
-    <%= form.file_field :attachments, multiple: true, class: "form__input" %>
-    <p class="form__hint">
-      <%= t("documents.form.attachments_hint",
-            count: Document::MAX_ATTACHMENT_COUNT,
-            size: Document::MAX_ATTACHMENT_SIZE / 1.megabyte) %>
-    </p>
-  </div>
+  <%= form.field :attachments, :file_field, multiple: true,
+                 hint: t("documents.form.attachments_hint",
+                         count: Document::MAX_ATTACHMENT_COUNT,
+                         size: Document::MAX_ATTACHMENT_SIZE / 1.megabyte) %>
 
   <% if document.attachments.attached? %>
     <fieldset class="form__fieldset">
       <legend class="form__label"><%= t("documents.form.existing_attachments") %></legend>
-      <p class="form__hint"><%= t("documents.form.remove_hint") %></p>
+      <%= form_hints t("documents.form.remove_hint") %>
 
       <% document.attachments.each do |attachment| %>
-        <div class="form__field form__field--inline">
+        <%= inline_field do %>
           <%= check_box_tag "document[remove_attachment_ids][]", attachment.id, false,
                             id: "document_remove_attachment_#{attachment.id}" %>
           <%= label_tag "document_remove_attachment_#{attachment.id}", attachment.filename.to_s %>
-        </div>
+        <% end %>
       <% end %>
     </fieldset>
   <% end %>

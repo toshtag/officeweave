@@ -26,10 +26,14 @@ class ApplicationFormBuilder < ActionView::Helpers::FormBuilder
   # html の指定は positional な hash として渡す。collection_select や select は
   # 選択肢の options を先に取るため、keyword のまま渡すと受け取る位置が変わる。
   def field(name, type = nil, *arguments, label: nil, hint: nil, **options, &block)
-    contents = block ? @template.capture(&block) : public_send(type, name, *arguments, options.merge(class: INPUT_CLASS))
+    contents = if block
+      @template.capture(&block)
+    else
+      public_send(type, name, *arguments, options.merge(class: INPUT_CLASS))
+    end
 
     @template.tag.div(class: FIELD_CLASS) do
-      @template.safe_join([ label(name, label, class: LABEL_CLASS), contents, *@template.form_hints(hint) ])
+      @template.safe_join([ label(name, label, class: LABEL_CLASS), contents, @template.form_hints(hint) ])
     end
   end
 end

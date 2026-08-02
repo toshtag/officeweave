@@ -1,53 +1,39 @@
 <%= form_with model: event, class: "form stack" do |form| %>
   <%= render "shared/error_messages", record: event %>
 
-  <div class="form__field">
-    <%= form.label :title, class: "form__label" %>
-    <%= form.text_field :title, required: true, class: "form__input" %>
-  </div>
+  <%= form.field :title, :text_field, required: true %>
+  <%= form.field :starts_at, :datetime_field, required: true %>
+  <%= form.field :ends_at, :datetime_field, required: true %>
 
-  <div class="form__field">
-    <%= form.label :starts_at, class: "form__label" %>
-    <%= form.datetime_field :starts_at, required: true, class: "form__input" %>
-  </div>
-
-  <div class="form__field">
-    <%= form.label :ends_at, class: "form__label" %>
-    <%= form.datetime_field :ends_at, required: true, class: "form__input" %>
-  </div>
-
-  <div class="form__field form__field--inline">
+  <%= inline_field do %>
     <%= form.check_box :all_day %>
     <%= form.label :all_day, class: "form__label" %>
-  </div>
+  <% end %>
 
-  <div class="form__field">
-    <%= form.label :description, class: "form__label" %>
-    <%= form.text_area :description, rows: 6, class: "form__input" %>
-  </div>
+  <%= form.field :description, :text_area, rows: 6 %>
 
   <fieldset class="form__fieldset">
     <legend class="form__label"><%= Event.human_attribute_name(:visibility) %></legend>
 
     <% Event::VISIBILITIES.each do |visibility| %>
-      <div class="form__field form__field--inline">
+      <%= inline_field do %>
         <%= form.radio_button :visibility, visibility %>
         <%= form.label :"visibility_#{visibility}", t("events.visibilities.#{visibility}") %>
-      </div>
+      <% end %>
     <% end %>
   </fieldset>
 
   <fieldset class="form__fieldset">
     <legend class="form__label"><%= Event.human_attribute_name(:department_ids) %></legend>
-    <p class="form__hint"><%= t("events.form.departments_hint") %></p>
+    <%= form_hints t("events.form.departments_hint") %>
 
     <% Department.with_ancestors(current_organization.departments.ordered).each do |department| %>
-      <div class="form__field form__field--inline">
+      <%= inline_field do %>
         <%= check_box_tag "event[department_ids][]", department.id,
                           event.department_ids.include?(department.id),
                           id: "event_department_#{department.id}" %>
         <%= label_tag "event_department_#{department.id}", department.display_path %>
-      </div>
+      <% end %>
     <% end %>
     <%= hidden_field_tag "event[department_ids][]", "", id: nil %>
   </fieldset>
