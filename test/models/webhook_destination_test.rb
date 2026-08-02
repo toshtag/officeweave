@@ -123,6 +123,7 @@ class WebhookDestinationTest < ActiveSupport::TestCase
       "198.18.0.1" => "ベンチマーク",
       "198.51.100.1" => "文書例示",
       "203.0.113.1" => "文書例示",
+      "192.88.99.1" => "6to4 の中継",
       "224.0.0.1" => "マルチキャスト",
       "240.0.0.1" => "予約済み"
     }.each do |address, description|
@@ -147,6 +148,100 @@ class WebhookDestinationTest < ActiveSupport::TestCase
   test "IPv4-mapped IPv6 で判定を抜けられない" do
     %w[::ffff:127.0.0.1 ::ffff:10.0.0.1 ::ffff:169.254.169.254 ::ffff:192.168.0.1].each do |address|
       assert_rejected("http://example.com/", :destination_not_allowed, resolver: resolver(address))
+    end
+  end
+
+  # --- 特殊用途の範囲 ---
+  #
+  # 外部の宛先として妥当な用途がない範囲を、下端、代表値、上端で押さえる。
+  # 確かめるのは、その表記が拒否されることだけである。実際に内部へ届くかどうかは
+  # 網の構成で決まり、ここでは扱わない。届く構成が有り得ることが、拒否する理由である。
+
+  test "廃止済みの site-local を拒否する" do
+    %w[
+      fec0::
+      fec0::1
+      feff:ffff:ffff:ffff:ffff:ffff:ffff:ffff
+    ].each do |address|
+      assert_rejected("http://example.com/", :destination_not_allowed, resolver: resolver(address))
+    end
+  end
+
+  test "IPv4 を内包する IPv6 の範囲を拒否する" do
+    # 内包した IPv4 を取り出して判定し直す形は採らない。範囲ごと拒否する。
+    # 取り出す位置は接頭辞の長さで変わり、誤ると迂回がそのまま残る。
+    %w[
+      64:ff9b::
+      64:ff9b::7f00:1
+      64:ff9b::a9fe:a9fe
+      64:ff9b::ffff:ffff
+      64:ff9b:1::
+      64:ff9b:1::a9fe:a9fe
+      64:ff9b:1:ffff:ffff:ffff:ffff:ffff
+      2002::
+      2002:7f00:1::1
+      2002:a9fe:a9fe::1
+      2002:ffff:ffff:ffff:ffff:ffff:ffff:ffff
+      2001::
+      2001:0:ffff:ffff:ffff:ffff:ffff:ffff
+    ].each do |address|
+      assert_rejected("http://example.com/", :destination_not_allowed, resolver: resolver(address))
+    end
+  end
+
+  test "IETF が用途を定めた 2001::/23 を拒否する" do
+    # Teredo は上の判定が押さえている。ここは同じ塊の残りを押さえる。
+    %w[
+      2001:1::1
+      2001:1::2
+      2001:2::1
+      2001:20::1
+      2001:30::1
+      2001:1ff:ffff:ffff:ffff:ffff:ffff:ffff
+    ].each do |address|
+      assert_rejected("http://example.com/", :destination_not_allowed, resolver: resolver(address))
+    end
+  end
+
+  test "外部の宛先として用途がない範囲を拒否する" do
+    %w[
+      100::
+      100::1
+      100::ffff:ffff:ffff:ffff
+      3fff::
+      3fff::1
+      3fff:fff:ffff:ffff:ffff:ffff:ffff:ffff
+      5f00::
+      5f00::1
+      5f00:ffff:ffff:ffff:ffff:ffff:ffff:ffff
+    ].each do |address|
+      assert_rejected("http://example.com/", :destination_not_allowed, resolver: resolver(address))
+    end
+  end
+
+  test "IPv6 literal でも特殊用途の範囲を拒否する" do
+    assert_rejected("http://[64:ff9b::a9fe:a9fe]/", :destination_not_allowed,
+                    resolver: resolver("64:ff9b::a9fe:a9fe"))
+  end
+
+  test "特殊用途が混ざる解決結果を拒否する" do
+    assert_rejected("http://example.com/", :destination_not_allowed,
+                    resolver: resolver("93.184.216.34", "64:ff9b::7f00:1"))
+  end
+
+  test "許可リストの origin なら特殊用途の範囲でも許可する" do
+    allowlist = Set["http://hooks.internal.example:80"]
+
+    destination = resolve("http://hooks.internal.example/",
+                          resolver: resolver("fec0::1"), allowlist: allowlist)
+
+    assert_equal "fec0::1", destination.ip_address
+  end
+
+  test "特殊用途の隣にある通常の IPv6 は許可する" do
+    # 追加した範囲の外側であることを、境界のすぐ隣で押さえる。
+    %w[2001:200::1 2003::1 3fff:1000::1 2606:4700::1111].each do |address|
+      assert_equal address, resolve("http://example.com/", resolver: resolver(address)).ip_address
     end
   end
 
