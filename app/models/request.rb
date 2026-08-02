@@ -30,6 +30,15 @@ class Request < ApplicationRecord
   scope :recent_first, -> { order(created_at: :desc, id: :desc) }
   scope :applied_by, ->(user) { where(applicant_id: user.id) }
 
+  # 一覧に並べる列だけを選ぶ。
+  #
+  # 本文は最大 10,000 文字あり、一覧では表示しない。全列を返すと、
+  # 表示しない本文が申請の件数だけ Rails process へ渡る。
+  #
+  # 申請者と種別の外部キーは残す。落とすと先読みが成立せず、
+  # 申請の件数だけ問い合わせが増える。
+  scope :listed, -> { select(:id, :title, :status, :applicant_id, :request_type_id) }
+
 
   # その利用者が処理を待たれている申請。
   # 自分の申請は自分で承認できないため、対象から外す。
