@@ -37,6 +37,8 @@ x-application-environment: &application_environment
   MAIL_FROM: ${MAIL_FROM:-officeweave@localhost}
   SMTP_ADDRESS: ${SMTP_ADDRESS:-}
   SMTP_PORT: ${SMTP_PORT:-587}
+  # 送信時に名乗るドメイン。設定側では受け付けていたが、ここで渡していなかった。
+  SMTP_DOMAIN: ${SMTP_DOMAIN:-}
   SMTP_USER_NAME: ${SMTP_USER_NAME:-}
   SMTP_PASSWORD: ${SMTP_PASSWORD:-}
   SMTP_AUTHENTICATION: ${SMTP_AUTHENTICATION:-}
