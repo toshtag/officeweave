@@ -41,4 +41,30 @@ class RequestsTest < ApplicationSystemTestCase
 
     assert_no_selector "option", text: request_types(:retired_type).name
   end
+
+  # 提出は、申請者が内容を承認担当者へ渡す操作である。
+  # 渡すまでは、承認担当者の画面に現れない。
+  test "提出するまで、承認担当者の画面に現れない" do
+    draft = requests(:hanako_leave_draft)
+
+    sign_in_as users(:approver)
+    visit requests_path
+
+    assert_no_text draft.title
+
+    click_button I18n.t("sessions.sign_out")
+
+    # 申請者は英語で表示する利用者である。
+    sign_in_as users(:hanako)
+    visit request_path(draft)
+    click_button I18n.t("requests.submit", locale: :en)
+
+    assert_text I18n.t("requests.submitted", locale: :en)
+    click_button I18n.t("sessions.sign_out", locale: :en)
+
+    sign_in_as users(:approver)
+    visit requests_path
+
+    assert_text draft.title
+  end
 end
