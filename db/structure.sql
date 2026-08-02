@@ -1713,6 +1713,13 @@ CREATE INDEX index_events_on_organization_id ON public.events USING btree (organ
 
 
 --
+-- Name: index_events_on_organization_id_and_ends_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_events_on_organization_id_and_ends_at ON public.events USING btree (organization_id, ends_at);
+
+
+--
 -- Name: index_events_on_organization_id_and_starts_at; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2365,6 +2372,7 @@ ALTER TABLE ONLY public.announcement_departments
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260802010000'),
 ('20260802000000'),
 ('20260801000000'),
 ('20260731000000'),
