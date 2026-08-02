@@ -14,6 +14,9 @@ CI.run do
   step "セキュリティ: 依存の脆弱性", "bin/bundler-audit"
   step "セキュリティ: 静的解析", "bin/brakeman --quiet --no-pager --exit-on-warn --exit-on-error"
 
-  step "テスト: 全件", "bin/rails test:all"
+  # 実ブラウザーを要する層は外す。ブラウザーは別の service として動かすため、
+  # 追加の道具なしで手元で実行できる状態を保てない。
+  # 外した層は、継続的インテグレーションの独立した仕事で実行する。
+  step "テスト: 全件（実ブラウザーを除く）", "bin/rails test:except_browser"
   step "テスト: 初期データ", "env RAILS_ENV=test bin/rails db:seed:replant"
 end
