@@ -33,6 +33,8 @@ class AuditEvent < ApplicationRecord
     webhook_endpoint_deleted
     users_imported
     users_exported
+    departments_imported
+    departments_exported
     audit_events_exported
   ].freeze
 

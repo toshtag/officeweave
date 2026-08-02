@@ -25,6 +25,10 @@ class ApplicationFormBuilder < ActionView::Helpers::FormBuilder
   #
   # html の指定は positional な hash として渡す。collection_select や select は
   # 選択肢の options を先に取るため、keyword のまま渡すと受け取る位置が変わる。
+  #
+  # id を明示した場合は、ラベルの結び付け先も同じ id にする。同じ画面へ
+  # 同じ名前の入力欄を 2 つ置く場合に必要になる。結び付けが崩れると、
+  # ラベルから入力欄へ移れない。
   def field(name, type = nil, *arguments, label: nil, hint: nil, **options, &block)
     contents = if block
       @template.capture(&block)
@@ -32,8 +36,11 @@ class ApplicationFormBuilder < ActionView::Helpers::FormBuilder
       public_send(type, name, *arguments, options.merge(class: INPUT_CLASS))
     end
 
+    label_options = { class: LABEL_CLASS }
+    label_options[:for] = options[:id] if options.key?(:id)
+
     @template.form_field(hint: hint) do
-      @template.safe_join([ label(name, label, class: LABEL_CLASS), contents ])
+      @template.safe_join([ label(name, label, **label_options), contents ])
     end
   end
 end

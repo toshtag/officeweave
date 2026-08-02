@@ -26,6 +26,31 @@ class DataTransfersTest < ApplicationSystemTestCase
     assert_text I18n.t("data_transfers.import.line", line: 3)
   end
 
+  test "JavaScript なしで部門を取り込める" do
+    sign_in_as users(:taro)
+
+    visit data_transfers_path
+    attach_file I18n.t("data_transfers.departments_import.file"), file_fixture("departments.csv")
+    click_button I18n.t("data_transfers.departments_import.submit")
+
+    assert_text I18n.t("data_transfers.imported", created: 2, updated: 0)
+
+    visit departments_path
+
+    assert_text "広報部 東日本課"
+  end
+
+  test "部門の取り込みの誤りも行番号が示される" do
+    sign_in_as users(:taro)
+
+    visit data_transfers_path
+    attach_file I18n.t("data_transfers.departments_import.file"), file_fixture("departments_invalid.csv")
+    click_button I18n.t("data_transfers.departments_import.submit")
+
+    assert_selector ".error-summary"
+    assert_text I18n.t("data_transfers.import.line", line: 2)
+  end
+
   test "未知の部門コードは行番号と識別子が示される" do
     sign_in_as users(:taro)
 

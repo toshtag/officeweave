@@ -699,6 +699,9 @@ en:
       destination_not_allowed: The destination is not allowed
       invalid_allowlist: The allowlist setting is invalid
 
+  department_csv:
+    duplicate_code: "Code %{code} also appears on line %{line}"
+    unknown_parent: "Parent code %{code} was not found"
   data_transfers:
     title: Import and export
     heading: Import and export
@@ -709,11 +712,17 @@ en:
       description: Download the current contents as CSV.
       users: Export users
       departments: Export departments
+    departments_import:
+      heading: Import departments
+      description: Departments with a matching code are updated. Others are added.
+      columns_hint: Put the headers above on the first line. parent_code is the code of the parent department. Row order does not matter. Omitting the parent_code column keeps the current hierarchy; an empty value moves the department to the top level. If any row is invalid, nothing is imported.
+      file: Department CSV file
+      submit: Import departments
     import:
       heading: Import users
       description: Users are matched by email address, then updated or added. Passwords are not handled.
       columns_hint: Put these headers on the first line. List department codes in `departments`, separated by spaces. Omit the `departments` column to keep current memberships, or leave it empty to remove them all. A single unknown code stops the whole file.
-      file: CSV file
+      file: User CSV file
       submit: Import
       failed: Nothing was imported. A single invalid row stops the whole file.
       line: "Line %{line}:"
@@ -768,4 +777,6 @@ en:
       webhook_endpoint_deleted: Endpoint deleted
       users_imported: Users imported
       users_exported: Users exported
+      departments_imported: Departments imported
+      departments_exported: Departments exported
       audit_events_exported: Audit log exported
