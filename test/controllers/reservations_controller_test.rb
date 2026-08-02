@@ -53,6 +53,12 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
     assert_equal events(:company_meeting), Reservation.last.event
   end
 
+  # 続く 3 件は、画面の選択肢を経由しない要求で確かめる。予定の選択肢は
+  # Event.visible_to で絞られるが、event_id は要求から受け取る値であるため、
+  # 選択肢の絞り込みだけでは境界を保証できない。
+  #
+  # 3 件はいずれも同じ理由を返す。別組織、参照できない自組織、未使用で理由が
+  # 分かれると、識別子を順に送るだけでどれに当たるかを判別できてしまう。
   test "選択肢に無い別組織の予定を送っても予約できない" do
     sign_in_as users(:hanako)
 
