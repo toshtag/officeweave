@@ -12,9 +12,9 @@
 
 ```text
 現在の Phase: R7
-直近完了 Task: R7-T2
+直近完了 Task: R7-T3
 進行中:        なし
-次に実行:      R7-T3
+次に実行:      R7-T4
 ```
 
 ## P0 プロジェクト契約
@@ -224,7 +224,7 @@ R0 の完了後に行った保守性のレビューで確認した問題を、Gi
 | ----- | ------------------------------------- | ------------------ | --------------------------- | --- |
 | R7-T1 | `r7/t1-unsubmitted-request-visibility` | GHSA-g3x9-9grv-p8j4 | 未提出の申請を承認担当者の参照範囲から外す       | 完了  |
 | R7-T2 | `r7/t2-resolver-process-isolation`    | GHSA-hr7m-r3hx-gj9x | 名前解決の時間切れで実行単位を確実に回収する      | 完了  |
-| R7-T3 | `r7/t3-special-purpose-ip-ranges`     | GHSA-jmmg-cxhh-6556 | 特殊用途の IP 範囲を送信先から外す        | 未着手 |
+| R7-T3 | `r7/t3-special-purpose-ip-ranges`     | GHSA-jmmg-cxhh-6556 | 特殊用途の IP 範囲を送信先から外す        | 完了  |
 | R7-T4 | `r7/t4-webhook-response-limit`        | GHSA-3xmf-2x95-gfmp | Webhook の応答を読む量に上限を設ける      | 未着手 |
 | R7-T5 | `r7/t5-webhook-total-deadline`        | GHSA-3xmf-2x95-gfmp | Webhook の送信に通信全体の期限を設ける     | 未着手 |
 
