@@ -5,9 +5,10 @@ module Api
       before_action :require_administrator
 
       def index
-        users = current_organization.users.ordered.includes(memberships: :department)
+        page = paginated(current_organization.users.ordered.includes(memberships: :department))
 
-        render json: { users: users.map { |record| serialize(record) } }
+        render json: { users: page.records.map { |record| serialize(record) },
+                       meta: pagination_meta(page) }
       end
 
       private
