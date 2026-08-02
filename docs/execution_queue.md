@@ -11,10 +11,10 @@
 ## 現在地
 
 ```text
-現在の Phase: R7
-直近完了 Task: R7-T9
+現在の Phase: R8
+直近完了 Task: R8-T1
 進行中:        なし
-次に実行:      なし（R7 完了。次の Phase の着手は別途決める）
+次に実行:      R8-T2
 ```
 
 ## P0 プロジェクト契約
@@ -231,6 +231,23 @@ R0 の完了後に行った保守性のレビューで確認した問題を、Gi
 | R7-T7 | `r7/t7-safe-delivery-error-message`    | GHSA-3xmf-2x95-gfmp | 通信の失敗の記録を決めた文面へそろえる     | 完了  |
 | R7-T8 | `r7/t8-deadline-recheck`               | GHSA-3xmf-2x95-gfmp | 期限が守られるかを測り直す           | 完了  |
 | R7-T9 | `r7/t9-https-and-receive-boundary`      | GHSA-3xmf-2x95-gfmp | HTTPS の経路と受け取りの境目を固定する   | 完了  |
+
+## R8 性能
+
+R7 の完了後に行った性能のレビューで確認した問題を、GitHub Issue として登録した。
+本 Phase では、それらを実測した影響の大きさと、修正の独立性の順に処理する。
+
+推測では着手しない。問い合わせの件数、読み込んだ行、または実行計画で
+再現を確かめたものだけを扱う。
+
+| Task  | ブランチ                            | 対応 Issue                                                  | 内容                        | 状態  |
+| ----- | ------------------------------- | --------------------------------------------------------- | ------------------------- | --- |
+| R8-T1 | `r8/t1-mail-fanout-preload`     | [#154](https://github.com/toshtag/OfficeWeave/issues/154) | メール配信の展開で利用者と配信設定を先読みする   | 完了  |
+| R8-T2 | `r8/t2-document-list-projection` | [#155](https://github.com/toshtag/OfficeWeave/issues/155) | 文書一覧を表示に必要な列と関連へ絞る        | 未着手 |
+| R8-T3 | `r8/t3-home-request-scope`      | [#156](https://github.com/toshtag/OfficeWeave/issues/156) | 入口の申請を表示するぶんへ限る           | 未着手 |
+| R8-T4 | `r8/t4-unread-notification-index` | [#157](https://github.com/toshtag/OfficeWeave/issues/157) | 未読の通知件数に部分索引を置く          | 未着手 |
+| R8-T5 | `r8/t5-event-ends-at-index`     | [#158](https://github.com/toshtag/OfficeWeave/issues/158) | 予定の終了時刻の絞り込みに索引を置く       | 未着手 |
+| R8-T6 | `r8/t6-reservation-ends-at-index` | [#159](https://github.com/toshtag/OfficeWeave/issues/159) | 予約の終了時刻の絞り込みに索引を置く       | 未着手 |
 
 ## 分解の方針
 

@@ -13,7 +13,12 @@
 class NotificationMailFanoutJob < ApplicationJob
   queue_as :default
 
+  # 利用者と配信設定は batch ごとにまとめて読む。先読みしないと、
+  # 通知 1 件につき利用者を 1 回、その配信設定を 1 回引く。件数は受け手の
+  # 人数で決まるため、そのまま利用者数に比例した往復になる。
   def perform(notification_ids)
-    Notification.where(id: notification_ids).find_each(&:deliver_by_mail)
+    Notification.where(id: notification_ids)
+                .includes(user: :notification_preferences)
+                .find_each(&:deliver_by_mail)
   end
 end

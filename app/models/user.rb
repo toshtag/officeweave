@@ -107,8 +107,12 @@ class User < ApplicationRecord
 
   # その種類の通知をメールでも受け取るか。
   # 設定していない種類は受け取る扱いとする。
+  #
+  # 読み込み済みの配列から選ぶ。`find_by` は関連が先読み済みでも問い合わせを
+  # 出すため、まとめて配信する経路では受け手の人数だけ往復が増える。
+  # 設定の種類は Notification::EVENTS の数までであり、全件読んでも増えない。
   def mail_notifications_for?(event)
-    preference = notification_preferences.find_by(event: event)
+    preference = notification_preferences.detect { |candidate| candidate.event == event }
 
     preference.nil? || preference.mail_enabled?
   end
