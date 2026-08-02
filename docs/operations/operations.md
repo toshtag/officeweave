@@ -318,6 +318,29 @@ docker compose -f compose.production.yaml exec -T web bin/jobs_status --failed
 worker が止まっていると、送信は行われずジョブが溜まる。データは失われない。
 `bin/diagnose` は worker の不在を失敗として報告する。
 
+### 配信する内容の制限
+
+画面の応答へ Content-Security-Policy を付けている。
+
+```text
+default-src     'self'      挙げていない種類はここへ落ちる
+script-src      'none'      スクリプトは配信していない
+style-src       'self'
+img-src         'self' data:
+form-action     'self'      入力の送信先を自分に限る
+frame-ancestors 'none'      枠への埋め込みを許さない
+base-uri        'self'
+object-src      'none'
+```
+
+逆プロキシで別の方針を重ねる場合は、この方針より緩めないようにする。
+ブラウザーは両方を満たす読み込みだけを許す。緩める向きの上書きはできない。
+
+報告先は設定していない。違反の記録が要る場合は、逆プロキシ側で
+`report-to` を付ける。
+
+API（`/api/v1/...`）の応答には付けていない。
+
 ### 稼働の通知
 
 `OPERATIONS_EMAIL` を指定すると、稼働の異常を 1 日 1 回知らせる。
