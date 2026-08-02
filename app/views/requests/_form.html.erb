@@ -1,25 +1,18 @@
 <%= form_with model: request, class: "form stack" do |form| %>
   <%= render "shared/error_messages", record: request %>
 
-  <div class="form__field">
-    <%= form.label :request_type_id, class: "form__label" %>
+  <%# 保存済みの申請では種別を変えられない。入力欄ではなく値を表示する。 %>
+  <%= form.field :request_type_id do %>
     <% if request.persisted? %>
       <p><%= request.request_type.name %></p>
     <% else %>
       <%= form.collection_select :request_type_id, current_organization.request_types.active.ordered,
                                  :id, :name, { include_blank: true }, required: true, class: "form__input" %>
     <% end %>
-  </div>
+  <% end %>
 
-  <div class="form__field">
-    <%= form.label :title, class: "form__label" %>
-    <%= form.text_field :title, required: true, class: "form__input" %>
-  </div>
-
-  <div class="form__field">
-    <%= form.label :body, class: "form__label" %>
-    <%= form.text_area :body, rows: 8, class: "form__input" %>
-  </div>
+  <%= form.field :title, :text_field, required: true %>
+  <%= form.field :body, :text_area, rows: 8 %>
 
   <%= form.submit class: "button button--primary" %>
 <% end %>

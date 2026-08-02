@@ -56,15 +56,13 @@
 
     <% if @assignable_users.any? %>
       <%= form_with model: [ @department, Membership.new ], class: "form stack" do |form| %>
-        <div class="form__field">
-          <%= form.label :user_id, User.model_name.human, class: "form__label" %>
-          <%= form.collection_select :user_id, @assignable_users, :id, :name, {}, class: "form__input" %>
-        </div>
+        <%= form.field :user_id, :collection_select, @assignable_users, :id, :name, {},
+                       label: User.model_name.human %>
 
-        <div class="form__field form__field--inline">
+        <%= inline_field do %>
           <%= form.check_box :primary %>
           <%= form.label :primary, class: "form__label" %>
-        </div>
+        <% end %>
 
         <%= form.submit t("memberships.new.submit"), class: "button button--primary" %>
       <% end %>

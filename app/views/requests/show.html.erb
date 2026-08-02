@@ -46,11 +46,10 @@
       <h2 id="request-decision"><%= t("request_decisions.heading") %></h2>
 
       <%= form_with url: request_decision_path(@request), class: "form stack" do |form| %>
-        <div class="form__field">
+        <%= form_field hint: t("request_decisions.comment_hint") do %>
           <%= label_tag :comment, t("request_decisions.comment"), class: "form__label" %>
           <%= text_area_tag :comment, nil, rows: 4, class: "form__input" %>
-          <p class="form__hint"><%= t("request_decisions.comment_hint") %></p>
-        </div>
+        <% end %>
 
         <div class="page-heading__actions">
           <%= form.button t("request_decisions.approve"), name: :decision, value: "approve",

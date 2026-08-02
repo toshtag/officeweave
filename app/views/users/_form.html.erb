@@ -1,49 +1,24 @@
 <%= form_with model: user, class: "form stack" do |form| %>
   <%= render "shared/error_messages", record: user %>
 
-  <div class="form__field">
-    <%= form.label :name, class: "form__label" %>
-    <%= form.text_field :name, required: true, class: "form__input" %>
-  </div>
+  <%= form.field :name, :text_field, required: true %>
+  <%= form.field :email_address, :email_field, required: true, autocomplete: "off" %>
 
-  <div class="form__field">
-    <%= form.label :email_address, class: "form__label" %>
-    <%= form.email_field :email_address, required: true, autocomplete: "off", class: "form__input" %>
-  </div>
+  <%# 入力欄の制限は入力の助けにとどめる。受理するかどうかは User モデルの検証が決める。 %>
+  <%= form.field :password, :password_field, required: user.new_record?,
+                 minlength: Authentication::PasswordPolicy::MINIMUM_LENGTH, maxlength: 72,
+                 autocomplete: "new-password",
+                 hint: [ t("users.form.password_policy_hint", count: Authentication::PasswordPolicy::MINIMUM_LENGTH),
+                         (t("users.form.password_hint") unless user.new_record?) ] %>
+  <%= form.field :password_confirmation, :password_field,
+                 minlength: Authentication::PasswordPolicy::MINIMUM_LENGTH, maxlength: 72,
+                 autocomplete: "new-password" %>
 
-  <div class="form__field">
-    <%= form.label :password, class: "form__label" %>
-    <%# 入力欄の制限は入力の助けにとどめる。受理するかどうかは User モデルの検証が決める。 %>
-    <%= form.password_field :password, required: user.new_record?,
-                            minlength: Authentication::PasswordPolicy::MINIMUM_LENGTH, maxlength: 72,
-                            autocomplete: "new-password", class: "form__input" %>
-    <p class="form__hint">
-      <%= t("users.form.password_policy_hint", count: Authentication::PasswordPolicy::MINIMUM_LENGTH) %>
-    </p>
-    <% unless user.new_record? %>
-      <p class="form__hint"><%= t("users.form.password_hint") %></p>
-    <% end %>
-  </div>
-
-  <div class="form__field">
-    <%= form.label :password_confirmation, class: "form__label" %>
-    <%= form.password_field :password_confirmation,
-                            minlength: Authentication::PasswordPolicy::MINIMUM_LENGTH, maxlength: 72,
-                            autocomplete: "new-password", class: "form__input" %>
-  </div>
-
-  <div class="form__field">
-    <%= form.label :role, class: "form__label" %>
-    <%= form.select :role, User.roles.keys.map { |role| [ t("roles.#{role}"), role ] }, {}, class: "form__input" %>
-  </div>
-
-  <div class="form__field">
-    <%= form.label :locale, class: "form__label" %>
-    <%= form.select :locale,
-                    I18n.available_locales.map { |locale| [ t("locale_switcher.names.#{locale}"), locale ] },
-                    { include_blank: t("users.form.locale_unset") }, class: "form__input" %>
-    <p class="form__hint"><%= t("users.form.locale_hint") %></p>
-  </div>
+  <%= form.field :role, :select, User.roles.keys.map { |role| [ t("roles.#{role}"), role ] }, {} %>
+  <%= form.field :locale, :select,
+                 I18n.available_locales.map { |locale| [ t("locale_switcher.names.#{locale}"), locale ] },
+                 { include_blank: t("users.form.locale_unset") },
+                 hint: t("users.form.locale_hint") %>
 
   <%= form.submit class: "button button--primary" %>
 <% end %>

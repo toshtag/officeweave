@@ -59,6 +59,11 @@ module Officeweave
     # ここは環境ごとに変える設定ではないため、全環境へ一度だけ書く。
     config.active_storage.draw_routes = false
 
+    # 入力欄の組み立ては ApplicationFormBuilder に集める。
+    # 画面ごとに builder を指定する形にすると、指定を忘れた画面だけが
+    # 素の組み立てへ戻り、写していたときと同じ状態が再び生まれる。
+    config.action_view.default_form_builder = "ApplicationFormBuilder"
+
     # Configuration for the application, engines, and railties goes here.
     #
     # These settings can be overridden in specific environments using the files

@@ -4,19 +4,19 @@
   <h1><%= t("audit_events.index.heading") %></h1>
 
   <form class="form form--inline" method="get" action="<%= audit_events_path %>">
-    <div class="form__field">
+    <%= form_field do %>
       <%= label_tag :audit_action, AuditEvent.human_attribute_name(:action), class: "form__label" %>
       <%= select_tag :audit_action,
                      options_for_select(AuditEvent::ACTIONS.map { |a| [ t("audit_events.actions.#{a}"), a ] },
                                         @action_name),
                      include_blank: t("audit_events.index.all_actions"), class: "form__input" %>
-    </div>
+    <% end %>
 
-    <div class="form__field">
+    <%= form_field do %>
       <%= label_tag :actor_id, AuditEvent.human_attribute_name(:actor), class: "form__label" %>
       <%= select_tag :actor_id, options_from_collection_for_select(@actors, :id, :name, @actor_id),
                      include_blank: t("audit_events.index.all_actors"), class: "form__input" %>
-    </div>
+    <% end %>
 
     <%= submit_tag t("events.index.filter"), class: "button", name: nil %>
   </form>

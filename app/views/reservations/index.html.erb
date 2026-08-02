@@ -7,10 +7,10 @@
   </div>
 
   <form class="form form--inline" method="get" action="<%= reservations_path %>">
-    <div class="form__field">
+    <%= form_field do %>
       <%= label_tag :from, t("events.index.from"), class: "form__label" %>
       <%= date_field_tag :from, @from, class: "form__input" %>
-    </div>
+    <% end %>
     <%= submit_tag t("events.index.filter"), class: "button", name: nil %>
   </form>
 

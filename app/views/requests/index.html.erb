@@ -22,12 +22,12 @@
 
   <form class="form form--inline" method="get" action="<%= requests_path %>">
     <%= hidden_field_tag :scope, @scope %>
-    <div class="form__field">
+    <%= form_field do %>
       <%= label_tag :status, Request.human_attribute_name(:status), class: "form__label" %>
       <%= select_tag :status,
                      options_for_select(Request::STATUSES.map { |s| [ t("requests.statuses.#{s}"), s ] }, @status),
                      include_blank: t("requests.index.all_statuses"), class: "form__input" %>
-    </div>
+    <% end %>
     <%= submit_tag t("events.index.filter"), class: "button", name: nil %>
   </form>
 

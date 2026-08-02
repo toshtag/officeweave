@@ -35,10 +35,8 @@
     <% end %>
 
     <%= form_with url: users_import_path, class: "form stack" do |form| %>
-      <div class="form__field">
-        <%= form.label :file, t("data_transfers.import.file"), class: "form__label" %>
-        <%= form.file_field :file, accept: "text/csv,.csv", required: true, class: "form__input" %>
-      </div>
+      <%= form.field :file, :file_field, accept: "text/csv,.csv", required: true,
+                     label: t("data_transfers.import.file") %>
 
       <%= form.submit t("data_transfers.import.submit"), class: "button button--primary" %>
     <% end %>
