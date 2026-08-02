@@ -9,15 +9,31 @@ require "test_helper"
 # 途中まで実装済みに見え、次に同じ領域へ着手する人が、その時点の要件ではなく
 # 生成された時点の雛形から始めることになる。
 class GeneratedPlaceholderTest < ActiveSupport::TestCase
-  # 追跡するファイルを持たないディレクトリ。空でも Git へ残す必要がある。
-  # 実行時に作られるものと、まだ中身を置いていないものが含まれる。
-  DIRECTORIES_KEPT_EMPTY = %w[
-    app/assets/images
-    log
-    storage
-    tmp
-    tmp/pids
-    vendor
+  # 中身を持たないディレクトリを Git へ残すための .keep。
+  #
+  # 実行環境が作った .keep を数えない。tmp/pids/.keep は開発環境が
+  # 動くうちに作られるが、Git は追跡していない。ファイルシステムから
+  # 一覧を作ると、手元では成立し、取得したままの作業ツリーでは成立しない
+  # 一覧になる。実際、それで CI が失敗した（#178）。
+  KEEP_FILES = %w[
+    app/assets/images/.keep
+    log/.keep
+    storage/.keep
+    tmp/.keep
+    vendor/.keep
+  ].freeze
+
+  # 中身を持つため、.keep を置かないディレクトリ。
+  DIRECTORIES_WITHOUT_KEEP = %w[
+    app/controllers/concerns
+    app/models/concerns
+    lib/tasks
+    script
+    test/controllers
+    test/fixtures/files
+    test/helpers
+    test/mailers
+    test/models
   ].freeze
 
   test "経路を持たない画面の雛形が残らない" do
@@ -50,38 +66,34 @@ class GeneratedPlaceholderTest < ActiveSupport::TestCase
                  "実行される行を持たない initializer がある"
   end
 
-  # 追跡するファイルを既に持つディレクトリでは、.keep は何も保っていない。
-  test "追跡するファイルを持つディレクトリに .keep が残らない" do
-    redundant = keep_files.select { |keep| tracked_files_in(keep.dirname).any? }
+  # 中身のあるディレクトリでは、.keep は何も保っていない。
+  test "中身のあるディレクトリに .keep が残らない" do
+    remaining = DIRECTORIES_WITHOUT_KEEP.select { |directory| keep_in(directory).exist? }
 
-    assert_empty redundant.map { |keep| relative(keep) },
-                 "追跡するファイルがあるのに .keep が残っている"
+    assert_empty remaining, "中身があるのに .keep が残っている"
   end
 
-  # 消しすぎると、実行時に作られるディレクトリが Git から消える。
-  test "空のまま残すディレクトリの .keep は残る" do
-    DIRECTORIES_KEPT_EMPTY.each do |directory|
-      keep = Rails.root.join(directory, ".keep")
+  # 消しすぎると、中身を持たないディレクトリが Git から消える。
+  test "中身を持たないディレクトリの .keep は残る" do
+    missing = KEEP_FILES.reject { |path| Rails.root.join(path).exist? }
 
-      assert keep.exist?, "#{directory}/.keep が消えている"
-      assert_empty tracked_files_in(keep.dirname),
-                   "#{directory} は追跡するファイルを持つため、この一覧から外す"
-    end
+    assert_empty missing, ".keep が消えている"
+  end
+
+  # 一覧が実態から外れると、上の 2 件は何も確かめないまま成功する。
+  # 中身が無くなったディレクトリは、.keep を消す側ではなく残す側へ移る。
+  #
+  # 逆向き（.keep を残す側に中身が無いこと）は、ファイルの有無では確かめられない。
+  # log、storage、tmp は実行時にファイルが作られる。Git が追跡していないことは、
+  # ファイルシステムからは読み取れない。
+  test "「.keep を置かない」と決めたディレクトリに中身がある" do
+    empty = DIRECTORIES_WITHOUT_KEEP.reject { |directory| Rails.root.glob("#{directory}/*").any? }
+
+    assert_empty empty, "中身が無いため、.keep を残す側へ移す"
   end
 
   private
-    def keep_files
-      Rails.root.glob("**/.keep")
-    end
-
-    def tracked_files_in(directory)
-      relative = directory.relative_path_from(Rails.root)
-      output = `git -C #{Rails.root} ls-files -- #{relative}`
-
-      output.lines.map(&:chomp).reject { |path| path.end_with?("/.keep") }
-    end
-
-    def relative(path)
-      path.relative_path_from(Rails.root).to_s
+    def keep_in(directory)
+      Rails.root.join(directory, ".keep")
     end
 end
