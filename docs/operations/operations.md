@@ -77,6 +77,35 @@ docker compose -f compose.production.yaml logs -f worker
 
 記録の保管と回収は、組織の環境にある仕組みへ委ねている。
 
+#### 構造化した記録
+
+`LOG_FORMAT=json` を指定すると、記録を 1 行 1 件の JSON で出す。
+指定した場合だけ働き、既定は人が読む行形式である。
+
+```json
+{"time":"2026-08-03T02:30:00.123Z","level":"INFO","event":"http_request","method":"GET","path":"/documents","status":200,"controller":"DocumentsController","action":"index","duration_ms":12.3,"user_id":1,"organization_id":1,"request_id":"a1b2c3"}
+```
+
+要求 1 件、送信 1 件を、それぞれ 1 行の要約として出す。
+
+```text
+event=http_request   method path status controller action duration_ms user_id organization_id
+event=job_performed  job job_id queue attempt duration_ms
+```
+
+```text
+- 経路に問い合わせ文字列は含めない。絞り込みの値が記録へ残らないようにする
+- 例外は種類だけを残す。文面には利用者が入力した値が入り得る
+- 利用者と組織は識別子だけを残す。名前とメールアドレスは残さない
+- 要求の識別子は request_id の項目として出す。文の接頭辞にはしない
+- 改行を含む記録も 1 行に収める
+- 行形式では、この要約を出さない。Rails が出す行と二重になる
+```
+
+書き出し先は変わらない。運用環境では標準出力へ出る。
+値を変更したら web と worker を再起動する。
+`text` と `json` 以外を指定した場合は起動しない。
+
 ### 送信の状況
 
 メールと Webhook は worker が送る。溜まっていないか、失敗が残っていないかを確認する。

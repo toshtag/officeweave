@@ -15,4 +15,15 @@ class ApplicationController < ActionController::Base
       Current.user&.organization
     end
     helper_method :current_organization
+
+    # 要求の記録へ、誰のどの組織の要求かを残す。
+    #
+    # 記録を出す側（config/initializers/logging.rb）は、利用者の特定の
+    # 仕組みを知らない。識別子だけを渡す。名前とメールアドレスは渡さない。
+    def append_info_to_payload(payload)
+      super
+
+      payload[:user_id] = Current.user&.id
+      payload[:organization_id] = Current.user&.organization_id
+    end
 end
