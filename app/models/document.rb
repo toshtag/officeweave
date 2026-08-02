@@ -26,6 +26,16 @@ class Document < ApplicationRecord
 
   scope :recently_updated, -> { order(updated_at: :desc, id: :desc) }
 
+  # 一覧に並べる列だけを選ぶ。
+  #
+  # 本文は最大 100,000 文字あり、一覧では表示しない。全列を返すと、
+  # 表示しない本文が文書の件数だけ Rails process へ渡る。検索の条件として
+  # 本文を使うことは変わらない。絞り込みはデータベースの側で終わる。
+  #
+  # 作成者と分類の外部キーは残す。落とすと先読みが成立せず、
+  # 文書の件数だけ問い合わせが増える。
+  scope :listed, -> { select(:id, :title, :document_category_id, :author_id, :updated_at) }
+
   # 参照できる文書。
   # 作成者は公開範囲に関わらず自分の文書を参照できる。
   scope :visible_to, ->(user) {

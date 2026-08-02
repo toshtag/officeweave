@@ -8,11 +8,14 @@ class DocumentsController < ApplicationController
     @query = params[:query]
     @category_id = params[:document_category_id]
     @categories = current_organization.document_categories.ordered
+    # 添付は一覧に出さない。先読みすると、添付を持たない文書まで含めて
+    # 一覧の要求ごとに関連と実体を読むことになる。
     @documents = Document.visible_to(Current.user)
                          .search(@query)
                          .in_category(@category_id)
-                                     .recently_updated
-                                     .includes(:author, :document_category, attachments_attachments: :blob)
+                         .recently_updated
+                         .listed
+                         .includes(:author, :document_category)
   end
 
   def show
