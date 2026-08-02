@@ -66,10 +66,13 @@ scanner() {
   local archive="$1"
   shift
 
+  # 検査器はホストの利用者として動かす。root で動かすと、置いていった
+  # 脆弱性のデータベースをホスト側で消せず、後片付けが失敗する。
   docker run --rm \
+    --user "$(id -u):$(id -g)" \
+    -e TRIVY_CACHE_DIR=/work/cache \
     -v "$WORK:/work" \
     -v "$PWD/$REPORT_DIR:/report" \
-    -v "$WORK/cache:/root/.cache" \
     "$SCANNER" image \
     --input "/work/${archive}" \
     --severity "$SEVERITY" \
@@ -84,6 +87,7 @@ scanner() {
 # 実行できる環境が狭まる。組み立てたイメージには ruby が入っている。
 count_findings() {
   docker run --rm --entrypoint ruby \
+    --user "$(id -u):$(id -g)" \
     -v "$PWD/$REPORT_DIR:/report" \
     "$APP_IMAGE" -rjson -e '
       document = JSON.parse(File.read(ARGV.fetch(0), encoding: "UTF-8"))

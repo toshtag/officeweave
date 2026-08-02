@@ -82,6 +82,12 @@ class ContainerScanScriptTest < ActiveSupport::TestCase
     assert_match(/docker save/, @body)
   end
 
+  # root で動かすと、置いていった脆弱性のデータベースをホスト側で消せず、
+  # 後片付けが失敗する。ファイルの持ち主は実行環境によって変わる。
+  test "検査器をホストの利用者として動かす" do
+    assert_match(/--user "\$\(id -u\):\$\(id -g\)"/, @body)
+  end
+
   # 脆弱性のデータベースは日々変わる。一括検証は実行のたびに同じ結果になる
   # ことを条件にしているため、そこへは含めない。
   test "一括検証へ含めない" do
