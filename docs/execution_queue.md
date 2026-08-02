@@ -12,9 +12,9 @@
 
 ```text
 現在の Phase: R2
-直近完了 Task: R2-T3
+直近完了 Task: R2-T4
 進行中:        なし
-次に実行:      R2-T4
+次に実行:      R2-T5
 ```
 
 ## P0 プロジェクト契約
@@ -228,7 +228,7 @@ Issue が大きい場合は分割してよいが、分割した場合は本書�
 | R2-T1 | `r2/t1-password-change`       | —        | 自分でパスワードを変更できるようにする           | 完了  |
 | R2-T2 | `r2/t2-password-reset`        | —        | パスワードの再設定を用意する                | 完了  |
 | R2-T3 | `r2/t3-session-management`    | —        | 自分のログインを一覧し、まとめて終わらせる         | 完了  |
-| R2-T4 | `r2/t4-api-token-expiry`      | —        | API トークンに有効期限を設ける             | 未着手 |
+| R2-T4 | `r2/t4-api-token-expiry`      | —        | API トークンに有効期限を設ける             | 完了  |
 | R2-T5 | `r2/t5-api-token-scope`       | —        | API トークンに権限を設ける               | 未着手 |
 | R2-T6 | `r2/t6-oidc`                  | —        | 実際の OIDC 連携を用意する              | 未着手 |
 
