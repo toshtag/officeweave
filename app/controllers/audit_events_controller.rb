@@ -9,6 +9,9 @@ class AuditEventsController < ApplicationController
   PER_PAGE = 50
 
   def index
+    # 記録が消える設定になっていることは、一覧からは読み取れない。
+    # 過去の記録を探したときに初めて気付く状態にしない。
+    @retention_days = Officeweave::Configuration::AuditRetention.days
     @action_name = params[:audit_action]
     @actor_id = params[:actor_id]
     @page = [ params[:page].to_i, 1 ].max

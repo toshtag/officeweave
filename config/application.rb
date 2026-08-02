@@ -22,6 +22,7 @@ Bundler.require(*Rails.groups)
 # config/environments/production.rb から使うため、autoload の順序へ依存させない。
 require_relative "../lib/officeweave/configuration/application_host"
 require_relative "../lib/officeweave/configuration/application_port"
+require_relative "../lib/officeweave/configuration/audit_retention"
 
 module Officeweave
   class Application < Rails::Application

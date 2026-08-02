@@ -651,6 +651,10 @@ en:
         zero: 0 records
         one: 1 record
         other: "%{count} records"
+      retention:
+        one: Records are removed after 1 day.
+        other: Records are removed after %{count} days.
+      retention_none: Records are never removed. No retention period is configured.
     actions:
       signed_in: Signed in
       sign_in_failed: Sign-in failed
