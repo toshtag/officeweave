@@ -5,3 +5,22 @@ room_a_morning:
   starts_at: <%= 1.day.from_now.change(hour: 9).to_fs(:db) %>
   ends_at: <%= 1.day.from_now.change(hour: 10).to_fs(:db) %>
   purpose: 定例打ち合わせ
+
+<%# 同じ設備の別の時間帯。重なりの判定と、他の利用者の予約の確認に使う。 %>
+room_a_afternoon:
+  organization: main
+  resource: meeting_room_a
+  reserver: hanako
+  <%# 既存のテストが空き時間として使う 13 時台は避ける。 %>
+  starts_at: <%= 1.day.from_now.change(hour: 15).to_fs(:db) %>
+  ends_at: <%= 1.day.from_now.change(hour: 16).to_fs(:db) %>
+  purpose: 打ち合わせ
+
+<%# 別の組織の予約。組織をまたいで扱えないことの確認に使う。 %>
+other_org_reservation:
+  organization: other
+  resource: other_org_room
+  reserver: outsider
+  starts_at: <%= 1.day.from_now.change(hour: 9).to_fs(:db) %>
+  ends_at: <%= 1.day.from_now.change(hour: 10).to_fs(:db) %>
+  purpose: 別組織の予約

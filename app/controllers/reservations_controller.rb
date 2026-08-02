@@ -1,6 +1,8 @@
 # 設備・備品の予約。
 class ReservationsController < ApplicationController
-  before_action :set_reservation, only: %i[destroy]
+  before_action :set_reservation, only: %i[edit update destroy]
+  # 変更と取り消しは、同じ範囲の利用者へ認める。
+  before_action :require_modifiable, only: %i[edit update destroy]
 
   def index
     @from = date_param(:from) || Date.current
@@ -27,11 +29,20 @@ class ReservationsController < ApplicationController
     end
   end
 
-  def destroy
-    unless @reservation.cancelable_by?(Current.user)
-      return render "shared/forbidden", status: :forbidden, formats: :html
-    end
+  def edit
+  end
 
+  def update
+    # 予約の変更は、取り消して作り直す形にしない。作り直すあいだに、
+    # 同じ時間帯を別の利用者が取れる。
+    if @reservation.update_with_overlap_check(reservation_params)
+      redirect_to reservations_path, notice: t("reservations.updated")
+    else
+      render :edit, status: :unprocessable_content
+    end
+  end
+
+  def destroy
     @reservation.destroy
 
     redirect_to reservations_path, notice: t("reservations.destroyed"), status: :see_other
@@ -49,6 +60,12 @@ class ReservationsController < ApplicationController
 
     def set_reservation
       @reservation = current_organization.reservations.find(params[:id])
+    end
+
+    def require_modifiable
+      return if @reservation.modifiable_by?(Current.user)
+
+      render "shared/forbidden", status: :forbidden, formats: :html
     end
 
     def reservation_params

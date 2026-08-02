@@ -399,6 +399,10 @@ en:
       reservable_hint: When something is no longer usable, clear this instead of deleting it so past bookings stay intact.
 
   reservations:
+    updated: The reservation has been updated.
+    edit:
+      title: Edit reservation
+      heading: Edit reservation
     created: The booking has been made.
     destroyed: The booking has been cancelled.
     cancel: Cancel

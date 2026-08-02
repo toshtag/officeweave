@@ -25,8 +25,11 @@ class Reservation < ApplicationRecord
     where(arel_table[:starts_at].lt(ends_at)).where(arel_table[:ends_at].gt(starts_at))
   }
 
-  # 持ち主と管理者だけが取り消せる。
-  def cancelable_by?(user)
+  # 持ち主と管理者だけが変更と取り消しをできる。
+  #
+  # 変更と取り消しで範囲を分けない。分けると、取り消して作り直せる利用者が
+  # 変更だけはできない状態になる。結果として同じことができる。
+  def modifiable_by?(user)
     reserver_id == user.id || user.administrator?
   end
 
@@ -38,6 +41,12 @@ class Reservation < ApplicationRecord
 
     errors.add(:base, :overlapping)
     false
+  end
+
+  def update_with_overlap_check(attributes)
+    assign_attributes(attributes)
+
+    save_with_overlap_check
   end
 
   private

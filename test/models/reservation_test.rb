@@ -152,8 +152,8 @@ class ReservationTest < ActiveSupport::TestCase
   end
 
   test "予約者と管理者だけが取り消せる" do
-    assert reservations(:room_a_morning).cancelable_by?(users(:taro))
-    assert_not reservations(:room_a_morning).cancelable_by?(users(:hanako))
+    assert reservations(:room_a_morning).modifiable_by?(users(:taro))
+    assert_not reservations(:room_a_morning).modifiable_by?(users(:hanako))
   end
 
   private
