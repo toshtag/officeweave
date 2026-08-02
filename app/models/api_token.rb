@@ -5,6 +5,9 @@
 #
 # 権限は発行した利用者から引き継ぐ。
 # token に独自の権限を持たせると、利用者の権限を変えても接続だけが残る。
+#
+# 範囲（scopes）は、引き継いだ権限を狭めるだけとする。広げない。
+# 利用者の一覧のように、管理者だけが読めるものは、範囲を許しても読めない。
 class ApiToken < ApplicationRecord
   include ActivityRecording
 
@@ -25,13 +28,27 @@ class ApiToken < ApplicationRecord
   # 期限なしを既定にすると、期限を選べることに気付かないまま発行される。
   DEFAULT_EXPIRY_DAYS = 90
 
+  # 許可できる範囲。API の資源に対応する。
+  #
+  # 資源より細かくしない（読み取りと書き込みを分けるなど）。今の API は
+  # 読み取りだけであり、分けても選ぶ側に判断の材料が無い。
+  SCOPES = %w[announcements events departments users].freeze
+
   belongs_to :organization
   belongs_to :user
 
   # 発行時にだけ参照できる値。
   attr_reader :token
 
+  # 選んだ順や重複で、同じ範囲の token が別の値として残らないようにする。
+  # 指定が無い（nil）ことは「すべて」を表す。空の配列とは区別する。
+  normalizes :scopes, with: lambda { |value|
+    value.compact_blank.uniq.sort_by { |scope| SCOPES.index(scope) || SCOPES.size }
+  }
+
   validates :name, presence: true, length: { maximum: 100 }
+  validates :scopes, presence: true, allow_nil: true
+  validate :scopes_are_known, if: -> { scopes.present? }
   # 過去の期限で発行させない。発行した時点で使えない token ができる。
   validate :expires_in_future, if: -> { expires_at.present? && will_save_change_to_expires_at? }
   belongs_to_same_organization :user
@@ -95,7 +112,21 @@ class ApiToken < ApplicationRecord
     !revoked? && !expired?(at: at)
   end
 
+  # その範囲を読めるか。
+  #
+  # 指定が無い token はすべてを許す。範囲の一覧を後から増やしたときも、
+  # 既に発行した token の使える範囲を狭めない。
+  def permits?(scope)
+    scopes.nil? || scopes.include?(scope.to_s)
+  end
+
   private
+    def scopes_are_known
+      unknown = scopes - SCOPES
+
+      errors.add(:scopes, :not_a_choice) if unknown.any?
+    end
+
     def expires_in_future
       errors.add(:expires_at, :not_in_future) if expires_at <= Time.current
     end

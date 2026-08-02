@@ -148,6 +148,7 @@ en:
         last_used_at: Last used
         expires_at: Expires
         expires_in_days: Expires
+        scopes: Scopes
       webhook_endpoint:
         name: Name
         url: Endpoint URL
@@ -636,6 +637,7 @@ en:
     revoke: Revoke
     never_used: Never used
     no_expiry: No expiry
+    all_scopes: All
     index:
       title: API tokens
       heading: API tokens
@@ -647,9 +649,15 @@ en:
       expires_in: "%{count} days"
       no_expiry: No expiry
       expires_hint: Choose a period that matches how long the integration is needed. Expired tokens stop working.
+      scopes_hint: Select only the scopes the integration needs. Unselected scopes cannot be read.
     issued:
       heading: Your new token
       description: This value is shown only here. It is not stored, so you cannot see it again.
+    scopes:
+      announcements: Announcements
+      events: Events
+      departments: Departments
+      users: Users
     status:
       active: Active
       revoked: Revoked

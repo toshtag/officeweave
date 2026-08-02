@@ -148,6 +148,7 @@ ja:
         last_used_at: 最終利用
         expires_at: 有効期限
         expires_in_days: 有効期限
+        scopes: 読める範囲
       webhook_endpoint:
         name: 名前
         url: 送信先 URL
@@ -656,6 +657,7 @@ ja:
     revoke: 無効にする
     never_used: 未使用
     no_expiry: 期限なし
+    all_scopes: すべて
     index:
       title: 外部接続用の token
       heading: 外部接続用の token
@@ -667,9 +669,15 @@ ja:
       expires_in: "%{count} 日"
       no_expiry: 期限なし
       expires_hint: 用途が終わる見込みに合わせて選びます。期限を過ぎた token は使えなくなります。
+      scopes_hint: 用途に必要な範囲だけを選びます。外した範囲は読めません。
     issued:
       heading: 発行された token
       description: この値はここでしか表示されません。保存していないため、閉じると再確認できません。
+    scopes:
+      announcements: お知らせ
+      events: 予定
+      departments: 部門
+      users: 利用者
     status:
       active: 有効
       revoked: 無効

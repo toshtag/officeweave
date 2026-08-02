@@ -257,7 +257,8 @@ CREATE TABLE public.api_tokens (
     revoked_at timestamp(6) without time zone,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    expires_at timestamp(6) without time zone
+    expires_at timestamp(6) without time zone,
+    scopes character varying[]
 );
 
 
@@ -2380,6 +2381,7 @@ ALTER TABLE ONLY public.announcement_departments
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260803010000'),
 ('20260803000000'),
 ('20260802020000'),
 ('20260802010000'),
