@@ -140,6 +140,14 @@ server と worker は `docker compose up` が起動します。
 docker compose exec web bin/setup
 ```
 
+開発環境のデータベースを作り直します。内容は失われます。取り消せません。
+web と worker を止めてから作り直し、止める前に動いていたものだけを起動し直します。
+配布用の構成は対象になりません。
+
+```bash
+script/reset_development
+```
+
 ホストのデータベースクライアントから直接つなぐ場合は、追加の構成を重ねます。
 通常の起動では、データベースはホストへ公開しません。
 

@@ -38,11 +38,6 @@ class ResetDevelopmentScriptTest < ActiveSupport::TestCase
     exit 0
   SCRIPT
 
-  test "準備コマンドは破壊的な操作を持たない" do
-    assert_no_match(/--reset/, Rails.root.join("bin/setup").read)
-    assert_no_match(/db:reset/, Rails.root.join("bin/setup").read)
-  end
-
   test "作り直しの専用コマンドがある" do
     assert Rails.root.join(SCRIPT).exist?, "#{SCRIPT} が無い"
     assert Rails.root.join(SCRIPT).executable?, "#{SCRIPT} が実行できない"

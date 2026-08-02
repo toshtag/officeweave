@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+#
+# 開発環境のデータベースを作り直す。
+#
+# ホスト側で実行する。作り直しは Compose の service を止める操作を伴うため、
+# コンテナの中からは行えない。web コンテナへ Docker を渡すことはしない。
+#
+# 標準の構成では worker が起動し、ジョブ用のデータベースへ接続し続ける。
+# その接続を残したまま作り直すと、業務用だけが消えて途中で止まる。
+#
+# 先に web を止め、新しいジョブが投入されない状態にしてから worker を止める。
+# 復元（script/production_restore）と同じ順にそろえる。
+#
+# 止めた service は、実行前に動いていたものだけを起動し直す。
+# 作り直しに失敗した場合も戻す。開発環境であり、止まったままにするより
+# 調べられる状態にするほうがよい。
+#
+# 対象は開発用の構成だけとする。配布用の構成は扱わない。
+# 配布環境を戻す手順は script/production_restore が持つ。
+#
+# 内容は失われる。実行前に確認を求める。
+# 自動で実行する場合は FORCE=1 を指定する。
+#
+# 使い方:
+#   script/reset_development
+#   FORCE=1 script/reset_development
+
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+compose() {
+  docker compose "$@"
+}
+
+fail() {
+  echo "$@" >&2
+  exit 1
+}
+
+# 稼働中のサービスを一度だけ読み、変数の上で判定する。
+# `compose ps | grep -q` の形にすると、grep が最初の一致で終了した時点で
+# compose 側が SIGPIPE で死に、pipefail によってパイプライン全体が失敗する。
+running_services=""
+
+read_running_services() {
+  running_services="$(compose ps --status running --services 2>/dev/null || true)"
+}
+
+service_running() {
+  case "
+${running_services}
+" in
+    *"
+$1
+"*) return 0 ;;
+  esac
+
+  return 1
+}
+
+# 実行前に動いていた service だけを起動し直す。
+# 止まっていたものをこの操作で起動すると、構成が変わってしまう。
+restore_services() {
+  if service_running web; then
+    echo "web を起動しています" >&2
+    compose start web >/dev/null
+  fi
+
+  if service_running worker; then
+    echo "worker を起動しています" >&2
+    compose start worker >/dev/null
+  fi
+}
+
+if [ "${FORCE:-0}" != "1" ]; then
+  echo "開発環境のデータベースの内容は失われます。"
+  echo "業務用とジョブ用の両方を作り直します。"
+  read -r -p "続けるには yes と入力してください: " answer
+  if [ "${answer}" != "yes" ]; then
+    echo "中止しました。"
+    exit 1
+  fi
+fi
+
+read_running_services
+
+if ! service_running db; then
+  fail "データベースが起動していません。先に docker compose up -d db を実行してください。"
+fi
+
+if service_running web; then
+  echo "web を停止しています" >&2
+  compose stop web >/dev/null
+fi
+
+if service_running worker; then
+  echo "worker を停止しています" >&2
+  compose stop worker >/dev/null
+fi
+
+# 停止した container へは exec できない。別の一時コンテナで作り直す。
+# --no-deps を付け、db を巻き込んで作り直さないようにする。
+echo "データベースを作り直しています" >&2
+reset_status=0
+compose run --rm --no-deps -T web bin/rails db:reset || reset_status=$?
+
+restore_services
+
+[ "${reset_status}" -eq 0 ] ||
+  fail "データベースの作り直しに失敗しました。内容が中途半端に残っている可能性があります。docker compose logs db を確認してください。"
+
+echo "データベースを作り直しました。" >&2
