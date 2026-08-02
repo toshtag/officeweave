@@ -12,9 +12,9 @@
 
 ```text
 現在の Phase: R8
-直近完了 Task: R8-T4
+直近完了 Task: R8-T5
 進行中:        なし
-次に実行:      R8-T5
+次に実行:      R8-T6
 ```
 
 ## P0 プロジェクト契約
@@ -246,7 +246,7 @@ R7 の完了後に行った性能のレビューで確認した問題を、GitHu
 | R8-T2 | `r8/t2-document-list-projection` | [#155](https://github.com/toshtag/OfficeWeave/issues/155) | 文書一覧を表示に必要な列と関連へ絞る        | 完了  |
 | R8-T3 | `r8/t3-home-request-scope`      | [#156](https://github.com/toshtag/OfficeWeave/issues/156) | 入口の申請を表示するぶんへ限る           | 完了  |
 | R8-T4 | `r8/t4-unread-notification-index` | [#157](https://github.com/toshtag/OfficeWeave/issues/157) | 未読の通知件数に部分索引を置く          | 完了  |
-| R8-T5 | `r8/t5-event-ends-at-index`     | [#158](https://github.com/toshtag/OfficeWeave/issues/158) | 予定の終了時刻の絞り込みに索引を置く       | 未着手 |
+| R8-T5 | `r8/t5-event-ends-at-index`     | [#158](https://github.com/toshtag/OfficeWeave/issues/158) | 予定の終了時刻の絞り込みに索引を置く       | 完了  |
 | R8-T6 | `r8/t6-reservation-ends-at-index` | [#159](https://github.com/toshtag/OfficeWeave/issues/159) | 予約の終了時刻の絞り込みに索引を置く       | 未着手 |
 
 ## 分解の方針
