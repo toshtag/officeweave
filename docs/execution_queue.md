@@ -13,8 +13,8 @@
 ```text
 現在の Phase: R7
 直近完了 Task: R7-T8
-進行中:        なし
-次に実行:      なし（R7 完了。次の Phase の着手は別途決める）
+進行中:        R7-T9
+次に実行:      なし（R7-T9 で完了。次の Phase の着手は別途決める）
 ```
 
 ## P0 プロジェクト契約
@@ -230,6 +230,7 @@ R0 の完了後に行った保守性のレビューで確認した問題を、Gi
 | R7-T6 | `r7/t6-response-receive-limit`         | GHSA-3xmf-2x95-gfmp | 応答として受け取る量そのものに上限を設ける   | 完了  |
 | R7-T7 | `r7/t7-safe-delivery-error-message`    | GHSA-3xmf-2x95-gfmp | 通信の失敗の記録を決めた文面へそろえる     | 完了  |
 | R7-T8 | `r7/t8-deadline-recheck`               | GHSA-3xmf-2x95-gfmp | 期限が守られるかを測り直す           | 完了  |
+| R7-T9 | `r7/t9-https-and-receive-boundary`      | GHSA-3xmf-2x95-gfmp | HTTPS の経路と受け取りの境目を固定する   | 進行中 |
 
 ## 分解の方針
 
