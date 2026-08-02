@@ -37,3 +37,6 @@ desktop.ini
 /config/master.key
 /config/credentials/*.key
 backups/
+
+# 脆弱性検査の報告。実行のたびに変わるため、リポジトリへ含めない。
+scan_report/

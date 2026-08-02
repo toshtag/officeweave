@@ -13,6 +13,7 @@ class ContainerScanScriptTest < ActiveSupport::TestCase
   SCRIPT = Rails.root.join("script/scan_container_image").freeze
   WORKFLOW = Rails.root.join(".github/workflows/verify.yml").freeze
   VERIFY = Rails.root.join("config/verify.rb").freeze
+  REPORT_DIR = "scan_report".freeze
 
   setup do
     @body = SCRIPT.read
@@ -40,7 +41,8 @@ class ContainerScanScriptTest < ActiveSupport::TestCase
   end
 
   test "重大さの下限を持つ" do
-    assert_match(/--severity[= ]HIGH,CRITICAL/, @body)
+    assert_match(/--severity/, @body)
+    assert_match(/HIGH,CRITICAL/, @body)
   end
 
   # 修正版が出ていない指摘で失敗させると、自分たちで解消できない状態で
@@ -51,8 +53,26 @@ class ContainerScanScriptTest < ActiveSupport::TestCase
   end
 
   # 失敗させないことと、見せないことは別である。
-  test "修正版のない指摘も一覧として出す" do
+  test "修正版のない指摘も報告へ残す" do
     assert_match(/--exit-code[= ]0/, @body)
+    assert_match(/#{Regexp.escape(REPORT_DIR)}/, @body)
+  end
+
+  # 実行のたびに変わるものを追跡すると、差分が読めなくなる。
+  test "報告をリポジトリへ含めない" do
+    assert_match(/^#{Regexp.escape(REPORT_DIR)}\/$/, Rails.root.join(".gitignore").read)
+  end
+
+  # 組み立てるイメージは入れるパッケージを選べる。取り込むイメージへの手立ては
+  # tag を上げることだけで、上げても解消しない場合がある。解消できない指摘で
+  # 検証を止め続けると、失敗を無視する習慣がつく。
+  test "合否を決めるのは組み立てたイメージだけとする" do
+    assert_match(/scan_and_gate "配布用のイメージ"/, @body)
+    assert_match(/scan_and_report "データベースのイメージ"/, @body)
+  end
+
+  test "継続的インテグレーションが報告を残す" do
+    assert_match(/#{Regexp.escape(REPORT_DIR)}/, WORKFLOW.read)
   end
 
   # socket を渡すと、検査器がホストの Docker を操作できる。
