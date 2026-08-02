@@ -10,6 +10,7 @@
 # web だけでなく worker、console、runner、Rake task も同じ経路を通る。
 Rails.application.config.to_prepare do
   Authentication::ProviderRegistry.register(Authentication::InternalProvider)
+  Authentication::ProviderRegistry.register(Authentication::OidcProvider)
 
   Authentication::ProviderRegistry.current
 end

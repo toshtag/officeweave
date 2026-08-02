@@ -12,6 +12,9 @@ ja:
       en: English
 
   sessions:
+    oidc:
+      submit: 認可サーバーでログイン
+      failed: ログインできませんでした。管理者へ連絡してください。
     sign_out: ログアウト
     signed_in: ログインしました。
     signed_out: ログアウトしました。

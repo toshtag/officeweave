@@ -12,6 +12,9 @@ en:
       en: English
 
   sessions:
+    oidc:
+      submit: Sign in with your identity provider
+      failed: Sign-in failed. Contact your administrator.
     sign_out: Sign out
     signed_in: You are now signed in.
     signed_out: You have been signed out.
