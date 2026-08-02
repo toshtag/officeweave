@@ -218,6 +218,147 @@ class ProductionBackupScriptsTest < ActiveSupport::TestCase
     end
   end
 
+  # --- 保持 ---
+
+  test "保持の上限を超えた古い書庫を消す" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+      place_archives(sandbox, "20260101T000000Z", "20260102T000000Z", "20260103T000000Z")
+
+      stdout, stderr, status = sandbox.run(
+        "script/production_backup", sandbox.path("out"),
+        env: environment(sandbox, running: "db web").merge("BACKUP_KEEP" => "2")
+      )
+
+      assert status.success?, stderr
+      remaining = archive_names(sandbox)
+
+      # 取得した書庫を含めて 2 件へ収まる。消えるのは名前順で古い側から。
+      assert_equal 2, remaining.size
+      assert_includes remaining, File.basename(stdout.strip)
+      assert_includes remaining, "officeweave-20260103T000000Z.tar.gz"
+      refute_includes remaining, "officeweave-20260101T000000Z.tar.gz"
+      refute_includes remaining, "officeweave-20260102T000000Z.tar.gz"
+    end
+  end
+
+  test "保持の上限を指定しなければ古い書庫を消さない" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+      place_archives(sandbox, "20260101T000000Z", "20260102T000000Z")
+
+      _stdout, stderr, status = sandbox.run(
+        "script/production_backup", sandbox.path("out"),
+        env: environment(sandbox, running: "db web")
+      )
+
+      assert status.success?, stderr
+      assert_equal 3, archive_names(sandbox).size
+    end
+  end
+
+  test "自分が付けた名前に一致しないファイルは消さない" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+      place_archives(sandbox, "20260101T000000Z")
+      others = %w[
+        officeweave.tar.gz
+        officeweave-20260101T000000Z.tar.gz.partial
+        officeweave-手で作った控え.tar.gz
+        organization-notes.txt
+      ]
+      others.each { |name| File.write(sandbox.path("out", name), "取得したものではない") }
+
+      _stdout, stderr, status = sandbox.run(
+        "script/production_backup", sandbox.path("out"),
+        env: environment(sandbox, running: "db web").merge("BACKUP_KEEP" => "1")
+      )
+
+      assert status.success?, stderr
+      others.each do |name|
+        assert File.exist?(sandbox.path("out", name)), "#{name} を消している"
+      end
+    end
+  end
+
+  test "取得に失敗した場合は古い書庫を消さない" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+      place_archives(sandbox, "20260101T000000Z", "20260102T000000Z")
+
+      _stdout, _stderr, status = sandbox.run(
+        "script/production_backup", sandbox.path("out"),
+        env: environment(sandbox, running: "db web")
+                .merge("BACKUP_KEEP" => "1", "FAKE_BACKUP_EXIT" => "1")
+      )
+
+      refute status.success?
+      assert_equal 2, archive_names(sandbox).size
+    end
+  end
+
+  test "保持の上限が整数でなければ、web を止めずに失敗する" do
+    [ "0", "-1", "いくつか", "2.5", "" ].each do |value|
+      with_shell_sandbox do |sandbox|
+        prepare(sandbox)
+        place_archives(sandbox, "20260101T000000Z")
+
+        _stdout, stderr, status = sandbox.run(
+          "script/production_backup", sandbox.path("out"),
+          env: environment(sandbox, running: "db web").merge("BACKUP_KEEP" => value)
+        )
+
+        if value.empty?
+          # 空文字は未指定として扱う。整理しないまま取得だけを行う。
+          assert status.success?, stderr
+          assert_equal 2, archive_names(sandbox).size
+        else
+          refute status.success?, "#{value.inspect} を受け付けている"
+          assert_includes stderr, "BACKUP_KEEP"
+          refute_includes calls(sandbox), "stop web"
+          assert_equal 1, archive_names(sandbox).size
+        end
+      end
+    end
+  end
+
+  test "消した書庫は標準エラーへ出し、標準出力へは書庫の経路だけを出す" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+      place_archives(sandbox, "20260101T000000Z")
+
+      stdout, stderr, status = sandbox.run(
+        "script/production_backup", sandbox.path("out"),
+        env: environment(sandbox, running: "db web").merge("BACKUP_KEEP" => "1")
+      )
+
+      assert status.success?, stderr
+      assert_includes stderr, "officeweave-20260101T000000Z.tar.gz"
+      assert_equal [ stdout.strip ], stdout.lines.map(&:strip)
+      assert_equal File.basename(stdout.strip), archive_names(sandbox).sole
+    end
+  end
+
+  test "書庫を消せなければ、取得した書庫を伝えたうえで失敗として返す" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+      # 消せないものを、書庫と同じ名前で置く。中身を持つディレクトリは rm で消えない。
+      undeletable = sandbox.path("out", "officeweave-20260101T000000Z.tar.gz")
+      FileUtils.mkdir_p(File.join(undeletable, "中身"))
+
+      stdout, stderr, status = sandbox.run(
+        "script/production_backup", sandbox.path("out"),
+        env: environment(sandbox, running: "db web").merge("BACKUP_KEEP" => "1")
+      )
+
+      refute status.success?
+      assert_includes stderr, "削除できませんでした"
+      # 取得は成功している。経路を伝えないと、受け取った側が書庫を見つけられない。
+      assert File.exist?(stdout.strip)
+      assert File.directory?(undeletable)
+    end
+  end
+
   # --- 復元 ---
 
   test "復元に成功した場合だけ web を起動する" do
@@ -297,6 +438,21 @@ class ProductionBackupScriptsTest < ActiveSupport::TestCase
         "FAKE_RUNNING_SERVICES" => running,
         "FAKE_ARCHIVE" => File.join(sandbox.root, "archive.tar.gz")
       }
+    end
+
+    # 既に取得済みの書庫として、取得日時だけが違うものを置く。
+    def place_archives(sandbox, *timestamps)
+      FileUtils.mkdir_p(sandbox.path("out"))
+
+      timestamps.map do |timestamp|
+        sandbox.path("out", "officeweave-#{timestamp}.tar.gz").tap do |path|
+          FileUtils.cp(File.join(sandbox.root, "archive.tar.gz"), path)
+        end
+      end
+    end
+
+    def archive_names(sandbox)
+      Dir.glob(sandbox.path("out", "officeweave-*.tar.gz")).map { |path| File.basename(path) }
     end
 
     def build_archive(destination, sandbox)
