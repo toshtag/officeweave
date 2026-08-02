@@ -56,6 +56,20 @@ docker compose exec web bin/diagnose
 
 開発用で通ることと、配布したものが動くことは別である。
 
+導入手順の出発点は `.env.example` の複製である。
+そこから必須の値を埋めただけで起動することを、実際の複製から確かめる。
+
+```text
+1. .env.example を .env として複製する
+2. DATABASE_PASSWORD、SECRET_KEY_BASE、APPLICATION_HOST を埋める
+3. 配布用の構成を起動する
+4. 構成の解決で止まらないことを確かめる
+```
+
+雛形に無い必須の変数があると、この手順は 3 で止まる。
+どの変数が足りないかは、構成ファイルが名前を挙げて知らせる。
+雛形と設定の文書の側は `test/models/environment_template_test.rb` が押さえている。
+
 ```bash
 docker compose -f compose.production.yaml up -d --build
 ```
