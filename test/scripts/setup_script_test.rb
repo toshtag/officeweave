@@ -30,12 +30,13 @@ class SetupScriptTest < ActiveSupport::TestCase
     assert_match(/log:clear tmp:clear/, body)
   end
 
-  # 作り直しは別の契約である。準備の既定を変えても失わない。
-  test "準備コマンドが --reset でデータベースを作り直す" do
+  # 作り直しは worker の接続を切る必要があり、Compose の service を止める操作を
+  # 伴う。コンテナの中からは行えないため、準備コマンドはこれを持たない。
+  test "準備コマンドが破壊的な操作を持たない" do
     body = SETUP.read
 
-    assert_match(/--reset/, body)
-    assert_match(/db:reset/, body)
+    assert_no_match(/db:reset/, body)
+    assert_no_match(/db:drop/, body)
   end
 
   # server を 1 process 起動するだけのコマンドは、Compose と役割が重なる。
