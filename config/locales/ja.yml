@@ -231,6 +231,7 @@ ja:
       cyclic: に自身または下位の部門は指定できません
       different_organization: に別の組織の記録は指定できません
       notification_preferences_not_saved: 通知の受け取り設定を保存できませんでした
+      current_password_invalid: 現在のパスワードが違います
     forbidden:
       title: 権限がありません
       heading: この操作は実行できません
@@ -582,6 +583,16 @@ ja:
       open: 次の場所で確認できます。
       settings_hint: このメールは OfficeWeave からの自動送信です。
 
+  passwords:
+    updated: パスワードを変更しました。他の端末のログインは終了しました。
+    edit:
+      title: パスワードの変更
+      heading: パスワードの変更
+      current_password: 現在のパスワード
+      new_password: 新しいパスワード
+      confirmation: 新しいパスワード（確認）
+      other_sessions_hint: 変更すると、この端末以外のログインはすべて終了します。
+      submit: 変更する
   settings:
     title: 自分の設定
     heading: 自分の設定
@@ -698,6 +709,7 @@ ja:
       user_created: 利用者の追加
       user_updated: 利用者の更新
       user_deactivated: 利用者の無効化
+      password_changed: パスワードの変更
       user_activated: 利用者の有効化
       department_created: 部門の追加
       department_updated: 部門の更新

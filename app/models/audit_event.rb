@@ -14,6 +14,7 @@ class AuditEvent < ApplicationRecord
     user_created
     user_updated
     user_deactivated
+    password_changed
     user_activated
     department_created
     department_updated

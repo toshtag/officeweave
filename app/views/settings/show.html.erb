@@ -29,6 +29,10 @@
 </div>
 
 <ul class="list-plain">
+  <%# 資格情報がこの製品の中に無い方式では案内しない。 %>
+  <% if password_credentials? %>
+    <li><%= link_to t("passwords.edit.heading"), edit_password_path %></li>
+  <% end %>
   <li><%= link_to t("api_tokens.index.heading"), api_tokens_path %></li>
   <% if administrator? %>
     <li><%= link_to t("webhook_endpoints.index.heading"), webhook_endpoints_path %></li>

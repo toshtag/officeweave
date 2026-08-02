@@ -46,8 +46,4 @@ class SessionsController < ApplicationController
       record_audit_event("sign_in_failed", organization: user.organization, actor: nil,
                                            details: { email_address: user.email_address })
     end
-
-    def authentication_provider
-      Authentication::ProviderRegistry.current
-    end
 end

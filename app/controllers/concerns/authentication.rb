@@ -3,7 +3,7 @@ module Authentication
 
   included do
     before_action :require_authentication
-    helper_method :authenticated?
+    helper_method :authenticated?, :password_credentials?
   end
 
   class_methods do
@@ -15,6 +15,19 @@ module Authentication
   private
     def authenticated?
       resume_session
+    end
+
+    # 稼働中の認証方式。設定で差し替えられる。
+    def authentication_provider
+      Authentication::ProviderRegistry.current
+    end
+
+    # この製品の中に、変更できる資格情報があるか。
+    #
+    # 外部の方式へ切り替えた環境では、パスワードはこの製品の外にある。
+    # 入力欄も、変更の経路も、案内も出さない。
+    def password_credentials?
+      authentication_provider.password_required?
     end
 
     def require_authentication
