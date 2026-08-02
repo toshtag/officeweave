@@ -213,39 +213,70 @@ class DeliverWebhookJobTest < ActiveJob::TestCase
     assert_equal 302, @endpoint.webhook_deliveries.recent_first.first.response_status
   end
 
-  # --- 応答の読み取り ---
+  # --- 受け取る量の上限 ---
   #
-  # 使うのは応答の状態だけである。本文は読み捨てる。
-  # 上限を超える分を読まないことを、受け取る側が書き込めた量で確かめる。
+  # 使うのは応答の状態だけである。上限は本文だけでなく、ステータス行と
+  # ヘッダーを含む受け取り全体に掛ける。本文だけを数えると、宛先は
+  # ヘッダーへ同じ量を積んで同じ負荷を作れる。
+  #
+  # 読み切ってから大きさを見る形にはしない。その時点で確保が済んでいる。
+  # 上限を超えた分を読まないことを、受け取る側が書き込めた量で確かめる。
 
   # 上限を十分に超え、かつソケットの緩衝より大きい量。
   # 緩衝へ収まる量だと、送信側が読むのをやめても最後まで書けてしまい、
   # 打ち切ったのか元から短いのかを区別できない。
-  OVERSIZED_BODY_BYTES = 33 * 1024 * 1024
+  OVERSIZED_BYTES = 33 * 1024 * 1024
+
+  # 打ち切れていれば、書き込めた量はこれを下回る。
+  # ソケットの緩衝の分だけ上限より多く書けるため、余裕を持たせる。
+  TRUNCATED_BYTES = 4 * 1024 * 1024
 
   test "上限は応答として妥当な大きさに収まる" do
-    assert_operator DeliverWebhookJob::MAXIMUM_RESPONSE_BYTES, :<, OVERSIZED_BODY_BYTES
+    assert_operator DeliverWebhookJob::MAXIMUM_RESPONSE_BYTES, :<, TRUNCATED_BYTES
+    assert_operator TRUNCATED_BYTES, :<, OVERSIZED_BYTES
   end
 
-  test "上限を超える応答は読み切らない" do
-    written = deliver_to_local_server(status: "200 応答", body_bytes: oversized_body_bytes)
+  test "巨大なステータス行を上限で打ち切る" do
+    written = deliver_to_local_server(status: "200 応答", status_line_bytes: OVERSIZED_BYTES)
 
-    assert_operator written, :<, oversized_body_bytes, "本文を最後まで読んでいる"
+    assert_operator written, :<, TRUNCATED_BYTES, "ステータス行を読み進めている"
+    assert_oversized_failure
+  end
+
+  test "巨大な単一ヘッダーを上限で打ち切る" do
+    written = deliver_to_local_server(status: "200 応答", single_header_bytes: OVERSIZED_BYTES)
+
+    assert_operator written, :<, TRUNCATED_BYTES, "ヘッダーを読み進めている"
+    assert_oversized_failure
+  end
+
+  test "ヘッダーの総量を上限で打ち切る" do
+    written = deliver_to_local_server(status: "200 応答", header_bytes: OVERSIZED_BYTES)
+
+    assert_operator written, :<, TRUNCATED_BYTES, "ヘッダーを読み進めている"
+    assert_oversized_failure
+  end
+
+  test "上限を超える本文は打ち切り、状態は記録する" do
+    written = deliver_to_local_server(status: "200 応答", body_bytes: OVERSIZED_BYTES)
+
+    assert_operator written, :<, TRUNCATED_BYTES, "本文を読み進めている"
     assert_equal 200, @endpoint.webhook_deliveries.recent_first.first.response_status
   end
 
   test "Content-Length の無い応答も同じ上限で打ち切る" do
-    written = deliver_to_local_server(status: "200 応答", body_bytes: oversized_body_bytes, chunked: true)
+    written = deliver_to_local_server(status: "200 応答", body_bytes: OVERSIZED_BYTES, chunked: true)
 
-    assert_operator written, :<, oversized_body_bytes, "chunked を最後まで読んでいる"
+    assert_operator written, :<, TRUNCATED_BYTES, "chunked を読み進めている"
     assert_equal 200, @endpoint.webhook_deliveries.recent_first.first.response_status
   end
 
-  test "上限までの応答は最後まで受け取る" do
-    body_bytes = DeliverWebhookJob::MAXIMUM_RESPONSE_BYTES
+  test "上限に収まる応答は最後まで受け取る" do
+    body_bytes = DeliverWebhookJob::MAXIMUM_RESPONSE_BYTES / 2
     written = deliver_to_local_server(status: "200 応答", body_bytes: body_bytes)
 
-    assert_equal body_bytes, written, "上限までの本文を打ち切っている"
+    # written はステータス行とヘッダーも含む。打ち切られていれば本文の量を下回る。
+    assert_operator written, :>=, body_bytes, "上限に収まる本文を打ち切っている"
     assert_equal 200, @endpoint.webhook_deliveries.recent_first.first.response_status
   end
 
@@ -256,14 +287,12 @@ class DeliverWebhookJobTest < ActiveJob::TestCase
 
     assert_equal 204, delivery.response_status
     assert_nil delivery.failure_code
+    assert_nil delivery.error_message
     assert delivery.delivered_at.present?
   end
 
-  test "上限を超えたことをやり直しの理由にしない" do
-    # 200 は元からやり直さない。上限で打ち切っても、その判断を変えない。
-    assert_nothing_raised do
-      deliver_to_local_server(status: "200 応答", body_bytes: oversized_body_bytes)
-    end
+  test "chunk の後書きも上限の中で扱う" do
+    deliver_to_local_server(status: "200 応答", body_bytes: 64, chunked: true, trailer: true)
 
     delivery = @endpoint.webhook_deliveries.recent_first.first
 
@@ -271,12 +300,74 @@ class DeliverWebhookJobTest < ActiveJob::TestCase
     assert_nil delivery.error_message
   end
 
+  test "圧縮した応答を要求しない" do
+    request = nil
+    @endpoint.update_column(:url, "http://hooks.internal.example/events")
+
+    with_local_server(loopback_address(2), status: "204 応答") do |received|
+      perform_to(loopback_address(2))
+      request = received.call.first
+    end
+
+    # 展開を伴うと、圧縮された小さい応答から大きな確保が起きる。
+    # 上限は受け取った byte に掛かるため、展開後の量には効かない。
+    assert_equal "identity", request.headers["accept-encoding"]
+  end
+
+  test "宛先が圧縮して返しても展開しない" do
+    # 展開する実装なら、この応答は圧縮の誤りとして例外になり状態が残らない。
+    deliver_to_local_server(status: "200 応答", content_encoding: "gzip", broken_encoding: true)
+
+    delivery = @endpoint.webhook_deliveries.recent_first.first
+
+    assert_equal 200, delivery.response_status
+    assert_nil delivery.error_message
+  end
+
+  test "上限を超えたことをやり直しの理由にしない" do
+    # 200 は元からやり直さない。上限で打ち切っても、その判断を変えない。
+    assert_nothing_raised do
+      deliver_to_local_server(status: "200 応答", body_bytes: OVERSIZED_BYTES)
+    end
+
+    assert_nothing_raised do
+      deliver_to_local_server(status: "500 応答", status_line_bytes: OVERSIZED_BYTES)
+    end
+
+    assert_oversized_failure
+  end
+
   test "5xx でも本文を読み切らずに記録し、やり直しへ渡す" do
-    written = deliver_to_local_server(status: "500 応答", body_bytes: oversized_body_bytes,
+    written = deliver_to_local_server(status: "500 応答", body_bytes: OVERSIZED_BYTES,
                                       expect: DeliverWebhookJob::TransientDeliveryError)
 
-    assert_operator written, :<, oversized_body_bytes, "本文を最後まで読んでいる"
+    assert_operator written, :<, TRUNCATED_BYTES, "本文を読み進めている"
     assert_equal 500, @endpoint.webhook_deliveries.recent_first.first.response_status
+  end
+
+  test "上限を超えた記録に宛先を残さない" do
+    deliver_to_local_server(status: "200 応答", status_line_bytes: OVERSIZED_BYTES)
+
+    message = @endpoint.webhook_deliveries.recent_first.first.error_message
+
+    refute_includes message, "hooks.internal.example"
+    refute_includes message, loopback_address(2)
+    refute_includes message, "80"
+  end
+
+  test "上限で打ち切っても実行単位と socket が増えない" do
+    skip "/proc を読めない環境では測れない" unless File.directory?("/proc/self/fd")
+
+    address = loopback_address(2)
+    @endpoint.update_column(:url, "http://hooks.internal.example/events")
+
+    with_local_server(address, status: "200 応答", status_line_bytes: 1024 * 1024) do
+      5.times { perform_to(address) }
+      before = process_resources
+      50.times { perform_to(address) }
+
+      assert_equal before, process_resources, "打ち切りのたびに資源が残っている"
+    end
   end
 
   # --- 通信全体の期限 ---
@@ -490,7 +581,30 @@ class DeliverWebhookJobTest < ActiveJob::TestCase
       end
     end
 
-    def oversized_body_bytes
-      OVERSIZED_BODY_BYTES
+    # 宛先を差し替えず、同じ受信サーバーへもう一度送る。
+    def perform_to(address)
+      job = DeliverWebhookJob.new
+      job.resolver = ->(_hostname, _port) { [ address ] }
+      job.allowlist = Set["http://hooks.internal.example:80"]
+      job.perform(@endpoint.id, "request_submitted", { subject_id: 1 })
+    end
+
+    # 実行単位と開いている口の数。打ち切りのたびに残っていないかを見る。
+    def process_resources
+      GC.start
+      descriptors = Dir["/proc/self/fd/*"]
+
+      { threads: Thread.list.size, descriptors: descriptors.size,
+        sockets: descriptors.count { |path| (File.readlink(path) rescue "").start_with?("socket:") } }
+    end
+
+    # 状態を受け取る前に上限を超えた場合の記録。
+    def assert_oversized_failure
+      delivery = @endpoint.webhook_deliveries.recent_first.first
+
+      assert_nil delivery.response_status, "状態を受け取っていないのに残している"
+      assert_nil delivery.delivered_at
+      assert_nil delivery.failure_code
+      assert_equal DeliverWebhookJob::RESPONSE_TOO_LARGE_MESSAGE, delivery.error_message
     end
 end
