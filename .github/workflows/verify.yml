@@ -45,6 +45,25 @@ jobs:
       - name: 検証を実行する
         run: docker compose run --rm web bin/verify
 
+      - name: 部品表を書き出す
+        run: |
+          docker compose run --rm -T web bin/rails officeweave:sbom > officeweave-sbom.json
+          # 読める JSON であることと、対象と部品が入っていることを確かめる。
+          ruby -rjson -e '
+            document = JSON.parse(File.read("officeweave-sbom.json"))
+            abort "形式が違う" unless document["bomFormat"] == "CycloneDX"
+            abort "対象が無い" if document.dig("metadata", "component", "name").to_s.empty?
+            abort "部品が無い" if document["components"].to_a.empty?
+            puts "部品表: #{document["components"].size} 件"
+          '
+
+      - name: 部品表を成果物として残す
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: officeweave-sbom
+          path: officeweave-sbom.json
+          retention-days: 30
+
       - name: 失敗した場合の記録を出す
         if: failure()
         run: docker compose logs
