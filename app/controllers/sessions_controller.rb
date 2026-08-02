@@ -8,6 +8,10 @@ class SessionsController < ApplicationController
 
   def new
     @password_required = authentication_provider.password_required?
+    # 認可サーバーへ送り出す入口を出すかどうか。
+    # 設定が無い環境では、その経路そのものが無い。
+    @oidc_available = authentication_provider.name_key == Authentication::OidcProvider.name_key &&
+                      Authentication::Oidc.configured?
   end
 
   def create

@@ -14,6 +14,10 @@ Rails.application.routes.draw do
   resources :logins, only: %i[index destroy]
   delete "logins" => "logins#destroy_all", as: :all_logins
 
+  # OIDC でのログイン。開始は状態を変えるため GET では受け付けない。
+  post "oidc/session" => "oidc_sessions#create", as: :oidc_session
+  get "oidc/callback" => "oidc_sessions#callback", as: :oidc_callback
+
   # パスワードの再設定。ログインしていない状態から使う。
   resources :password_resets, only: %i[new create edit update], param: :token
 

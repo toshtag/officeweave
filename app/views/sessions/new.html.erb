@@ -3,6 +3,11 @@
 <div class="panel panel--narrow stack">
   <h1><%= t("sessions.new.heading") %></h1>
 
+  <%# 資格情報がこの製品の中に無い方式では、認可サーバーへ送り出す。 %>
+  <% if @oidc_available %>
+    <%= button_to t("sessions.oidc.submit"), oidc_session_path, class: "button button--primary" %>
+  <% end %>
+
   <%= form_with url: session_path, class: "form stack" do |form| %>
     <%= form.field :email_address, :email_field, required: true, autofocus: true,
                    autocomplete: "username", label: t("activerecord.attributes.user.email_address") %>

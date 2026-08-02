@@ -146,7 +146,9 @@ class OidcLoginTest < ActionDispatch::IntegrationTest
   end
 
   test "nonce が違う id_token ではログインしない" do
-    with_oidc_login({ "/token" => { id_token: OidcProviderTestHelper.id_token(nonce: "another-nonce") } }) do |provider|
+    mismatched = { "/token" => { id_token: OidcProviderTestHelper.id_token(nonce: "another-nonce") } }
+
+    with_oidc_login(mismatched) do |provider|
       sign_in_with_oidc(provider)
 
       assert_redirected_to new_session_path
@@ -155,7 +157,9 @@ class OidcLoginTest < ActionDispatch::IntegrationTest
   end
 
   test "該当する利用者が居なければログインしない" do
-    with_oidc_login({ "/token" => { id_token: OidcProviderTestHelper.id_token(email: "nobody@example.com") } }) do |provider|
+    unknown = { "/token" => { id_token: OidcProviderTestHelper.id_token(email: "nobody@example.com") } }
+
+    with_oidc_login(unknown) do |provider|
       sign_in_with_oidc(provider)
 
       assert_redirected_to new_session_path
@@ -175,15 +179,29 @@ class OidcLoginTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "失敗を監査記録へ残す" do
-    with_oidc_login({ "/token" => { id_token: OidcProviderTestHelper.id_token(email: "nobody@example.com") } }) do |provider|
+  test "無効化された利用者の試みを監査記録へ残す" do
+    @user.deactivate!
+
+    with_oidc_login do |provider|
       sign_in_with_oidc(provider)
 
       event = AuditEvent.with_action("sign_in_failed").recent_first.first
 
       assert_not_nil event
       assert_nil event.actor
+      assert_equal @user, event.target
       assert_equal "oidc", event.details["provider"]
+    end
+  end
+
+  test "利用者を特定できない失敗は記録しない" do
+    # どの組織の記録にもならない。内部認証の失敗と同じ扱いとする。
+    unknown = { "/token" => { id_token: OidcProviderTestHelper.id_token(email: "nobody@example.com") } }
+
+    with_oidc_login(unknown) do |provider|
+      assert_no_difference -> { AuditEvent.count } do
+        sign_in_with_oidc(provider)
+      end
     end
   end
 
