@@ -7,7 +7,7 @@ require "socket"
 # ここでは差し替えず、getaddrinfo だけを置き換えて既定の実装を動かす。
 #
 # 実ネットワークの DNS 待ち時間には依存させない。終わらない解決は
-# 解放されるまで戻らない Queue で作り、確認のたびに必ず解放する。
+# 誰も書かない pipe で作り、確認のたびに必ず閉じる。
 class WebhookResolutionTest < ActiveSupport::TestCase
   # 時間切れの判定に使う余裕。実行環境の速さでぶれる分を吸収する。
   SLACK = 3
@@ -78,6 +78,13 @@ class WebhookResolutionTest < ActiveSupport::TestCase
     assert_no_child_processes
   end
 
+  # 差し替えを設定していない環境では、宛先の保存、配信、bin/diagnose の
+  # いずれもこの実装を通る。テスト環境だけは、実行環境の DNS へ依存させない
+  # ため差し替えてあり、そこからは辿れない。結び付きだけをここで確かめる。
+  test "差し替えを設定していない場合は、この実装を使う" do
+    assert_equal WebhookDestination::DEFAULT_RESOLVER, WebhookDestination.resolver_or_default(nil)
+  end
+
   test "利用者へ返す理由に、宛先も内部の詳細も含めない" do
     with_hanging_getaddrinfo
 
@@ -104,18 +111,22 @@ class WebhookResolutionTest < ActiveSupport::TestCase
       Addrinfo.singleton_class.define_method(:getaddrinfo) { |*| block.call }
     end
 
-    # 解放されるまで戻らない解決。実ネットワークの待ち時間には依存しない。
+    # 終わらない解決。実ネットワークの待ち時間には依存しない。
+    #
+    # 誰も書かない pipe から読む。Queue は使えない。解決が別の process で
+    # 行われる場合、待っているのはその process の唯一の thread であり、
+    # Ruby が deadlock として検知して例外で戻してしまう。
     def with_hanging_getaddrinfo
-      @pending = Queue.new
-      pending = @pending
-      with_getaddrinfo { pending.pop }
+      @pending_reader, @pending_writer = IO.pipe
+      reader = @pending_reader
+      with_getaddrinfo { reader.read }
     end
 
-    # 待ちを解放する。子プロセス側で待っている場合は親の Queue へ届かないが、
-    # 親の process に残った待ちがあれば、ここで確実に解く。
+    # 待ちに使った pipe を閉じる。読み手が親の process に残っていれば、
+    # 書き手を閉じた時点で終端として戻る。
     def release_pending_resolutions
-      10.times { @pending&.push(nil) }
-      @pending = nil
+      [ @pending_writer, @pending_reader ].each { |io| io.close unless io.nil? || io.closed? }
+      @pending_reader = @pending_writer = nil
     end
 
     def restore_getaddrinfo
