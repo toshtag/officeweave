@@ -1776,6 +1776,13 @@ CREATE INDEX index_notifications_on_subject ON public.notifications USING btree 
 
 
 --
+-- Name: index_notifications_on_unread_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_notifications_on_unread_user_id ON public.notifications USING btree (user_id) WHERE (read_at IS NULL);
+
+
+--
 -- Name: index_notifications_on_user_and_subject_event; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2358,6 +2365,7 @@ ALTER TABLE ONLY public.announcement_departments
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260802000000'),
 ('20260801000000'),
 ('20260731000000'),
 ('20260730000000'),
