@@ -5,7 +5,7 @@ class ApiTokenExpiryRequestTest < ActionDispatch::IntegrationTest
   test "期限を選んで発行できる" do
     sign_in_as users(:taro)
 
-    post api_tokens_url, params: { api_token: { name: "集計", expires_in_days: "90" } }
+    post api_tokens_url, params: { api_token: { name: "集計", expires_in_days: "90", scopes: %w[events] } }
 
     assert_redirected_to api_tokens_path
     assert_in_delta 90.days.from_now, ApiToken.recent_first.first.expires_at, 1.minute
@@ -14,7 +14,7 @@ class ApiTokenExpiryRequestTest < ActionDispatch::IntegrationTest
   test "期限なしを選べる" do
     sign_in_as users(:taro)
 
-    post api_tokens_url, params: { api_token: { name: "常設", expires_in_days: "" } }
+    post api_tokens_url, params: { api_token: { name: "常設", expires_in_days: "", scopes: %w[events] } }
 
     assert_redirected_to api_tokens_path
     assert_nil ApiToken.recent_first.first.expires_at
@@ -24,7 +24,7 @@ class ApiTokenExpiryRequestTest < ActionDispatch::IntegrationTest
     sign_in_as users(:taro)
 
     assert_no_difference -> { ApiToken.count } do
-      post api_tokens_url, params: { api_token: { name: "十年", expires_in_days: "3650" } }
+      post api_tokens_url, params: { api_token: { name: "十年", expires_in_days: "3650", scopes: %w[events] } }
     end
 
     assert_response :unprocessable_content
@@ -90,7 +90,7 @@ class ApiTokenExpiryRequestTest < ActionDispatch::IntegrationTest
   test "発行の記録に期限を残す" do
     sign_in_as users(:taro)
 
-    post api_tokens_url, params: { api_token: { name: "集計", expires_in_days: "30" } }
+    post api_tokens_url, params: { api_token: { name: "集計", expires_in_days: "30", scopes: %w[events] } }
 
     event = AuditEvent.with_action("api_token_issued").recent_first.first
 
