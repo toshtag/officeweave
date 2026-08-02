@@ -739,6 +739,41 @@ ALTER SEQUENCE public.request_activities_id_seq OWNED BY public.request_activiti
 
 
 --
+-- Name: request_approval_steps; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.request_approval_steps (
+    id bigint NOT NULL,
+    request_id bigint NOT NULL,
+    approver_department_id bigint,
+    approver_id bigint,
+    "position" integer DEFAULT 0 NOT NULL,
+    approved_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: request_approval_steps_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.request_approval_steps_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: request_approval_steps_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.request_approval_steps_id_seq OWNED BY public.request_approval_steps.id;
+
+
+--
 -- Name: request_types; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1180,6 +1215,13 @@ ALTER TABLE ONLY public.request_activities ALTER COLUMN id SET DEFAULT nextval('
 
 
 --
+-- Name: request_approval_steps id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.request_approval_steps ALTER COLUMN id SET DEFAULT nextval('public.request_approval_steps_id_seq'::regclass);
+
+
+--
 -- Name: request_types id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1401,6 +1443,14 @@ ALTER TABLE ONLY public.organizations
 
 ALTER TABLE ONLY public.request_activities
     ADD CONSTRAINT request_activities_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: request_approval_steps request_approval_steps_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.request_approval_steps
+    ADD CONSTRAINT request_approval_steps_pkey PRIMARY KEY (id);
 
 
 --
@@ -1911,6 +1961,34 @@ CREATE INDEX index_request_activities_on_request_id_and_created_at ON public.req
 
 
 --
+-- Name: index_request_approval_steps_on_approver_department_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_request_approval_steps_on_approver_department_id ON public.request_approval_steps USING btree (approver_department_id);
+
+
+--
+-- Name: index_request_approval_steps_on_approver_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_request_approval_steps_on_approver_id ON public.request_approval_steps USING btree (approver_id);
+
+
+--
+-- Name: index_request_approval_steps_on_request_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_request_approval_steps_on_request_id ON public.request_approval_steps USING btree (request_id);
+
+
+--
+-- Name: index_request_approval_steps_on_request_id_and_position; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_request_approval_steps_on_request_id_and_position ON public.request_approval_steps USING btree (request_id, "position");
+
+
+--
 -- Name: index_request_types_on_organization_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2150,6 +2228,14 @@ ALTER TABLE ONLY public.announcement_reads
 
 
 --
+-- Name: request_approval_steps fk_rails_5450b5e294; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.request_approval_steps
+    ADD CONSTRAINT fk_rails_5450b5e294 FOREIGN KEY (request_id) REFERENCES public.requests(id);
+
+
+--
 -- Name: requests fk_rails_54d15c43d3; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2163,6 +2249,14 @@ ALTER TABLE ONLY public.requests
 
 ALTER TABLE ONLY public.requests
     ADD CONSTRAINT fk_rails_59d5c2771d FOREIGN KEY (request_type_id) REFERENCES public.request_types(id);
+
+
+--
+-- Name: request_approval_steps fk_rails_5c3bd45f9c; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.request_approval_steps
+    ADD CONSTRAINT fk_rails_5c3bd45f9c FOREIGN KEY (approver_department_id) REFERENCES public.departments(id);
 
 
 --
@@ -2406,6 +2500,14 @@ ALTER TABLE ONLY public.document_departments
 
 
 --
+-- Name: request_approval_steps fk_rails_e724329876; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.request_approval_steps
+    ADD CONSTRAINT fk_rails_e724329876 FOREIGN KEY (approver_id) REFERENCES public.users(id);
+
+
+--
 -- Name: announcement_reads fk_rails_e929ca5a13; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2452,6 +2554,7 @@ ALTER TABLE ONLY public.announcement_departments
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260803030000'),
 ('20260803020000'),
 ('20260803010000'),
 ('20260803000000'),

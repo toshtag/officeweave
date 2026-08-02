@@ -460,6 +460,7 @@ ja:
   requests:
     approval_route: 承認の経路
     awaiting_step: 承認待ち
+    approved_by: 承認 %{name}
     created: 申請を作成しました。
     updated: 申請を更新しました。
     submitted: 申請を提出しました。

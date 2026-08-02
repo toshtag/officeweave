@@ -19,6 +19,8 @@ class Request < ApplicationRecord
   belongs_to :applicant, class_name: "User"
 
   has_many :request_activities, dependent: :destroy
+  # 提出の時点の段を写した経路。
+  has_many :request_approval_steps, -> { ordered }, dependent: :destroy, inverse_of: :request
   has_many :notifications, as: :subject, dependent: :destroy
 
   validates :title, presence: true, length: { maximum: 200 }
@@ -119,13 +121,14 @@ class Request < ApplicationRecord
   end
 
   def submit(actor:)
-    first_step = request_type.first_approval_step
-
     changed = change_status(to: "pending", actor: actor, action: "submitted") do
       self.submitted_at = Time.current
+      # 提出の時点の段を写す。写した経路は、種別の段を後から変えても変わらない。
+      # 再提出では取り直す。そのときの段が、その提出の経路になる。
+      snapshot_route
       # 提出のたびに 1 段目から始める。差し戻しのあとの再提出も同じとする。
       # 途中まで進んだ経路を、内容を直したあとも引き継がない。
-      self.current_step_position = first_step&.position || 0
+      self.current_step_position = route_steps.first&.position || 0
     end
 
     notify_approvers if changed
@@ -149,11 +152,21 @@ class Request < ApplicationRecord
     decide(to: "returned", action: "returned", actor: actor, comment: comment, event: "request_returned")
   end
 
+  # この申請が通る経路。
+  #
+  # 写した経路があればそれを使う。無い場合は種別の段を経路として扱う。
+  # 写す仕組みより前に提出された申請には、写した経路が無い。
+  def route_steps
+    steps = request_approval_steps.to_a
+
+    steps.presence || request_type.approval_steps.ordered.to_a
+  end
+
   # 現在待っている段。段の構成が変わった場合は、その並び以降の最初の段とする。
-  def current_step = request_type.approval_step_at(current_step_position)
+  def current_step = route_steps.detect { |step| step.position >= current_step_position }
 
   # 現在の段の次にある段。無ければ nil。
-  def next_step = request_type.approval_step_after(current_step_position)
+  def next_step = route_steps.detect { |step| step.position > current_step_position }
 
   # 現在の段の承認を担当する利用者。
   def approvers(step = current_step)
@@ -186,6 +199,21 @@ class Request < ApplicationRecord
   end
 
   private
+    # 提出の時点の段を写す。前の提出の分は残さない。
+    def snapshot_route
+      request_approval_steps.destroy_all if persisted? && request_approval_steps.exists?
+
+      request_type.approval_steps.ordered.each do |step|
+        request_approval_steps.build(step.snapshot_attributes)
+      end
+    end
+
+    # 写した経路の段へ、承認したことを残す。
+    # 写した経路が無い申請では、残す先が無い。何もしない。
+    def record_route_approval(position:, actor:)
+      request_approval_steps.detect { |step| step.position == position }&.record_approval!(actor: actor)
+    end
+
     # 次の段へ進める。状態は pending のままとする。
     #
     # 段の記録は決裁と同じ形で残す。承認済みへ至らない承認も、誰がいつ
@@ -203,6 +231,7 @@ class Request < ApplicationRecord
         decided = current_step_position
         self.current_step_position = following.position
         save!
+        record_route_approval(position: decided, actor: actor)
         request_activities.create!(actor: actor, action: "approved", comment: comment,
                                   step_position: decided)
         advanced = true
@@ -222,6 +251,8 @@ class Request < ApplicationRecord
       changed = change_status(to: to, actor: actor, action: action, comment: comment,
                               step_position: decided_position) do
         self.decided_at = Time.current
+        # 承認した段だけへ印を残す。差し戻しは、その段を通していない。
+        record_route_approval(position: decided_position, actor: actor) if to == "approved"
       end
 
       if changed
