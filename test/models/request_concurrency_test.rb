@@ -35,7 +35,8 @@ class RequestConcurrencyTest < ActiveSupport::TestCase
     @approver = create_user("approver@example.com", role: "administrator")
     @approver.memberships.create!(department: @department)
     @request_type = @organization.request_types.create!(
-      name: "休暇届", code: "leave", approver_department: @department
+      name: "休暇届", code: "leave",
+      approval_steps_attributes: [ { position: 10, approver_department_id: @department.id } ]
     )
     @endpoint = @organization.webhook_endpoints.create!(name: "連携先", url: "https://example.com/hook")
     @request = create_request(status: "pending", submitted_at: 1.day.ago)

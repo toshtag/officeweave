@@ -120,7 +120,7 @@ en:
         name: Name
         code: Code
         description: Description
-        approver_department: Approving department
+        approval_steps: Approval steps
         approver_department_id: Approving department
         active: Accept new requests
         position: Display order
@@ -413,6 +413,7 @@ en:
     updated: The request type has been updated.
     approver_administrators: Administrators
     index:
+      approval_steps: Approval steps
       title: Request types
       heading: Request types
       new: Add a request type
@@ -429,11 +430,16 @@ en:
       active: Open
       inactive: Closed
     form:
+      approval_steps: Approval steps
+      approval_steps_hint: Approvals happen in order. A step without a department is handled by administrators. Lower position numbers come first. To add a step, choose a department in the empty step and save, then open this page again.
+      remove_step: Remove this step
       approver_unset: Administrators approve
       approver_hint: Members of the department you pick can approve. Leave it blank to let administrators approve.
       active_hint: When a type is no longer used, clear this instead of deleting it so past requests stay intact.
 
   requests:
+    approval_route: Approval route
+    awaiting_step: Awaiting
     created: The request has been created.
     updated: The request has been updated.
     submitted: The request has been submitted.

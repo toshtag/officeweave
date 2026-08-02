@@ -14,7 +14,7 @@
         <thead>
           <tr>
             <th scope="col"><%= RequestType.human_attribute_name(:name) %></th>
-            <th scope="col"><%= RequestType.human_attribute_name(:approver_department) %></th>
+            <th scope="col"><%= t("request_types.index.approval_steps") %></th>
             <th scope="col"><%= t("request_types.index.status") %></th>
             <th scope="col"><span class="visually-hidden"><%= t("common.actions") %></span></th>
           </tr>
@@ -23,7 +23,17 @@
           <% @request_types.each do |request_type| %>
             <tr>
               <td><%= request_type.name %></td>
-              <td><%= request_type.approver_department&.display_path || t("request_types.approver_administrators") %></td>
+              <td>
+                <%# 段を並びの順に出す。1 段だけの種別は 1 つだけ並ぶ。 %>
+                <ol class="list-plain">
+                  <% request_type.approval_steps.each do |step| %>
+                    <li>
+                      <%= step.approver_department&.display_path ||
+                            t("request_types.approver_administrators") %>
+                    </li>
+                  <% end %>
+                </ol>
+              </td>
               <td>
                 <% if request_type.active? %>
                   <%= t("request_types.status.active") %>

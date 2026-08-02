@@ -41,11 +41,15 @@ class Request < ApplicationRecord
 
 
   # その利用者が処理を待たれている申請。
-  # 自分の申請は自分で承認できないため、対象から外す。
+  #
+  # 現在の段の担当だけを対象にする。先の段の担当は、その段へ進むまで
+  # 待たれていない。自分の申請は自分で承認できないため、対象から外す。
   scope :awaiting_decision_by, ->(user) {
-    where(organization_id: user.organization_id, status: "pending")
-      .where.not(applicant_id: user.id)
-      .where(request_type_id: approvable_request_types(user))
+    scope = where(organization_id: user.organization_id, status: "pending")
+              .where.not(applicant_id: user.id)
+
+    # 管理者はすべての段を担当する。段を持つ前からの範囲を狭めない。
+    user.administrator? ? scope : scope.where(current_step_approvable_by(user))
   }
   # 単一の状態でも、複数の状態の並びでも絞り込める。
   scope :with_status, ->(status) {
@@ -76,13 +80,30 @@ class Request < ApplicationRecord
   }
 
   # その利用者が承認を担当する申請種別。
+  #
+  # いずれかの段を担当していれば、その種別の申請を参照できる。
+  # 実際に決裁できるかどうかは、現在の段が決める。
   # 管理者はすべての種別を担当する。
   def self.approvable_request_types(user)
     return RequestType.where(organization_id: user.organization_id).select(:id) if user.administrator?
 
-    RequestType
+    ApprovalStep
       .where(approver_department_id: Membership.where(user_id: user.id).select(:department_id))
-      .select(:id)
+      .select(:request_type_id)
+  end
+
+  # 現在の段が、その利用者の担当である申請。
+  #
+  # 段は種別ごとの並びで決まる。申請が持つのは待っている段の並びの値であり、
+  # 段そのものへの参照ではない。段の構成を後から変えても、待っている位置が
+  # 別の段へずれない。
+  def self.current_step_approvable_by(user)
+    steps = ApprovalStep
+              .where(ApprovalStep.arel_table[:request_type_id].eq(arel_table[:request_type_id]))
+              .where(ApprovalStep.arel_table[:position].eq(arel_table[:current_step_position]))
+              .where(approver_department_id: Membership.where(user_id: user.id).select(:department_id))
+
+    steps.arel.exists
   end
 
   def can_transition_to?(next_status)
@@ -98,8 +119,13 @@ class Request < ApplicationRecord
   end
 
   def submit(actor:)
+    first_step = request_type.first_approval_step
+
     changed = change_status(to: "pending", actor: actor, action: "submitted") do
       self.submitted_at = Time.current
+      # 提出のたびに 1 段目から始める。差し戻しのあとの再提出も同じとする。
+      # 途中まで進んだ経路を、内容を直したあとも引き継がない。
+      self.current_step_position = first_step&.position || 0
     end
 
     notify_approvers if changed
@@ -110,7 +136,12 @@ class Request < ApplicationRecord
     change_status(to: "withdrawn", actor: actor, action: "withdrawn")
   end
 
+  # 現在の段を承認する。
+  #
+  # 次の段があれば、その段を待つ状態のまま進める。最後の段であれば承認済みとする。
   def approve(actor:, comment: nil)
+    return advance_step(actor: actor, comment: comment) if next_step.present?
+
     decide(to: "approved", action: "approved", actor: actor, comment: comment, event: "request_approved")
   end
 
@@ -118,14 +149,17 @@ class Request < ApplicationRecord
     decide(to: "returned", action: "returned", actor: actor, comment: comment, event: "request_returned")
   end
 
-  # 承認を担当する利用者。
-  def approvers
-    department_id = request_type.approver_department_id
+  # 現在待っている段。段の構成が変わった場合は、その並び以降の最初の段とする。
+  def current_step = request_type.approval_step_at(current_step_position)
 
-    scope = organization.users.active
-    scope = department_id ? scope.where(id: Membership.where(department_id: department_id).select(:user_id))
-                          : scope.where(role: "administrator")
-    scope.where.not(id: applicant_id)
+  # 現在の段の次にある段。無ければ nil。
+  def next_step = request_type.approval_step_after(current_step_position)
+
+  # 現在の段の承認を担当する利用者。
+  def approvers(step = current_step)
+    return organization.users.none if step.nil?
+
+    step.approvers(organization).where.not(id: applicant_id)
   end
 
   def record_creation(actor:)
@@ -138,7 +172,12 @@ class Request < ApplicationRecord
   # 現在の状態は見ない。状態は競合で変わり得るため、
   # 実際に処理できるかどうかは行を占有した change_status だけが決める。
   def decision_authorized_for?(user)
-    applicant_id != user.id && request_type.approvable_by?(user)
+    return false if applicant_id == user.id
+
+    step = current_step
+
+    # 段が無い場合は、種別の担当（管理者）へ委ねる。
+    step ? step.approvable_by?(user) : user.administrator?
   end
 
   # 決裁の操作を画面へ出してよいかどうか。
@@ -147,8 +186,41 @@ class Request < ApplicationRecord
   end
 
   private
+    # 次の段へ進める。状態は pending のままとする。
+    #
+    # 段の記録は決裁と同じ形で残す。承認済みへ至らない承認も、誰がいつ
+    # 決裁したかを追える必要がある。
+    def advance_step(actor:, comment:)
+      advanced = false
+      following = nil
+
+      with_lock do
+        next unless status == "pending"
+
+        following = next_step
+        next if following.nil?
+
+        decided = current_step_position
+        self.current_step_position = following.position
+        save!
+        request_activities.create!(actor: actor, action: "approved", comment: comment,
+                                  step_position: decided)
+        advanced = true
+      end
+
+      # 次の段の担当へ知らせる。占有したまま送らない。
+      if advanced
+        Notification.deliver_to_all(users: approvers(following), subject: self, event: "request_submitted")
+      end
+
+      advanced
+    end
+
     def decide(to:, action:, actor:, comment:, event:)
-      changed = change_status(to: to, actor: actor, action: action, comment: comment) do
+      decided_position = current_step_position
+
+      changed = change_status(to: to, actor: actor, action: action, comment: comment,
+                              step_position: decided_position) do
         self.decided_at = Time.current
       end
 
@@ -174,7 +246,7 @@ class Request < ApplicationRecord
     #
     # 通知や外部への送信はここへ含めない。占有したまま外部を待つと、
     # 送信の遅れがそのまま他の操作の待ち時間になる。
-    def change_status(to:, actor:, action:, comment: nil)
+    def change_status(to:, actor:, action:, comment: nil, step_position: nil)
       changed = false
 
       with_lock do
@@ -183,7 +255,8 @@ class Request < ApplicationRecord
         self.status = to
         yield if block_given?
         save!
-        request_activities.create!(actor: actor, action: action, comment: comment)
+        request_activities.create!(actor: actor, action: action, comment: comment,
+                                  step_position: step_position)
         changed = true
       end
 

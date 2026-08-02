@@ -1,14 +1,32 @@
+<%# 段の階層は 1 度だけ読む。段ごとに読むと、段の数だけ問い合わせが増える。 %>
+<% departments = Department.with_ancestors(current_organization.departments.ordered) %>
+
 <%= form_with model: request_type, class: "form stack" do |form| %>
   <%= render "shared/error_messages", record: request_type %>
 
   <%= form.field :name, :text_field, required: true %>
   <%= form.field :code, :text_field, required: true %>
   <%= form.field :description, :text_area, rows: 4 %>
-  <%= form.field :approver_department_id, :collection_select,
-                 Department.with_ancestors(current_organization.departments.ordered),
-                 :id, :display_path,
-                 { include_blank: t("request_types.form.approver_unset") },
-                 hint: t("request_types.form.approver_hint") %>
+  <fieldset class="form__fieldset">
+    <legend class="form__label"><%= t("request_types.form.approval_steps") %></legend>
+    <%= form_hints t("request_types.form.approval_steps_hint") %>
+
+    <%# 既にある段と、空の 1 段を並べる。JavaScript を使わずに増やせるようにする。 %>
+    <%= form.fields_for :approval_steps do |step_form| %>
+      <%= step_form.field :position, :number_field %>
+      <%= step_form.field :approver_department_id, :collection_select,
+                          departments, :id, :display_path,
+                          { include_blank: t("request_types.form.approver_unset") } %>
+
+      <% unless step_form.object.new_record? %>
+        <%= inline_field do %>
+          <%= step_form.check_box :_destroy %>
+          <%= step_form.label :_destroy, t("request_types.form.remove_step"),
+                              class: ApplicationFormBuilder::LABEL_CLASS %>
+        <% end %>
+      <% end %>
+    <% end %>
+  </fieldset>
   <%= form.field :position, :number_field %>
 
   <%= inline_field hint: t("request_types.form.active_hint") do %>

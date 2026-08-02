@@ -2,7 +2,6 @@ leave:
   organization: main
   name: 休暇届
   code: leave
-  approver_department: sales
   position: 10
 
 expense:

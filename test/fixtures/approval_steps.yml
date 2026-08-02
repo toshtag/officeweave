@@ -1,0 +1,18 @@
+<%# 単段の種別。これまでの「承認部門」と同じ担当になる。 %>
+leave_first:
+  request_type: leave
+  approver_department: sales
+  position: 10
+
+<%# 部門を指定しない段。管理者が担当する。 %>
+expense_first:
+  request_type: expense
+  position: 10
+
+retired_first:
+  request_type: retired_type
+  position: 10
+
+other_org_first:
+  request_type: other_org_type
+  position: 10
