@@ -12,9 +12,9 @@
 
 ```text
 現在の Phase: R6
-直近完了 Task: R6-T3
+直近完了 Task: R6-T4
 進行中:        なし
-次に実行:      R6-T4
+次に実行:      R6-T5
 ```
 
 ## P0 プロジェクト契約
@@ -435,7 +435,7 @@ R0 の完了後に行った保守性のレビューで確認した問題を、Gi
 | R6-T1 | `r6/t1-document-implementation-drift` | [#136](https://github.com/toshtag/OfficeWeave/issues/136) | 規約と品質基盤の文書を実装へそろえる     | 完了  |
 | R6-T2 | `r6/t2-environment-documentation`     | [#133](https://github.com/toshtag/OfficeWeave/issues/133) | 環境変数の説明の正本を 1 か所へ定める   | 完了  |
 | R6-T3 | `r6/t3-form-field-helper`             | [#132](https://github.com/toshtag/OfficeWeave/issues/132) | 入力欄の組み立てを 1 か所へまとめる    | 完了  |
-| R6-T4 | `r6/t4-test-layers`                   | [#137](https://github.com/toshtag/OfficeWeave/issues/137) | テストの置き場所を方針の層へそろえる     | 未着手 |
+| R6-T4 | `r6/t4-test-layers`                   | [#137](https://github.com/toshtag/OfficeWeave/issues/137) | テストの置き場所を方針の層へそろえる     | 完了  |
 | R6-T5 | `r6/t5-verification-scope`            | [#134](https://github.com/toshtag/OfficeWeave/issues/134) | 総合検証を自動で確かめられないものへ絞る   | 未着手 |
 | R6-T6 | `r6/t6-execution-queue-scope`         | [#135](https://github.com/toshtag/OfficeWeave/issues/135) | 実行キューを現在地とタスク表へ絞る      | 未着手 |
 
