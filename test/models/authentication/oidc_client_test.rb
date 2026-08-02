@@ -16,6 +16,9 @@ module Authentication
     # 並列実行では、他の worker が同じ 443 番を使う。
     self.use_transactional_tests = false
 
+    # 発見の結果は処理系の中で共有する。持ち越すと、往復の回数を確かめられない。
+    setup { Oidc::Client.reset_cache! }
+
     test "発見の経路から端点と鍵を読む" do
       with_oidc_provider do |provider|
         client = build(provider)
@@ -114,7 +117,7 @@ module Authentication
     test "code を id_token へ交換する" do
       expected = OidcProviderTestHelper.id_token
 
-      with_oidc_provider("/token" => { id_token: expected }) do |provider|
+      with_oidc_provider({ "/token" => { id_token: expected } }) do |provider|
         assert_equal expected, exchange(provider)
         assert_equal "/token", provider.path_of(1)
       end
