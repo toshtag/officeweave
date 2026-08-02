@@ -31,12 +31,16 @@
 
       <dt><%= t("requests.approval_route") %></dt>
       <dd>
+        <%# 経路は提出の時点の段を写したもの。種別の段を後から変えても変わらない。 %>
         <ol class="list-plain">
-          <% @request.request_type.approval_steps.each do |step| %>
+          <% @request.route_steps.each do |step| %>
             <li>
               <%= step.approver_department&.display_path || t("request_types.approver_administrators") %>
-              <%# 待っている段を示す。多段では、どこで止まっているかが要る。 %>
-              <% if @request.status == "pending" && step.position == @request.current_step_position %>
+              <% if step.try(:approved?) %>
+                <%= t("requests.approved_by", name: step.approver&.name) %>
+                <%= l(step.approved_at, format: :short) %>
+              <% elsif @request.status == "pending" && step.position == @request.current_step_position %>
+                <%# 待っている段を示す。多段では、どこで止まっているかが要る。 %>
                 <span class="status status--muted"><%= t("requests.awaiting_step") %></span>
               <% end %>
             </li>

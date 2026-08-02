@@ -440,6 +440,7 @@ en:
   requests:
     approval_route: Approval route
     awaiting_step: Awaiting
+    approved_by: "Approved by %{name}"
     created: The request has been created.
     updated: The request has been updated.
     submitted: The request has been submitted.

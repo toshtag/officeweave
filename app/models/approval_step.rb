@@ -6,38 +6,18 @@
 # 並びは position で表す。値は連続していなくてよい。間へ段を足せるように
 # するためであり、部門や種別の並びと同じ考え方である。
 class ApprovalStep < ApplicationRecord
-  belongs_to :request_type
-  belongs_to :approver_department, class_name: "Department", optional: true
+  include ApprovalStepBehavior
 
-  validates :position, presence: true,
-                       uniqueness: { scope: :request_type_id },
-                       numericality: { only_integer: true }
+  belongs_to :request_type
+
+  validates :position, uniqueness: { scope: :request_type_id }
   validate :approver_department_must_be_in_same_organization
 
   # 最後の段は消せない。1 段も無い種別は、提出しても誰も担当しない。
   before_destroy :preserve_last_step
 
-  scope :ordered, -> { order(:position, :id) }
-
-  # この段の承認を担当できる利用者かどうか。
-  #
-  # 管理者はすべての段を担当する。段を持つ前から、管理者はすべての種別を
-  # 担当していた。その範囲を狭めない。
-  def approvable_by?(user)
-    return true if user.administrator?
-    return false if approver_department_id.nil?
-
-    user.memberships.exists?(department_id: approver_department_id)
-  end
-
-  # この段を担当する利用者。部門を指定しない段は管理者とする。
-  def approvers(organization)
-    scope = organization.users.active
-
-    approver_department_id ? scope.where(id: Membership.where(department_id: approver_department_id)
-                                                       .select(:user_id))
-                           : scope.where(role: "administrator")
-  end
+  # 申請へ写すための値。写した先の表と同じ意味の列だけを渡す。
+  def snapshot_attributes = { position: position, approver_department_id: approver_department_id }
 
   private
     # 組織をまたぐ参照を作らない。種別と同じ組織の部門だけを指定できる。
