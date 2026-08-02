@@ -17,7 +17,10 @@ Rails.application.routes.draw do
   resources :events
 
   # 監査記録。
-  resources :audit_events, only: %i[index]
+  resources :audit_events, only: %i[index] do
+    # 一覧と同じ絞り込みで書き出す。
+    get :export, on: :collection
+  end
 
   # 利用者と部門の入出力。
   get "data_transfers" => "data_transfers#show", as: :data_transfers

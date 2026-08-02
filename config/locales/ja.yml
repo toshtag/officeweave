@@ -675,6 +675,9 @@ ja:
         one: 記録は 1 日を過ぎると消えます。
         other: 記録は %{count} 日を過ぎると消えます。
       retention_none: 記録は消えません。保持期間は設定されていません。
+      export: CSV で書き出す
+    export:
+      too_many: 一度に書き出せるのは %{limit} 件までです。該当は %{count} 件あります。絞り込むか、コマンドから書き出してください。
     actions:
       signed_in: ログイン
       sign_in_failed: ログイン失敗
@@ -697,3 +700,4 @@ ja:
       webhook_endpoint_deleted: 送信先の削除
       users_imported: 利用者の取り込み
       users_exported: 利用者の書き出し
+      audit_events_exported: 監査記録の書き出し

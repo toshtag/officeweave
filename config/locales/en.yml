@@ -655,6 +655,9 @@ en:
         one: Records are removed after 1 day.
         other: Records are removed after %{count} days.
       retention_none: Records are never removed. No retention period is configured.
+      export: Export as CSV
+    export:
+      too_many: "Up to %{limit} records can be exported at once. %{count} records match. Narrow the filter, or export from the command line."
     actions:
       signed_in: Signed in
       sign_in_failed: Sign-in failed
@@ -677,3 +680,4 @@ en:
       webhook_endpoint_deleted: Endpoint deleted
       users_imported: Users imported
       users_exported: Users exported
+      audit_events_exported: Audit log exported
