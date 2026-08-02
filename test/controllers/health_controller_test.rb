@@ -1,4 +1,5 @@
 require "test_helper"
+require "tmpdir"
 
 class HealthControllerTest < ActionDispatch::IntegrationTest
   test "依存先が正常なら ok を返す" do
@@ -56,11 +57,20 @@ class HealthControllerTest < ActionDispatch::IntegrationTest
   test "確かめる先を毎回書き込みで試さない" do
     # 稼働確認は監視から繰り返し呼ばれる。1 回ごとにファイルを作ると、
     # 監視の間隔がそのまま書き込みの回数になる。
-    before = Dir.glob(File.join(ActiveStorage::Blob.service.root, "*")).size
+    #
+    # 数えるのはこのテストだけの場所とする。共有の保存先を数えると、
+    # 並列実行の他のテストが添付を保存した分まで数に入る。
+    service = ActiveStorage::Blob.service
+    probe = Dir.mktmpdir("officeweave-health-probe")
+    service.define_singleton_method(:root) { probe }
 
     3.times { get health_url }
 
-    assert_equal before, Dir.glob(File.join(ActiveStorage::Blob.service.root, "*")).size
+    assert_response :success
+    assert_empty Dir.children(probe), "稼働確認が保存先へ書き込んでいる"
+  ensure
+    service&.singleton_class&.remove_method(:root)
+    FileUtils.remove_entry(probe) if probe
   end
 
   test "データベースへ到達できない場合は 503 を返す" do
