@@ -419,6 +419,10 @@ ja:
       reservable_hint: 使えなくなった設備・備品は、削除せずにここを外してください。過去の予約の記録が残ります。
 
   reservations:
+    updated: 予約を変更しました。
+    edit:
+      title: 予約の変更
+      heading: 予約の変更
     created: 予約しました。
     destroyed: 予約を取り消しました。
     cancel: 取り消す

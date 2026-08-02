@@ -99,9 +99,11 @@ class ReservationChangeTest < ActionDispatch::IntegrationTest
   test "他の組織の予約は扱えない" do
     sign_in_as users(:taro)
 
-    assert_raises(ActiveRecord::RecordNotFound) do
-      get edit_reservation_url(reservations(:other_org_reservation))
-    end
+    # 見つからない扱いとする。他の組織に記録があるかどうかを応答から
+    # 読み取れないようにする。
+    get edit_reservation_url(reservations(:other_org_reservation))
+
+    assert_response :not_found
   end
 
   test "変更の画面を開ける" do

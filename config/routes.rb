@@ -83,7 +83,7 @@ Rails.application.routes.draw do
   end
 
   # 設備・備品の予約。
-  resources :reservations, only: %i[index new create destroy]
+  resources :reservations, only: %i[index new create edit update destroy]
 
   # 設備・備品。使えなくなったものは削除せず、予約を受け付けない状態にする。
   resources :resources, except: %i[destroy]

@@ -11,8 +11,9 @@ room_a_afternoon:
   organization: main
   resource: meeting_room_a
   reserver: hanako
-  starts_at: <%= 1.day.from_now.change(hour: 13).to_fs(:db) %>
-  ends_at: <%= 1.day.from_now.change(hour: 14).to_fs(:db) %>
+  <%# 既存のテストが空き時間として使う 13 時台は避ける。 %>
+  starts_at: <%= 1.day.from_now.change(hour: 15).to_fs(:db) %>
+  ends_at: <%= 1.day.from_now.change(hour: 16).to_fs(:db) %>
   purpose: 打ち合わせ
 
 <%# 別の組織の予約。組織をまたいで扱えないことの確認に使う。 %>

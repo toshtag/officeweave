@@ -36,7 +36,11 @@
               <td><%= reservation.purpose %></td>
               <td><%= reservation.reserver.name %></td>
               <td>
-                <% if reservation.cancelable_by?(Current.user) %>
+                <% if reservation.modifiable_by?(Current.user) %>
+                  <%= link_to t("common.edit"), edit_reservation_path(reservation),
+                              class: "button button--quiet" %>
+                <% end %>
+                <% if reservation.modifiable_by?(Current.user) %>
                   <%= button_to t("reservations.cancel"), reservation, method: :delete,
                                 class: "button button--quiet" %>
                 <% end %>
