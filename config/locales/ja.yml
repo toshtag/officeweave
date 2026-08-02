@@ -564,6 +564,19 @@ ja:
       request_approved: "申請が承認されました: %{title}"
       request_returned: "申請が差し戻されました: %{title}"
 
+  operations_mailer:
+    report:
+      subject:
+        one: 稼働に 1 件の異常があります
+        other: 稼働に %{count} 件の異常があります
+      heading:
+        one: 次の 1 件を確認してください。
+        other: 次の %{count} 件を確認してください。
+      statuses:
+        error: "[失敗]"
+        warning: "[注意]"
+      next_step: 状態は次のコマンドで確認できます。
+      recipient_hint: この知らせは OPERATIONS_EMAIL に届きます。
   notification_mailer:
     notify:
       open: 次の場所で確認できます。

@@ -544,6 +544,19 @@ en:
       request_approved: "Your request was approved: %{title}"
       request_returned: "Your request was returned: %{title}"
 
+  operations_mailer:
+    report:
+      subject:
+        one: 1 operational issue detected
+        other: "%{count} operational issues detected"
+      heading:
+        one: Check the following item.
+        other: "Check the following %{count} items."
+      statuses:
+        error: "[error]"
+        warning: "[warning]"
+      next_step: Check the current state with these commands.
+      recipient_hint: This notice is sent to OPERATIONS_EMAIL.
   notification_mailer:
     notify:
       open: You can review it here.

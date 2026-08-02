@@ -43,7 +43,9 @@ class OperationalReportTest < ActiveSupport::TestCase
   test "実際の診断からも組み立てられる" do
     report = OperationalReport.new
 
-    # 手元の構成では失敗しない。項目の形だけを確かめる。
+    # 手元の構成で何が出るかは実行環境による。項目の形だけを確かめる。
+    assert_kind_of Array, report.issues
+
     report.issues.each do |issue|
       assert issue[:name].present?
       assert_includes %i[error warning], issue[:status]

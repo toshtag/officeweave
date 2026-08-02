@@ -43,9 +43,14 @@ class Diagnostics
   end
 
   private
-    def ok(name, detail = nil) = { name: name, status: :ok, detail: detail }
-    def warning(name, detail) = { name: name, status: :warning, detail: detail }
-    def error(name, detail) = { name: name, status: :error, detail: detail }
+    # notify は、運用者へ知らせる価値があるかを表す。
+    #
+    # 失敗は必ず知らせる。注意は、放っておくと運用が成り立たなくなるものだけを
+    # 知らせる。設定として選んだ結果の注意を毎日送ると、通知そのものが
+    # 読まれなくなる。判断はここに置き、通知する側では判定しない。
+    def ok(name, detail = nil) = { name: name, status: :ok, detail: detail, notify: false }
+    def warning(name, detail, notify: false) = { name: name, status: :warning, detail: detail, notify: notify }
+    def error(name, detail) = { name: name, status: :error, detail: detail, notify: true }
 
     def database_connection
       version = ActiveRecord::Base.connection.select_value("SELECT version()")
@@ -365,7 +370,8 @@ class Diagnostics
         error("ジョブの実行",
               "worker が動いていません。docker compose -f compose.production.yaml up -d worker を実行してください。")
       else
-        warning("ジョブの実行", "worker が動いていません。ジョブは溜まるだけで実行されません。")
+        # 運用環境では失敗として扱う。開発環境でも、送信は行われない。
+        warning("ジョブの実行", "worker が動いていません。ジョブは溜まるだけで実行されません。", notify: true)
       end
     rescue StandardError => exception
       error("ジョブの実行", exception.message)
@@ -383,7 +389,9 @@ class Diagnostics
       if count.zero?
         ok("失敗したジョブ", "なし")
       else
-        warning("失敗したジョブ", "#{count} 件あります。bin/jobs_status --failed で内容を確認してください。")
+        # 送られないままの通知が残っている。放っておいても解消しない。
+        warning("失敗したジョブ", "#{count} 件あります。bin/jobs_status --failed で内容を確認してください。",
+                notify: true)
       end
     rescue StandardError => exception
       error("失敗したジョブ", exception.message)

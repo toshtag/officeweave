@@ -5,6 +5,8 @@ require "test_helper"
 # 宛先は業務の管理者ではなく、環境を預かる運用者とする。
 # 送るのは異常があるときだけとし、無事を毎日知らせない。
 class ReportOperationalIssuesJobTest < ActiveJob::TestCase
+  include ActionMailer::TestHelper
+
   teardown do
     ENV.delete("OPERATIONS_EMAIL")
   end
