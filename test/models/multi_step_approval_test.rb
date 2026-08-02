@@ -25,7 +25,9 @@ class MultiStepApprovalTest < ActiveSupport::TestCase
 
     assert_equal "pending", @request.status
     assert_equal @first.position, @request.current_step_position
-    assert_equal @first, @request.current_step
+    # 待っている段は、提出のときに写した経路の段として返る（R3-T3）。
+    assert_equal @first.position, @request.current_step.position
+    assert_equal @first.approver_department, @request.current_step.approver_department
   end
 
   test "1 段目の承認では承認済みにならない" do
@@ -142,9 +144,10 @@ class MultiStepApprovalTest < ActiveSupport::TestCase
     @request.submit(actor: users(:hanako))
     @second.destroy!
 
-    # 1 段目を承認した時点で、次の段は無い。承認済みへ進める。
+    # 提出のときに写した経路（R3-T3）で進む。2 段目は写した経路に残っている。
     assert @request.approve(actor: users(:approver))
-    assert_equal "approved", @request.reload.status
+    assert_equal "pending", @request.reload.status
+    assert_equal @second.position, @request.current_step_position
   end
 
   test "段を足しても、進行中の申請の現在の段は変わらない" do

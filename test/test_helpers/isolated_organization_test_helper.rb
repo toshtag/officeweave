@@ -42,6 +42,7 @@ module IsolatedOrganizationTestHelper
       Notification.where(subject_type: "Announcement", subject_id: ids.announcements).delete_all
       RequestActivity.where(request_id: ids.requests).delete_all
       ApprovalStep.where(request_type_id: ids.request_types).delete_all
+      RequestApprovalStep.where(request_id: ids.requests).delete_all
       AnnouncementRead.where(user_id: ids.users).delete_all
       AnnouncementDepartment.where(announcement_id: ids.announcements).delete_all
       EventDepartment.where(event_id: ids.events).delete_all
