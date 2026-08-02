@@ -568,6 +568,38 @@ ALTER SEQUENCE public.event_departments_id_seq OWNED BY public.event_departments
 
 
 --
+-- Name: event_participants; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.event_participants (
+    id bigint NOT NULL,
+    event_id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: event_participants_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.event_participants_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: event_participants_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.event_participants_id_seq OWNED BY public.event_participants.id;
+
+
+--
 -- Name: events; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1216,6 +1248,13 @@ ALTER TABLE ONLY public.event_departments ALTER COLUMN id SET DEFAULT nextval('p
 
 
 --
+-- Name: event_participants id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_participants ALTER COLUMN id SET DEFAULT nextval('public.event_participants_id_seq'::regclass);
+
+
+--
 -- Name: events id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1446,6 +1485,14 @@ ALTER TABLE ONLY public.documents
 
 ALTER TABLE ONLY public.event_departments
     ADD CONSTRAINT event_departments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: event_participants event_participants_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_participants
+    ADD CONSTRAINT event_participants_pkey PRIMARY KEY (id);
 
 
 --
@@ -1907,6 +1954,34 @@ CREATE UNIQUE INDEX index_event_departments_on_pair ON public.event_departments 
 
 
 --
+-- Name: index_event_participants_on_event_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_event_participants_on_event_id ON public.event_participants USING btree (event_id);
+
+
+--
+-- Name: index_event_participants_on_event_id_and_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_event_participants_on_event_id_and_user_id ON public.event_participants USING btree (event_id, user_id);
+
+
+--
+-- Name: index_event_participants_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_event_participants_on_user_id ON public.event_participants USING btree (user_id);
+
+
+--
+-- Name: index_event_participants_on_user_id_and_event_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_event_participants_on_user_id_and_event_id ON public.event_participants USING btree (user_id, event_id);
+
+
+--
 -- Name: index_events_on_organization_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2346,6 +2421,14 @@ ALTER TABLE ONLY public.requests
 
 
 --
+-- Name: event_participants fk_rails_565ef9d942; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_participants
+    ADD CONSTRAINT fk_rails_565ef9d942 FOREIGN KEY (event_id) REFERENCES public.events(id);
+
+
+--
 -- Name: requests fk_rails_59d5c2771d; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2578,6 +2661,14 @@ ALTER TABLE ONLY public.request_activities
 
 
 --
+-- Name: event_participants fk_rails_d47e705293; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_participants
+    ADD CONSTRAINT fk_rails_d47e705293 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
 -- Name: users fk_rails_d7b9ff90af; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2672,6 +2763,7 @@ ALTER TABLE ONLY public.announcement_departments
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260803050000'),
 ('20260803040000'),
 ('20260803030000'),
 ('20260803020000'),

@@ -106,6 +106,7 @@ ja:
         visibility: 公開範囲
         department_ids: 公開先の部門
         owner: 登録者
+        participant_ids: 参加者
       resource:
         name: 名称
         code: 識別子
@@ -394,6 +395,7 @@ ja:
       heading: 予定の編集
     form:
       departments_hint: 公開範囲が「指定した部門」の場合にだけ使われます。
+      participants_hint: 指名した利用者は、公開範囲に関わらずこの予定を見られます。
 
   resources:
     created: 設備・備品を登録しました。
@@ -586,6 +588,7 @@ ja:
       empty: 通知はありません。
     events:
       announcement_published: "お知らせが公開されました: %{title}"
+      event_invited: "予定に指名されました: %{title}"
       request_submitted: "申請が提出されました: %{title}"
       request_approved: "申請が承認されました: %{title}"
       request_returned: "申請が差し戻されました: %{title}"
@@ -667,6 +670,7 @@ ja:
     mail_notifications_hint: 選択を外した種類は、画面には残りますがメールでは届きません。
     events:
       announcement_published: お知らせが公開されたとき
+      event_invited: 予定に指名されたとき
       request_submitted: 申請が提出されたとき
       request_approved: 自分の申請が承認されたとき
       request_returned: 自分の申請が差し戻されたとき

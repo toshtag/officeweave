@@ -20,6 +20,11 @@
   </div>
 
   <dl class="definition">
+    <% if @event.participants.any? %>
+      <dt><%= Event.human_attribute_name(:participant_ids) %></dt>
+      <dd data-event-participants><%= @event.participants.ordered.map(&:name).to_sentence %></dd>
+    <% end %>
+
     <dt><%= Event.human_attribute_name(:visibility) %></dt>
     <dd>
       <%= t("events.visibilities.#{@event.visibility}") %>
