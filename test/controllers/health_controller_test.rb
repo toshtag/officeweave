@@ -22,14 +22,33 @@ class HealthControllerTest < ActionDispatch::IntegrationTest
     assert_equal "ok", body.dig("checks", "storage")
   end
 
-  test "保存領域へ書けない場合は 503 を返す" do
+  test "保存領域を作れない場合は 503 を返す" do
+    # 経路の途中がファイルであれば、保存先のディレクトリは作れない。
     service = ActiveStorage::Blob.service
-    service.define_singleton_method(:root) { "/officeweave-does-not-exist" }
+    blocked = Rails.root.join("Gemfile/storage").to_s
+    service.define_singleton_method(:root) { blocked }
 
     get health_url
 
     assert_response :service_unavailable
     assert_equal "error", response.parsed_body.dig("checks", "storage")
+  ensure
+    service&.singleton_class&.remove_method(:root)
+  end
+
+  test "保存先がまだ作られていなくても、作れるなら ok とする" do
+    # 保存先は最初の保存で作られる。1 度も保存していない環境で、
+    # 稼働確認だけが失敗する状態にしない。
+    service = ActiveStorage::Blob.service
+    absent = Rails.root.join("tmp/storage-not-created-yet")
+    FileUtils.rm_rf(absent)
+    service.define_singleton_method(:root) { absent.to_s }
+
+    get health_url
+
+    assert_response :success
+    assert_equal "ok", response.parsed_body.dig("checks", "storage")
+    refute File.exist?(absent), "稼働確認が保存先を作っている"
   ensure
     service&.singleton_class&.remove_method(:root)
   end

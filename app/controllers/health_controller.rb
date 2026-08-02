@@ -57,8 +57,23 @@ class HealthController < ApplicationController
       # ローカルディスク以外の保存先は、ここでは判定しない。
       return "ok" if root.blank?
 
-      File.writable?(root.to_s) ? "ok" : "error"
+      base = existing_ancestor_of(root)
+
+      # 途中がファイルであれば、保存先のディレクトリは作れない。
+      return "error" unless base.directory?
+
+      File.writable?(base.to_s) ? "ok" : "error"
     rescue StandardError
       "error"
+    end
+
+    # 保存先は最初の保存で作られる。まだ無い場合は、存在する一番近い親を見る。
+    #
+    # 作って確かめる形にしない。稼働確認が構成を変えることになり、
+    # 監視の間隔でディレクトリが作られる。
+    def existing_ancestor_of(root)
+      path = Pathname.new(root.to_s)
+      path = path.parent until path.exist? || path.root?
+      path
     end
 end
