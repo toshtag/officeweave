@@ -286,6 +286,36 @@ jobs:
       - name: 構成を診断する
         run: docker compose -f compose.production.yaml exec -T web bin/diagnose
 
+      # 応答の速さは動かす機械によって変わるため、合否には使わない。
+      # ここで確かめるのは、同時に要求が来たときに応答が返り続けることと、
+      # 測る手順そのものが動くことである。規模は仕事の時間に収まる量とする。
+      - name: 負荷測定用のデータを積む
+        run: |
+          docker compose -f compose.production.yaml exec -T \
+            -e LOAD_SAMPLE_SCALE=4 -e LOAD_SAMPLE_PASSWORD="${LOAD_SAMPLE_PASSWORD}" \
+            web bin/rails officeweave:load_sample
+        env:
+          LOAD_SAMPLE_PASSWORD: verification-only-load-password
+
+      - name: 負荷をかけて応答を測る
+        run: script/measure_load
+        env:
+          BASE_URL: http://127.0.0.1:3210
+          LOAD_MEASUREMENT_HOST: localhost
+          LOAD_MEASUREMENT_EMAIL: measure@load-sample.invalid
+          LOAD_MEASUREMENT_PASSWORD: verification-only-load-password
+          LOAD_MEASUREMENT_REQUESTS: "100"
+          LOAD_MEASUREMENT_CONNECTIONS: "5"
+
+      - name: 測定の報告を成果物として残す
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: officeweave-load-report
+          path: load_report/
+          retention-days: 30
+          if-no-files-found: ignore
+
       - name: 失敗した場合の記録を出す
         if: failure()
         run: docker compose -f compose.production.yaml logs

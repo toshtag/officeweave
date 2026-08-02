@@ -1,0 +1,184 @@
+#!/usr/bin/env bash
+#
+# 主要な画面の応答を、負荷をかけて測る。
+#
+# 応答の速さは動かす機械によって変わる。合否には使えないため、報告として残す。
+# 数え上げで確かめられるもの（問い合わせの回数、読み込む行）は
+# test/controllers の層が扱う。ここで見るのは、同時に要求が来たときに
+# 応答が返り続けるかである。
+#
+# 測る相手は既に起動している構成とする。この手順では起動も設定も行わない。
+# 配布用の構成で測るのが本来であり、そこは接続情報を持つ側が決める。
+#
+# 使い方:
+#   BASE_URL=http://127.0.0.1:3210 \
+#   LOAD_MEASUREMENT_EMAIL=measure@load-sample.invalid \
+#   LOAD_MEASUREMENT_PASSWORD=... \
+#   script/measure_load
+#
+#   報告は load_report/ へ書き出す。
+#
+# 先に測る対象のデータを積む。
+#   docker compose -f compose.production.yaml exec web bin/rails officeweave:load_sample
+
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+# 負荷をかける道具は digest で固定する。中身が後から変わると、同じ commit を
+# 測っても結果が変わる。版は注記として残す。
+GENERATOR="ghcr.io/hatoo/oha:1.15.0@sha256:57c2247792c1466c88ecc83ddb9253aa0b58dcb852b1d7f2026a0acf7744c965"
+
+BASE_URL="${BASE_URL:-http://127.0.0.1:3210}"
+HOST_HEADER="${LOAD_MEASUREMENT_HOST:-localhost}"
+
+# 要求の総数と同時に開く接続の数。既定は手元で数十秒に収まる量とする。
+REQUESTS="${LOAD_MEASUREMENT_REQUESTS:-200}"
+CONNECTIONS="${LOAD_MEASUREMENT_CONNECTIONS:-10}"
+
+REPORT_DIR="load_report"
+
+# 測る画面。読み込む量の違いが応答へ現れるものを選ぶ。
+PATHS=(
+  "/"
+  "/announcements"
+  "/events"
+  "/documents"
+  "/documents?query=測定"
+  "/requests"
+  "/users"
+  "/audit_events"
+)
+
+: "${LOAD_MEASUREMENT_EMAIL:?測定に使う利用者のメールアドレスを指定してください}"
+: "${LOAD_MEASUREMENT_PASSWORD:?測定に使う利用者のパスワードを指定してください}"
+
+WORK="$(mktemp -d)"
+trap 'rm -rf "$WORK"' EXIT
+
+rm -rf "$REPORT_DIR"
+mkdir -p "$REPORT_DIR"
+
+# 画面と同じ経路でログインし、cookie を得る。
+#
+# 内部の仕組みで作らない。認証を通した状態でなければ、測る対象の画面へ
+# 到達できない。
+sign_in() {
+  local token
+
+  # token は head の meta から取る。画面には言語の切り替えの form も並んでおり、
+  # そちらの hidden な token は送信先が違うため受け付けられない。
+  token="$(curl -sS -c "$WORK/cookies" -H "Host: ${HOST_HEADER}" "${BASE_URL}/session/new" |
+    grep -o 'name="csrf-token" content="[^"]*"' | head -n 1 | cut -d'"' -f4)"
+
+  if [ -z "$token" ]; then
+    echo "ログイン画面から token を取得できませんでした（${BASE_URL}）" >&2
+    exit 1
+  fi
+
+  curl -sS -o /dev/null -b "$WORK/cookies" -c "$WORK/cookies" \
+    -H "Host: ${HOST_HEADER}" \
+    --data-urlencode "authenticity_token=${token}" \
+    --data-urlencode "email_address=${LOAD_MEASUREMENT_EMAIL}" \
+    --data-urlencode "password=${LOAD_MEASUREMENT_PASSWORD}" \
+    "${BASE_URL}/session"
+
+  # cookie が得られたかを、認証の要る画面で確かめる。ここを飛ばすと、
+  # ログイン画面を測り続けて速いという結果になる。
+  local status
+  status="$(curl -sS -o /dev/null -w '%{http_code}' -b "$WORK/cookies" \
+    -H "Host: ${HOST_HEADER}" "${BASE_URL}/users")"
+
+  if [ "$status" != "200" ]; then
+    echo "ログインできませんでした（/users が ${status} を返しました）" >&2
+    exit 1
+  fi
+}
+
+session_cookie() {
+  # Netscape 形式の cookie ファイルから、値だけを取り出す。
+  awk '/\tsession_id\t/ { print "session_id=" $7 }' "$WORK/cookies" | tail -n 1
+}
+
+measure() {
+  local path="$1" name="$2" cookie="$3"
+
+  docker run --rm --network host \
+    -v "$PWD/$REPORT_DIR:/report" \
+    "$GENERATOR" \
+    -n "$REQUESTS" -c "$CONNECTIONS" --no-tui \
+    -H "Cookie: ${cookie}" \
+    -H "Host: ${HOST_HEADER}" \
+    --output-format json \
+    -o "/report/${name}.json" \
+    "${BASE_URL}${path}"
+}
+
+# 報告から、判断に使う値だけを取り出す。
+summarize() {
+  ruby -rjson -e '
+    name, path = ARGV
+    report = JSON.parse(File.read("load_report/#{name}.json"))
+    summary = report.fetch("summary")
+    percentiles = report.fetch("latencyPercentiles", {})
+    status = report.fetch("statusCodeDistribution", {})
+    ok = status.fetch("200", 0)
+
+    printf("%-22s %8.3f %8.3f %8.3f %8.1f %6d/%d\n",
+           path, summary["average"], percentiles.fetch("p95", 0.0), summary["slowest"],
+           summary["requestsPerSec"], ok, status.values.sum)
+  ' "$1" "$2"
+}
+
+echo "測定します: ${BASE_URL}（要求 ${REQUESTS} 件 / 同時 ${CONNECTIONS}）"
+
+sign_in
+cookie="$(session_cookie)"
+
+if [ -z "$cookie" ]; then
+  echo "cookie を取り出せませんでした" >&2
+  exit 1
+fi
+
+index=0
+for path in "${PATHS[@]}"; do
+  name="$(printf 'screen-%02d' "$index")"
+
+  measure "$path" "$name" "$cookie" > /dev/null
+
+  index=$((index + 1))
+done
+
+echo
+printf "%-22s %8s %8s %8s %8s %8s\n" "画面" "平均(s)" "p95(s)" "最遅(s)" "件/秒" "200/全体"
+
+index=0
+failed=0
+for path in "${PATHS[@]}"; do
+  name="$(printf 'screen-%02d' "$index")"
+
+  summarize "$name" "$path"
+
+  # 200 以外が混ざっていれば、測った値は意味を持たない。
+  if ! ruby -rjson -e '
+        report = JSON.parse(File.read("load_report/#{ARGV[0]}.json"))
+        status = report.fetch("statusCodeDistribution", {})
+        exit status.keys == ["200"]
+      ' "$name"; then
+    failed=1
+    echo "  200 以外の応答が混ざっています（${path}）" >&2
+  fi
+
+  index=$((index + 1))
+done
+
+echo
+echo "報告: ${REPORT_DIR}/"
+
+if [ "$failed" -ne 0 ]; then
+  echo "測定は成立していません。応答の内容を確かめてください。" >&2
+  exit 1
+fi
+
+# 速さそのものは合否に使わない。動かす機械によって変わる。
+echo "すべての要求が 200 を返しました。速さは報告として残しています。"
