@@ -7,7 +7,7 @@
 # bin/verify をそのまま呼び出す。手順が二重に管理される状態を作らない。
 
 CI.run do
-  step "準備: 依存とデータベース", "bin/setup --skip-server"
+  step "準備: 依存とデータベース", "bin/setup"
 
   step "書式: Ruby", "bin/rubocop"
 
