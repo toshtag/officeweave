@@ -213,6 +213,72 @@ class DeliverWebhookJobTest < ActiveJob::TestCase
     assert_equal 302, @endpoint.webhook_deliveries.recent_first.first.response_status
   end
 
+  # --- 応答の読み取り ---
+  #
+  # 使うのは応答の状態だけである。本文は読み捨てる。
+  # 上限を超える分を読まないことを、受け取る側が書き込めた量で確かめる。
+
+  # 上限を十分に超え、かつソケットの緩衝より大きい量。
+  # 緩衝へ収まる量だと、送信側が読むのをやめても最後まで書けてしまい、
+  # 打ち切ったのか元から短いのかを区別できない。
+  OVERSIZED_BODY_BYTES = 33 * 1024 * 1024
+
+  test "上限は応答として妥当な大きさに収まる" do
+    assert_operator DeliverWebhookJob::MAXIMUM_RESPONSE_BYTES, :<, OVERSIZED_BODY_BYTES
+  end
+
+  test "上限を超える応答は読み切らない" do
+    written = deliver_to_local_server(status: "200 応答", body_bytes: oversized_body_bytes)
+
+    assert_operator written, :<, oversized_body_bytes, "本文を最後まで読んでいる"
+    assert_equal 200, @endpoint.webhook_deliveries.recent_first.first.response_status
+  end
+
+  test "Content-Length の無い応答も同じ上限で打ち切る" do
+    written = deliver_to_local_server(status: "200 応答", body_bytes: oversized_body_bytes, chunked: true)
+
+    assert_operator written, :<, oversized_body_bytes, "chunked を最後まで読んでいる"
+    assert_equal 200, @endpoint.webhook_deliveries.recent_first.first.response_status
+  end
+
+  test "上限までの応答は最後まで受け取る" do
+    body_bytes = DeliverWebhookJob::MAXIMUM_RESPONSE_BYTES
+    written = deliver_to_local_server(status: "200 応答", body_bytes: body_bytes)
+
+    assert_equal body_bytes, written, "上限までの本文を打ち切っている"
+    assert_equal 200, @endpoint.webhook_deliveries.recent_first.first.response_status
+  end
+
+  test "本文の無い応答は従来どおり成功として記録する" do
+    deliver_to_local_server(status: "204 応答")
+
+    delivery = @endpoint.webhook_deliveries.recent_first.first
+
+    assert_equal 204, delivery.response_status
+    assert_nil delivery.failure_code
+    assert delivery.delivered_at.present?
+  end
+
+  test "上限を超えたことをやり直しの理由にしない" do
+    # 200 は元からやり直さない。上限で打ち切っても、その判断を変えない。
+    assert_nothing_raised do
+      deliver_to_local_server(status: "200 応答", body_bytes: oversized_body_bytes)
+    end
+
+    delivery = @endpoint.webhook_deliveries.recent_first.first
+
+    assert_equal 200, delivery.response_status
+    assert_nil delivery.error_message
+  end
+
+  test "5xx でも本文を読み切らずに記録し、やり直しへ渡す" do
+    written = deliver_to_local_server(status: "500 応答", body_bytes: oversized_body_bytes,
+                                      expect: DeliverWebhookJob::TransientDeliveryError)
+
+    assert_operator written, :<, oversized_body_bytes, "本文を最後まで読んでいる"
+    assert_equal 500, @endpoint.webhook_deliveries.recent_first.first.response_status
+  end
+
   # --- やり直し ---
 
   test "合計 5 回まで実行し、待ち時間はメールとそろえる" do
@@ -340,17 +406,27 @@ class DeliverWebhookJobTest < ActiveJob::TestCase
   end
 
   private
-    # 応答を決めた受信サーバーへ送る。
-    def deliver_to_local_server(status:, payload: { subject_id: 1 })
+    # 応答を決めた受信サーバーへ送り、本文として書き込めた byte 数を返す。
+    #
+    # やり直しへ渡ることを期待する場合は expect へ例外を渡す。
+    # 送信の側で例外が出ても、受け取る側が書き込めた量は確かめられる。
+    def deliver_to_local_server(status:, payload: { subject_id: 1 }, expect: nil, **response)
       address = loopback_address(2)
       @endpoint.update_column(:url, "http://hooks.internal.example/events")
 
-      with_local_server(address, status: status) do |_received|
+      with_local_server(address, status: status, **response) do |_received, written|
         job = DeliverWebhookJob.new
         job.resolver = ->(_hostname, _port) { [ address ] }
         job.allowlist = Set["http://hooks.internal.example:80"]
 
-        job.perform(@endpoint.id, "request_submitted", payload)
+        perform = -> { job.perform(@endpoint.id, "request_submitted", payload) }
+        expect ? assert_raises(expect) { perform.call } : perform.call
+
+        written.call
       end
+    end
+
+    def oversized_body_bytes
+      OVERSIZED_BODY_BYTES
     end
 end

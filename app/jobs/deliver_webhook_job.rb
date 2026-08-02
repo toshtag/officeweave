@@ -20,6 +20,14 @@ class DeliverWebhookJob < ApplicationJob
   READ_TIMEOUT = 10
   WRITE_TIMEOUT = 10
 
+  # 応答の本文を読む量の上限。
+  #
+  # 使うのは応答の状態だけであり、本文は読み捨てる。上限を設けないと、
+  # 宛先が返した分だけをそのまま抱えることになる。
+  # 受け取りの合図として妥当な大きさより十分に大きく、
+  # worker のメモリを脅かさない値にする。
+  MAXIMUM_RESPONSE_BYTES = 64 * 1024
+
   # 初回に加えて 4 回やり直す。合計 5 回まで実行する。
   MAXIMUM_ATTEMPTS = 5
 
@@ -31,6 +39,12 @@ class DeliverWebhookJob < ApplicationJob
   # 宛先の検査による拒否は含めない。設定が変わらない限り結果も変わらない。
   # 恒久的な 4xx も含めない。受け取る側の実装が変わるまで通らない。
   class TransientDeliveryError < StandardError; end
+
+  # 応答の本文が上限を超えたこと。
+  #
+  # 読み取りを打ち切るためだけに使い、この階層の外へは出さない。
+  # 応答の状態は頭部で受け取り済みであり、送信の失敗ではない。
+  class ResponseTooLarge < StandardError; end
 
   # やり直す応答。
   #
@@ -94,11 +108,11 @@ class DeliverWebhookJob < ApplicationJob
       transient = nil
 
       begin
-        response = post(endpoint, destination, body)
-        delivery.response_status = response.code.to_i
+        status = post(endpoint, destination, body)
+        delivery.response_status = status
         delivery.delivered_at = Time.current
 
-        transient = "応答 #{response.code}" if RETRYABLE_STATUSES.include?(delivery.response_status)
+        transient = "応答 #{status}" if RETRYABLE_STATUSES.include?(status)
       rescue *TRANSIENT_NETWORK_ERRORS => error
         delivery.error_message = error.message.truncate(200)
         transient = error.class.name
@@ -113,6 +127,11 @@ class DeliverWebhookJob < ApplicationJob
       raise TransientDeliveryError, "送信をやり直します: #{transient}" if transient
     end
 
+    # 送信し、応答の状態だけを返す。
+    #
+    # 応答そのものを返さない。本文は上限までしか読まないため、
+    # 戻り値から本文へ触れる形にすると、読み切っていないものを
+    # 読み切ったつもりで扱う経路ができる。
     def post(endpoint, destination, body)
       uri = destination.uri
       request = Net::HTTP::Post.new(uri)
@@ -122,9 +141,39 @@ class DeliverWebhookJob < ApplicationJob
       request["X-OfficeWeave-Delivery-Id"] = job_id
       request.body = body
 
+      status = nil
+
       # 送るのは 1 回だけとする。3xx の Location へは追わない。
       # 追うと、検証を通した宛先から内部の宛先へ誘導できてしまう。
-      build_connection(destination).start { |connection| connection.request(request) }
+      build_connection(destination).start do |connection|
+        connection.request(request) do |response|
+          status = response.code.to_i
+          discard_body(response)
+        end
+      end
+
+      status
+    rescue ResponseTooLarge
+      # 状態は頭部で受け取り済みである。打ち切りは失敗として扱わない。
+      status
+    end
+
+    # 本文を読み捨てる。上限を超えた時点で読むのをやめる。
+    #
+    # block を渡さずに応答を受け取ると、Net::HTTP は本文を最後まで
+    # メモリへ読み込む。block を渡し、届いた分の大きさだけを数える。
+    # Content-Length の有無で経路を分けない。数えるのは届いた byte であり、
+    # 申告された長さではない。chunked にも同じ上限が効く。
+    #
+    # 上限を超えたら例外で抜ける。block の中から抜けないと、
+    # Net::HTTP が残りを読み切ってしまう。
+    def discard_body(response)
+      read = 0
+
+      response.read_body do |chunk|
+        read += chunk.bytesize
+        raise ResponseTooLarge if read > MAXIMUM_RESPONSE_BYTES
+      end
     end
 
     # 接続の組み立て。

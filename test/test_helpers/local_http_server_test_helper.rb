@@ -16,30 +16,55 @@ module LocalHttpServerTestHelper
   end
 
   # 受信サーバーを立て、受け取った要求を集める。
-  def with_local_server(address, status: "204 No Content", location: nil)
+  #
+  # body_bytes を渡すと、その大きさの本文を返す。chunked を真にすると
+  # Content-Length を付けず、同じ量を chunk に分けて返す。
+  #
+  # ブロックの第 2 引数では、本文として実際に書き込めた byte 数を読める。
+  # 送信側が途中で読み取りをやめると、書き込みはそこで止まる。
+  # 送った量と返そうとした量の差が、打ち切られたことの証拠になる。
+  def with_local_server(address, status: "204 No Content", location: nil,
+                        body_bytes: 0, chunked: false, chunk_bytes: 4096)
     server = TCPServer.new(address, 80)
-    received = []
+    state = { received: [], written: 0, handled: 0 }
     lock = Mutex.new
 
     acceptor = Thread.new do
       loop do
         socket = server.accept
         entry = read_request(socket)
-        lock.synchronize { received << entry }
-        socket.write(build_response(status, location))
+        lock.synchronize { state[:received] << entry }
+        sent = write_response(socket, status, location, body_bytes, chunked, chunk_bytes)
         socket.close
+        lock.synchronize { state[:written] += sent; state[:handled] += 1 }
       end
     rescue IOError, Errno::EBADF, Errno::EINVAL
       nil
     end
 
-    yield -> { lock.synchronize { received.dup } }
+    yield(-> { lock.synchronize { state[:received].dup } }, -> { written_bytes(state, lock) })
   ensure
     acceptor&.kill
     server&.close
   end
 
   private
+    # 応答を書き終えるのを待ってから、本文として書き込めた量を返す。
+    #
+    # 送信側が読み取りをやめても、こちらが EPIPE を受け取るまでには間がある。
+    # 待たずに読むと、打ち切られたのか元から短いのかを取り違える。
+    def written_bytes(state, lock, timeout: 5)
+      deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + timeout
+
+      until lock.synchronize { state[:handled] == state[:received].size && state[:handled].positive? }
+        break if Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
+
+        sleep 0.01
+      end
+
+      lock.synchronize { state[:written] }
+    end
+
     def read_request(socket)
       request_line = socket.gets.to_s.strip
       headers = {}
@@ -57,10 +82,44 @@ module LocalHttpServerTestHelper
       Received.new(request_line: request_line, headers: headers, body: body)
     end
 
-    def build_response(status, location)
+    # 頭部を書いてから本文を流し、本文として書き込めた byte 数を返す。
+    #
+    # 送信側が上限で読み取りをやめると、書き込んでいる途中で接続が切れる。
+    # 打ち切られたこと自体はこのサーバーの失敗ではないため、静かに終える。
+    def write_response(socket, status, location, body_bytes, chunked, chunk_bytes)
+      socket.write(build_headers(status, location, body_bytes, chunked))
+      write_body(socket, body_bytes, chunked, chunk_bytes)
+    rescue Errno::EPIPE, Errno::ECONNRESET
+      0
+    end
+
+    # 一度に持つのは 1 塊だけとする。返す量そのものを組み立てると、
+    # 上限を超える大きさを試すたびにテスト側が同じだけ抱えてしまう。
+    def write_body(socket, body_bytes, chunked, chunk_bytes)
+      written = 0
+      remaining = body_bytes
+
+      begin
+        while remaining.positive?
+          size = [ chunk_bytes, remaining ].min
+          payload = "a" * size
+          socket.write(chunked ? "#{size.to_s(16)}\r\n#{payload}\r\n" : payload)
+          remaining -= size
+          written += size
+        end
+
+        socket.write("0\r\n\r\n") if chunked
+      rescue Errno::EPIPE, Errno::ECONNRESET
+        # 送信側が読み取りをやめた。ここまでに書き込めた量を返す。
+      end
+
+      written
+    end
+
+    def build_headers(status, location, body_bytes, chunked)
       lines = [ "HTTP/1.1 #{status}" ]
       lines << "Location: #{location}" if location
-      lines << "Content-Length: 0"
+      lines << (chunked ? "Transfer-Encoding: chunked" : "Content-Length: #{body_bytes}")
       lines << "Connection: close"
 
       "#{lines.join("\r\n")}\r\n\r\n"
