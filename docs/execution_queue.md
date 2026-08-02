@@ -12,9 +12,9 @@
 
 ```text
 現在の Phase: R9
-直近完了 Task: R9-T2
+直近完了 Task: R9-T3
 進行中:        なし
-次に実行:      R9-T3
+次に実行:      R9-T4
 ```
 
 ## P0 プロジェクト契約
@@ -261,7 +261,7 @@ R8 の完了後に行った開発体験のレビューで確認した問題を�
 | ----- | -------------------------------- | --------------------------------------------------------- | --------------------------- | --- |
 | R9-T1 | `r9/t1-importmap-removal`        | [#166](https://github.com/toshtag/OfficeWeave/issues/166) | 使っていない配信スクリプトの基盤を取り除く       | 完了  |
 | R9-T2 | `r9/t2-organization-code-contract` | [#167](https://github.com/toshtag/OfficeWeave/issues/167) | 組織内の識別子の契約を 1 か所へまとめる       | 完了  |
-| R9-T3 | `r9/t3-setup-command-contract`   | [#168](https://github.com/toshtag/OfficeWeave/issues/168) | 準備コマンドを準備だけで終わるようにする        | 未着手 |
+| R9-T3 | `r9/t3-setup-command-contract`   | [#168](https://github.com/toshtag/OfficeWeave/issues/168) | 準備コマンドを準備だけで終わるようにする        | 完了  |
 | R9-T4 | `r9/t4-generated-template-cleanup` | [#169](https://github.com/toshtag/OfficeWeave/issues/169) | 実行されない生成雛形と役目を終えた .keep を消す | 未着手 |
 | R9-T5 | `r9/t5-dependency-review-source` | [#170](https://github.com/toshtag/OfficeWeave/issues/170) | 依存追加の審査手順の正本を 1 つに定める       | 未着手 |
 
