@@ -186,9 +186,13 @@ class DeliverWebhookJob < ApplicationJob
     end
   end
 
-  # 名前解決、許可リスト、期限は、テストから差し替える。
+  # 名前解決、許可リスト、期限、証明書の検証元は、テストから差し替える。
   # インスタンスの中に閉じ、他のテストへ漏れる状態を作らない。
-  attr_writer :resolver, :allowlist, :total_deadline
+  #
+  # 証明書の検証元を差し替えられるようにしたのは、HTTPS の経路を
+  # 実行環境の信頼設定に依存せずに確かめるためである。既定は未指定とし、
+  # その場合は Net::HTTP の既定に従う。運用時の挙動は変わらない。
+  attr_writer :resolver, :allowlist, :total_deadline, :certificate_store
 
   def perform(webhook_endpoint_id, event, payload)
     endpoint = WebhookEndpoint.active.find_by(id: webhook_endpoint_id)
@@ -345,6 +349,8 @@ class DeliverWebhookJob < ApplicationJob
         http.use_ssl = true
         http.verify_mode = OpenSSL::SSL::VERIFY_PEER
         http.verify_hostname = true
+        # 未指定なら Net::HTTP の既定に従う。この接続の中だけへ渡す。
+        http.cert_store = @certificate_store if @certificate_store
       end
 
       http

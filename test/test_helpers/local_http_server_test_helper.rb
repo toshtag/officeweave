@@ -17,14 +17,15 @@ module LocalHttpServerTestHelper
   # 上限の抜けを外から確かめられない。
   Plan = Struct.new(:status, :location, :body_bytes, :chunked, :chunk_bytes, :chunk_delay,
                     :status_line_bytes, :header_bytes, :single_header_bytes,
-                    :content_encoding, :broken_encoding, :trailer, :malformed, :greet, :payload,
-                    keyword_init: true)
+                    :content_encoding, :broken_encoding, :trailer, :malformed, :greet,
+                    :total_bytes, :termination, :payload, keyword_init: true)
 
   DEFAULT_PLAN = {
     status: "204 No Content", location: nil, body_bytes: 0, chunked: false,
     chunk_bytes: 4096, chunk_delay: 0, status_line_bytes: 0, header_bytes: 0,
     single_header_bytes: 0, content_encoding: nil, broken_encoding: false,
-    trailer: false, malformed: false, greet: false, payload: nil
+    trailer: false, malformed: false, greet: false,
+    total_bytes: nil, termination: :length, payload: nil
   }.freeze
 
   # プロセスごとに固定のループバックアドレス。
@@ -42,15 +43,21 @@ module LocalHttpServerTestHelper
   # 打ち切られたことの証拠になる。
   def with_local_server(address, **options)
     port = options.delete(:port) || 80
+    tls = options.delete(:tls)
     plan = Plan.new(**DEFAULT_PLAN.merge(options))
     plan.payload = plan.broken_encoding ? broken_payload : compress(plan.body_bytes) if plan.content_encoding
-    server = TCPServer.new(address, port)
+    server = build_server(address, port, tls)
     state = { received: [], written: 0, handled: 0 }
     lock = Mutex.new
 
     acceptor = Thread.new do
       loop do
-        socket = server.accept
+        # 証明書を受け入れない相手では accept そのものが失敗する。
+        socket = begin
+          server.accept
+        rescue OpenSSL::SSL::SSLError, Errno::ECONNRESET
+          next
+        end
         # greet では要求を読まずに返す。TLS を待つ相手へ、平文をすぐ返せる。
         entry = plan.greet ? Received.new : read_request(socket)
         lock.synchronize { state[:received] << entry }
@@ -69,6 +76,17 @@ module LocalHttpServerTestHelper
   end
 
   private
+    # TLS を渡した場合だけ、待ち受けを包む。
+    def build_server(address, port, tls)
+      plain = TCPServer.new(address, port)
+      return plain if tls.nil?
+
+      context = OpenSSL::SSL::SSLContext.new
+      context.cert = tls.certificate
+      context.key = tls.key
+      OpenSSL::SSL::SSLServer.new(plain, context)
+    end
+
     # 応答を書き終えるのを待ってから、書き込めた量を返す。
     #
     # 送信側が読み取りをやめても、こちらが EPIPE を受け取るまでには間がある。
@@ -107,12 +125,40 @@ module LocalHttpServerTestHelper
     # 送信側が上限で読み取りをやめると、書き込んでいる途中で接続が切れる。
     # 打ち切られたこと自体はこのサーバーの失敗ではないため、静かに終える。
     def write_response(socket, plan)
+      return write_exact_total(socket, plan) if plan.total_bytes
+
       written = 0
       written += write_padded(socket) { |emit| write_status_line(emit, plan) }
       written += write_padded(socket) { |emit| write_headers(emit, plan) }
       written + write_payload(socket, plan)
     rescue Errno::EPIPE, Errno::ECONNRESET, IOError
       written
+    end
+
+    # 応答の全体がちょうど指定の byte 数になるよう詰め物で調整して流す。
+    # 上限そのものの境目を、終わり方を変えながら確かめるために使う。
+    def write_exact_total(socket, plan)
+      body = exact_body(plan)
+      base = "HTTP/1.1 #{plan.status}\r\n#{exact_framing(plan, body)}Connection: close\r\n"
+      padding = plan.total_bytes - (base.bytesize + "X-Pad: \r\n".bytesize + 2 + body.bytesize)
+      response = "#{base}X-Pad: #{'p' * padding}\r\n\r\n#{body}"
+      socket.write(response)
+      response.bytesize
+    rescue Errno::EPIPE, Errno::ECONNRESET, IOError
+      0
+    end
+
+    def exact_body(plan)
+      payload = "a" * plan.body_bytes
+      plan.termination == :chunked ? "#{plan.body_bytes.to_s(16)}\r\n#{payload}\r\n0\r\n\r\n" : payload
+    end
+
+    def exact_framing(plan, body)
+      case plan.termination
+      when :chunked then "Transfer-Encoding: chunked\r\n"
+      when :close then ""
+      else "Content-Length: #{body.bytesize}\r\n"
+      end
     end
 
     # 大きさを指定された部分は、まとめて組み立てずに小分けで流す。
