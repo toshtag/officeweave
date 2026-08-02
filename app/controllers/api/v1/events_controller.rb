@@ -2,12 +2,13 @@ module Api
   module V1
     class EventsController < Api::BaseController
       def index
-        events = Event.visible_to(current_user)
-                      .starting_from(from_time)
-                      .chronological
-                      .includes(:owner)
+        page = paginated(Event.visible_to(current_user)
+                              .starting_from(from_time)
+                              .chronological
+                              .includes(:owner))
 
-        render json: { events: events.map { |record| serialize(record) } }
+        render json: { events: page.records.map { |record| serialize(record) },
+                       meta: pagination_meta(page) }
       end
 
       private

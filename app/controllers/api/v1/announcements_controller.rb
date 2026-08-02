@@ -2,9 +2,10 @@ module Api
   module V1
     class AnnouncementsController < Api::BaseController
       def index
-        announcements = Announcement.visible_to(current_user).recent_first.includes(:author)
+        page = paginated(Announcement.visible_to(current_user).recent_first.includes(:author))
 
-        render json: { announcements: announcements.map { |record| serialize(record) } }
+        render json: { announcements: page.records.map { |record| serialize(record) },
+                       meta: pagination_meta(page) }
       end
 
       private
