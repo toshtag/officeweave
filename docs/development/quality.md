@@ -78,11 +78,8 @@ docker compose exec web bin/brakeman --quiet --no-pager --exit-on-warn --exit-on
 docker compose exec web bin/bundler-audit
 ```
 
-ブラウザーへ配信する外部スクリプトも同様に確認する。
-
-```bash
-docker compose exec web bin/importmap audit
-```
+ブラウザーへ配信するスクリプトは持たないため、その監査は行わない。
+配信するようになった時点で、その方式に合う監査を検証へ加える。
 
 ### 脆弱性が見つかった場合
 

@@ -12,7 +12,6 @@ CI.run do
   step "書式: Ruby", "bin/rubocop"
 
   step "セキュリティ: 依存の脆弱性", "bin/bundler-audit"
-  step "セキュリティ: 配信スクリプトの脆弱性", "bin/importmap audit"
   step "セキュリティ: 静的解析", "bin/brakeman --quiet --no-pager --exit-on-warn --exit-on-error"
 
   step "テスト: 全件", "bin/rails test:all"

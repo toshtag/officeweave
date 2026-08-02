@@ -11,10 +11,10 @@
 ## 現在地
 
 ```text
-現在の Phase: R8
-直近完了 Task: R8-T6
+現在の Phase: R9
+直近完了 Task: R9-T1
 進行中:        なし
-次に実行:      なし（R8 完了。次の Phase の着手は別途決める）
+次に実行:      R9-T2
 ```
 
 ## P0 プロジェクト契約
@@ -248,6 +248,22 @@ R7 の完了後に行った性能のレビューで確認した問題を、GitHu
 | R8-T4 | `r8/t4-unread-notification-index` | [#157](https://github.com/toshtag/OfficeWeave/issues/157) | 未読の通知件数に部分索引を置く          | 完了  |
 | R8-T5 | `r8/t5-event-ends-at-index`     | [#158](https://github.com/toshtag/OfficeWeave/issues/158) | 予定の終了時刻の絞り込みに索引を置く       | 完了  |
 | R8-T6 | `r8/t6-reservation-ends-at-index` | [#159](https://github.com/toshtag/OfficeWeave/issues/159) | 予約の終了時刻の絞り込みに索引を置く       | 完了  |
+
+## R9 開発体験
+
+R8 の完了後に行った開発体験のレビューで確認した問題を、GitHub Issue として登録した。
+本 Phase では、それらを影響する範囲の広さと、修正の独立性の順に処理する。
+
+削る量では判断しない。現在かかっている保守の手間、変更時の二重作業、
+更新を落としたときの危険、コマンドの実際の挙動を根拠にする。
+
+| Task  | ブランチ                             | 対応 Issue                                                  | 内容                          | 状態  |
+| ----- | -------------------------------- | --------------------------------------------------------- | --------------------------- | --- |
+| R9-T1 | `r9/t1-importmap-removal`        | [#166](https://github.com/toshtag/OfficeWeave/issues/166) | 使っていない配信スクリプトの基盤を取り除く       | 完了  |
+| R9-T2 | `r9/t2-organization-code-contract` | [#167](https://github.com/toshtag/OfficeWeave/issues/167) | 組織内の識別子の契約を 1 か所へまとめる       | 未着手 |
+| R9-T3 | `r9/t3-setup-command-contract`   | [#168](https://github.com/toshtag/OfficeWeave/issues/168) | 準備コマンドを準備だけで終わるようにする        | 未着手 |
+| R9-T4 | `r9/t4-generated-template-cleanup` | [#169](https://github.com/toshtag/OfficeWeave/issues/169) | 実行されない生成雛形と役目を終えた .keep を消す | 未着手 |
+| R9-T5 | `r9/t5-dependency-review-source` | [#170](https://github.com/toshtag/OfficeWeave/issues/170) | 依存追加の審査手順の正本を 1 つに定める       | 未着手 |
 
 ## 分解の方針
 

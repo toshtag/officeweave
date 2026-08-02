@@ -92,7 +92,6 @@ rails 8.1.3                   公開ゲムリポジトリの最新安定版と�
   サーバー生成 HTML
   ERB
   素の CSS（カスタムプロパティ、カスケードレイヤー）
-  ブラウザー標準の JavaScript モジュール
 
 実行環境:
   Docker Compose
