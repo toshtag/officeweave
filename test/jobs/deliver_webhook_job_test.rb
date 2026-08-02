@@ -473,8 +473,8 @@ class DeliverWebhookJobTest < ActiveJob::TestCase
     address = loopback_address(4)
     @endpoint.update_column(:url, "https://hooks.internal.example/events")
 
-    # TLS を返さないものへ https でつなぐ。handshake の途中で失敗する。
-    with_local_server(address, port: 443, status: "200 応答") do
+    # TLS を待っている相手へ平文を返す。handshake の途中で失敗する。
+    with_local_server(address, port: 443, malformed: true, greet: true) do
       assert_raises(DeliverWebhookJob::TransientDeliveryError) do
         perform_to(address, origin: "https://hooks.internal.example:443")
       end

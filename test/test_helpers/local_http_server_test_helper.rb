@@ -17,13 +17,14 @@ module LocalHttpServerTestHelper
   # 上限の抜けを外から確かめられない。
   Plan = Struct.new(:status, :location, :body_bytes, :chunked, :chunk_bytes, :chunk_delay,
                     :status_line_bytes, :header_bytes, :single_header_bytes,
-                    :content_encoding, :broken_encoding, :trailer, :malformed, :payload, keyword_init: true)
+                    :content_encoding, :broken_encoding, :trailer, :malformed, :greet, :payload,
+                    keyword_init: true)
 
   DEFAULT_PLAN = {
     status: "204 No Content", location: nil, body_bytes: 0, chunked: false,
     chunk_bytes: 4096, chunk_delay: 0, status_line_bytes: 0, header_bytes: 0,
     single_header_bytes: 0, content_encoding: nil, broken_encoding: false,
-    trailer: false, malformed: false, payload: nil
+    trailer: false, malformed: false, greet: false, payload: nil
   }.freeze
 
   # プロセスごとに固定のループバックアドレス。
@@ -50,7 +51,8 @@ module LocalHttpServerTestHelper
     acceptor = Thread.new do
       loop do
         socket = server.accept
-        entry = read_request(socket)
+        # greet では要求を読まずに返す。TLS を待つ相手へ、平文をすぐ返せる。
+        entry = plan.greet ? Received.new : read_request(socket)
         lock.synchronize { state[:received] << entry }
         sent = write_response(socket, plan)
         socket.close
