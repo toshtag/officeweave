@@ -12,8 +12,8 @@
 
 ```text
 現在の Phase: R5
-直近完了 Task: R5-T5
-進行中:        R5-T7
+直近完了 Task: R5-T7
+進行中:        なし
 次に実行:      R5-T8
 ```
 
@@ -315,7 +315,7 @@ OIDC 連携は 3 つに分ける。設定と id_token の検証、認可サー�
 | R5-T4 | `r5/t4-container-scan`            | —        | コンテナの脆弱性を検査する            | 完了  |
 | R5-T6 | `r5/t6-browser-e2e`               | —        | 実ブラウザーで主要な流れを確かめる        | 完了  |
 | R5-T5 | `r5/t5-accessibility-check`       | —        | アクセシビリティを自動で検査する         | 完了  |
-| R5-T7 | `r5/t7-query-count`               | —        | 問い合わせの回数を固定する            | 進行中 |
+| R5-T7 | `r5/t7-query-count`               | —        | 問い合わせの回数を固定する            | 完了  |
 | R5-T8 | `r5/t8-load-measurement`          | —        | 負荷をかけて応答を測る              | 未着手 |
 
 ## R6 保守性
