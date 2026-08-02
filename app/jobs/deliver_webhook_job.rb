@@ -1,4 +1,5 @@
 require "net/http"
+require "timeout"
 
 # 出来事を宛先へ送る。
 #
@@ -28,6 +29,16 @@ class DeliverWebhookJob < ApplicationJob
   # worker のメモリを脅かさない値にする。
   MAXIMUM_RESPONSE_BYTES = 64 * 1024
 
+  # 要求の開始から終了までの上限。
+  #
+  # 上の待ち時間は、いずれも 1 回の操作に効く。それより短い間隔で
+  # 少しずつ返し続ける宛先は、どの上限にも掛からないまま worker を占有できる。
+  # 経過そのものを測り、越えたところで打ち切る。
+  #
+  # 1 回の読み取りが止まった場合は READ_TIMEOUT の側で切れるよう、
+  # それより長くする。逆にすると、一時的な停止までやり直さない失敗になる。
+  TOTAL_DEADLINE = 30
+
   # 初回に加えて 4 回やり直す。合計 5 回まで実行する。
   MAXIMUM_ATTEMPTS = 5
 
@@ -45,6 +56,13 @@ class DeliverWebhookJob < ApplicationJob
   # 読み取りを打ち切るためだけに使い、この階層の外へは出さない。
   # 応答の状態は頭部で受け取り済みであり、送信の失敗ではない。
   class ResponseTooLarge < StandardError; end
+
+  # 通信全体の期限を超えたこと。
+  #
+  # やり直す失敗には含めない。相手は応答を返し続けており、止まってはいない。
+  # 期限に収まらないという結果は、やり直しても変わらない。
+  # やり直すと、同じ占有を最大 5 回繰り返すことになる。
+  class DeadlineExceeded < StandardError; end
 
   # やり直す応答。
   #
@@ -64,9 +82,9 @@ class DeliverWebhookJob < ApplicationJob
            attempts: MAXIMUM_ATTEMPTS,
            wait: ->(executions) { RETRY_INTERVALS.fetch(executions - 1, RETRY_INTERVALS.last) }
 
-  # 名前解決と許可リストは、テストから差し替える。
+  # 名前解決、許可リスト、期限は、テストから差し替える。
   # インスタンスの中に閉じ、他のテストへ漏れる状態を作らない。
-  attr_writer :resolver, :allowlist
+  attr_writer :resolver, :allowlist, :total_deadline
 
   def perform(webhook_endpoint_id, event, payload)
     endpoint = WebhookEndpoint.active.find_by(id: webhook_endpoint_id)
@@ -91,6 +109,10 @@ class DeliverWebhookJob < ApplicationJob
       @resolver || WebhookDestination::DEFAULT_RESOLVER
     end
 
+    def total_deadline
+      @total_deadline || TOTAL_DEADLINE
+    end
+
     def resolve(url)
       WebhookDestination.resolve!(url, resolver: resolver, allowlist: @allowlist)
     rescue WebhookDestination::Error => error
@@ -113,6 +135,10 @@ class DeliverWebhookJob < ApplicationJob
         delivery.delivered_at = Time.current
 
         transient = "応答 #{status}" if RETRYABLE_STATUSES.include?(status)
+      rescue DeadlineExceeded => error
+        # 相手は返し続けており、止まってはいない。やり直しても同じ結果になる。
+        # 通信の失敗より先に受ける。StandardError へ落とすと意図が読めない。
+        delivery.error_message = error.message
       rescue *TRANSIENT_NETWORK_ERRORS => error
         delivery.error_message = error.message.truncate(200)
         transient = error.class.name
@@ -143,12 +169,14 @@ class DeliverWebhookJob < ApplicationJob
 
       status = nil
 
-      # 送るのは 1 回だけとする。3xx の Location へは追わない。
-      # 追うと、検証を通した宛先から内部の宛先へ誘導できてしまう。
-      build_connection(destination).start do |connection|
-        connection.request(request) do |response|
-          status = response.code.to_i
-          discard_body(response)
+      within_deadline do
+        # 送るのは 1 回だけとする。3xx の Location へは追わない。
+        # 追うと、検証を通した宛先から内部の宛先へ誘導できてしまう。
+        build_connection(destination).start do |connection|
+          connection.request(request) do |response|
+            status = response.code.to_i
+            discard_body(response)
+          end
         end
       end
 
@@ -156,6 +184,22 @@ class DeliverWebhookJob < ApplicationJob
     rescue ResponseTooLarge
       # 状態は頭部で受け取り済みである。打ち切りは失敗として扱わない。
       status
+    end
+
+    # 要求の開始から終了までを期限で囲む。
+    #
+    # 頭部の受信も本文の受信も、同じ期限の中に入れる。本文だけを数えると、
+    # 頭部を少しずつ返す宛先が同じ占有を作れる。頭部の読み取りは
+    # Net::HTTP の中にあり、こちらから途中へ入れない。
+    #
+    # 名前解決を子プロセスへ逃がしたのとは事情が違う。getaddrinfo は
+    # C の中で止まり、別の実行単位から止められない。ソケットの読み取りは
+    # 待っている間に割り込みを受け取れるため、同じ実行単位のまま打ち切れる。
+    #
+    # 送出する例外はこの階層のものにする。Timeout::Error のままだと、
+    # やり直す通信の失敗に含まれてしまう。
+    def within_deadline(&block)
+      Timeout.timeout(total_deadline, DeadlineExceeded, "通信全体の期限を超えました", &block)
     end
 
     # 本文を読み捨てる。上限を超えた時点で読むのをやめる。

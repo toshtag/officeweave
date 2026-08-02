@@ -279,6 +279,69 @@ class DeliverWebhookJobTest < ActiveJob::TestCase
     assert_equal 500, @endpoint.webhook_deliveries.recent_first.first.response_status
   end
 
+  # --- 通信全体の期限 ---
+  #
+  # 待ち時間の上限は 1 回の読み取りに効く。それより短い間隔で少しずつ
+  # 返し続ける宛先は、上限に掛からないまま worker を占有できる。
+  # 期限は、要求の開始から終了までの経過で判定する。
+
+  # 4096 byte を 16 byte ずつ 0.1 秒間隔で返す。
+  # 1 回の読み取りは待ち時間の上限に収まるが、読み切るには 25 秒以上かかる。
+  SLOW_RESPONSE = { body_bytes: 4096, chunked: true, chunk_bytes: 16, chunk_delay: 0.1 }.freeze
+
+  test "期限は 1 回の読み取りの上限より長い" do
+    # 1 回の読み取りが止まった場合は、こちらではなく待ち時間の上限で切れる。
+    # 逆にすると、一時的な停止までやり直さない失敗になってしまう。
+    assert_operator DeliverWebhookJob::TOTAL_DEADLINE, :>, DeliverWebhookJob::READ_TIMEOUT
+  end
+
+  test "少しずつ返し続ける応答を期限で打ち切る" do
+    started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+    written = deliver_to_local_server(status: "200 応答", deadline: 0.5, **SLOW_RESPONSE)
+
+    elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
+
+    assert_operator elapsed, :<, 10, "期限で打ち切っていない"
+    assert_operator written, :<, SLOW_RESPONSE[:body_bytes], "本文を最後まで読んでいる"
+  end
+
+  test "期限を超えた送信を、宛先を残さない失敗として記録する" do
+    deliver_to_local_server(status: "200 応答", deadline: 0.5, **SLOW_RESPONSE)
+
+    delivery = @endpoint.webhook_deliveries.recent_first.first
+
+    assert delivery.error_message.present?
+    refute_includes delivery.error_message, "hooks.internal.example"
+    assert_nil delivery.response_status
+    assert_nil delivery.delivered_at
+  end
+
+  test "期限の超過ではやり直さない" do
+    # やり直す応答を返す宛先でも、期限で切れた場合はやり直さない。
+    # やり直すと、同じ占有を最大 5 回繰り返すことになる。
+    assert_nothing_raised do
+      deliver_to_local_server(status: "500 応答", deadline: 0.5, **SLOW_RESPONSE)
+    end
+  end
+
+  test "期限の超過を、やり直す通信の失敗に含めない" do
+    refute_includes DeliverWebhookJob::TRANSIENT_NETWORK_ERRORS, DeliverWebhookJob::DeadlineExceeded
+    # 1 回の読み取りの時間切れは、これまでどおりやり直す。
+    assert_includes DeliverWebhookJob::TRANSIENT_NETWORK_ERRORS, Timeout::Error
+  end
+
+  test "期限の内に終わる応答はこれまでどおり成功する" do
+    deliver_to_local_server(status: "200 応答", deadline: 5,
+                            body_bytes: 64, chunked: true, chunk_bytes: 16, chunk_delay: 0.01)
+
+    delivery = @endpoint.webhook_deliveries.recent_first.first
+
+    assert_equal 200, delivery.response_status
+    assert_nil delivery.error_message
+    assert delivery.delivered_at.present?
+  end
+
   # --- やり直し ---
 
   test "合計 5 回まで実行し、待ち時間はメールとそろえる" do
@@ -410,7 +473,7 @@ class DeliverWebhookJobTest < ActiveJob::TestCase
     #
     # やり直しへ渡ることを期待する場合は expect へ例外を渡す。
     # 送信の側で例外が出ても、受け取る側が書き込めた量は確かめられる。
-    def deliver_to_local_server(status:, payload: { subject_id: 1 }, expect: nil, **response)
+    def deliver_to_local_server(status:, payload: { subject_id: 1 }, expect: nil, deadline: nil, **response)
       address = loopback_address(2)
       @endpoint.update_column(:url, "http://hooks.internal.example/events")
 
@@ -418,6 +481,7 @@ class DeliverWebhookJobTest < ActiveJob::TestCase
         job = DeliverWebhookJob.new
         job.resolver = ->(_hostname, _port) { [ address ] }
         job.allowlist = Set["http://hooks.internal.example:80"]
+        job.total_deadline = deadline if deadline
 
         perform = -> { job.perform(@endpoint.id, "request_submitted", payload) }
         expect ? assert_raises(expect) { perform.call } : perform.call
