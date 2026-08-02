@@ -12,6 +12,38 @@ class HealthControllerTest < ActionDispatch::IntegrationTest
     assert body["checked_at"].present?
   end
 
+  test "ジョブの保存先と保存領域も確かめる" do
+    # ジョブを積めない、添付を保存できないは、画面が開けても機能が壊れている。
+    get health_url
+
+    body = response.parsed_body
+
+    assert_equal "ok", body.dig("checks", "queue")
+    assert_equal "ok", body.dig("checks", "storage")
+  end
+
+  test "保存領域へ書けない場合は 503 を返す" do
+    service = ActiveStorage::Blob.service
+    service.define_singleton_method(:root) { "/officeweave-does-not-exist" }
+
+    get health_url
+
+    assert_response :service_unavailable
+    assert_equal "error", response.parsed_body.dig("checks", "storage")
+  ensure
+    service&.singleton_class&.remove_method(:root)
+  end
+
+  test "確かめる先を毎回書き込みで試さない" do
+    # 稼働確認は監視から繰り返し呼ばれる。1 回ごとにファイルを作ると、
+    # 監視の間隔がそのまま書き込みの回数になる。
+    before = Dir.glob(File.join(ActiveStorage::Blob.service.root, "*")).size
+
+    3.times { get health_url }
+
+    assert_equal before, Dir.glob(File.join(ActiveStorage::Blob.service.root, "*")).size
+  end
+
   test "データベースへ到達できない場合は 503 を返す" do
     # 接続そのものを差し替えると、テストを包むトランザクションが失われる。
     # 問い合わせだけを失敗させて、稼働確認の応答を確認する。
