@@ -8,6 +8,14 @@
     <% end %>
   </div>
 
+  <form class="form form--inline" method="get" action="<%= announcements_path %>">
+    <%= form_field do %>
+      <%= label_tag :query, t("announcements.index.query"), class: "form__label" %>
+      <%= search_field_tag :query, @query, class: "form__input" %>
+    <% end %>
+    <%= submit_tag t("events.index.filter"), class: "button", name: nil %>
+  </form>
+
   <% if @announcements.any? %>
     <ul class="list-cards">
       <% @announcements.each do |announcement| %>

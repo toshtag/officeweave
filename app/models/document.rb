@@ -60,8 +60,26 @@ class Document < ApplicationRecord
     next if term.blank?
 
     pattern = "%#{sanitize_sql_like(term)}%"
-    where(arel_table[:title].matches(pattern).or(arel_table[:body].matches(pattern)))
+    # 添付の名前も対象にする。探す側は、文書の題名ではなく渡された
+    # ファイルの名前を覚えていることがある。
+    #
+    # 結合ではなく副問い合わせで引く。結合すると、名前が一致した添付の数だけ
+    # 同じ文書が並ぶ。
+    where(arel_table[:title].matches(pattern)
+            .or(arel_table[:body].matches(pattern))
+            .or(arel_table[:id].in(attached_document_ids(pattern).arel)))
   }
+
+  # 添付の名前が一致する文書の識別子。
+  #
+  # 保存基盤の表を直に引く。名前は blob が持ち、attachment が文書へ結び付ける。
+  def self.attached_document_ids(pattern)
+    ActiveStorage::Attachment
+      .where(record_type: "Document", name: "attachments")
+      .where(blob_id: ActiveStorage::Blob.where(ActiveStorage::Blob.arel_table[:filename].matches(pattern))
+                                         .select(:id))
+      .select(:record_id)
+  end
 
   # 作成者と管理者だけが変更できる。
   def editable_by?(user)

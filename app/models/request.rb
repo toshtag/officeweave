@@ -53,6 +53,15 @@ class Request < ApplicationRecord
     # 管理者はすべての段を担当する。段を持つ前からの範囲を狭めない。
     user.administrator? ? scope : scope.where(current_step_approvable_by(user))
   }
+  # 題名と本文の部分一致で引く。文書とお知らせと同じ書き方でそろえる。
+  scope :search, ->(query) {
+    term = query.to_s.strip
+    next if term.blank?
+
+    pattern = "%#{sanitize_sql_like(term)}%"
+    where(arel_table[:title].matches(pattern).or(arel_table[:body].matches(pattern)))
+  }
+
   # 種別での絞り込み。指定が無ければ全件を返す。
   scope :with_request_type, ->(request_type_id) {
     next if request_type_id.blank?

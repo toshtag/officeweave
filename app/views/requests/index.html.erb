@@ -23,6 +23,11 @@
   <form class="form form--inline" method="get" action="<%= requests_path %>">
     <%= hidden_field_tag :scope, @scope %>
     <%= form_field do %>
+      <%= label_tag :query, t("requests.index.query"), class: "form__label" %>
+      <%= search_field_tag :query, @query, class: "form__input" %>
+    <% end %>
+
+    <%= form_field do %>
       <%= label_tag :status, Request.human_attribute_name(:status), class: "form__label" %>
       <%= select_tag :status,
                      options_for_select(Request::STATUSES.map { |s| [ t("requests.statuses.#{s}"), s ] }, @status),
@@ -62,7 +67,8 @@
     </div>
 
     <%= render "shared/pagination", page: @page,
-               parameters: { scope: @scope, status: @status, request_type_id: @request_type_id } %>
+               parameters: { scope: @scope, status: @status, request_type_id: @request_type_id,
+                             query: @query } %>
   <% else %>
     <p><%= t("requests.index.empty") %></p>
   <% end %>
