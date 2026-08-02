@@ -2,3 +2,8 @@ taro_sales:
   user: taro
   department: sales
   primary: true
+
+approver_sales:
+  user: approver
+  department: sales
+  primary: true

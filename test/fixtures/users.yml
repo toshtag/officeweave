@@ -27,3 +27,11 @@ outsider_free:
   name: 高橋 四郎
   email_address: shiro@example.com
   password_digest: <%= password_digest %>
+
+# 休暇届の承認部門に所属する一般利用者。
+# 管理者ではない承認担当者から何が見えるかの確認に使う。
+approver:
+  organization: main
+  name: 鈴木 五郎
+  email_address: goro@example.com
+  password_digest: <%= password_digest %>
