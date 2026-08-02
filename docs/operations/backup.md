@@ -158,10 +158,97 @@ BACKUP_KEEP=7 script/production_backup /var/backups/officeweave
 残っている書庫が期限だけで消えることを避けるためである。
 日数で管理する場合は、保管先の仕組み側で行う。
 
+### 定期的な取得
+
+取得はホストの時刻起動から呼ぶ。製品側に時刻起動の仕組みは持たない。
+`worker` の定期実行にも登録しない。書庫を置くのはホストであり、
+コンテナの中からホストのディレクトリへは書き出さない。
+
+無人で呼ぶために、取得は次の 3 つを満たす。
+
+```text
+- 取得が重なっていれば、取得せずに 0 以外で終わる
+- 記録の各行に時刻が付く
+- 取得できなかった場合は 0 以外で終わる
+```
+
+#### cron から呼ぶ
+
+```cron
+MAILTO=operations@example.com
+PATH=/usr/local/bin:/usr/bin:/bin
+
+30 2 * * * cd /srv/officeweave && BACKUP_KEEP=7 BACKUP_PASSPHRASE_FILE=/etc/officeweave/backup-passphrase script/production_backup /var/backups/officeweave >> /var/log/officeweave-backup.log 2>&1
+```
+
+```text
+- PATH を指定する。cron の既定の PATH に docker が無い環境がある
+- リポジトリのルートへ移ってから呼ぶ
+- MAILTO を指定すると、失敗した回の記録が届く
+```
+
+`>> ... 2>&1` を付けた場合、成功した回の記録もファイルへ残る。
+`MAILTO` へ届くのは、出力があった回だけである。
+
+#### systemd timer から呼ぶ
+
+```ini
+[Unit]
+Description=OfficeWeave のバックアップ
+
+[Service]
+Type=oneshot
+WorkingDirectory=/srv/officeweave
+Environment=BACKUP_KEEP=7
+Environment=BACKUP_PASSPHRASE_FILE=/etc/officeweave/backup-passphrase
+ExecStart=/srv/officeweave/script/production_backup /var/backups/officeweave
+```
+
+```ini
+[Unit]
+Description=OfficeWeave のバックアップを毎日実行する
+
+[Timer]
+OnCalendar=*-*-* 02:30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+記録は journal へ入る。失敗した回は `systemctl status` と
+`OnFailure=` から拾える。
+
+```bash
+journalctl -u officeweave-backup.service --since today
+```
+
+#### 取得が重なった場合
+
+取得中は、出力先へ `.production_backup.lock` を作る。
+残っているあいだ、次の取得は始まらない。
+
+```text
+- 同じホストで、そのプロセスが動いている    取得せずに失敗する
+- 同じホストで、そのプロセスが残っていない  印を引き継いで取得する
+- 別のホストが作った印                     取得せずに失敗する
+- 中身が読めない印                         取得せずに失敗する
+```
+
+別のホストの印を奪わない。そのプロセスが動いているかを、別のホストからは
+判定できない。判定できないものを奪うと、取得が重なる。
+
+失敗した場合、印の経路と取り除き方を記録へ出す。
+
+```bash
+rm -rf /var/backups/officeweave/.production_backup.lock
+```
+
+取り除く前に、そのホストで取得が動いていないことを確かめる。
+
 ### 保管
 
 - 書庫はアプリケーションと同じホストに置いたままにしない
-- 定期的な取得は、利用者側の仕組み（時刻起動など）で行う
 - 書庫には組織の全データと添付ファイルが含まれる。持ち出しと保管の扱いに注意する
 - `backups/` はリポジトリの追跡対象から除いている
 
@@ -326,8 +413,5 @@ docker compose exec -e FORCE=1 web bin/restore backups/<書庫>
 
 日数での保持を用意しない理由は「保持する数」にある。
 
-次はロードマップの R1 運用信頼性で扱う。
-
-```text
-定期取得の仕組み
-```
+定期取得の仕組み自体は持たない。呼ぶのはホストの時刻起動とし、
+その登録手順を「定期的な取得」へ書いた。

@@ -54,9 +54,100 @@ compose() {
   docker compose -f compose.production.yaml "$@"
 }
 
+# 記録には時刻を付ける。
+#
+# 時刻起動から呼ぶと、いつ何が起きたかを後から読むのは記録だけになる。
+# cron は出力へ時刻を付けない。付ける仕組みを呼び出し側へ求めない。
+log() {
+  echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $*" >&2
+}
+
 fail() {
-  echo "$@" >&2
+  log "$@"
   exit 1
+}
+
+# 取得中であることを示す印。取得を始める前に作り、終わりに外す。
+#
+# 時刻起動から呼ぶと、前の取得が終わる前に次が始まり得る。
+# 取得は web と worker を止めるため、重なると、片方の停止と再開が
+# もう片方の取得の途中で起きる。取得時点がそろわない書庫ができる。
+lock_directory=""
+partial=""
+
+on_exit() {
+  if [ -n "${lock_directory}" ]; then
+    rm -rf "${lock_directory}"
+  fi
+
+  # 途中で止まった書庫を、使える書庫として残さない。
+  if [ -n "${partial}" ]; then
+    rm -f "${partial}"
+  fi
+}
+
+trap on_exit EXIT
+
+# 印を取る。取れない場合は、その理由と取り除き方を示して終わる。
+#
+# 印の中へ、作ったホストとプロセスを書く。生死を判定できるのは同じホストの
+# 場合だけであり、別のホストの印は奪わない。判定できないものを奪うと、
+# 取得が重なる。
+acquire_lock() {
+  local candidate="$1"
+  local owner_file="${candidate}/owner"
+  local owner host pid
+
+  if take_lock "${candidate}"; then
+    return 0
+  fi
+
+  owner="$(cat "${owner_file}" 2>/dev/null || true)"
+  host="${owner%% *}"
+  pid="${owner##* }"
+
+  # 印の中身が読めない場合は奪わない。作られた直後の一瞬に当たった可能性と、
+  # 途中で止まった可能性を、中身からは区別できない。手で取り除く形を示す。
+  if [ -z "${owner}" ] || ! is_process_id "${pid}"; then
+    fail "取得中の印が残っていますが、実行しているものを特定できません: ${candidate}
+取り除く場合: rm -rf ${candidate}"
+  fi
+
+  if [ "${host}" != "$(uname -n)" ]; then
+    fail "別のホスト (${host}) が取得中です: ${candidate}
+そのホストで終わるのを待ってください。
+取り除く場合: rm -rf ${candidate}"
+  fi
+
+  if kill -0 "${pid}" 2>/dev/null; then
+    fail "このホストで取得が実行中です (プロセス ${pid}): ${candidate}
+終わるのを待ってください。取得の間隔が短すぎる可能性もあります。
+取り除く場合: rm -rf ${candidate}"
+  fi
+
+  # 同じホストで、その識別子のプロセスは残っていない。
+  # 途中で止まった取得の印として引き継ぐ。
+  log "止まったままの印を引き継ぎます: ${candidate} (プロセス ${pid})"
+  rm -rf "${candidate}"
+
+  take_lock "${candidate}" ||
+    fail "取得中の印を作れませんでした: ${candidate}"
+}
+
+is_process_id() {
+  case "$1" in
+    ""|*[!0-9]*) return 1 ;;
+  esac
+}
+
+take_lock() {
+  local candidate="$1"
+
+  # mkdir は、既にある場合に必ず失敗する。作れたことがそのまま印になる。
+  mkdir "${candidate}" 2>/dev/null || return 1
+
+  lock_directory="${candidate}"
+  printf '%s %s\n' "$(uname -n)" "$$" > "${candidate}/owner"
 }
 
 # 上限の検査は、サービスを止める前に行う。
@@ -131,9 +222,9 @@ prune_old_archives() {
     [ -n "${entry}" ] || continue
 
     if rm -f "${entry}" 2>/dev/null; then
-      echo "保持の上限を超えたため削除しました: ${entry}" >&2
+      log "保持の上限を超えたため削除しました: ${entry}"
     else
-      echo "古い書庫を削除できませんでした: ${entry}" >&2
+      log "古い書庫を削除できませんでした: ${entry}"
       status=1
     fi
   done <<ARCHIVES
@@ -163,6 +254,11 @@ $1
 
   return 1
 }
+
+# 検査を終えてから印を取る。値の誤りで中止する場合に印を残さない。
+# 印は出力先へ置く。出力先を共有する取得同士が、同じ印を見るようにする。
+mkdir -p "${output_directory}"
+acquire_lock "${output_directory}/.production_backup.lock"
 
 read_running_services
 
@@ -195,7 +291,7 @@ wait_for_web() {
 # 再開は web から行う。worker は web の稼働を前提に起動する。
 restart_services() {
   if [ "${web_was_running}" -eq 1 ]; then
-    echo "web を再開しています" >&2
+    log "web を再開しています"
     compose start web >/dev/null 2>&1 ||
       fail "web を再開できませんでした。docker compose -f compose.production.yaml logs web を確認してください。"
 
@@ -204,7 +300,7 @@ restart_services() {
   fi
 
   if [ "${worker_was_running}" -eq 1 ]; then
-    echo "worker を再開しています" >&2
+    log "worker を再開しています"
     compose start worker >/dev/null 2>&1 ||
       fail "worker を再開できませんでした。docker compose -f compose.production.yaml logs worker を確認してください。"
 
@@ -225,16 +321,14 @@ wait_for_worker() {
 }
 
 if [ "${web_was_running}" -eq 1 ]; then
-  echo "取得のあいだ web を停止します。画面は一時的に使えなくなります。" >&2
+  log "取得のあいだ web を停止します。画面は一時的に使えなくなります。"
   compose stop web >/dev/null
 fi
 
 if [ "${worker_was_running}" -eq 1 ]; then
-  echo "worker を停止します。実行中のジョブの終了を待ちます。" >&2
+  log "worker を停止します。実行中のジョブの終了を待ちます。"
   compose stop worker >/dev/null
 fi
-
-mkdir -p "${output_directory}"
 
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
 
@@ -263,7 +357,7 @@ cleanup_partial() {
   rm -f "${partial}"
 }
 
-echo "書庫を取得しています" >&2
+log "書庫を取得しています"
 
 # --no-deps を付け、db を巻き込んで作り直さないようにする。
 # -T を付け、標準出力へ端末の制御文字が混ざらないようにする。
@@ -313,7 +407,7 @@ mv "${partial}" "${archive}"
 
 restart_services
 
-echo "取得しました: ${archive}" >&2
+log "取得しました: ${archive}"
 
 # 整理は、取得と再開を終えてから行う。
 # 消してから取得すると、取得が失敗した時点で残りが 1 世代分少ない状態になる。

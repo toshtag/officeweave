@@ -384,6 +384,23 @@ jobs:
             raise "復元前のデータが残っている" if Organization.exists?(code: "before-encrypted")
           '
 
+      - name: 取得が重なった場合に取得しないことを確かめる
+        run: |
+          # ここまでの取得で、印が残っていないこと。
+          test ! -e backups/.production_backup.lock
+          before="$(ls -1 backups/officeweave-* | wc -l)"
+          # このジョブの shell を、取得中のプロセスとして印へ書く。
+          mkdir backups/.production_backup.lock
+          printf '%s %s\n' "$(uname -n)" "$$" > backups/.production_backup.lock/owner
+          if script/production_backup; then
+            echo "印が残っているのに取得してしまった" >&2
+            exit 1
+          fi
+          test "$(ls -1 backups/officeweave-* | wc -l)" = "${before}"
+          rm -rf backups/.production_backup.lock
+          # 印で止まった場合も、web は止めない。
+          curl -sf -H 'Host: localhost' http://127.0.0.1:3212/up > /dev/null
+
       - name: 依存先まで含めて確認する
         run: |
           response="$(curl -sf -H 'Host: localhost' http://127.0.0.1:3212/health)"

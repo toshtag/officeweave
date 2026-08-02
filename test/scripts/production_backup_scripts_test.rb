@@ -359,6 +359,155 @@ class ProductionBackupScriptsTest < ActiveSupport::TestCase
     end
   end
 
+  # --- 無人での実行 ---
+
+  test "取得が実行中であれば、取得せずに失敗する" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+      place_lock(sandbox, host: this_host, pid: Process.pid)
+
+      _stdout, stderr, status = sandbox.run(
+        "script/production_backup", sandbox.path("out"),
+        env: environment(sandbox, running: "db web")
+      )
+
+      refute status.success?
+      assert_includes stderr, "取得が実行中です"
+      # 取り除き方を示す。示さないと、印が残ったときに手が無い。
+      assert_includes stderr, lock_path(sandbox)
+      refute_includes calls(sandbox), "stop web"
+      assert_empty archive_names(sandbox)
+    end
+  end
+
+  test "別のホストが取得中であれば、印を奪わない" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+      place_lock(sandbox, host: "別のホスト", pid: 1)
+
+      _stdout, stderr, status = sandbox.run(
+        "script/production_backup", sandbox.path("out"),
+        env: environment(sandbox, running: "db web")
+      )
+
+      refute status.success?
+      assert_includes stderr, "別のホスト"
+      refute_includes calls(sandbox), "stop web"
+      assert File.exist?(File.join(lock_path(sandbox), "owner")), "他のホストの印を消している"
+    end
+  end
+
+  test "実行しているものを特定できない印は奪わない" do
+    [ nil, "中身のない印\n" ].each do |owner|
+      with_shell_sandbox do |sandbox|
+        prepare(sandbox)
+        place_lock(sandbox, owner: owner)
+
+        _stdout, stderr, status = sandbox.run(
+          "script/production_backup", sandbox.path("out"),
+          env: environment(sandbox, running: "db web")
+        )
+
+        refute status.success?, "#{owner.inspect} の印で取得を始めている"
+        assert_includes stderr, "特定できません"
+        refute_includes calls(sandbox), "stop web"
+      end
+    end
+  end
+
+  test "止まったままの印は引き継いで取得する" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+      place_lock(sandbox, host: this_host, pid: finished_process_id)
+
+      stdout, stderr, status = sandbox.run(
+        "script/production_backup", sandbox.path("out"),
+        env: environment(sandbox, running: "db web")
+      )
+
+      assert status.success?, stderr
+      assert_includes stderr, "引き継ぎます"
+      assert_equal 1, archive_names(sandbox).size
+      assert File.exist?(stdout.strip)
+    end
+  end
+
+  test "取得を終えたら印を外す" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+
+      _stdout, stderr, status = sandbox.run(
+        "script/production_backup", sandbox.path("out"),
+        env: environment(sandbox, running: "db web")
+      )
+
+      assert status.success?, stderr
+      refute File.exist?(lock_path(sandbox)), "成功したのに印が残っている"
+    end
+  end
+
+  test "取得に失敗しても印を外す" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+
+      _stdout, _stderr, status = sandbox.run(
+        "script/production_backup", sandbox.path("out"),
+        env: environment(sandbox, running: "db web").merge("FAKE_BACKUP_EXIT" => "1")
+      )
+
+      refute status.success?
+      refute File.exist?(lock_path(sandbox)), "失敗したのに印が残っている"
+    end
+  end
+
+  test "取得へ入る前に中止した場合は印を作らない" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+
+      _stdout, _stderr, status = sandbox.run(
+        "script/production_backup", sandbox.path("out"),
+        env: environment(sandbox, running: "").merge("BACKUP_KEEP" => "0")
+      )
+
+      refute status.success?
+      refute File.exist?(lock_path(sandbox)), "取得へ入っていないのに印が残っている"
+    end
+  end
+
+  test "記録の各行に時刻が付く" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+
+      _stdout, stderr, status = sandbox.run(
+        "script/production_backup", sandbox.path("out"),
+        env: environment(sandbox, running: "db web")
+      )
+
+      assert status.success?, stderr
+      lines = stderr.lines.map(&:chomp).reject(&:empty?)
+
+      refute_empty lines
+      lines.each do |line|
+        # 時刻起動から呼ぶと、記録に時刻が付くのは呼び出し側の仕組み次第になる。
+        assert_match(/\A\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z\] /, line, "時刻が無い: #{line}")
+      end
+    end
+  end
+
+  test "取得に失敗した理由にも時刻が付く" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+
+      _stdout, stderr, status = sandbox.run(
+        "script/production_backup", sandbox.path("out"),
+        env: environment(sandbox, running: "")
+      )
+
+      refute status.success?
+      assert_match(/\A\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z\] データベースが起動していません/, stderr)
+    end
+  end
+
   # --- 暗号化 ---
 
   test "パスフレーズを指定すると、書庫を暗号化して残す" do
@@ -666,6 +815,29 @@ class ProductionBackupScriptsTest < ActiveSupport::TestCase
 
     def entries(archive)
       `tar --list --gzip --file=#{Shellwords.escape(archive)}`.split("\n")
+    end
+
+    def lock_path(sandbox)
+      sandbox.path("out", ".production_backup.lock")
+    end
+
+    # 取得中であることを示す印を、実行しているものの情報付きで置く。
+    def place_lock(sandbox, host: nil, pid: nil, owner: :from_parts)
+      FileUtils.mkdir_p(lock_path(sandbox))
+
+      content = owner == :from_parts ? "#{host} #{pid}\n" : owner
+      File.write(File.join(lock_path(sandbox), "owner"), content) if content
+    end
+
+    def this_host
+      @this_host ||= `uname -n`.strip
+    end
+
+    # 終わったプロセスの識別子。生きているものと同じ形で、生きていない。
+    def finished_process_id
+      pid = spawn("true")
+      Process.wait(pid)
+      pid
     end
 
     # 既に取得済みの書庫として、取得日時だけが違うものを置く。
