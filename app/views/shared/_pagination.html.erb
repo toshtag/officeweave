@@ -1,0 +1,28 @@
+<%# 一覧のページ送り。1 ページに収まる一覧へは出さない。 %>
+<%#
+  page       Pagination
+  parameters ページ番号以外に引き継ぐ要求の値
+%>
+<% if page.paginated? %>
+  <nav class="tabs" aria-label="<%= t("pagination.label") %>">
+    <ul class="tabs__list">
+      <% if page.previous_page? %>
+        <li>
+          <%= link_to t("pagination.previous"),
+                      url_for(parameters.merge(page: page.previous_page)), class: "tabs__link" %>
+        </li>
+      <% end %>
+      <li>
+        <span class="tabs__link" aria-current="page">
+          <%= t("pagination.current", current: page.current_page, total: page.total_pages) %>
+        </span>
+      </li>
+      <% if page.next_page? %>
+        <li>
+          <%= link_to t("pagination.next"),
+                      url_for(parameters.merge(page: page.next_page)), class: "tabs__link" %>
+        </li>
+      <% end %>
+    </ul>
+  </nav>
+<% end %>

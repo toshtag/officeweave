@@ -1,7 +1,9 @@
 # 自分宛の通知の一覧と、通知からの移動。
 class NotificationsController < ApplicationController
   def index
-    @notifications = Current.user.notifications.recent_first.includes(:subject)
+    @page = Pagination.new(Current.user.notifications.recent_first.includes(:subject),
+                          page: params[:page])
+    @notifications = @page.records
   end
 
   # 通知を開いたら既読にして、対象の画面へ送る。

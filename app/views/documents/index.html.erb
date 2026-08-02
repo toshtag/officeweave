@@ -31,7 +31,7 @@
 
   <% if @query.present? %>
     <p role="status">
-      <%= t("documents.index.result", query: @query, count: @documents.size) %>
+      <%= t("documents.index.result", query: @query, count: @page.total_count) %>
     </p>
   <% end %>
 
@@ -58,6 +58,8 @@
         </tbody>
       </table>
     </div>
+    <%= render "shared/pagination", page: @page,
+               parameters: { query: @query, document_category_id: @category_id } %>
   <% else %>
     <p><%= t("documents.index.empty") %></p>
   <% end %>

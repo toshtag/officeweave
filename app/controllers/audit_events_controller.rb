@@ -20,12 +20,11 @@ class AuditEventsController < ApplicationController
     @retention_days = Officeweave::Configuration::AuditRetention.days
     @action_name = params[:audit_action]
     @actor_id = params[:actor_id]
-    @page = [ params[:page].to_i, 1 ].max
 
-    scope = filtered_scope.recent_first.includes(:actor)
-
-    @total_count = scope.count
-    @audit_events = scope.offset((@page - 1) * PER_PAGE).limit(PER_PAGE)
+    @page = Pagination.new(filtered_scope.recent_first.includes(:actor),
+                           page: params[:page], per_page: PER_PAGE)
+    @audit_events = @page.records
+    @total_count = @page.total_count
     @actors = current_organization.users.ordered
   end
 

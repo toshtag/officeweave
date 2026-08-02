@@ -374,6 +374,16 @@ ja:
       short: "%m/%d"
       long: "%Y年%m月%d日"
 
+  pagination:
+    label: ページ送り
+    previous: 前へ
+    next: 次へ
+    current: "%{current} / %{total} ページ"
+    total:
+      zero: 0 件
+      one: 1 件
+      other: "%{count} 件"
+
   events:
     destroyed_following: この回以降の繰り返しを削除しました。
     destroy_following: この回以降を削除する

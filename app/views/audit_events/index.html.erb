@@ -63,20 +63,8 @@
       </table>
     </div>
 
-    <nav class="tabs" aria-label="<%= t("audit_events.index.pages") %>">
-      <ul class="tabs__list">
-        <% if @page > 1 %>
-          <li><%= link_to t("audit_events.index.previous"),
-                          audit_events_path(page: @page - 1, audit_action: @action_name, actor_id: @actor_id),
-                          class: "tabs__link" %></li>
-        <% end %>
-        <% if @total_count > @page * AuditEventsController::PER_PAGE %>
-          <li><%= link_to t("audit_events.index.next"),
-                          audit_events_path(page: @page + 1, audit_action: @action_name, actor_id: @actor_id),
-                          class: "tabs__link" %></li>
-        <% end %>
-      </ul>
-    </nav>
+    <%= render "shared/pagination", page: @page,
+               parameters: { audit_action: @action_name, actor_id: @actor_id } %>
   <% else %>
     <p><%= t("audit_events.index.empty") %></p>
   <% end %>

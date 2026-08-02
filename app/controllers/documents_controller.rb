@@ -10,12 +10,16 @@ class DocumentsController < ApplicationController
     @categories = current_organization.document_categories.ordered
     # 添付は一覧に出さない。先読みすると、添付を持たない文書まで含めて
     # 一覧の要求ごとに関連と実体を読むことになる。
-    @documents = Document.visible_to(Current.user)
-                         .search(@query)
-                         .in_category(@category_id)
-                         .recently_updated
-                         .listed
-                         .includes(:author, :document_category)
+    @page = Pagination.new(
+      Document.visible_to(Current.user)
+              .search(@query)
+              .in_category(@category_id)
+              .recently_updated
+              .listed
+              .includes(:author, :document_category),
+      page: params[:page]
+    )
+    @documents = @page.records
   end
 
   def show

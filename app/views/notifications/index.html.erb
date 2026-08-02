@@ -17,6 +17,8 @@
         </li>
       <% end %>
     </ul>
+
+    <%= render "shared/pagination", page: @page, parameters: {} %>
   <% else %>
     <p><%= t("notifications.index.empty") %></p>
   <% end %>
