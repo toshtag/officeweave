@@ -12,8 +12,8 @@
 
 ```text
 現在の Phase: R5
-直近完了 Task: R5-T4
-進行中:        R5-T6
+直近完了 Task: R5-T6
+進行中:        なし
 次に実行:      R5-T5
 ```
 
@@ -304,7 +304,7 @@ OIDC 連携は 3 つに分ける。設定と id_token の検証、認可サー�
 | R5-T2 | `r5/t2-action-sha-pinning`        | —        | GitHub Actions の参照を SHA で固定する | 完了  |
 | R5-T3 | `r5/t3-sbom`                      | —        | 部品表を生成する                 | 完了  |
 | R5-T4 | `r5/t4-container-scan`            | —        | コンテナの脆弱性を検査する            | 完了  |
-| R5-T6 | `r5/t6-browser-e2e`               | —        | 実ブラウザーで主要な流れを確かめる        | 進行中 |
+| R5-T6 | `r5/t6-browser-e2e`               | —        | 実ブラウザーで主要な流れを確かめる        | 完了  |
 | R5-T5 | `r5/t5-accessibility-check`       | —        | アクセシビリティを自動で検査する         | 未着手 |
 | R5-T7 | `r5/t7-load-verification`         | —        | 性能と負荷を確かめる               | 未着手 |
 

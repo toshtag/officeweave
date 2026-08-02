@@ -136,6 +136,8 @@ P1-T1 で、候補どおりの構成が動作することを確認した。
 | Ruby on Rails | `8.1.3`  | `Gemfile` と `Gemfile.lock`   |
 | PostgreSQL   | `18.4`   | `compose.yaml` の `db` サービス   |
 | jwt          | `3.2.0`  | `Gemfile` と `Gemfile.lock`   |
+| selenium-webdriver | `4.46.0` | `Gemfile` と `Gemfile.lock`（試験のみ） |
+| Chromium（試験のみ） | `150.0`  | `compose.browser.yaml` の `browser` サービス |
 
 確認内容。
 
