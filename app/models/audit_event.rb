@@ -24,6 +24,8 @@ class AuditEvent < ApplicationRecord
     department_deleted
     membership_created
     membership_deleted
+    approval_delegation_created
+    approval_delegation_deleted
     request_approved
     request_returned
     api_token_issued

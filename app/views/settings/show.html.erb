@@ -34,6 +34,7 @@
     <li><%= link_to t("passwords.edit.heading"), edit_password_path %></li>
   <% end %>
   <li><%= link_to t("logins.index.heading"), logins_path %></li>
+  <li><%= link_to t("approval_delegations.index.heading"), approval_delegations_path %></li>
   <li><%= link_to t("api_tokens.index.heading"), api_tokens_path %></li>
   <% if administrator? %>
     <li><%= link_to t("webhook_endpoints.index.heading"), webhook_endpoints_path %></li>

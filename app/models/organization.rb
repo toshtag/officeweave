@@ -9,6 +9,7 @@ class Organization < ApplicationRecord
   has_many :resources, dependent: :restrict_with_error
   has_many :reservations, dependent: :restrict_with_error
   has_many :request_types, dependent: :restrict_with_error
+  has_many :approval_delegations, dependent: :destroy
   has_many :requests, dependent: :restrict_with_error
   has_many :document_categories, dependent: :restrict_with_error
   has_many :documents, dependent: :restrict_with_error

@@ -46,6 +46,11 @@ class User < ApplicationRecord
   has_many :notifications, dependent: :destroy
   has_many :notification_preferences, dependent: :destroy
   has_many :api_tokens, dependent: :destroy
+  # 承認の委任。委任した側と、受けた側の両方から辿る。
+  has_many :approval_delegations_as_delegator, class_name: "ApprovalDelegation",
+           foreign_key: :delegator_id, dependent: :destroy, inverse_of: :delegator
+  has_many :approval_delegations_as_delegate, class_name: "ApprovalDelegation",
+           foreign_key: :delegate_id, dependent: :destroy, inverse_of: :delegate
 
   # 大文字小文字と前後の空白の違いで別の利用者として扱わない。
   # 権限は 2 段階だけとする。
