@@ -93,6 +93,10 @@ jobs:
       - name: データベースとブラウザーを起動する
         run: docker compose up -d db browser
 
+      # 一括検証は bin/setup が用意するが、この仕事はそこを通らない。
+      - name: テスト用のデータベースを用意する
+        run: docker compose run --rm web bin/rails db:test:prepare
+
       - name: 主要な流れを実ブラウザーで確かめる
         run: docker compose run --rm web bin/rails test:browser
 
