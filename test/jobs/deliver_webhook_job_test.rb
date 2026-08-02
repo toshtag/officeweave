@@ -422,6 +422,20 @@ class DeliverWebhookJobTest < ActiveJob::TestCase
     assert_includes DeliverWebhookJob::TRANSIENT_NETWORK_ERRORS, Timeout::Error
   end
 
+  test "解析で時間を使う応答も、期限より十分に手前で終わる" do
+    # 期限は待機中にしか割り込めない。受け取ったものの解析で CPU を使う間は
+    # 割り込みが届かず、期限を大きく超えることがあった。受け取る量に上限を
+    # 設けたため、解析に回る量そのものが小さい。
+    started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+    deliver_to_local_server(status: "200 応答", status_line_bytes: OVERSIZED_BYTES)
+
+    elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
+
+    assert_operator elapsed, :<, 5, "解析で期限を超えて居座っている"
+    assert_oversized_failure
+  end
+
   test "期限の内に終わる応答はこれまでどおり成功する" do
     deliver_to_local_server(status: "200 応答", deadline: 5,
                             body_bytes: 64, chunked: true, chunk_bytes: 16, chunk_delay: 0.01)
