@@ -133,8 +133,11 @@ script/production_backup
 script/production_restore backups/<書庫>
 ```
 
+依存とデータベースを整え直します。server は起動しません。
+server と worker は `docker compose up` が起動します。
+
 ```bash
-docker compose exec web bin/setup --skip-server
+docker compose exec web bin/setup
 ```
 
 ホストのデータベースクライアントから直接つなぐ場合は、追加の構成を重ねます。
