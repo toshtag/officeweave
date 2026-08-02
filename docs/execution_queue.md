@@ -11,10 +11,10 @@
 ## 現在地
 
 ```text
-現在の Phase: R6
+現在の Phase: R7
 直近完了 Task: R6-T6
-進行中:        なし
-次に実行:      なし（R6 完了。次の Phase の着手は別途決める）
+進行中:        R7-T1
+次に実行:      R7-T2
 ```
 
 ## P0 プロジェクト契約
@@ -208,6 +208,19 @@ R0 の完了後に行った保守性のレビューで確認した問題を、Gi
 | R6-T5 | `r6/t5-verification-scope`            | [#134](https://github.com/toshtag/OfficeWeave/issues/134) | 総合検証を自動で確かめられないものへ絞る   | 完了  |
 | R6-T6 | `r6/t6-execution-queue-scope`         | [#135](https://github.com/toshtag/OfficeWeave/issues/135) | 実行キューを現在地とタスク表へ絞る      | 完了  |
 
+## R7 脆弱性対応
+
+セキュリティレビューで確認したものを、非公開の Draft Security Advisory として
+登録した。本 Phase では、それらを 1 件ずつ修正する。
+
+公開の Issue では管理しない。対応する Advisory の番号だけを記録する。
+再現手順と影響は Advisory が持ち、本書へは写さない。
+
+| Task  | ブランチ                                  | 対応 Advisory        | 内容                          | 状態  |
+| ----- | ------------------------------------- | ------------------ | --------------------------- | --- |
+| R7-T1 | `r7/t1-unsubmitted-request-visibility` | GHSA-g3x9-9grv-p8j4 | 未提出の申請を承認担当者の参照範囲から外す       | 進行中 |
+| R7-T2 | `r7/t2-resolver-process-isolation`    | GHSA-hr7m-r3hx-gj9x | 名前解決の時間切れで実行単位を確実に回収する      | 未着手 |
+
 ## 分解の方針
 
 - 1 タスクは、単独でテストまたは動作確認ができる単位までとする
@@ -242,3 +255,6 @@ R0 の完了後に行った保守性のレビューで確認した問題を、Gi
 
 タスク表の列は `Task` `ブランチ` `対応 Issue` `内容` `状態` とする。
 Issue を持たないタスクは `対応 Issue` を `—` とする。
+
+脆弱性のように公開の Issue で管理しないものは、3 列目を対応する登録先へ置き換える。
+R7 は `対応 Advisory` とし、Draft Security Advisory の GHSA ID を書く。
