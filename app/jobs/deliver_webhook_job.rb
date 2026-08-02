@@ -32,9 +32,24 @@ class DeliverWebhookJob < ApplicationJob
   # worker のメモリを脅かさない値にする。
   MAXIMUM_RESPONSE_BYTES = 64 * 1024
 
-  # 上限を超えたときに記録へ残す文面。
-  # 宛先も payload も入れない。記録は持ち出されることがある。
-  RESPONSE_TOO_LARGE_MESSAGE = "応答が大きすぎます".freeze
+  # 通信の失敗を記録へ残すときの文面。
+  #
+  # 例外の文面をそのまま残さない。Net::HTTP は接続に失敗すると、宛先と
+  # ポートを含む文面へ差し替えて送出し直す。OpenSSL の文面にも宛先が入る。
+  # 記録は画面に出て、持ち出されることがある。
+  #
+  # 送信する側にとって必要なのは、何が起きたのかであって、例外の文面ではない。
+  # 区分ごとに決めた文面だけを残す。
+  DELIVERY_ERROR_MESSAGES = {
+    connection_failed: "宛先へ接続できませんでした",
+    connection_timeout: "宛先とのやり取りが時間切れになりました",
+    tls_failed: "宛先との暗号化された通信を確立できませんでした",
+    resolution_failed: "宛先の名前を解決できませんでした",
+    invalid_response: "宛先の応答を解釈できませんでした",
+    response_too_large: "応答が大きすぎます",
+    deadline_exceeded: "通信全体の期限を超えました",
+    unexpected: "送信中に想定しない失敗が起きました"
+  }.freeze
 
   # 圧縮した応答を要求しない。
   #
@@ -74,11 +89,7 @@ class DeliverWebhookJob < ApplicationJob
   # 状態を受け取った後であれば、読み取りを打ち切るためだけに使い外へは出さない。
   # 状態を受け取る前に超えた場合は、送信の失敗として記録する。
   # やり直しはしない。同じ宛先は同じ量を返す。
-  class ResponseTooLarge < StandardError
-    def initialize(message = RESPONSE_TOO_LARGE_MESSAGE)
-      super
-    end
-  end
+  class ResponseTooLarge < StandardError; end
 
   # 通信全体の期限を超えたこと。
   #
@@ -150,6 +161,31 @@ class DeliverWebhookJob < ApplicationJob
            attempts: MAXIMUM_ATTEMPTS,
            wait: ->(executions) { RETRY_INTERVALS.fetch(executions - 1, RETRY_INTERVALS.last) }
 
+  class << self
+    # 記録へ残す文面。区分を経由するため、例外の文面は表へ出ない。
+    def delivery_error_message(error)
+      DELIVERY_ERROR_MESSAGES.fetch(delivery_error_reason(error))
+    end
+
+    # 例外を区分へ写す。
+    #
+    # 時間切れは Timeout::Error の下にまとまっている。接続、読み取り、
+    # 書き込みのどれで切れても、送信する側から見れば同じ「時間切れ」である。
+    # 分けると文面が増えるだけで、次に何をするかは変わらない。
+    def delivery_error_reason(error)
+      case error
+      when ResponseTooLarge then :response_too_large
+      when DeadlineExceeded then :deadline_exceeded
+      when OpenSSL::SSL::SSLError then :tls_failed
+      when Timeout::Error then :connection_timeout
+      when SocketError then :resolution_failed
+      when Net::HTTPBadResponse, Net::ProtocolError then :invalid_response
+      when SystemCallError, IOError then :connection_failed
+      else :unexpected
+      end
+    end
+  end
+
   # 名前解決、許可リスト、期限は、テストから差し替える。
   # インスタンスの中に閉じ、他のテストへ漏れる状態を作らない。
   attr_writer :resolver, :allowlist, :total_deadline
@@ -207,13 +243,13 @@ class DeliverWebhookJob < ApplicationJob
         # どちらもやり直しても同じ結果になる。相手は返し続けており、
         # 止まってはいない。返す量も期限に収まらない点も、宛先の側で決まる。
         # 通信の失敗より先に受ける。StandardError へ落とすと意図が読めない。
-        delivery.error_message = error.message
+        delivery.error_message = self.class.delivery_error_message(error)
       rescue *TRANSIENT_NETWORK_ERRORS => error
-        delivery.error_message = error.message.truncate(200)
+        delivery.error_message = self.class.delivery_error_message(error)
         transient = error.class.name
       rescue StandardError => error
         # 宛先の不調で送信元が落ちないようにする。結果だけを記録する。
-        delivery.error_message = error.message.truncate(200)
+        delivery.error_message = self.class.delivery_error_message(error)
       end
 
       delivery.save!
