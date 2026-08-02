@@ -20,6 +20,9 @@
 #
 # 既定の出力先:
 #   ./backups
+#
+# 環境変数:
+#   BACKUP_KEEP  出力先へ残す書庫の数。指定した場合だけ古い書庫を消す
 
 set -euo pipefail
 
@@ -30,6 +33,13 @@ umask 077
 
 output_directory="${1:-backups}"
 
+# 残す書庫の数。既定を持たない。
+#
+# 既定を持たせると、この版へ入れ替えただけで書庫が消える組織が出る。
+# 入れ替えの時点では、消える量も消える時刻も利用者へ見えない。
+# 消す機能は、上限を明示した組織だけで働かせる。
+keep="${BACKUP_KEEP:-}"
+
 compose() {
   docker compose -f compose.production.yaml "$@"
 }
@@ -37,6 +47,70 @@ compose() {
 fail() {
   echo "$@" >&2
   exit 1
+}
+
+# 上限の検査は、サービスを止める前に行う。
+# 取得を終えてから値の誤りで落ちると、停止と再開だけを繰り返すことになる。
+if [ -n "${keep}" ]; then
+  case "${keep}" in
+    *[!0-9]*) fail "BACKUP_KEEP には 1 以上の整数を指定してください: ${keep}" ;;
+  esac
+
+  [ "${keep}" -ge 1 ] || fail "BACKUP_KEEP には 1 以上の整数を指定してください: ${keep}"
+fi
+
+# 出力先にあるもののうち、このスクリプトが取得した書庫だけを、名前順に並べる。
+#
+# 名前は取得日時で始まるため、名前順が取得順になる。
+# 同じ秒に 2 度取得したときだけ、連番付きのほうが先に並ぶ。
+# その 2 つの間で古い側を取り違える可能性は残るが、
+# 秒までそろった 2 つの書庫の間の順序であり、保持する期間には影響しない。
+list_archives() {
+  local entry name
+
+  for entry in "${output_directory}"/officeweave-*.tar.gz; do
+    [ -e "${entry}" ] || continue
+
+    name="$(basename "${entry}")"
+
+    # 取得日時の形に一致しないものは、こちらが作ったものではない。
+    # 出力先を他の用途と共有していても、触るのは自分が作ったものだけとする。
+    [[ "${name}" =~ ^officeweave-[0-9]{8}T[0-9]{6}Z(-[0-9]+)?\.tar\.gz$ ]] || continue
+
+    echo "${entry}"
+  done | sort
+}
+
+# 上限を超えた分を、古い側から消す。取得に成功したあとにだけ呼ぶ。
+prune_old_archives() {
+  local archives total excess status entry
+
+  archives="$(list_archives)"
+  [ -n "${archives}" ] || return 0
+
+  total="$(printf '%s\n' "${archives}" | wc -l | tr -d ' ')"
+  [ "${total}" -gt "${keep}" ] || return 0
+
+  # head は最初の n 行で標準入力を閉じる。pipefail と組み合わせると、
+  # 書き込む側が SIGPIPE で終わった時点でパイプライン全体が失敗する。
+  excess="$(printf '%s\n' "${archives}" | sed -n "1,$((total - keep))p")"
+
+  status=0
+
+  while IFS= read -r entry; do
+    [ -n "${entry}" ] || continue
+
+    if rm -f "${entry}" 2>/dev/null; then
+      echo "保持の上限を超えたため削除しました: ${entry}" >&2
+    else
+      echo "古い書庫を削除できませんでした: ${entry}" >&2
+      status=1
+    fi
+  done <<ARCHIVES
+${excess}
+ARCHIVES
+
+  return "${status}"
 }
 
 # 稼働中のサービスを一度だけ読み、変数の上で判定する。
@@ -178,4 +252,17 @@ mv "${partial}" "${archive}"
 restart_services
 
 echo "取得しました: ${archive}" >&2
+
+# 整理は、取得と再開を終えてから行う。
+# 消してから取得すると、取得が失敗した時点で残りが 1 世代分少ない状態になる。
+prune_status=0
+
+if [ -n "${keep}" ]; then
+  prune_old_archives || prune_status=1
+fi
+
+# 整理に失敗した場合も、取得した書庫の経路は伝える。
+# 伝えないと、受け取った側は作られた書庫を見つけられないまま失敗を受け取る。
 echo "${archive}"
+
+exit "${prune_status}"
