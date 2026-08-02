@@ -4,8 +4,20 @@ class UsersController < ApplicationController
   before_action :set_user, only: %i[edit update]
 
   def index
-    @page = Pagination.new(current_organization.users.ordered.includes(:primary_department),
-                          page: params[:page])
+    @query = params[:query]
+    @department_id = params[:department_id]
+    @state = params[:state].presence_in(%w[active deactivated])
+    @departments = Department.with_ancestors(current_organization.departments.ordered)
+
+    @page = Pagination.new(
+      current_organization.users
+                          .search(@query)
+                          .in_department(@department_id)
+                          .with_state(@state)
+                          .ordered
+                          .includes(:primary_department),
+      page: params[:page]
+    )
     @users = @page.records
   end
 

@@ -3,6 +3,19 @@
 <div class="stack">
   <h1><%= t("notifications.index.heading") %></h1>
 
+  <nav class="tabs" aria-label="<%= t("notifications.index.filters.label") %>">
+    <ul class="tabs__list">
+      <% [ [ nil, t("notifications.index.filters.all") ],
+           [ "unread", t("notifications.index.filters.unread") ] ].each do |value, name| %>
+        <li>
+          <%= link_to name, notifications_path(read_state: value),
+                      class: class_names("tabs__link", "tabs__link--current" => @read_state == value),
+                      aria: { current: @read_state == value ? "page" : nil } %>
+        </li>
+      <% end %>
+    </ul>
+  </nav>
+
   <% if @notifications.any? %>
     <ul class="list-cards">
       <% @notifications.each do |notification| %>
@@ -18,7 +31,7 @@
       <% end %>
     </ul>
 
-    <%= render "shared/pagination", page: @page, parameters: {} %>
+    <%= render "shared/pagination", page: @page, parameters: { read_state: @read_state } %>
   <% else %>
     <p><%= t("notifications.index.empty") %></p>
   <% end %>

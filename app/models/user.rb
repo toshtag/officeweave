@@ -80,6 +80,35 @@ class User < ApplicationRecord
   scope :active, -> { where(deactivated_at: nil) }
   scope :deactivated, -> { where.not(deactivated_at: nil) }
 
+  # 名前とメールアドレスの部分一致で引く。
+  #
+  # 語の区切りを空白で判断する検索は、日本語の氏名では語を切り出せない。
+  # 部分一致であれば、区切りのない表記でも同じ書き方で引ける。
+  # 文書の検索（Document.search）と同じ考え方である。
+  scope :search, ->(query) {
+    term = query.to_s.strip
+    next if term.blank?
+
+    pattern = "%#{sanitize_sql_like(term)}%"
+    where(arel_table[:name].matches(pattern).or(arel_table[:email_address].matches(pattern)))
+  }
+
+  # 指定した部門に所属する利用者。上位部門を指定しても下位は含めない。
+  # 含めると、指定した部門の人数と一覧の件数が食い違う。
+  scope :in_department, ->(department_id) {
+    next if department_id.blank?
+
+    where(id: Membership.where(department_id: department_id).select(:user_id))
+  }
+
+  # 有効・無効での絞り込み。指定が無ければ両方を返す。
+  scope :with_state, ->(state) {
+    case state
+    when "active" then active
+    when "deactivated" then deactivated
+    end
+  }
+
   # 組織には利用中の管理者が少なくとも 1 人必要とする。
   # 管理者が誰もいなくなると、利用者も部門も設定も画面からは戻せない。
   #
