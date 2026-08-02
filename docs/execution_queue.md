@@ -12,8 +12,8 @@
 
 ```text
 現在の Phase: R2
-直近完了 Task: R2-T6A
-進行中:        R2-T6
+直近完了 Task: R2-T6
+進行中:        なし
 次に実行:      R2-T7
 ```
 
@@ -235,7 +235,7 @@ OIDC 連携は 2 つに分ける。設定と id_token の検証、そして認�
 | R2-T4 | `r2/t4-api-token-expiry`      | —        | API トークンに有効期限を設ける             | 完了  |
 | R2-T5 | `r2/t5-api-token-scope`       | —        | API トークンに権限を設ける               | 完了  |
 | R2-T6A | `r2/t6a-health-storage-check` | —       | 保存先が未作成でも稼働確認が通るようにする        | 完了  |
-| R2-T6 | `r2/t6-oidc-verification`     | —        | OIDC の設定と id_token の検証を用意する    | 進行中 |
+| R2-T6 | `r2/t6-oidc-verification`     | —        | OIDC の設定と id_token の検証を用意する    | 完了  |
 | R2-T7 | `r2/t7-oidc-login`            | —        | OIDC でログインできるようにする             | 未着手 |
 
 ## R6 保守性
