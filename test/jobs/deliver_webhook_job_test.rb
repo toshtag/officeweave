@@ -433,6 +433,75 @@ class DeliverWebhookJobTest < ActiveJob::TestCase
     assert delivery.delivered_at.present?
   end
 
+  # --- 失敗の記録 ---
+  #
+  # 例外の文面をそのまま残さない。Net::HTTP は接続に失敗すると、宛先と
+  # ポートを含む文面へ差し替えて送出し直す。OpenSSL の文面にも宛先が入る。
+  # 記録は画面に出て、持ち出されることがある。
+
+  test "例外を決めた区分の文面へ写す" do
+    {
+      DeliverWebhookJob::ResponseTooLarge.new => :response_too_large,
+      DeliverWebhookJob::DeadlineExceeded.new => :deadline_exceeded,
+      OpenSSL::SSL::SSLError.new("SSL_connect returned=1 errno=0 peeraddr=10.0.0.5:443") => :tls_failed,
+      Net::OpenTimeout.new => :connection_timeout,
+      Net::ReadTimeout.new => :connection_timeout,
+      Net::WriteTimeout.new => :connection_timeout,
+      Timeout::Error.new => :connection_timeout,
+      SocketError.new("getaddrinfo: Name or service not known") => :resolution_failed,
+      Net::HTTPBadResponse.new("wrong status line") => :invalid_response,
+      Errno::ECONNREFUSED.new("connect(2) for \"10.0.0.5\" port 80") => :connection_failed,
+      Errno::ECONNRESET.new => :connection_failed,
+      EOFError.new("end of file reached") => :connection_failed,
+      RuntimeError.new("残してはいけない値") => :unexpected
+    }.each do |error, reason|
+      assert_equal message_for(reason), DeliverWebhookJob.delivery_error_message(error), error.class.name
+    end
+  end
+
+  test "接続できない宛先を決めた文面で記録する" do
+    # 受け付けるものがいない宛先へつなぎ、接続の失敗を作る。
+    address = loopback_address(3)
+    @endpoint.update_column(:url, "http://hooks.internal.example/events")
+
+    assert_raises(DeliverWebhookJob::TransientDeliveryError) { perform_to(address) }
+
+    assert_recorded_safely(message_for(:connection_failed), address)
+  end
+
+  test "暗号化できない宛先を決めた文面で記録する" do
+    address = loopback_address(4)
+    @endpoint.update_column(:url, "https://hooks.internal.example/events")
+
+    # TLS を返さないものへ https でつなぐ。handshake の途中で失敗する。
+    with_local_server(address, port: 443, status: "200 応答") do
+      assert_raises(DeliverWebhookJob::TransientDeliveryError) do
+        perform_to(address, origin: "https://hooks.internal.example:443")
+      end
+    end
+
+    assert_recorded_safely(message_for(:tls_failed), address)
+  end
+
+  test "解釈できない応答を決めた文面で記録する" do
+    address = loopback_address(5)
+    @endpoint.update_column(:url, "http://hooks.internal.example/events")
+
+    with_local_server(address, malformed: true) { perform_to(address) }
+
+    assert_recorded_safely(message_for(:invalid_response), address)
+  end
+
+  test "上限と期限の記録も同じ形にそろえる" do
+    deliver_to_local_server(status: "200 応答", status_line_bytes: OVERSIZED_BYTES)
+
+    assert_recorded_safely(message_for(:response_too_large), loopback_address(2))
+
+    deliver_to_local_server(status: "200 応答", deadline: 0.5, **SLOW_RESPONSE)
+
+    assert_recorded_safely(message_for(:deadline_exceeded), loopback_address(2))
+  end
+
   # --- やり直し ---
 
   test "合計 5 回まで実行し、待ち時間はメールとそろえる" do
@@ -582,11 +651,26 @@ class DeliverWebhookJobTest < ActiveJob::TestCase
     end
 
     # 宛先を差し替えず、同じ受信サーバーへもう一度送る。
-    def perform_to(address)
+    def perform_to(address, origin: "http://hooks.internal.example:80")
       job = DeliverWebhookJob.new
       job.resolver = ->(_hostname, _port) { [ address ] }
-      job.allowlist = Set["http://hooks.internal.example:80"]
+      job.allowlist = Set[origin]
       job.perform(@endpoint.id, "request_submitted", { subject_id: 1 })
+    end
+
+    def message_for(reason)
+      DeliverWebhookJob::DELIVERY_ERROR_MESSAGES.fetch(reason)
+    end
+
+    # 記録が決めた文面だけで、宛先も送信内容も含まないこと。
+    def assert_recorded_safely(expected, address)
+      message = @endpoint.webhook_deliveries.recent_first.first.error_message
+
+      assert_equal expected, message
+      [ address, "hooks.internal.example", "/events", "80", "443",
+        @endpoint.secret, "subject_id" ].each do |secret|
+        refute_includes message, secret, "記録へ #{secret} が入っている"
+      end
     end
 
     # 実行単位と開いている口の数。打ち切りのたびに残っていないかを見る。
@@ -605,6 +689,6 @@ class DeliverWebhookJobTest < ActiveJob::TestCase
       assert_nil delivery.response_status, "状態を受け取っていないのに残している"
       assert_nil delivery.delivered_at
       assert_nil delivery.failure_code
-      assert_equal DeliverWebhookJob::RESPONSE_TOO_LARGE_MESSAGE, delivery.error_message
+      assert_equal message_for(:response_too_large), delivery.error_message
     end
 end

@@ -17,13 +17,13 @@ module LocalHttpServerTestHelper
   # 上限の抜けを外から確かめられない。
   Plan = Struct.new(:status, :location, :body_bytes, :chunked, :chunk_bytes, :chunk_delay,
                     :status_line_bytes, :header_bytes, :single_header_bytes,
-                    :content_encoding, :broken_encoding, :trailer, :payload, keyword_init: true)
+                    :content_encoding, :broken_encoding, :trailer, :malformed, :payload, keyword_init: true)
 
   DEFAULT_PLAN = {
     status: "204 No Content", location: nil, body_bytes: 0, chunked: false,
     chunk_bytes: 4096, chunk_delay: 0, status_line_bytes: 0, header_bytes: 0,
     single_header_bytes: 0, content_encoding: nil, broken_encoding: false,
-    trailer: false, payload: nil
+    trailer: false, malformed: false, payload: nil
   }.freeze
 
   # プロセスごとに固定のループバックアドレス。
@@ -40,9 +40,10 @@ module LocalHttpServerTestHelper
   # やめると書き込みはそこで止まる。返そうとした量との差が、
   # 打ち切られたことの証拠になる。
   def with_local_server(address, **options)
+    port = options.delete(:port) || 80
     plan = Plan.new(**DEFAULT_PLAN.merge(options))
     plan.payload = plan.broken_encoding ? broken_payload : compress(plan.body_bytes) if plan.content_encoding
-    server = TCPServer.new(address, options[:port] || 80)
+    server = TCPServer.new(address, port)
     state = { received: [], written: 0, handled: 0 }
     lock = Mutex.new
 
@@ -133,12 +134,17 @@ module LocalHttpServerTestHelper
     end
 
     def write_status_line(emit, plan)
+      # HTTP として解釈できない列。応答の組み立てで失敗する経路を作る。
+      return emit.call("NOT-HTTP ここは応答ではない\r\n\r\n") if plan.malformed
+
       emit.call("HTTP/1.1 #{plan.status}")
       pad(emit, plan.status_line_bytes)
       emit.call("\r\n")
     end
 
     def write_headers(emit, plan)
+      return if plan.malformed
+
       emit.call("Location: #{plan.location}\r\n") if plan.location
       emit.call("Content-Encoding: #{plan.content_encoding}\r\n") if plan.content_encoding
       emit.call("Trailer: X-Checked\r\n") if plan.trailer
@@ -176,6 +182,7 @@ module LocalHttpServerTestHelper
     end
 
     def write_payload(socket, plan)
+      return 0 if plan.malformed
       return write_compressed(socket, plan) if plan.content_encoding
       return 0 if plan.body_bytes.zero?
 

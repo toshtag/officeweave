@@ -111,6 +111,25 @@ class WebhookEndpointsControllerTest < ActionDispatch::IntegrationTest
     assert_not_includes AuditEvent.recent_first.first.details.to_json, endpoint.secret
   end
 
+  test "一般利用者は送信の記録を開けない" do
+    # 送信の記録には通信の失敗の文面が出る。読める範囲を管理者に限る。
+    endpoint = organizations(:main).webhook_endpoints.create!(name: "連携先", url: "https://example.com/hook")
+    sign_in_as users(:hanako)
+
+    get webhook_endpoint_url(endpoint)
+
+    assert_response :forbidden
+  end
+
+  test "別組織の送信の記録は開けない" do
+    other = organizations(:other).webhook_endpoints.create!(name: "別組織", url: "https://example.com/hook")
+    sign_in_as users(:taro)
+
+    get webhook_endpoint_url(other)
+
+    assert_response :not_found
+  end
+
   test "送信の記録を確認できる" do
     sign_in_as users(:taro)
     endpoint = organizations(:main).webhook_endpoints.create!(name: "連携先", url: "https://example.com/hook")
