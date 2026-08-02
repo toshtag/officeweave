@@ -719,6 +719,9 @@ ja:
       destination_not_allowed: 送信できない宛先です
       invalid_allowlist: 許可リストの設定が不正です
 
+  department_csv:
+    duplicate_code: 識別子 %{code} は %{line} 行目にもあります
+    unknown_parent: 上位部門の識別子 %{code} が見つかりません
   data_transfers:
     title: 入出力
     heading: 入出力
@@ -729,11 +732,17 @@ ja:
       description: 現在の内容を CSV として取得します。
       users: 利用者を書き出す
       departments: 部門を書き出す
+    departments_import:
+      heading: 部門の取り込み
+      description: 識別子が一致する部門は更新し、なければ追加します。
+      columns_hint: 1 行目に上記の見出しを付けてください。parent_code は上位部門の識別子です。行の並びは問いません。parent_code 列を省くと階層は変わりません。列を付けて空欄にすると最上位へ移します。1 件でも誤りがあると、何も取り込まれません。
+      file: 部門の CSV ファイル
+      submit: 部門を取り込む
     import:
       heading: 利用者の取り込み
       description: メールアドレスが一致する利用者は更新し、なければ追加します。パスワードは扱いません。
       columns_hint: 1 行目に上記の見出しを付けてください。departments は部門の識別子を空白で区切って並べます。departments 列を省くと所属は変わりません。列を付けて空欄にすると、所属をすべて解除します。登録されていない識別子が 1 件でもあると、何も取り込まれません。
-      file: CSV ファイル
+      file: 利用者の CSV ファイル
       submit: 取り込む
       failed: 取り込めませんでした。1 件でも誤りがあると、何も保存されません。
       line: "%{line} 行目:"
@@ -788,4 +797,6 @@ ja:
       webhook_endpoint_deleted: 送信先の削除
       users_imported: 利用者の取り込み
       users_exported: 利用者の書き出し
+      departments_imported: 部門の取り込み
+      departments_exported: 部門の書き出し
       audit_events_exported: 監査記録の書き出し

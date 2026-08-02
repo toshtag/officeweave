@@ -13,6 +13,21 @@
     </ul>
   </section>
 
+  <%# 取り込みの誤りは、どちらの取り込みで起きても同じ形で示す。 %>
+  <% if @result && !@result.success? %>
+    <div class="error-summary" role="alert">
+      <h3 class="error-summary__heading"><%= t("data_transfers.import.failed") %></h3>
+      <ul>
+        <% @result.errors.each do |error| %>
+          <li>
+            <%= t("data_transfers.import.line", line: error[:line]) %>
+            <%= error[:messages].to_sentence %>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
   <section class="panel panel--narrow stack" aria-labelledby="data-transfers-import">
     <h2 id="data-transfers-import"><%= t("data_transfers.import.heading") %></h2>
     <p><%= t("data_transfers.import.description") %></p>
@@ -20,25 +35,28 @@
     <pre class="token"><%= UserCsv::HEADERS.join(",") %></pre>
     <p class="form__hint"><%= t("data_transfers.import.columns_hint") %></p>
 
-    <% if @result && !@result.success? %>
-      <div class="error-summary" role="alert">
-        <h3 class="error-summary__heading"><%= t("data_transfers.import.failed") %></h3>
-        <ul>
-          <% @result.errors.each do |error| %>
-            <li>
-              <%= t("data_transfers.import.line", line: error[:line]) %>
-              <%= error[:messages].to_sentence %>
-            </li>
-          <% end %>
-        </ul>
-      </div>
-    <% end %>
-
     <%= form_with url: users_import_path, class: "form stack" do |form| %>
       <%= form.field :file, :file_field, accept: "text/csv,.csv", required: true,
                      label: t("data_transfers.import.file") %>
 
       <%= form.submit t("data_transfers.import.submit"), class: "button button--primary" %>
+    <% end %>
+  </section>
+
+  <section class="panel panel--narrow stack" aria-labelledby="data-transfers-departments-import">
+    <h2 id="data-transfers-departments-import"><%= t("data_transfers.departments_import.heading") %></h2>
+    <p><%= t("data_transfers.departments_import.description") %></p>
+
+    <pre class="token"><%= DepartmentCsv::HEADERS.join(",") %></pre>
+    <p class="form__hint"><%= t("data_transfers.departments_import.columns_hint") %></p>
+
+    <%# 同じ画面に取り込みの欄が 2 つある。id を分け、ラベルの結び付けを保つ。 %>
+    <%= form_with url: departments_import_path, class: "form stack" do |form| %>
+      <%= form.field :file, :file_field, accept: "text/csv,.csv", required: true,
+                     id: "departments_file",
+                     label: t("data_transfers.departments_import.file") %>
+
+      <%= form.submit t("data_transfers.departments_import.submit"), class: "button button--primary" %>
     <% end %>
   </section>
 </div>
