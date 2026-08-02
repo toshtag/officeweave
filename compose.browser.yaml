@@ -1,0 +1,35 @@
+# 実ブラウザーでテストを実行するための追加の構成。
+#
+# ブラウザーは別の service として置く。開発用のイメージへ入れると、
+# イメージの大きさと組み立て時間が増え、検証の実行環境も利用者の環境から離れる。
+# 使うのは test/browser の層だけであり、通常の起動では要らない。
+#
+# 使い方:
+#   docker compose -f compose.yaml -f compose.browser.yaml up -d
+#   docker compose -f compose.yaml -f compose.browser.yaml exec web bin/rails test:browser
+services:
+  # 版は image の digest で固定する。中身が後から変わると、同じ commit を
+  # 検証しても結果が変わる。版は注記として残す。
+  browser:
+    image: selenium/standalone-chromium@sha256:3400b92f1cddb2dfaaf358654e8f7d83d7be45192fb73c5f28c25faa28d36504 # 150.0
+    # 共有メモリーが既定の 64MB のままだと、Chromium が描画中に落ちる。
+    shm_size: 2gb
+    environment:
+      # 1 度に 1 つの操作しか行わない。並行して開くと、どの失敗がどのテストの
+      # ものか読めない。
+      SE_NODE_MAX_SESSIONS: 1
+      SE_NODE_OVERRIDE_MAX_SESSIONS: true
+    # ホストへポートを公開しない。使うのは web からだけである。
+    expose:
+      - "4444"
+
+  web:
+    environment:
+      # ブラウザーの接続先。この変数がある場合だけ、test/browser を実行できる。
+      SELENIUM_REMOTE_URL: http://browser:4444
+      # ブラウザーから見たテスト用サーバーの宛先。
+      # ブラウザーは別のコンテナで動くため、localhost では届かない。
+      BROWSER_TEST_APPLICATION_HOST: web
+    depends_on:
+      browser:
+        condition: service_started

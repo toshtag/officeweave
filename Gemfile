@@ -52,6 +52,10 @@ group :development do
 end
 
 group :test do
-  # システムテスト用。実行はブラウザーを使わない rack_test で行う。
+  # システムテスト用。既定の実行はブラウザーを使わない rack_test で行う。
   gem "capybara"
+
+  # test/browser の層でだけ使う。別のコンテナで動く Chromium を操作する。
+  # WebDriver の通信を自分で書くと、規格の実装を持つことになる。
+  gem "selenium-webdriver"
 end
