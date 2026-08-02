@@ -1,0 +1,24 @@
+<% content_for :title, t("password_resets.edit.title") %>
+
+<div class="panel panel--narrow stack">
+  <h1><%= t("password_resets.edit.heading") %></h1>
+
+  <%= form_with model: @user, url: password_reset_path(@token), method: :patch, class: "form stack" do |form| %>
+    <%= render "shared/error_messages", record: @user %>
+
+    <%# 入力欄の制限は入力の助けにとどめる。受理するかどうかは User モデルの検証が決める。 %>
+    <%= form.field :password, :password_field, required: true,
+                   minlength: Authentication::PasswordPolicy::MINIMUM_LENGTH, maxlength: 72,
+                   autocomplete: "new-password",
+                   label: t("passwords.edit.new_password"),
+                   hint: t("users.form.password_policy_hint",
+                           count: Authentication::PasswordPolicy::MINIMUM_LENGTH) %>
+    <%= form.field :password_confirmation, :password_field, required: true,
+                   minlength: Authentication::PasswordPolicy::MINIMUM_LENGTH, maxlength: 72,
+                   autocomplete: "new-password" %>
+
+    <%= form_hints t("password_resets.edit.sessions_hint") %>
+
+    <%= form.submit t("password_resets.edit.submit"), class: "button button--primary" %>
+  <% end %>
+</div>

@@ -10,6 +10,9 @@ Rails.application.routes.draw do
   # 自分のパスワードの変更。管理者による変更とは別の経路とする。
   resource :password, only: %i[edit update]
 
+  # パスワードの再設定。ログインしていない状態から使う。
+  resources :password_resets, only: %i[new create edit update], param: :token
+
   # 表示言語の切り替え。状態を変えるため GET では受け付けない。
   patch "locale" => "locales#update", as: :locale
 

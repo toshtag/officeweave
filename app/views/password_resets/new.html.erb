@@ -1,0 +1,20 @@
+<% content_for :title, t("password_resets.new.title") %>
+
+<div class="panel panel--narrow stack">
+  <h1><%= t("password_resets.new.heading") %></h1>
+
+  <p><%= t("password_resets.new.description") %></p>
+
+  <%= form_with url: password_resets_path, method: :post, class: "form stack" do %>
+    <%= form_field do %>
+      <%= label_tag :email_address, User.human_attribute_name(:email_address),
+                    class: ApplicationFormBuilder::LABEL_CLASS %>
+      <%= email_field_tag :email_address, params[:email_address], class: ApplicationFormBuilder::INPUT_CLASS,
+                          required: true, autocomplete: "username" %>
+    <% end %>
+
+    <%= submit_tag t("password_resets.new.submit"), class: "button button--primary", name: nil %>
+  <% end %>
+
+  <p><%= link_to t("password_resets.new.back"), new_session_path %></p>
+</div>

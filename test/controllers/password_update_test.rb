@@ -6,6 +6,8 @@ require "test_helper"
 # 今のパスワードを知っていることを求める。求めないと、開いたままの画面を
 # 使える相手が、資格情報を置き換えて利用者を締め出せる。
 class PasswordUpdateTest < ActionDispatch::IntegrationTest
+  include PasswordlessProviderTestHelper
+
   NEW_PASSWORD = "a-brand-new-secret-value".freeze
 
   test "今のパスワードを添えて変更できる" do
@@ -138,41 +140,28 @@ class PasswordUpdateTest < ActionDispatch::IntegrationTest
   end
 
   test "パスワードを使わない認証方式では扱えない" do
-    Authentication::ProviderRegistry.register(PasswordlessProvider)
-    ENV["AUTHENTICATION_PROVIDER"] = "passwordless"
-    sign_in_as users(:hanako)
+    with_passwordless_provider do
+      sign_in_as users(:hanako)
 
-    get edit_password_url
-    assert_response :not_found
+      get edit_password_url
+      assert_response :not_found
 
-    patch password_url, params: {
-      current_password: "password-for-tests",
-      user: { password: NEW_PASSWORD, password_confirmation: NEW_PASSWORD }
-    }
-    assert_response :not_found
-    assert users(:hanako).reload.authenticate("password-for-tests")
-  ensure
-    Authentication::ProviderRegistry.instance_variable_get(:@providers).delete("passwordless")
-    ENV.delete("AUTHENTICATION_PROVIDER")
+      patch password_url, params: {
+        current_password: "password-for-tests",
+        user: { password: NEW_PASSWORD, password_confirmation: NEW_PASSWORD }
+      }
+      assert_response :not_found
+      assert users(:hanako).reload.authenticate("password-for-tests")
+    end
   end
 
   test "パスワードを使わない認証方式では、設定から案内しない" do
-    Authentication::ProviderRegistry.register(PasswordlessProvider)
-    ENV["AUTHENTICATION_PROVIDER"] = "passwordless"
-    sign_in_as users(:hanako)
+    with_passwordless_provider do
+      sign_in_as users(:hanako)
 
-    get settings_url
+      get settings_url
 
-    assert_select "a[href=?]", edit_password_path, count: 0
-  ensure
-    Authentication::ProviderRegistry.instance_variable_get(:@providers).delete("passwordless")
-    ENV.delete("AUTHENTICATION_PROVIDER")
-  end
-
-  # 外部の方式の代わりとして使う。資格情報はこの製品の中に無い。
-  class PasswordlessProvider
-    def self.name_key = "passwordless"
-    def self.password_required? = false
-    def self.authenticate(email_address:, password:) = User.find_by(email_address: email_address)
+      assert_select "a[href=?]", edit_password_path, count: 0
+    end
   end
 end

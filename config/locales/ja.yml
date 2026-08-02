@@ -583,6 +583,28 @@ ja:
       open: 次の場所で確認できます。
       settings_hint: このメールは OfficeWeave からの自動送信です。
 
+  password_resets:
+    sent: 再設定の案内をメールで送りました。届かない場合は、メールアドレスと迷惑メールをご確認ください。
+    updated: パスワードを再設定しました。新しいパスワードでログインしてください。
+    invalid_token: 再設定の案内が使えません。期限が切れたか、すでに使われています。あらためて送ってください。
+    rate_limited: 要求が続いています。しばらく待ってからお試しください。
+    new:
+      title: パスワードの再設定
+      heading: パスワードの再設定
+      description: 登録しているメールアドレスへ、再設定の案内を送ります。
+      submit: 案内を送る
+      back: ログイン画面へ戻る
+    edit:
+      title: 新しいパスワードの設定
+      heading: 新しいパスワードの設定
+      sessions_hint: 再設定すると、この利用者のログインはすべて終了します。
+      submit: 設定する
+  password_mailer:
+    reset:
+      subject: パスワードの再設定
+      heading: 次の場所から、新しいパスワードを設定できます。
+      expires_hint: この案内は %{count} 分で使えなくなります。
+      ignore_hint: 心当たりがない場合は、何もしないでください。パスワードは変わりません。
   passwords:
     updated: パスワードを変更しました。他の端末のログインは終了しました。
     edit:
@@ -710,6 +732,8 @@ ja:
       user_updated: 利用者の更新
       user_deactivated: 利用者の無効化
       password_changed: パスワードの変更
+      password_reset_requested: パスワード再設定の要求
+      password_reset_completed: パスワードの再設定
       user_activated: 利用者の有効化
       department_created: 部門の追加
       department_updated: 部門の更新
