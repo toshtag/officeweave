@@ -22,6 +22,9 @@ class Notification < ApplicationRecord
   scope :recent_first, -> { order(created_at: :desc, id: :desc) }
   scope :unread, -> { where(read_at: nil) }
 
+  # 未読だけへ絞るかどうか。指定が無ければ両方を返す。
+  scope :with_read_state, ->(state) { unread if state == "unread" }
+
   # 同じ出来事について二重に通知しない。
   # 通知を作る側は、重複を気にせず呼べるようにする。
   def self.deliver(user:, subject:, event:)

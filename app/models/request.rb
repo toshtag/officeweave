@@ -53,6 +53,13 @@ class Request < ApplicationRecord
     # 管理者はすべての段を担当する。段を持つ前からの範囲を狭めない。
     user.administrator? ? scope : scope.where(current_step_approvable_by(user))
   }
+  # 種別での絞り込み。指定が無ければ全件を返す。
+  scope :with_request_type, ->(request_type_id) {
+    next if request_type_id.blank?
+
+    where(request_type_id: request_type_id)
+  }
+
   # 単一の状態でも、複数の状態の並びでも絞り込める。
   scope :with_status, ->(status) {
     values = Array(status) & STATUSES
