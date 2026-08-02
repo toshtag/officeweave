@@ -12,9 +12,9 @@
 
 ```text
 現在の Phase: R1
-直近完了 Task: R1-T3
+直近完了 Task: R1-T4
 進行中:        なし
-次に実行:      R1-T4
+次に実行:      R1-T5
 ```
 
 ## P0 プロジェクト契約
@@ -207,7 +207,7 @@ Issue が大きい場合は分割してよいが、分割した場合は本書�
 | R1-T1 | `r1/t1-backup-retention`    | —        | 取得した書庫の保持の上限を設ける            | 完了  |
 | R1-T2 | `r1/t2-backup-encryption`   | —        | 書庫を暗号化して取得し、同じ経路で復元する       | 完了  |
 | R1-T3 | `r1/t3-scheduled-backup`    | —        | 時刻起動から無人で取得できるようにする         | 完了  |
-| R1-T4 | `r1/t4-audit-retention`     | —        | 監査記録の保持期間を設ける               | 未着手 |
+| R1-T4 | `r1/t4-audit-retention`     | —        | 監査記録の保持期間を設ける               | 完了  |
 | R1-T5 | `r1/t5-audit-export`        | —        | 監査記録を書き出せるようにする             | 未着手 |
 | R1-T6 | `r1/t6-structured-log`      | —        | 要求と送信の記録を構造化して出す            | 未着手 |
 | R1-T7 | `r1/t7-operational-alerts`  | —        | 稼働の異常を運用者へ知らせる              | 未着手 |
