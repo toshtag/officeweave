@@ -9,16 +9,8 @@
     <%= form_with model: @webhook_endpoint, url: webhook_endpoints_path, class: "form stack" do |form| %>
       <%= render "shared/error_messages", record: @webhook_endpoint %>
 
-      <div class="form__field">
-        <%= form.label :name, class: "form__label" %>
-        <%= form.text_field :name, required: true, class: "form__input" %>
-      </div>
-
-      <div class="form__field">
-        <%= form.label :url, class: "form__label" %>
-        <%= form.url_field :url, required: true, class: "form__input" %>
-        <p class="form__hint"><%= t("webhook_endpoints.new.url_hint") %></p>
-      </div>
+      <%= form.field :name, :text_field, required: true %>
+      <%= form.field :url, :url_field, required: true, hint: t("webhook_endpoints.new.url_hint") %>
 
       <%= form.submit t("webhook_endpoints.new.submit"), class: "button button--primary" %>
     <% end %>

@@ -17,11 +17,7 @@
     <%= form_with model: @api_token, url: api_tokens_path, class: "form stack" do |form| %>
       <%= render "shared/error_messages", record: @api_token %>
 
-      <div class="form__field">
-        <%= form.label :name, class: "form__label" %>
-        <%= form.text_field :name, required: true, class: "form__input" %>
-        <p class="form__hint"><%= t("api_tokens.new.name_hint") %></p>
-      </div>
+      <%= form.field :name, :text_field, required: true, hint: t("api_tokens.new.name_hint") %>
 
       <%= form.submit t("api_tokens.new.submit"), class: "button button--primary" %>
     <% end %>

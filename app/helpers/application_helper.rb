@@ -32,6 +32,14 @@ module ApplicationHelper
     simple_format(CGI.escapeHTML(text.to_s), html_options, sanitize: false)
   end
 
+  # 縦に並べる入力欄の包み。補足は内側へ置く。
+  #
+  # 模型を持つフォームでは ApplicationFormBuilder#field を使う。
+  # 一覧の絞り込みのように、模型を持たず _tag の補助で組み立てる場合はここを直接使う。
+  def form_field(hint: nil, &block)
+    tag.div(class: ApplicationFormBuilder::FIELD_CLASS) { safe_join([ capture(&block), form_hints(hint) ]) }
+  end
+
   # 横に並べる入力欄。選択肢そのものが操作の対象になる場合に使う。
   #
   # 補足は包みの外へ置く。包みは横並びであり、内側へ入れると補足が

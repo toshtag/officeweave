@@ -32,8 +32,8 @@ class ApplicationFormBuilder < ActionView::Helpers::FormBuilder
       public_send(type, name, *arguments, options.merge(class: INPUT_CLASS))
     end
 
-    @template.tag.div(class: FIELD_CLASS) do
-      @template.safe_join([ label(name, label, class: LABEL_CLASS), contents, @template.form_hints(hint) ])
+    @template.form_field(hint: hint) do
+      @template.safe_join([ label(name, label, class: LABEL_CLASS), contents ])
     end
   end
 end

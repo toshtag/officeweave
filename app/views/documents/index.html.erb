@@ -12,17 +12,17 @@
   </div>
 
   <form class="form form--inline" method="get" action="<%= documents_path %>" role="search">
-    <div class="form__field">
+    <%= form_field do %>
       <%= label_tag :query, t("documents.index.query"), class: "form__label" %>
       <%= search_field_tag :query, @query, class: "form__input" %>
-    </div>
+    <% end %>
 
-    <div class="form__field">
+    <%= form_field do %>
       <%= label_tag :document_category_id, Document.human_attribute_name(:document_category), class: "form__label" %>
       <%= select_tag :document_category_id,
                      options_from_collection_for_select(@categories, :id, :name, @category_id),
                      include_blank: t("documents.index.all_categories"), class: "form__input" %>
-    </div>
+    <% end %>
     <%= submit_tag t("documents.index.search"), class: "button", name: nil %>
     <% if @query.present? || @category_id.present? %>
       <%= link_to t("documents.index.clear"), documents_path, class: "button button--quiet" %>
