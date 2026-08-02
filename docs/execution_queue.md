@@ -12,9 +12,9 @@
 
 ```text
 現在の Phase: R6
-直近完了 Task: R6-T5
+直近完了 Task: R6-T6
 進行中:        なし
-次に実行:      R6-T6
+次に実行:      なし（R6 完了。次の Phase の着手は別途決める）
 ```
 
 ## P0 プロジェクト契約
@@ -206,7 +206,7 @@ R0 の完了後に行った保守性のレビューで確認した問題を、Gi
 | R6-T3 | `r6/t3-form-field-helper`             | [#132](https://github.com/toshtag/OfficeWeave/issues/132) | 入力欄の組み立てを 1 か所へまとめる    | 完了  |
 | R6-T4 | `r6/t4-test-layers`                   | [#137](https://github.com/toshtag/OfficeWeave/issues/137) | テストの置き場所を方針の層へそろえる     | 完了  |
 | R6-T5 | `r6/t5-verification-scope`            | [#134](https://github.com/toshtag/OfficeWeave/issues/134) | 総合検証を自動で確かめられないものへ絞る   | 完了  |
-| R6-T6 | `r6/t6-execution-queue-scope`         | [#135](https://github.com/toshtag/OfficeWeave/issues/135) | 実行キューを現在地とタスク表へ絞る      | 未着手 |
+| R6-T6 | `r6/t6-execution-queue-scope`         | [#135](https://github.com/toshtag/OfficeWeave/issues/135) | 実行キューを現在地とタスク表へ絞る      | 完了  |
 
 ## 分解の方針
 
