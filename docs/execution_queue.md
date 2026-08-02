@@ -13,8 +13,8 @@
 ```text
 現在の Phase: R7
 直近完了 Task: R7-T5
-進行中:        なし
-次に実行:      なし（R7 完了。次の Phase の着手は別途決める）
+進行中:        R7-T6
+次に実行:      R7-T7
 ```
 
 ## P0 プロジェクト契約
@@ -227,6 +227,9 @@ R0 の完了後に行った保守性のレビューで確認した問題を、Gi
 | R7-T3 | `r7/t3-special-purpose-ip-ranges`     | GHSA-jmmg-cxhh-6556 | 特殊用途の IP 範囲を送信先から外す        | 完了  |
 | R7-T4 | `r7/t4-webhook-response-limit`        | GHSA-3xmf-2x95-gfmp | Webhook の応答を読む量に上限を設ける      | 完了  |
 | R7-T5 | `r7/t5-webhook-total-deadline`        | GHSA-3xmf-2x95-gfmp | Webhook の送信に通信全体の期限を設ける     | 完了  |
+| R7-T6 | `r7/t6-response-receive-limit`         | GHSA-3xmf-2x95-gfmp | 応答として受け取る量そのものに上限を設ける   | 進行中 |
+| R7-T7 | `r7/t7-safe-delivery-error-message`    | GHSA-3xmf-2x95-gfmp | 通信の失敗の記録を決めた文面へそろえる     | 未着手 |
+| R7-T8 | `r7/t8-deadline-recheck`               | GHSA-3xmf-2x95-gfmp | 期限が守られるかを測り直す           | 未着手 |
 
 ## 分解の方針
 
