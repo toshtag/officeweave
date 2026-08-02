@@ -14,12 +14,18 @@ module OidcProviderTestHelper
   ISSUER_HOSTNAME = LocalCertificateTestHelper::HOSTNAME
   KEY_ID = "test-key".freeze
 
-  Provider = Struct.new(:issuer, :key, :requests, keyword_init: true) do
+  Provider = Struct.new(:issuer, :key, :requests, :responder, keyword_init: true) do
     def jwks = { "keys" => [ JWT::JWK.new(key, kid: KEY_ID).export ] }
 
     def path_of(index) = requests.call[index][:path]
     def body_of(index) = requests.call[index][:body]
     def header_of(index, name) = requests.call[index][:headers][name]
+
+    # 応答を後から差し替える。
+    #
+    # nonce は認可の開始のときに決まる。立てた時点では、それを含む
+    # id_token を用意できない。
+    def respond_with(path, payload) = responder.call(path, payload)
   end
 
   # 鍵の生成は重いため、1 度だけ作って使い回す。
@@ -66,8 +72,11 @@ module OidcProviderTestHelper
         end
 
         request = read_request(socket)
-        lock.synchronize { received << request }
-        write_response(socket, plan[request[:path]] || [ 404, { error: "not_found" } ])
+        response = lock.synchronize do
+          received << request
+          plan[request[:path]] || [ 404, { error: "not_found" } ]
+        end
+        write_response(socket, response)
         socket.close
       rescue Errno::EPIPE, Errno::ECONNRESET, IOError
         nil
@@ -76,8 +85,11 @@ module OidcProviderTestHelper
       nil
     end
 
-    yield Provider.new(issuer: issuer, key: OidcProviderTestHelper.key,
-                       requests: -> { lock.synchronize { received.dup } })
+    yield Provider.new(
+      issuer: issuer, key: OidcProviderTestHelper.key,
+      requests: -> { lock.synchronize { received.dup } },
+      responder: ->(path, payload) { lock.synchronize { plan[path] = payload } }
+    )
   ensure
     acceptor&.kill
     server&.close
