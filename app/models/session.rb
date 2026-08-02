@@ -22,6 +22,16 @@ class Session < ApplicationRecord
       where(expires_at: ..at).or(where(last_active_at: ..(at - IDLE_TIMEOUT)))
     end
 
+    # まだ認証に使えるセッション。
+    #
+    # expired の否定を書かない。or を含む条件の否定は、片方だけを反転した
+    # 条件になりやすい。境界の扱いは expired? と同じとし、境界の時刻
+    # ちょうどは使えないものとする。
+    def usable(at: Time.current)
+      where(arel_table[:expires_at].gt(at))
+        .where(arel_table[:last_active_at].gt(at - IDLE_TIMEOUT))
+    end
+
     # 定期実行から呼ぶ。callback を持たないため一括で消す。
     def delete_expired(at: Time.current)
       expired(at: at).delete_all

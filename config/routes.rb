@@ -10,6 +10,10 @@ Rails.application.routes.draw do
   # 自分のパスワードの変更。管理者による変更とは別の経路とする。
   resource :password, only: %i[edit update]
 
+  # ログイン中の端末の一覧と終了。ログインそのものは /session が扱う。
+  resources :logins, only: %i[index destroy]
+  delete "logins" => "logins#destroy_all", as: :all_logins
+
   # パスワードの再設定。ログインしていない状態から使う。
   resources :password_resets, only: %i[new create edit update], param: :token
 

@@ -563,6 +563,24 @@ en:
       open: You can review it here.
       settings_hint: This message was sent automatically by OfficeWeave.
 
+  logins:
+    revoked:
+      one: 1 session ended.
+      other: "%{count} sessions ended."
+    index:
+      title: Signed-in devices
+      heading: Signed-in devices
+      description: End any session you do not recognize, then change your password.
+      device: Device
+      started_at: Signed in
+      last_active_at: Last activity
+      action: Actions
+      current: This device
+      unknown_device: Unknown device
+      sign_out: Sign out
+      revoke: End
+      revoke_others: End all other sessions
+      revoke_others_hint: This device stays signed in. Sign out from the row above.
   password_resets:
     sent: If the address is registered, a reset link has been sent. Check your inbox and spam folder.
     updated: Your password has been reset. Sign in with the new password.
@@ -714,6 +732,7 @@ en:
       password_changed: Password changed
       password_reset_requested: Password reset requested
       password_reset_completed: Password reset completed
+      sessions_revoked: Sessions ended
       user_activated: User activated
       department_created: Department added
       department_updated: Department updated
