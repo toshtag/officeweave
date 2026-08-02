@@ -1,0 +1,9 @@
+<%= t("password_mailer.reset.heading") %>
+
+<%= edit_password_reset_url(@token) %>
+
+<%= t("password_mailer.reset.expires_hint", count: (User::PASSWORD_RESET_EXPIRES_IN / 60).to_i) %>
+<%= t("password_mailer.reset.ignore_hint") %>
+
+--
+<%= t("application.name") %>

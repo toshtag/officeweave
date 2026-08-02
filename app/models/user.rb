@@ -1,6 +1,25 @@
 class User < ApplicationRecord
   has_secure_password
 
+  # パスワードの再設定の案内が使える時間。
+  #
+  # メールの受信箱に残るリンクであり、そのまま資格情報を置き換えられる。
+  # 短くすると、受け取ってから開くまでに切れる。届いたことに気付いてから
+  # 操作するまでの間を見込んで 15 分とする。
+  PASSWORD_RESET_EXPIRES_IN = 15.minutes
+
+  # 再設定の案内に使う値。
+  #
+  # 記録として持たない。持つと、失効させる処理と、消し忘れた行の扱いを
+  # 別に決めることになる。署名した値へ期限と用途を含め、鍵で検証する。
+  #
+  # パスワードが変わると、その前に発行した値は使えなくなる。
+  # digest の一部を署名の対象へ含めているためである。一度使った案内が
+  # 二度使えないことも、これで成り立つ。
+  generates_token_for :password_reset, expires_in: PASSWORD_RESET_EXPIRES_IN do
+    password_salt&.last(10)
+  end
+
   belongs_to :organization
   has_many :sessions, dependent: :destroy
   has_many :memberships, dependent: :destroy

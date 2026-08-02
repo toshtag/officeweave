@@ -9,6 +9,7 @@ require "test_helper"
 # 組織に属するメールアドレスの一覧を、この経路から作れる。
 class PasswordResetTest < ActionDispatch::IntegrationTest
   include ActionMailer::TestHelper
+  include PasswordlessProviderTestHelper
 
   NEW_PASSWORD = "a-reset-secret-value".freeze
 
@@ -147,26 +148,24 @@ class PasswordResetTest < ActionDispatch::IntegrationTest
   end
 
   test "パスワードを使わない認証方式では扱えない" do
-    Authentication::ProviderRegistry.register(PasswordUpdateTest::PasswordlessProvider)
-    ENV["AUTHENTICATION_PROVIDER"] = "passwordless"
+    with_passwordless_provider do
+      get new_password_reset_url
+      assert_response :not_found
 
-    get new_password_reset_url
-    assert_response :not_found
+      assert_no_emails do
+        post password_resets_url, params: { email_address: users(:hanako).email_address }
+      end
+      assert_response :not_found
 
-    assert_no_emails do
-      post password_resets_url, params: { email_address: users(:hanako).email_address }
+      get new_session_url
+      assert_select "a[href=?]", new_password_reset_path, count: 0
     end
-    assert_response :not_found
-
-    get new_session_url
-    assert_select "a[href=?]", new_password_reset_path, count: 0
-  ensure
-    Authentication::ProviderRegistry.instance_variable_get(:@providers).delete("passwordless")
-    ENV.delete("AUTHENTICATION_PROVIDER")
   end
 
   test "案内には再設定の経路と、心当たりがない場合の扱いを書く" do
-    post password_resets_url, params: { email_address: users(:hanako).email_address }
+    perform_enqueued_jobs do
+      post password_resets_url, params: { email_address: users(:hanako).email_address }
+    end
 
     body = ActionMailer::Base.deliveries.last.body.to_s
 
