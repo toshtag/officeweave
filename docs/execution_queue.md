@@ -12,9 +12,9 @@
 
 ```text
 現在の Phase: R2
-直近完了 Task: R2-T7
+直近完了 Task: R2-T8
 進行中:        なし
-次に実行:      R2-T8
+次に実行:      R3-T1（R2 完了。R3 のタスク表は着手時に登録する）
 ```
 
 ## P0 プロジェクト契約
@@ -238,7 +238,7 @@ OIDC 連携は 3 つに分ける。設定と id_token の検証、認可サー�
 | R2-T6 | `r2/t6-oidc-verification`     | —        | OIDC の設定と id_token の検証を用意する    | 完了  |
 | R2-T7A | `r2/t7a-health-probe-isolation` | —      | 稼働確認のテストを並列実行から切り離す         | 完了  |
 | R2-T7 | `r2/t7-oidc-client`           | —        | 認可サーバーとの通信を用意する               | 完了  |
-| R2-T8 | `r2/t8-oidc-login`            | —        | OIDC でログインできるようにする             | 未着手 |
+| R2-T8 | `r2/t8-oidc-login`            | —        | OIDC でログインできるようにする             | 完了  |
 
 ## R6 保守性
 
