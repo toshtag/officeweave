@@ -1909,6 +1909,13 @@ CREATE INDEX index_reservations_on_organization_id ON public.reservations USING 
 
 
 --
+-- Name: index_reservations_on_organization_id_and_ends_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_reservations_on_organization_id_and_ends_at ON public.reservations USING btree (organization_id, ends_at);
+
+
+--
 -- Name: index_reservations_on_reserver_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2372,6 +2379,7 @@ ALTER TABLE ONLY public.announcement_departments
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260802020000'),
 ('20260802010000'),
 ('20260802000000'),
 ('20260801000000'),
