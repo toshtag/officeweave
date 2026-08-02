@@ -39,6 +39,7 @@ class PersistentQueueTest < ActiveSupport::TestCase
     assert_equal %w[
       clear_solid_queue_finished_jobs
       delete_expired_sessions
+      delete_expired_audit_events
       publish_scheduled_announcements
     ], recurring["production"].keys
   end

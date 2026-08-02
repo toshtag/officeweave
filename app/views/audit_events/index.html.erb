@@ -23,6 +23,14 @@
 
   <p role="status"><%= t("audit_events.index.total", count: @total_count) %></p>
 
+  <p class="form__hint" data-audit-retention>
+    <%= if @retention_days
+          t("audit_events.index.retention", count: @retention_days)
+        else
+          t("audit_events.index.retention_none")
+        end %>
+  </p>
+
   <% if @audit_events.any? %>
     <div class="panel">
       <table>

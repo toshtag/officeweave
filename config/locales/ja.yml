@@ -671,6 +671,10 @@ ja:
         zero: 記録は 0 件です
         one: 記録は 1 件です
         other: 記録は %{count} 件です
+      retention:
+        one: 記録は 1 日を過ぎると消えます。
+        other: 記録は %{count} 日を過ぎると消えます。
+      retention_none: 記録は消えません。保持期間は設定されていません。
     actions:
       signed_in: ログイン
       sign_in_failed: ログイン失敗

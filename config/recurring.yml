@@ -18,6 +18,12 @@ production:
   delete_expired_sessions:
     command: "Session.delete_expired"
     schedule: every hour at minute 22
+  # 保持期間を指定していない場合は 1 件も対象にならない。
+  # 毎時ではなく 1 日 1 回とする。日の単位で判断する設定であり、
+  # 蓄積した記録を毎時走査する理由がない。
+  delete_expired_audit_events:
+    command: "AuditEvent.delete_expired"
+    schedule: every day at 3:32am
   # 公開日時の到来で公開が成立する。誰の操作も待てないため、ここで拾う。
   # 到来から知らせまでの遅れが 1 時間になると、予約公開の意味が薄れる。
   publish_scheduled_announcements:

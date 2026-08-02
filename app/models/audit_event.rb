@@ -1,7 +1,11 @@
 # 重要な操作の記録。
 #
-# 記録は書き足すだけとし、更新も削除もしない。
+# 記録は書き足すだけとし、更新はしない。
 # 後から書き換えられる記録は、監査の用途に使えない。
+#
+# 削除の経路は 1 つだけとする。保持期間より古い記録を、定期実行が
+# まとめて消す。個々の記録を選んで消す経路は持たない。持つと、
+# 都合の悪い 1 件だけを取り除ける状態になる。
 class AuditEvent < ApplicationRecord
   ACTIONS = %w[
     signed_in
@@ -35,12 +39,31 @@ class AuditEvent < ApplicationRecord
   belongs_to_same_organization :actor
 
   scope :recent_first, -> { order(created_at: :desc, id: :desc) }
+
+  # 保持期間を過ぎた記録。期間を指定していない場合は 1 件も含まない。
+  #
+  # 境界の時刻ちょうどは含めない。指定した日数は「残す期間」であり、
+  # その端は残す側に入る。
+  scope :expired, ->(at: Time.current) do
+    days = Officeweave::Configuration::AuditRetention.days
+
+    days ? where(created_at: ...(at - days.days)) : none
+  end
   scope :with_action, ->(action) { where(action: action) if action.in?(ACTIONS) }
   scope :by_actor, ->(actor_id) { where(actor_id: actor_id) if actor_id.present? }
 
   # 記録を書き換えさせない。
   before_update { raise ActiveRecord::ReadOnlyRecord }
   before_destroy { raise ActiveRecord::ReadOnlyRecord }
+
+  # 定期実行から呼ぶ。
+  #
+  # 削除は一括で行う。1 件ずつ destroy する形は、書き換えを禁じる仕掛けに
+  # 阻まれるうえ、蓄積した記録の件数だけ問い合わせが増える。
+  # 消した件数を返し、実行の記録から範囲を読み取れるようにする。
+  def self.delete_expired(at: Time.current)
+    expired(at: at).delete_all
+  end
 
   def self.record(organization:, action:, actor: nil, target: nil, details: {}, ip_address: nil)
     return nil if organization.nil?
