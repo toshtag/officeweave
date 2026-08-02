@@ -20,11 +20,14 @@ module LocalHttpServerTestHelper
   # body_bytes を渡すと、その大きさの本文を返す。chunked を真にすると
   # Content-Length を付けず、同じ量を chunk に分けて返す。
   #
+  # chunk_delay を渡すと、塊ごとにその秒数だけ間を空ける。
+  # 1 回の読み取りは待ち時間の上限に収まるが、全体では長く続く応答を作れる。
+  #
   # ブロックの第 2 引数では、本文として実際に書き込めた byte 数を読める。
   # 送信側が途中で読み取りをやめると、書き込みはそこで止まる。
   # 送った量と返そうとした量の差が、打ち切られたことの証拠になる。
   def with_local_server(address, status: "204 No Content", location: nil,
-                        body_bytes: 0, chunked: false, chunk_bytes: 4096)
+                        body_bytes: 0, chunked: false, chunk_bytes: 4096, chunk_delay: 0)
     server = TCPServer.new(address, 80)
     state = { received: [], written: 0, handled: 0 }
     lock = Mutex.new
@@ -34,7 +37,7 @@ module LocalHttpServerTestHelper
         socket = server.accept
         entry = read_request(socket)
         lock.synchronize { state[:received] << entry }
-        sent = write_response(socket, status, location, body_bytes, chunked, chunk_bytes)
+        sent = write_response(socket, status, location, body_bytes, chunked, chunk_bytes, chunk_delay)
         socket.close
         lock.synchronize { state[:written] += sent; state[:handled] += 1 }
       end
@@ -86,16 +89,16 @@ module LocalHttpServerTestHelper
     #
     # 送信側が上限で読み取りをやめると、書き込んでいる途中で接続が切れる。
     # 打ち切られたこと自体はこのサーバーの失敗ではないため、静かに終える。
-    def write_response(socket, status, location, body_bytes, chunked, chunk_bytes)
+    def write_response(socket, status, location, body_bytes, chunked, chunk_bytes, chunk_delay)
       socket.write(build_headers(status, location, body_bytes, chunked))
-      write_body(socket, body_bytes, chunked, chunk_bytes)
+      write_body(socket, body_bytes, chunked, chunk_bytes, chunk_delay)
     rescue Errno::EPIPE, Errno::ECONNRESET
       0
     end
 
     # 一度に持つのは 1 塊だけとする。返す量そのものを組み立てると、
     # 上限を超える大きさを試すたびにテスト側が同じだけ抱えてしまう。
-    def write_body(socket, body_bytes, chunked, chunk_bytes)
+    def write_body(socket, body_bytes, chunked, chunk_bytes, chunk_delay)
       written = 0
       remaining = body_bytes
 
@@ -106,6 +109,7 @@ module LocalHttpServerTestHelper
           socket.write(chunked ? "#{size.to_s(16)}\r\n#{payload}\r\n" : payload)
           remaining -= size
           written += size
+          sleep chunk_delay if chunk_delay.positive? && remaining.positive?
         end
 
         socket.write("0\r\n\r\n") if chunked
