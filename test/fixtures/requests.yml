@@ -21,3 +21,31 @@ taro_leave_pending:
   title: 私用のための休暇
   status: pending
   submitted_at: <%= 2.days.ago.to_fs(:db) %>
+
+# 一度提出したあとの状態。承認担当者は既に内容を見ている。
+hanako_leave_returned:
+  organization: main
+  request_type: leave
+  applicant: hanako
+  title: 差し戻された休暇の申請
+  body: 期間の記載が足りない
+  status: returned
+  submitted_at: <%= 3.days.ago.to_fs(:db) %>
+
+hanako_leave_withdrawn_after_submit:
+  organization: main
+  request_type: leave
+  applicant: hanako
+  title: 提出後に取り下げた休暇の申請
+  body: 予定が変わった
+  status: withdrawn
+  submitted_at: <%= 4.days.ago.to_fs(:db) %>
+
+# 提出しないまま取り下げた状態。承認担当者へは一度も渡っていない。
+hanako_leave_withdrawn_before_submit:
+  organization: main
+  request_type: leave
+  applicant: hanako
+  title: 提出せずに取り下げた休暇の申請
+  body: 書きかけで取りやめた
+  status: withdrawn
