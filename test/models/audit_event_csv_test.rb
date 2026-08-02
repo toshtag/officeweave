@@ -33,8 +33,8 @@ class AuditEventCsvTest < ActiveSupport::TestCase
     rows = parse(AuditEventCsv.new(@organization.audit_events).export)
 
     assert_equal %w[signed_in signed_out], rows.map { |row| row["action"] }
-    assert_equal older.created_at.utc.iso8601, rows.first["recorded_at"]
-    assert_equal newer.created_at.utc.iso8601, rows.last["recorded_at"]
+    assert_equal [ older, newer ].map { |event| event.created_at.utc.iso8601 },
+                 rows.map { |row| row["recorded_at"] }
   end
 
   test "操作の名前は翻訳せずに書き出す" do
@@ -63,8 +63,9 @@ class AuditEventCsvTest < ActiveSupport::TestCase
 
     row = parse(AuditEventCsv.new(@organization.audit_events).export).first
 
-    assert_nil row["actor_name"]
-    assert_nil row["actor_email_address"]
+    # 値は必ず引用して書き出す。空欄は空文字として戻る。
+    assert_empty row["actor_name"]
+    assert_empty row["actor_email_address"]
   end
 
   test "内訳は JSON として書き出す" do

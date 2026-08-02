@@ -27,7 +27,8 @@ class AuditEventsExportTest < ActionDispatch::IntegrationTest
 
     get export_audit_events_url(format: :csv)
 
-    assert_redirected_to root_path
+    # 参照と同じ扱いにする。権限が無いことは、経路の有無ではなく応答で示す。
+    assert_response :forbidden
   end
 
   test "ログインしていなければ書き出せない" do

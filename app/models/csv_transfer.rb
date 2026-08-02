@@ -50,6 +50,18 @@ class CsvTransfer
       end
     end
 
+    # 書き出し先を渡す形。件数が多い場合に、全体をメモリへ載せずに済む。
+    #
+    # 生成の指定は generate と同じものを使う。片方だけを変えると、
+    # 渡し方によって引用の仕方が違う CSV が出る。
+    def write(io, headers:)
+      csv = CSV.new(io, headers: headers, write_headers: true, force_quotes: true)
+
+      yield Writer.new(csv)
+
+      io
+    end
+
     # 見出しは復元しない。見出しのある形式だけを扱うのは、見出しが無いと
     # どの行を復元すべきかを区別できないためである。
     #

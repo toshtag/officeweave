@@ -21,6 +21,12 @@
     <%= submit_tag t("events.index.filter"), class: "button", name: nil %>
   </form>
 
+  <p>
+    <%= link_to t("audit_events.index.export"),
+                export_audit_events_path(format: :csv, audit_action: @action_name, actor_id: @actor_id),
+                class: "button button--secondary" %>
+  </p>
+
   <p role="status"><%= t("audit_events.index.total", count: @total_count) %></p>
 
   <p class="form__hint" data-audit-retention>
