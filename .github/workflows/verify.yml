@@ -180,6 +180,22 @@ jobs:
           docker compose -f compose.production.yaml logs worker >&2
           exit 1
 
+      - name: 記録を構造化して出せることを確かめる
+        run: |
+          # 運用環境では記録を標準出力へ出す。一時コンテナの出力から読み取る。
+          output="$(docker compose -f compose.production.yaml run --rm --no-deps -T \
+            -e LOG_FORMAT=json web bin/rails runner 'Rails.logger.info(event: "check", value: 1)' 2>&1)"
+          echo "${output}"
+          echo "${output}" | grep -q '"event":"check"'
+          # 行形式では構造化しない。
+          text="$(docker compose -f compose.production.yaml run --rm --no-deps -T \
+            web bin/rails runner 'Rails.logger.info("行形式の確認")' 2>&1)"
+          echo "${text}" | grep -q '行形式の確認'
+          if echo "${text}" | grep -q '"level":"INFO"'; then
+            echo "行形式で JSON が出ている" >&2
+            exit 1
+          fi
+
       - name: 構成を診断する
         run: docker compose -f compose.production.yaml exec -T web bin/diagnose
 
