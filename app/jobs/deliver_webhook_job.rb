@@ -1,3 +1,4 @@
+require "delegate"
 require "net/http"
 require "timeout"
 
@@ -21,13 +22,30 @@ class DeliverWebhookJob < ApplicationJob
   READ_TIMEOUT = 10
   WRITE_TIMEOUT = 10
 
-  # 応答の本文を読む量の上限。
+  # 1 つの応答で受け取る byte の総量の上限。
   #
-  # 使うのは応答の状態だけであり、本文は読み捨てる。上限を設けないと、
-  # 宛先が返した分だけをそのまま抱えることになる。
+  # 使うのは応答の状態だけであり、ステータス行もヘッダーも本文も読み捨てる。
+  # 上限は、そのすべてを合わせた受け取り量に掛ける。本文だけを数えると、
+  # 宛先はヘッダーへ同じ量を積んで同じ負荷を作れる。
+  #
   # 受け取りの合図として妥当な大きさより十分に大きく、
   # worker のメモリを脅かさない値にする。
   MAXIMUM_RESPONSE_BYTES = 64 * 1024
+
+  # 上限を超えたときに記録へ残す文面。
+  # 宛先も payload も入れない。記録は持ち出されることがある。
+  RESPONSE_TOO_LARGE_MESSAGE = "応答が大きすぎます".freeze
+
+  # 圧縮した応答を要求しない。
+  #
+  # 本文は読み捨てるため、圧縮しても得るものがない。一方で、展開を伴うと
+  # 小さい応答から大きな確保が起きる。上限は受け取った byte に掛かるため、
+  # 展開後の量には効かない。
+  #
+  # Net::HTTP は、こちらが指定しない場合に gzip と deflate を要求し、
+  # 受け取った応答を自動で展開する。指定すればどちらも行わない。
+  # 宛先が指定を無視して圧縮を返しても、展開はされない。
+  ACCEPTED_ENCODING = "identity".freeze
 
   # 要求の開始から終了までの上限。
   #
@@ -51,11 +69,16 @@ class DeliverWebhookJob < ApplicationJob
   # 恒久的な 4xx も含めない。受け取る側の実装が変わるまで通らない。
   class TransientDeliveryError < StandardError; end
 
-  # 応答の本文が上限を超えたこと。
+  # 受け取る量が上限を超えたこと。
   #
-  # 読み取りを打ち切るためだけに使い、この階層の外へは出さない。
-  # 応答の状態は頭部で受け取り済みであり、送信の失敗ではない。
-  class ResponseTooLarge < StandardError; end
+  # 状態を受け取った後であれば、読み取りを打ち切るためだけに使い外へは出さない。
+  # 状態を受け取る前に超えた場合は、送信の失敗として記録する。
+  # やり直しはしない。同じ宛先は同じ量を返す。
+  class ResponseTooLarge < StandardError
+    def initialize(message = RESPONSE_TOO_LARGE_MESSAGE)
+      super
+    end
+  end
 
   # 通信全体の期限を超えたこと。
   #
@@ -63,6 +86,51 @@ class DeliverWebhookJob < ApplicationJob
   # 期限に収まらないという結果は、やり直しても変わらない。
   # やり直すと、同じ占有を最大 5 回繰り返すことになる。
   class DeadlineExceeded < StandardError; end
+
+  # ソケットから読む byte を数え、上限を超えたところで止める。
+  #
+  # Net::HTTP はステータス行とヘッダーを、応答をこちらへ渡す前に読み切る。
+  # 読み終えてから大きさを見る形にすると、その時点で確保が済んでいる。
+  # 一番外側の読み取りで数えれば、確保される前に止められる。
+  #
+  # 1 回の読み取りを残りの許容量までに切り詰める。抱える量が上限を超えない。
+  class BoundedSocket < SimpleDelegator
+    def initialize(io, limit)
+      super(io)
+      @remaining = limit
+    end
+
+    def read_nonblock(maximum, buffer = nil, exception: true)
+      raise ResponseTooLarge if @remaining <= 0
+
+      allowed = [ maximum, @remaining ].min
+      result = if buffer
+        __getobj__.read_nonblock(allowed, buffer, exception: exception)
+      else
+        __getobj__.read_nonblock(allowed, exception: exception)
+      end
+
+      @remaining -= result.bytesize if result.is_a?(String)
+      result
+    end
+  end
+
+  # 受け取る量に上限を持つ接続。
+  #
+  # Net::HTTP は、応答の読み取りの途中へ入る口を持たない。接続したソケットを
+  # 包み、一番外側で数える。差し替えるのはこの接続の中だけであり、
+  # Net::HTTP そのものへは手を入れない。
+  #
+  # TLS の handshake は接続の中で終わるため、この数には入らない。
+  class BoundedConnection < Net::HTTP
+    attr_accessor :receive_limit
+
+    private
+      def connect
+        super
+        @socket.instance_variable_set(:@io, BoundedSocket.new(@socket.io, receive_limit))
+      end
+  end
 
   # やり直す応答。
   #
@@ -135,8 +203,9 @@ class DeliverWebhookJob < ApplicationJob
         delivery.delivered_at = Time.current
 
         transient = "応答 #{status}" if RETRYABLE_STATUSES.include?(status)
-      rescue DeadlineExceeded => error
-        # 相手は返し続けており、止まってはいない。やり直しても同じ結果になる。
+      rescue DeadlineExceeded, ResponseTooLarge => error
+        # どちらもやり直しても同じ結果になる。相手は返し続けており、
+        # 止まってはいない。返す量も期限に収まらない点も、宛先の側で決まる。
         # 通信の失敗より先に受ける。StandardError へ落とすと意図が読めない。
         delivery.error_message = error.message
       rescue *TRANSIENT_NETWORK_ERRORS => error
@@ -160,7 +229,9 @@ class DeliverWebhookJob < ApplicationJob
     # 読み切ったつもりで扱う経路ができる。
     def post(endpoint, destination, body)
       uri = destination.uri
-      request = Net::HTTP::Post.new(uri)
+      # Accept-Encoding は組み立ての時点で渡す。後から入れ替えても、
+      # Net::HTTP は自分で付けた要求として展開を行う。
+      request = Net::HTTP::Post.new(uri, "Accept-Encoding" => ACCEPTED_ENCODING)
       request["Content-Type"] = "application/json"
       request["X-OfficeWeave-Signature"] = endpoint.signature_for(body)
       # やり直しても変わらない値を添える。受け取る側が重複を判別できるようにする。
@@ -182,7 +253,10 @@ class DeliverWebhookJob < ApplicationJob
 
       status
     rescue ResponseTooLarge
-      # 状態は頭部で受け取り済みである。打ち切りは失敗として扱わない。
+      # 状態を受け取った後なら、打ち切りは送信の失敗ではない。
+      # 受け取る前に超えた場合は、記録できる状態が無いため失敗として渡す。
+      raise if status.nil?
+
       status
     end
 
@@ -202,22 +276,15 @@ class DeliverWebhookJob < ApplicationJob
       Timeout.timeout(total_deadline, DeadlineExceeded, "通信全体の期限を超えました", &block)
     end
 
-    # 本文を読み捨てる。上限を超えた時点で読むのをやめる。
+    # 本文を読み捨てる。
     #
     # block を渡さずに応答を受け取ると、Net::HTTP は本文を最後まで
-    # メモリへ読み込む。block を渡し、届いた分の大きさだけを数える。
-    # Content-Length の有無で経路を分けない。数えるのは届いた byte であり、
-    # 申告された長さではない。chunked にも同じ上限が効く。
+    # メモリへ読み込む。block を渡し、届いた分をその場で捨てる。
     #
-    # 上限を超えたら例外で抜ける。block の中から抜けないと、
-    # Net::HTTP が残りを読み切ってしまう。
+    # 量の判定はここでは行わない。ソケットの側で数える。ここで数えると、
+    # ステータス行とヘッダーが漏れ、しかも読み終えた後の判定になる。
     def discard_body(response)
-      read = 0
-
-      response.read_body do |chunk|
-        read += chunk.bytesize
-        raise ResponseTooLarge if read > MAXIMUM_RESPONSE_BYTES
-      end
+      response.read_body { |_chunk| nil }
     end
 
     # 接続の組み立て。
@@ -231,7 +298,8 @@ class DeliverWebhookJob < ApplicationJob
     def build_connection(destination)
       uri = destination.uri
 
-      http = Net::HTTP.new(uri.hostname, uri.port, nil)
+      http = BoundedConnection.new(uri.hostname, uri.port, nil)
+      http.receive_limit = MAXIMUM_RESPONSE_BYTES
       http.ipaddr = destination.ip_address
       http.open_timeout = OPEN_TIMEOUT
       http.read_timeout = READ_TIMEOUT

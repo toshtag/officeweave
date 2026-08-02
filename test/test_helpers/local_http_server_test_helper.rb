@@ -105,8 +105,8 @@ module LocalHttpServerTestHelper
     # 打ち切られたこと自体はこのサーバーの失敗ではないため、静かに終える。
     def write_response(socket, plan)
       written = 0
-      written += write_padded(socket) { |o| o.call("HTTP/1.1 #{plan.status}"); pad(o, plan.status_line_bytes); o.call("\r\n") }
-      written += write_padded(socket) { |o| write_headers(o, plan) }
+      written += write_padded(socket) { |emit| write_status_line(emit, plan) }
+      written += write_padded(socket) { |emit| write_headers(emit, plan) }
       written + write_payload(socket, plan)
     rescue Errno::EPIPE, Errno::ECONNRESET, IOError
       written
@@ -130,6 +130,12 @@ module LocalHttpServerTestHelper
         emit.call(filler * size)
         remaining -= size
       end
+    end
+
+    def write_status_line(emit, plan)
+      emit.call("HTTP/1.1 #{plan.status}")
+      pad(emit, plan.status_line_bytes)
+      emit.call("\r\n")
     end
 
     def write_headers(emit, plan)
