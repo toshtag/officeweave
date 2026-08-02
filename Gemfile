@@ -58,4 +58,7 @@ group :test do
   # test/browser の層でだけ使う。別のコンテナで動く Chromium を操作する。
   # WebDriver の通信を自分で書くと、規格の実装を持つことになる。
   gem "selenium-webdriver"
+
+  # アクセシビリティの判定。規格の判定条件を自分で書かない。
+  gem "axe-core-capybara"
 end
