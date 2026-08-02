@@ -66,7 +66,32 @@ sub         あること
 署名の検証、期限の判定、鍵の選択は `jwt` へ委ねている。
 委ねる範囲は `JWT.decode` の 1 か所に閉じている。
 
-## 4. 実装が守ること
+## 4. 認可サーバーとの通信
+
+`app/models/authentication/oidc/client.rb` が扱う。
+
+```text
+発見    {OIDC_ISSUER}/.well-known/openid-configuration から端点と鍵の場所を読む
+鍵      jwks_uri から署名の検証に使う鍵を読む
+交換    token_endpoint へ code を送り、id_token を受け取る
+```
+
+相手の応答を信じる範囲は次のとおりである。
+
+```text
+- 名乗る issuer が OIDC_ISSUER と一致すること
+- 端点が https で、同じ発行者の下にあること
+- 3 つの端点（authorization、token、jwks）がそろっていること
+- 転送（3xx）には従わない
+- 受け取る量は 256 KiB まで。超えた時点で接続を切る
+```
+
+発見の結果は 1 時間だけ共有する。鍵を入れ替えた場合、反映されるまでに
+最大 1 時間かかる。
+
+`client_secret` は Basic 認証で送る。本文へは入れない。
+
+## 5. 実装が守ること
 
 - `name_key` は空でない識別子とし、先頭または末尾へ空白を含めない。
   不正な `name_key` は登録の時点で拒否する。取り除いて受理することはない
