@@ -54,8 +54,8 @@
       <h2 id="home-requests"><%= t("home.requests.heading") %></h2>
 
       <% if @awaiting_requests.any? %>
-        <h3><%= t("home.requests.awaiting", count: @awaiting_requests.size) %></h3>
-        <ul class="list-plain">
+        <h3><%= t("home.requests.awaiting", count: @awaiting_count) %></h3>
+        <ul class="list-plain" id="home-awaiting-requests">
           <% @awaiting_requests.each do |request| %>
             <li>
               <%= link_to request.title, request %>
@@ -63,11 +63,12 @@
             </li>
           <% end %>
         </ul>
+        <p><%= link_to t("home.requests.more_awaiting"), requests_path(scope: "awaiting") %></p>
       <% end %>
 
       <% if @open_requests.any? %>
         <h3><%= t("home.requests.mine") %></h3>
-        <ul class="list-plain">
+        <ul class="list-plain" id="home-open-requests">
           <% @open_requests.each do |request| %>
             <li>
               <%= link_to request.title, request %>
@@ -75,6 +76,7 @@
             </li>
           <% end %>
         </ul>
+        <p><%= link_to t("home.requests.more_mine"), requests_path(scope: "mine") %></p>
       <% end %>
 
       <% if @awaiting_requests.empty? && @open_requests.empty? %>

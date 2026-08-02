@@ -39,6 +39,8 @@ en:
         one: 1 request waiting for you
         other: "%{count} requests waiting for you"
       mine: Your open requests
+      more_awaiting: See all requests waiting for you
+      more_mine: See all your requests
       empty: Nothing needs your attention right now.
     departments:
       heading: Your departments

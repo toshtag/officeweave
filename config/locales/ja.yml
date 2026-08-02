@@ -39,6 +39,8 @@ ja:
         one: 自分の承認待ち 1 件
         other: 自分の承認待ち %{count} 件
       mine: 進行中の自分の申請
+      more_awaiting: すべての承認待ちを見る
+      more_mine: すべての自分の申請を見る
       empty: 対応が必要な申請はありません。
     departments:
       heading: 所属している部門
