@@ -1,0 +1,15 @@
+<%= t("operations_mailer.report.heading", count: @issues.size) %>
+
+<% @issues.each do |issue| %>
+- <%= t("operations_mailer.report.statuses.#{issue[:status]}") %> <%= issue[:name] %>
+  <%= issue[:detail] %>
+<% end %>
+
+<%= t("operations_mailer.report.next_step") %>
+
+  bin/diagnose
+  bin/jobs_status --failed
+
+--
+<%= t("application.name") %>
+<%= t("operations_mailer.report.recipient_hint") %>

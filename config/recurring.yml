@@ -24,6 +24,11 @@ production:
   delete_expired_audit_events:
     command: "AuditEvent.delete_expired"
     schedule: every day at 3:32am
+  # 放っておくと運用が成り立たなくなるものを、1 日 1 回だけ知らせる。
+  # 宛先を設定していない場合と、異常が無い場合は何も送らない。
+  report_operational_issues:
+    class: ReportOperationalIssuesJob
+    schedule: every day at 7:42am
   # 公開日時の到来で公開が成立する。誰の操作も待てないため、ここで拾う。
   # 到来から知らせまでの遅れが 1 時間になると、予約公開の意味が薄れる。
   publish_scheduled_announcements:
