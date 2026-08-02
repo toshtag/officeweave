@@ -54,6 +54,8 @@
         </tbody>
       </table>
     </div>
+
+    <%= render "shared/pagination", page: @page, parameters: { scope: @scope, status: @status } %>
   <% else %>
     <p><%= t("requests.index.empty") %></p>
   <% end %>

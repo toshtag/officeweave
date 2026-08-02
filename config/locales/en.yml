@@ -354,6 +354,16 @@ en:
       short: "%b %-d"
       long: "%B %-d, %Y"
 
+  pagination:
+    label: Pagination
+    previous: Previous
+    next: Next
+    current: "Page %{current} of %{total}"
+    total:
+      zero: 0 items
+      one: 1 item
+      other: "%{count} items"
+
   events:
     destroyed_following: This and later occurrences have been deleted.
     destroy_following: Delete this and later

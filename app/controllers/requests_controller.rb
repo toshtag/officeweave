@@ -13,7 +13,10 @@ class RequestsController < ApplicationController
   def index
     @scope = params[:scope].presence_in(SCOPES)
     @status = params[:status]
-    @requests = scoped_requests.with_status(@status).recent_first.includes(:request_type, :applicant)
+    @page = Pagination.new(scoped_requests.with_status(@status).recent_first
+                                          .includes(:request_type, :applicant),
+                          page: params[:page])
+    @requests = @page.records
     @awaiting_count = Request.awaiting_decision_by(Current.user).count
   end
 
