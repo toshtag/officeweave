@@ -146,6 +146,8 @@ en:
         name: Name
         user: User
         last_used_at: Last used
+        expires_at: Expires
+        expires_in_days: Expires
       webhook_endpoint:
         name: Name
         url: Endpoint URL
@@ -210,6 +212,8 @@ en:
       not_after_start: must be after the start time
       cyclic: cannot be this department or one of its descendants
       different_organization: must belong to the same organization
+      not_in_future: must be in the future
+      not_a_choice: is not one of the available choices
       notification_preferences_not_saved: The notification settings could not be saved
       current_password_invalid: The current password is incorrect
     forbidden:
@@ -631,6 +635,7 @@ en:
     revoked: The token has been revoked.
     revoke: Revoke
     never_used: Never used
+    no_expiry: No expiry
     index:
       title: API tokens
       heading: API tokens
@@ -639,12 +644,16 @@ en:
       heading: Issue a token
       submit: Issue
       name_hint: Give it a name that explains what it is for.
+      expires_in: "%{count} days"
+      no_expiry: No expiry
+      expires_hint: Choose a period that matches how long the integration is needed. Expired tokens stop working.
     issued:
       heading: Your new token
       description: This value is shown only here. It is not stored, so you cannot see it again.
     status:
       active: Active
       revoked: Revoked
+      expired: Expired
 
   webhook_endpoints:
     created: The endpoint has been added.

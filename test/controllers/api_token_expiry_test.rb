@@ -47,15 +47,18 @@ class ApiTokenExpiryRequestTest < ActionDispatch::IntegrationTest
 
     get api_tokens_url
 
-    assert_select "[data-api-token-id='#{token.id}']", text: /#{I18n.l(token.expires_at.to_date)}/
+    assert_select "[data-api-token-id='#{token.id}']",
+                  text: /#{I18n.l(token.expires_at.to_date, format: :long)}/
   end
 
   test "期限を過ぎた token は、期限切れとして示す" do
     token = users(:taro).api_tokens.create!(organization: organizations(:main), name: "切れた",
                                             expires_at: 1.day.from_now)
-    sign_in_as users(:taro)
 
     travel 2.days do
+      # ログインは進めた時刻で行う。セッションの絶対期限は 8 時間であり、
+      # 先にログインすると、時刻を進めた時点でログイン画面へ戻る。
+      sign_in_as users(:taro)
       get api_tokens_url
 
       assert_select "[data-api-token-id='#{token.id}']", text: /#{I18n.t('api_tokens.status.expired')}/

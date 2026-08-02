@@ -44,10 +44,13 @@ class ApiTokenExpiryTest < ActiveSupport::TestCase
   end
 
   test "期限の時刻ちょうどは使えない" do
-    token = issue(expires_in_days: 30)
+    # 秒より細かい端数を持たせない。travel_to は秒までしか合わせられず、
+    # 端数があると「ちょうど」を作れない。
+    at = 30.days.from_now.change(usec: 0)
+    token = @user.api_tokens.create!(organization: @user.organization, name: "境界", expires_at: at)
     value = token.token
 
-    travel_to token.expires_at do
+    travel_to at do
       assert_nil ApiToken.authenticate(value)
     end
   end

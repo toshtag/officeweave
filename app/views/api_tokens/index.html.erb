@@ -19,6 +19,12 @@
 
       <%= form.field :name, :text_field, required: true, hint: t("api_tokens.new.name_hint") %>
 
+      <%= form.field :expires_in_days, :select,
+                     ApiToken::EXPIRY_CHOICES.map { |days| [ t("api_tokens.new.expires_in", count: days), days ] },
+                     { include_blank: t("api_tokens.new.no_expiry"),
+                       selected: ApiToken::DEFAULT_EXPIRY_DAYS },
+                     hint: t("api_tokens.new.expires_hint") %>
+
       <%= form.submit t("api_tokens.new.submit"), class: "button button--primary" %>
     <% end %>
   </div>
@@ -30,18 +36,23 @@
           <tr>
             <th scope="col"><%= ApiToken.human_attribute_name(:name) %></th>
             <th scope="col"><%= ApiToken.human_attribute_name(:last_used_at) %></th>
+            <th scope="col"><%= ApiToken.human_attribute_name(:expires_at) %></th>
             <th scope="col"><%= t("api_tokens.index.status") %></th>
             <th scope="col"><span class="visually-hidden"><%= t("common.actions") %></span></th>
           </tr>
         </thead>
         <tbody>
           <% @api_tokens.each do |api_token| %>
-            <tr>
+            <tr data-api-token-id="<%= api_token.id %>">
               <td><%= api_token.name %></td>
               <td><%= api_token.last_used_at ? l(api_token.last_used_at, format: :short) : t("api_tokens.never_used") %></td>
+              <td><%= api_token.expires_at ? l(api_token.expires_at.to_date, format: :long) : t("api_tokens.no_expiry") %></td>
               <td>
                 <% if api_token.revoked? %>
                   <span class="status status--muted"><%= t("api_tokens.status.revoked") %></span>
+                <% elsif api_token.expired? %>
+                  <%# 失効とは分けて示す。止めたのは人か、最初に決めた条件かが違う。 %>
+                  <span class="status status--muted"><%= t("api_tokens.status.expired") %></span>
                 <% else %>
                   <%= t("api_tokens.status.active") %>
                 <% end %>

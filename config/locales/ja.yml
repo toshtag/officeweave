@@ -146,6 +146,8 @@ ja:
         name: 名前
         user: 利用者
         last_used_at: 最終利用
+        expires_at: 有効期限
+        expires_in_days: 有効期限
       webhook_endpoint:
         name: 名前
         url: 送信先 URL
@@ -230,6 +232,8 @@ ja:
       not_after_start: は開始より後にしてください
       cyclic: に自身または下位の部門は指定できません
       different_organization: に別の組織の記録は指定できません
+      not_in_future: は未来の時刻にしてください
+      not_a_choice: に選べない値が指定されています
       notification_preferences_not_saved: 通知の受け取り設定を保存できませんでした
       current_password_invalid: 現在のパスワードが違います
     forbidden:
@@ -651,6 +655,7 @@ ja:
     revoked: token を無効にしました。
     revoke: 無効にする
     never_used: 未使用
+    no_expiry: 期限なし
     index:
       title: 外部接続用の token
       heading: 外部接続用の token
@@ -659,12 +664,16 @@ ja:
       heading: token の発行
       submit: 発行する
       name_hint: 用途が分かる名前を付けてください。
+      expires_in: "%{count} 日"
+      no_expiry: 期限なし
+      expires_hint: 用途が終わる見込みに合わせて選びます。期限を過ぎた token は使えなくなります。
     issued:
       heading: 発行された token
       description: この値はここでしか表示されません。保存していないため、閉じると再確認できません。
     status:
       active: 有効
       revoked: 無効
+      expired: 期限切れ
 
   webhook_endpoints:
     created: 送信先を登録しました。
