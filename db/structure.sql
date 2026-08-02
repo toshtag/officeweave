@@ -614,7 +614,8 @@ CREATE TABLE public.events (
     all_day boolean DEFAULT false NOT NULL,
     visibility character varying DEFAULT 'organization'::character varying NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    series_id bigint
 );
 
 
@@ -2010,6 +2011,20 @@ CREATE INDEX index_events_on_owner_id ON public.events USING btree (owner_id);
 
 
 --
+-- Name: index_events_on_series_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_events_on_series_id ON public.events USING btree (series_id);
+
+
+--
+-- Name: index_events_on_series_id_and_starts_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_events_on_series_id_and_starts_at ON public.events USING btree (series_id, starts_at);
+
+
+--
 -- Name: index_memberships_on_department_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2346,6 +2361,14 @@ ALTER TABLE ONLY public.reservations
 
 ALTER TABLE ONLY public.events
     ADD CONSTRAINT fk_rails_163b5130b5 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: events fk_rails_1a56b1500c; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.events
+    ADD CONSTRAINT fk_rails_1a56b1500c FOREIGN KEY (series_id) REFERENCES public.events(id);
 
 
 --
@@ -2763,6 +2786,7 @@ ALTER TABLE ONLY public.announcement_departments
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260803060000'),
 ('20260803050000'),
 ('20260803040000'),
 ('20260803030000'),

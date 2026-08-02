@@ -54,5 +54,17 @@
     <%= hidden_field_tag "event[participant_ids][]", "", id: nil %>
   </fieldset>
 
+  <% if event.new_record? %>
+    <fieldset class="form__fieldset">
+      <legend class="form__label"><%= t("events.form.recurrence") %></legend>
+      <%= form_hints t("events.form.recurrence_hint", count: Event::Recurrence::MAXIMUM_OCCURRENCES) %>
+
+      <%= form.field :recurrence_frequency, :select,
+                     Event::Recurrence::FREQUENCIES.map { |value| [ t("events.frequencies.#{value}"), value ] },
+                     { include_blank: t("events.form.no_recurrence") } %>
+      <%= form.field :repeat_until, :date_field %>
+    </fieldset>
+  <% end %>
+
   <%= form.submit class: "button button--primary" %>
 <% end %>

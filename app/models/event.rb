@@ -15,6 +15,11 @@ class Event < ApplicationRecord
   has_many :event_participants, dependent: :destroy
   has_many :participants, through: :event_participants, source: :user
 
+  # 同じ繰り返しの回。最初の回も自分の識別子を持つ。
+  belongs_to :series, class_name: "Event", optional: true
+  has_many :series_events, class_name: "Event", foreign_key: :series_id,
+           dependent: nil, inverse_of: :series
+
   validates :title, presence: true, length: { maximum: 200 }
   validates :description, length: { maximum: 10_000 }
   validates :starts_at, :ends_at, presence: true
@@ -25,6 +30,18 @@ class Event < ApplicationRecord
   validate :departments_must_be_in_same_organization
 
   scope :starting_from, ->(time) { where(ends_at: time..) }
+
+  # 繰り返しの一部かどうか。
+  def recurring? = series_id.present?
+
+  # この回と、これより後の回をまとめて消す。
+  #
+  # 前の回は消さない。既に終わった回を、後からの操作で消さない。
+  def destroy_following
+    return destroy unless recurring?
+
+    Event.where(series_id: series_id).where(starts_at: starts_at..).destroy_all
+  end
 
   # 参加者を指名し直す。新しく指名した相手だけへ知らせる。
   #
