@@ -12,9 +12,9 @@
 
 ```text
 現在の Phase: R9
-直近完了 Task: R9-T5
-進行中:        R9-T6
-次に実行:      なし
+直近完了 Task: R9-T6
+進行中:        なし
+次に実行:      なし（R9 完了。次の Phase の着手は別途決める）
 ```
 
 ## P0 プロジェクト契約
@@ -264,7 +264,7 @@ R8 の完了後に行った開発体験のレビューで確認した問題を�
 | R9-T3 | `r9/t3-setup-command-contract`   | [#168](https://github.com/toshtag/OfficeWeave/issues/168) | 準備コマンドを準備だけで終わるようにする        | 完了  |
 | R9-T4 | `r9/t4-generated-template-cleanup` | [#169](https://github.com/toshtag/OfficeWeave/issues/169) | 実行されない生成雛形と役目を終えた .keep を消す | 完了  |
 | R9-T5 | `r9/t5-dependency-review-source` | [#170](https://github.com/toshtag/OfficeWeave/issues/170) | 依存追加の審査手順の正本を 1 つに定める       | 完了  |
-| R9-T6 | `r9/t6-development-database-reset` | [#176](https://github.com/toshtag/OfficeWeave/issues/176) | 標準の開発構成からデータベースを安全に再作成できるようにする | 進行中 |
+| R9-T6 | `r9/t6-development-database-reset` | [#176](https://github.com/toshtag/OfficeWeave/issues/176) | 標準の開発構成からデータベースを安全に再作成できるようにする | 完了  |
 
 ## 分解の方針
 
