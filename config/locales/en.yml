@@ -62,12 +62,18 @@ en:
       request: Request
       document: Document
       document_category: Document category
+      approval_delegation: Approval delegation
       api_token: API token
       webhook_endpoint: Event endpoint
       webhook_delivery: Delivery
       audit_event: Audit event
       membership: Membership
     attributes:
+      approval_delegation:
+        delegator: Delegator
+        delegate: Delegate
+        starts_on: Starts on
+        ends_on: Ends on
       user:
         name: Name
         email_address: Email address
@@ -641,6 +647,24 @@ en:
       request_approved: When your request is approved
       request_returned: When your request is returned
 
+  approval_delegations:
+    created: The delegation has been created.
+    deleted: The delegation has ended.
+    delete: End
+    no_end: No end date
+    index:
+      title: Approval delegation
+      heading: Approval delegation
+      description: While you are away, another user can approve on your behalf. The assignment itself does not move.
+      status: Status
+    new:
+      heading: Add a delegation
+      submit: Add
+      ends_on_hint: Leave empty to continue until you end it.
+    status:
+      active: Active
+      inactive: Out of period
+
   api_tokens:
     created: The token has been issued.
     revoked: The token has been revoked.
@@ -775,6 +799,8 @@ en:
       department_deleted: Department deleted
       membership_created: Member added
       membership_deleted: Member removed
+      approval_delegation_created: Approval delegation created
+      approval_delegation_deleted: Approval delegation ended
       request_approved: Request approved
       request_returned: Request returned
       api_token_issued: Token issued

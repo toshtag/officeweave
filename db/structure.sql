@@ -282,6 +282,41 @@ ALTER SEQUENCE public.api_tokens_id_seq OWNED BY public.api_tokens.id;
 
 
 --
+-- Name: approval_delegations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.approval_delegations (
+    id bigint NOT NULL,
+    organization_id bigint NOT NULL,
+    delegator_id bigint NOT NULL,
+    delegate_id bigint NOT NULL,
+    starts_on date NOT NULL,
+    ends_on date,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: approval_delegations_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.approval_delegations_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: approval_delegations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.approval_delegations_id_seq OWNED BY public.approval_delegations.id;
+
+
+--
 -- Name: approval_steps; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -715,7 +750,8 @@ CREATE TABLE public.request_activities (
     comment text,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    step_position integer
+    step_position integer,
+    on_behalf_of_id bigint
 );
 
 
@@ -1124,6 +1160,13 @@ ALTER TABLE ONLY public.api_tokens ALTER COLUMN id SET DEFAULT nextval('public.a
 
 
 --
+-- Name: approval_delegations id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.approval_delegations ALTER COLUMN id SET DEFAULT nextval('public.approval_delegations_id_seq'::regclass);
+
+
+--
 -- Name: approval_steps id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1331,6 +1374,14 @@ ALTER TABLE ONLY public.announcements
 
 ALTER TABLE ONLY public.api_tokens
     ADD CONSTRAINT api_tokens_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: approval_delegations approval_delegations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.approval_delegations
+    ADD CONSTRAINT approval_delegations_pkey PRIMARY KEY (id);
 
 
 --
@@ -1653,6 +1704,34 @@ CREATE INDEX index_api_tokens_on_user_id ON public.api_tokens USING btree (user_
 
 
 --
+-- Name: index_approval_delegations_on_delegate_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_approval_delegations_on_delegate_id ON public.approval_delegations USING btree (delegate_id);
+
+
+--
+-- Name: index_approval_delegations_on_delegate_id_and_starts_on; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_approval_delegations_on_delegate_id_and_starts_on ON public.approval_delegations USING btree (delegate_id, starts_on);
+
+
+--
+-- Name: index_approval_delegations_on_delegator_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_approval_delegations_on_delegator_id ON public.approval_delegations USING btree (delegator_id);
+
+
+--
+-- Name: index_approval_delegations_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_approval_delegations_on_organization_id ON public.approval_delegations USING btree (organization_id);
+
+
+--
 -- Name: index_approval_steps_on_approver_department_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1947,6 +2026,13 @@ CREATE INDEX index_request_activities_on_actor_id ON public.request_activities U
 
 
 --
+-- Name: index_request_activities_on_on_behalf_of_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_request_activities_on_on_behalf_of_id ON public.request_activities USING btree (on_behalf_of_id);
+
+
+--
 -- Name: index_request_activities_on_request_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2188,6 +2274,14 @@ ALTER TABLE ONLY public.events
 
 
 --
+-- Name: approval_delegations fk_rails_1aebba5e0d; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.approval_delegations
+    ADD CONSTRAINT fk_rails_1aebba5e0d FOREIGN KEY (delegator_id) REFERENCES public.users(id);
+
+
+--
 -- Name: webhook_endpoints fk_rails_21808fa528; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2225,6 +2319,14 @@ ALTER TABLE ONLY public.webhook_deliveries
 
 ALTER TABLE ONLY public.announcement_reads
     ADD CONSTRAINT fk_rails_3bf795c88f FOREIGN KEY (announcement_id) REFERENCES public.announcements(id);
+
+
+--
+-- Name: request_activities fk_rails_41d9c39993; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.request_activities
+    ADD CONSTRAINT fk_rails_41d9c39993 FOREIGN KEY (on_behalf_of_id) REFERENCES public.users(id);
 
 
 --
@@ -2396,6 +2498,14 @@ ALTER TABLE ONLY public.approval_steps
 
 
 --
+-- Name: approval_delegations fk_rails_a9053ccc33; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.approval_delegations
+    ADD CONSTRAINT fk_rails_a9053ccc33 FOREIGN KEY (delegate_id) REFERENCES public.users(id);
+
+
+--
 -- Name: reservations fk_rails_af7a37539f; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2409,6 +2519,14 @@ ALTER TABLE ONLY public.reservations
 
 ALTER TABLE ONLY public.notifications
     ADD CONSTRAINT fk_rails_b080fb4855 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: approval_delegations fk_rails_b39d3f62b8; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.approval_delegations
+    ADD CONSTRAINT fk_rails_b39d3f62b8 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
 
 
 --
@@ -2554,6 +2672,7 @@ ALTER TABLE ONLY public.announcement_departments
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260803040000'),
 ('20260803030000'),
 ('20260803020000'),
 ('20260803010000'),

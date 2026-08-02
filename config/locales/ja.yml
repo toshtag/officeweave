@@ -62,12 +62,18 @@ ja:
       request: 申請
       document: 文書
       document_category: 文書の分類
+      approval_delegation: 承認の委任
       api_token: 外部接続用の token
       webhook_endpoint: 出来事の送信先
       webhook_delivery: 送信の記録
       audit_event: 監査記録
       membership: 所属
     attributes:
+      approval_delegation:
+        delegator: 委任した利用者
+        delegate: 任せる利用者
+        starts_on: 開始日
+        ends_on: 終了日
       user:
         name: 氏名
         email_address: メールアドレス
@@ -661,6 +667,24 @@ ja:
       request_approved: 自分の申請が承認されたとき
       request_returned: 自分の申請が差し戻されたとき
 
+  approval_delegations:
+    created: 承認の委任を登録しました。
+    deleted: 承認の委任を終わらせました。
+    delete: 終わらせる
+    no_end: 期限なし
+    index:
+      title: 承認の委任
+      heading: 承認の委任
+      description: 不在のあいだ、自分が担当する承認を別の利用者へ任せられます。担当そのものは移りません。
+      status: 状態
+    new:
+      heading: 委任の登録
+      submit: 登録する
+      ends_on_hint: 空欄にすると、終わらせるまで続きます。
+    status:
+      active: 有効
+      inactive: 期間外
+
   api_tokens:
     created: token を発行しました。
     revoked: token を無効にしました。
@@ -795,6 +819,8 @@ ja:
       department_deleted: 部門の削除
       membership_created: 所属の追加
       membership_deleted: 所属の解除
+      approval_delegation_created: 承認の委任の登録
+      approval_delegation_deleted: 承認の委任の終了
       request_approved: 申請の承認
       request_returned: 申請の差し戻し
       api_token_issued: token の発行
