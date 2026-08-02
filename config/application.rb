@@ -25,6 +25,7 @@ require_relative "../lib/officeweave/configuration/application_port"
 require_relative "../lib/officeweave/configuration/audit_retention"
 require_relative "../lib/officeweave/configuration/log_format"
 require_relative "../lib/officeweave/configuration/operations_email"
+require_relative "../lib/officeweave/configuration/oidc"
 
 # 記録の形式は、初期化処理から使う。autoload の順序へ依存させない。
 require_relative "../lib/officeweave/logging"
