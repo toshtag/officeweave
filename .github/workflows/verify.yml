@@ -97,8 +97,11 @@ jobs:
       - name: テスト用のデータベースを用意する
         run: docker compose run --rm web bin/rails db:test:prepare
 
+      # --use-aliases を付ける。付けないと、この一時コンテナへ service の名前が
+      # 割り当てられず、ブラウザーから web という宛先を引けない。
+      # 常駐の web は起動していないため、名前が重なることもない。
       - name: 主要な流れを実ブラウザーで確かめる
-        run: docker compose run --rm web bin/rails test:browser
+        run: docker compose run --rm --use-aliases web bin/rails test:browser
 
       - name: 失敗した場合の画面を残す
         if: failure()
