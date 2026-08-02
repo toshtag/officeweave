@@ -36,7 +36,7 @@ class ProductionBackupScriptsTest < ActiveSupport::TestCase
             cat "${FAKE_ARCHIVE}"
             ;;
           *bin/restore*)
-            cat > /dev/null
+            cat > "${FAKE_RECEIVED:-/dev/null}"
             exit "${FAKE_RESTORE_EXIT:-0}"
             ;;
         esac
@@ -359,6 +359,195 @@ class ProductionBackupScriptsTest < ActiveSupport::TestCase
     end
   end
 
+  # --- 暗号化 ---
+
+  test "パスフレーズを指定すると、書庫を暗号化して残す" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+
+      stdout, stderr, status = sandbox.run(
+        "script/production_backup", sandbox.path("out"),
+        env: encrypted_environment(sandbox, running: "db web")
+      )
+
+      assert status.success?, stderr
+      archive = stdout.strip
+
+      assert_match(/officeweave-\d{8}T\d{6}Z\.tar\.gz\.enc\z/, archive)
+      assert_equal "Salted__", File.binread(archive, 8)
+      refute system("tar", "--list", "--gzip", "--file=#{archive}",
+                    out: File::NULL, err: File::NULL),
+             "暗号化した書庫がそのまま書庫として読める"
+    end
+  end
+
+  test "暗号化した書庫は openssl だけで取り出せる" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+
+      stdout, stderr, status = sandbox.run(
+        "script/production_backup", sandbox.path("out"),
+        env: encrypted_environment(sandbox, running: "db web")
+      )
+
+      assert status.success?, stderr
+      decrypted = decrypt(sandbox, stdout.strip)
+
+      assert_includes entries(decrypted), "./database.sql"
+    end
+  end
+
+  test "パスフレーズを指定しなければ暗号化しない" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+
+      stdout, stderr, status = sandbox.run(
+        "script/production_backup", sandbox.path("out"),
+        env: environment(sandbox, running: "db web")
+      )
+
+      assert status.success?, stderr
+      assert_includes entries(stdout.strip), "./database.sql"
+    end
+  end
+
+  test "パスフレーズのファイルが使えなければ、web を止めずに失敗する" do
+    cases = {
+      "見つからない" => ->(sandbox) { sandbox.path("out", "無いファイル") },
+      "1 行目が空" => lambda do |sandbox|
+        sandbox.path("empty-line").tap { |path| File.write(path, "\n合言葉\n") }
+      end,
+      "中身が無い" => ->(sandbox) { sandbox.path("empty").tap { |path| File.write(path, "") } }
+    }
+
+    cases.each do |name, build|
+      with_shell_sandbox do |sandbox|
+        prepare(sandbox)
+
+        _stdout, stderr, status = sandbox.run(
+          "script/production_backup", sandbox.path("out"),
+          env: environment(sandbox, running: "db web")
+                 .merge("BACKUP_PASSPHRASE_FILE" => build.call(sandbox))
+        )
+
+        refute status.success?, "#{name} を受け付けている"
+        assert_includes stderr, "パスフレーズ"
+        refute_includes calls(sandbox), "stop web"
+        assert_empty Dir.glob(sandbox.path("out", "*")), "#{name} で書庫が残っている"
+      end
+    end
+  end
+
+  test "暗号化した書庫も保持の対象になる" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+      FileUtils.mkdir_p(sandbox.path("out"))
+      old = sandbox.path("out", "officeweave-20260101T000000Z.tar.gz.enc")
+      FileUtils.cp(File.join(sandbox.root, "archive.tar.gz"), old)
+
+      _stdout, stderr, status = sandbox.run(
+        "script/production_backup", sandbox.path("out"),
+        env: encrypted_environment(sandbox, running: "db web").merge("BACKUP_KEEP" => "1")
+      )
+
+      assert status.success?, stderr
+      refute File.exist?(old), "暗号化した書庫が整理の対象から外れている"
+      assert_equal 1, Dir.glob(sandbox.path("out", "*")).size
+    end
+  end
+
+  test "取得した書庫を復号できなければ、書庫を残さず失敗する" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+      # 暗号化はできるが復号はできない openssl。
+      # 取得の直後の確認が働いていなければ、読めない書庫が成果物として残る。
+      sandbox.install_command("openssl", <<~SCRIPT)
+        #!/bin/bash
+        for argument in "$@"; do
+          [ "${argument}" = "-d" ] && exit 1
+        done
+        printf 'Salted__'
+        cat
+      SCRIPT
+
+      _stdout, stderr, status = sandbox.run(
+        "script/production_backup", sandbox.path("out"),
+        env: encrypted_environment(sandbox, running: "db web")
+      )
+
+      refute status.success?
+      assert_includes stderr, "復号"
+      assert_empty Dir.glob(sandbox.path("out", "*")), "読めない書庫が残っている"
+      # 取得の失敗であり、運用を止め続ける理由はない。
+      assert_includes calls(sandbox), "start web"
+    end
+  end
+
+  test "暗号化された書庫を、復号して復元へ渡す" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+      encrypted = encrypt(sandbox, File.join(sandbox.root, "archive.tar.gz"))
+
+      _stdout, stderr, status = sandbox.run(
+        "script/production_restore", encrypted,
+        env: encrypted_environment(sandbox, running: "db web worker").merge("FORCE" => "1")
+      )
+
+      assert status.success?, stderr
+      # 復元側が受け取るのは平文の書庫とする。コンテナへパスフレーズを渡さない。
+      assert_includes entries(sandbox.path("received.tar.gz")), "./database.sql"
+    end
+  end
+
+  test "暗号化された書庫をパスフレーズなしで渡すと、web を止めずに失敗する" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+      encrypted = encrypt(sandbox, File.join(sandbox.root, "archive.tar.gz"))
+
+      _stdout, stderr, status = sandbox.run(
+        "script/production_restore", encrypted,
+        env: environment(sandbox, running: "db web").merge("FORCE" => "1")
+      )
+
+      refute status.success?
+      assert_includes stderr, "暗号化されています"
+      refute_includes calls(sandbox), "stop web"
+    end
+  end
+
+  test "パスフレーズが違えば、web を止めずに失敗する" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+      encrypted = encrypt(sandbox, File.join(sandbox.root, "archive.tar.gz"))
+      other = sandbox.path("other-passphrase")
+      File.write(other, "違う合言葉\n")
+
+      _stdout, stderr, status = sandbox.run(
+        "script/production_restore", encrypted,
+        env: environment(sandbox, running: "db web")
+               .merge("FORCE" => "1", "BACKUP_PASSPHRASE_FILE" => other)
+      )
+
+      refute status.success?
+      assert_includes stderr, "パスフレーズ"
+      refute_includes calls(sandbox), "stop web"
+    end
+  end
+
+  test "平文の書庫は、パスフレーズを指定していても平文として扱う" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+
+      _stdout, stderr, status = sandbox.run(
+        "script/production_restore", File.join(sandbox.root, "archive.tar.gz"),
+        env: encrypted_environment(sandbox, running: "db web").merge("FORCE" => "1")
+      )
+
+      assert status.success?, stderr
+      assert_includes entries(sandbox.path("received.tar.gz")), "./database.sql"
+    end
+  end
+
   # --- 復元 ---
 
   test "復元に成功した場合だけ web を起動する" do
@@ -436,8 +625,47 @@ class ProductionBackupScriptsTest < ActiveSupport::TestCase
     def environment(sandbox, running:)
       {
         "FAKE_RUNNING_SERVICES" => running,
-        "FAKE_ARCHIVE" => File.join(sandbox.root, "archive.tar.gz")
+        "FAKE_ARCHIVE" => File.join(sandbox.root, "archive.tar.gz"),
+        # 復元側のコンテナが標準入力から受け取ったものを、そのまま残す。
+        "FAKE_RECEIVED" => sandbox.path("received.tar.gz")
       }
+    end
+
+    def encrypted_environment(sandbox, running:)
+      passphrase = sandbox.path("passphrase")
+      File.write(passphrase, "取り違えない合言葉\n")
+
+      environment(sandbox, running: running).merge("BACKUP_PASSPHRASE_FILE" => passphrase)
+    end
+
+    # 暗号化と復号は、製品の外にある openssl だけで行う。
+    #
+    # 指定を script/lib/archive_cipher.sh から読み取らない。ここへ書くのは
+    # 「この形なら openssl だけで取り出せる」という約束であり、
+    # 実装から読み取ると、約束が変わっても気付けない。
+    CIPHER = %w[-aes-256-cbc -md sha256 -pbkdf2 -iter 600000 -salt].freeze
+
+    def encrypt(sandbox, source)
+      passphrase = sandbox.path("passphrase")
+      File.write(passphrase, "取り違えない合言葉\n") unless File.exist?(passphrase)
+
+      destination = "#{source}.enc"
+      system("openssl", "enc", *CIPHER, "-pass", "file:#{passphrase}",
+             "-in", source, "-out", destination, exception: true)
+
+      destination
+    end
+
+    def decrypt(sandbox, source)
+      destination = sandbox.path("decrypted.tar.gz")
+      system("openssl", "enc", "-d", *CIPHER, "-pass", "file:#{sandbox.path('passphrase')}",
+             "-in", source, "-out", destination, exception: true)
+
+      destination
+    end
+
+    def entries(archive)
+      `tar --list --gzip --file=#{Shellwords.escape(archive)}`.split("\n")
     end
 
     # 既に取得済みの書庫として、取得日時だけが違うものを置く。

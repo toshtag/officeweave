@@ -11,13 +11,25 @@
 # 復元先の内容は失われる。実行前に確認を求める。
 # 自動で実行する場合は FORCE=1 を指定する。
 #
+# 暗号化された書庫は、ホスト側で復号してからコンテナへ渡す。
+# パスフレーズはコンテナへ渡さない。渡すと、その寿命のあいだ環境に残る。
+#
 # 使い方:
 #   script/production_restore <ホスト側の書庫>
 #   FORCE=1 script/production_restore <ホスト側の書庫>
+#
+# 環境変数:
+#   FORCE                   1 のとき確認を求めない
+#   BACKUP_PASSPHRASE_FILE  暗号化された書庫を復元する場合のパスフレーズのファイル
 
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
+
+# 暗号化の取り決めは、取得する側と共有する。
+. script/lib/archive_cipher.sh
+
+passphrase_file="${BACKUP_PASSPHRASE_FILE:-}"
 
 compose() {
   docker compose -f compose.production.yaml "$@"
@@ -57,9 +69,37 @@ archive="$1"
 
 [ -f "${archive}" ] || fail "書庫が見つかりません: ${archive}"
 
+decrypt_to_stdout() {
+  # shellcheck disable=SC2086
+  openssl enc -d ${ARCHIVE_CIPHER_ARGUMENTS} -pass file:"${passphrase_file}" -in "$1"
+}
+
+# 暗号化されているかは、名前ではなく中身で判定する。
+# 平文の書庫にパスフレーズを指定していても、平文として扱う。
+encrypted=0
+
+if archive_cipher_encrypted "${archive}"; then
+  encrypted=1
+
+  [ -n "${passphrase_file}" ] ||
+    fail "この書庫は暗号化されています。BACKUP_PASSPHRASE_FILE でパスフレーズのファイルを指定してください: ${archive}"
+
+  archive_cipher_check_passphrase_file "${passphrase_file}" || exit 1
+fi
+
 # 壊れた書庫でアプリケーションを止めないよう、ホスト側でも先に読めるか確かめる。
-tar --list --gzip --file="${archive}" >/dev/null 2>&1 ||
-  fail "書庫として読み取れません: ${archive}"
+#
+# 暗号化された書庫では、復号の失敗と書庫の破損を分けて報告しない。
+# パスフレーズが違えば、復号したものは書庫として読めない形になり、
+# tar が先に終わった時点で openssl は SIGPIPE で終わる。
+# 終了状態からは、どちらが原因かを確実には決められない。
+if [ "${encrypted}" -eq 1 ]; then
+  decrypt_to_stdout "${archive}" 2>/dev/null | tar --list --gzip >/dev/null 2>&1 ||
+    fail "書庫を復号して読み取れません。パスフレーズと書庫を確かめてください: ${archive}"
+else
+  tar --list --gzip --file="${archive}" >/dev/null 2>&1 ||
+    fail "書庫として読み取れません: ${archive}"
+fi
 
 if [ "${FORCE:-0}" != "1" ]; then
   echo "配布環境のデータベースとアップロードされたファイルは失われます。"
@@ -84,9 +124,20 @@ compose stop web >/dev/null
 echo "worker を停止しています" >&2
 compose stop worker >/dev/null
 
+# コンテナへ渡すのは、いつでも平文の書庫とする。
+# 復号をコンテナの側で行うと、パスフレーズをコンテナへ渡すことになる。
+# 平文をホストのファイルへ書き出さないよう、復号した内容はそのまま流す。
+run_restore() {
+  if [ "${encrypted}" -eq 1 ]; then
+    decrypt_to_stdout "${archive}" | compose run --rm --no-deps -T -e FORCE=1 web bin/restore --stdin
+  else
+    compose run --rm --no-deps -T -e FORCE=1 web bin/restore --stdin < "${archive}"
+  fi
+}
+
 # 復元に失敗した状態のまま画面を開けない。
 # 中途半端なデータで運用を再開させないため、web と worker は停止したままにする。
-if ! compose run --rm --no-deps -T -e FORCE=1 web bin/restore --stdin < "${archive}"; then
+if ! run_restore; then
   echo "" >&2
   echo "復元に失敗しました。" >&2
   echo "web と worker は停止したままにしています。中途半端なデータで運用を再開させないためです。" >&2

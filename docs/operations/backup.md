@@ -83,6 +83,58 @@ script/production_backup /var/backups/officeweave
 外部から直接データベースへ書き込む仕組みを持ち込んでいる場合は、
 その停止を別途行う必要がある。本書の手順は、この製品の `web` だけを止める。
 
+### 暗号化
+
+`BACKUP_PASSPHRASE_FILE` を指定すると、書庫を暗号化して取得する。
+指定した場合だけ働き、既定値は持たない。指定しなければ平文のままである。
+
+```bash
+BACKUP_PASSPHRASE_FILE=/etc/officeweave/backup-passphrase script/production_backup
+```
+
+```text
+- 暗号化はホストへ届く途中で行う。平文の書庫はどこにも作らない
+- 名前は officeweave-<取得日時>.tar.gz.enc になる
+- 取得の直後に、復号して書庫として読めることを確かめる
+- 確かめられなければ、書庫を残さず失敗する
+```
+
+パスフレーズは、値ではなくファイルの経路で渡す。
+値を環境変数で渡すと、そこから呼ぶ子プロセスすべてへ渡り、記録へも写り得る。
+ファイルは、読める利用者を運用の担当者だけに限る。
+
+```bash
+chmod 600 /etc/officeweave/backup-passphrase
+```
+
+パスフレーズは書庫に含まれない。失うと復元できない。
+書庫とは別の場所へ保管する。
+
+#### 方式
+
+```text
+openssl enc -aes-256-cbc -md sha256 -pbkdf2 -iter 600000 -salt
+```
+
+鍵はパスフレーズから導出する。塩は書庫の先頭へ入る。
+
+守るのは内容の秘匿である。改ざんの検知は行わない。
+書庫を書き換えられ得る場所へ置く場合は、保管先の権限で守る。
+
+#### 製品を通さずに取り出す
+
+書庫だけが残った状況でも、`openssl` があれば中身を取り出せる。
+
+```bash
+openssl enc -d -aes-256-cbc -md sha256 -pbkdf2 -iter 600000 \
+  -pass file:/etc/officeweave/backup-passphrase \
+  -in backups/officeweave-20260101T000000Z.tar.gz.enc |
+  tar --extract --gzip
+```
+
+開発環境の `bin/backup` と `bin/restore` は暗号化を扱わない。
+暗号化された書庫を開発環境で使う場合は、上の手順で復号してから渡す。
+
 ### 保持する数
 
 `BACKUP_KEEP` を指定すると、出力先へ残す書庫の数を上限で抑える。
@@ -126,21 +178,39 @@ script/production_restore backups/officeweave-20260101T000000Z.tar.gz
 FORCE=1 script/production_restore <書庫のパス>
 ```
 
+暗号化された書庫は、取得のときと同じパスフレーズを指定する。
+
+```bash
+BACKUP_PASSPHRASE_FILE=/etc/officeweave/backup-passphrase \
+  script/production_restore backups/officeweave-20260101T000000Z.tar.gz.enc
+```
+
 ### 復元の進み方
 
 ```text
-1. ホスト側で、書庫として読めることを確認する
-2. 確認を求める（FORCE=1 なら省く）
-3. web を停止する
-4. 一時コンテナへ書庫を標準入力から渡す
-5. コンテナ内で書庫の中身を検査する
-6. 検査を通った場合だけ、データベースとファイルを置き換える
-7. 成功した場合だけ web を起動する
-8. 稼働確認と診断を実行する
+1. ホスト側で、暗号化されているかを書庫の中身から判定する
+2. 暗号化されていれば、復号して書庫として読めることを確認する
+3. 暗号化されていなければ、そのまま書庫として読めることを確認する
+4. 確認を求める（FORCE=1 なら省く）
+5. web を停止する
+6. 一時コンテナへ書庫を標準入力から渡す。暗号化された書庫は復号して渡す
+7. コンテナ内で書庫の中身を検査する
+8. 検査を通った場合だけ、データベースとファイルを置き換える
+9. 成功した場合だけ web を起動する
+10. 稼働確認と診断を実行する
 ```
 
 停止した `web` へ `docker compose exec` はできない。
 そのため、復元は停止した `web` とは別の一時コンテナで実行する。
+
+暗号化されているかは、名前ではなく書庫の中身で判定する。
+改名した書庫も、拡張子を落として転送された書庫も、同じように扱える。
+
+復号はホスト側で行う。コンテナへ渡るのは平文の書庫であり、
+パスフレーズはコンテナへ渡らない。
+
+パスフレーズを指定しない場合、暗号化された書庫は `web` を停止する前に拒否する。
+パスフレーズが違う場合も同じである。どちらも既存のデータは変更されない。
 
 ### 受け付けない書庫
 
@@ -241,6 +311,9 @@ docker compose exec web bin/backup
 docker compose exec -e FORCE=1 web bin/restore backups/<書庫>
 ```
 
+コンテナ内の `bin/backup` と `bin/restore` は暗号化を扱わない。
+書庫を作る側と保管する側を分けており、暗号化するのは保管する側だけとする。
+
 ## 7. 扱っていないこと
 
 次は扱わない。
@@ -256,6 +329,5 @@ docker compose exec -e FORCE=1 web bin/restore backups/<書庫>
 次はロードマップの R1 運用信頼性で扱う。
 
 ```text
-取得した書庫の暗号化
 定期取得の仕組み
 ```

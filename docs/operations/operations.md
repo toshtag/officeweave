@@ -133,6 +133,16 @@ BACKUP_KEEP=7 script/production_backup /var/backups/officeweave
 
 指定しない場合は消えない。消える条件は [バックアップと復元](backup.md) にある。
 
+書庫を組織の外へ持ち出す場合や、他の用途と共有する場所へ置く場合は、
+パスフレーズを指定して暗号化する。
+
+```bash
+BACKUP_PASSPHRASE_FILE=/etc/officeweave/backup-passphrase \
+  BACKUP_KEEP=7 script/production_backup /var/backups/officeweave
+```
+
+パスフレーズは書庫に含まれない。失うと復元できない。書庫とは別の場所へ保管する。
+
 ## 6. 困ったとき
 
 ### ログインできない

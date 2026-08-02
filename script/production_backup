@@ -22,11 +22,15 @@
 #   ./backups
 #
 # 環境変数:
-#   BACKUP_KEEP  出力先へ残す書庫の数。指定した場合だけ古い書庫を消す
+#   BACKUP_KEEP             出力先へ残す書庫の数。指定した場合だけ古い書庫を消す
+#   BACKUP_PASSPHRASE_FILE  パスフレーズのファイル。指定した場合だけ暗号化する
 
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
+
+# 暗号化の取り決めは、復元する側と共有する。
+. script/lib/archive_cipher.sh
 
 # 書庫には組織の全データが入る。最初から所有者だけが読める状態にする。
 umask 077
@@ -39,6 +43,12 @@ output_directory="${1:-backups}"
 # 入れ替えの時点では、消える量も消える時刻も利用者へ見えない。
 # 消す機能は、上限を明示した組織だけで働かせる。
 keep="${BACKUP_KEEP:-}"
+
+# 暗号化に使うパスフレーズのファイル。こちらも既定を持たない。
+#
+# 値そのものを環境変数で受け取らない。ファイルの経路だけを受け取る。
+# 環境変数は、この処理から呼ぶ子プロセスすべてへ渡り、記録へ写り得る。
+passphrase_file="${BACKUP_PASSPHRASE_FILE:-}"
 
 compose() {
   docker compose -f compose.production.yaml "$@"
@@ -59,23 +69,43 @@ if [ -n "${keep}" ]; then
   [ "${keep}" -ge 1 ] || fail "BACKUP_KEEP には 1 以上の整数を指定してください: ${keep}"
 fi
 
+# パスフレーズの検査も、サービスを止める前に行う。
+if [ -n "${passphrase_file}" ]; then
+  archive_cipher_check_passphrase_file "${passphrase_file}" || exit 1
+fi
+
+# 書庫の中身を暗号にする。鍵はパスフレーズから導出する。
+# パスフレーズは引数へ渡さない。引数は同じホストの他の利用者から見える。
+encrypt_to_stdout() {
+  # shellcheck disable=SC2086
+  openssl enc ${ARCHIVE_CIPHER_ARGUMENTS} -pass file:"${passphrase_file}"
+}
+
+decrypt_to_stdout() {
+  # shellcheck disable=SC2086
+  openssl enc -d ${ARCHIVE_CIPHER_ARGUMENTS} -pass file:"${passphrase_file}" -in "$1"
+}
+
 # 出力先にあるもののうち、このスクリプトが取得した書庫だけを、名前順に並べる。
 #
 # 名前は取得日時で始まるため、名前順が取得順になる。
 # 同じ秒に 2 度取得したときだけ、連番付きのほうが先に並ぶ。
 # その 2 つの間で古い側を取り違える可能性は残るが、
 # 秒までそろった 2 つの書庫の間の順序であり、保持する期間には影響しない。
+#
+# 暗号化した書庫も同じ対象とする。整理の対象を平文だけにすると、
+# 暗号化へ切り替えた組織で書庫が増え続ける。
 list_archives() {
   local entry name
 
-  for entry in "${output_directory}"/officeweave-*.tar.gz; do
+  for entry in "${output_directory}"/officeweave-*.tar.gz "${output_directory}"/officeweave-*.tar.gz.enc; do
     [ -e "${entry}" ] || continue
 
     name="$(basename "${entry}")"
 
     # 取得日時の形に一致しないものは、こちらが作ったものではない。
     # 出力先を他の用途と共有していても、触るのは自分が作ったものだけとする。
-    [[ "${name}" =~ ^officeweave-[0-9]{8}T[0-9]{6}Z(-[0-9]+)?\.tar\.gz$ ]] || continue
+    [[ "${name}" =~ ^officeweave-[0-9]{8}T[0-9]{6}Z(-[0-9]+)?\.tar\.gz(\.enc)?$ ]] || continue
 
     echo "${entry}"
   done | sort
@@ -207,14 +237,22 @@ fi
 mkdir -p "${output_directory}"
 
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
-archive="${output_directory}/officeweave-${timestamp}.tar.gz"
+
+# 暗号化したものは .enc で終わらせる。中身の判定は名前ではなく先頭の印で行うが、
+# 保管先で平文と混ざったときに、名前だけで見分けられるほうがよい。
+extension="tar.gz"
+if [ -n "${passphrase_file}" ]; then
+  extension="tar.gz.enc"
+fi
+
+archive="${output_directory}/officeweave-${timestamp}.${extension}"
 
 if [ -e "${archive}" ]; then
   suffix=1
-  while [ -e "${output_directory}/officeweave-${timestamp}-${suffix}.tar.gz" ]; do
+  while [ -e "${output_directory}/officeweave-${timestamp}-${suffix}.${extension}" ]; do
     suffix=$((suffix + 1))
   done
-  archive="${output_directory}/officeweave-${timestamp}-${suffix}.tar.gz"
+  archive="${output_directory}/officeweave-${timestamp}-${suffix}.${extension}"
 fi
 
 # 完成するまでは正式な名前を使わない。
@@ -229,22 +267,46 @@ echo "書庫を取得しています" >&2
 
 # --no-deps を付け、db を巻き込んで作り直さないようにする。
 # -T を付け、標準出力へ端末の制御文字が混ざらないようにする。
-if ! compose run --rm --no-deps -T web bin/backup --stdout > "${partial}"; then
+#
+# 暗号化は、書庫がホストへ届く途中で行う。平文をいったん置いてから
+# 暗号化する形にすると、消し忘れた平文が保管先へ残り得る。
+# pipefail のもとでは、取得と暗号化のどちらが失敗しても失敗になる。
+receive_archive() {
+  if [ -n "${passphrase_file}" ]; then
+    compose run --rm --no-deps -T web bin/backup --stdout | encrypt_to_stdout > "${partial}"
+  else
+    compose run --rm --no-deps -T web bin/backup --stdout > "${partial}"
+  fi
+}
+
+if ! receive_archive; then
   cleanup_partial
   restart_services
   fail "バックアップの取得に失敗しました。"
 fi
 
-if ! gzip --test "${partial}" 2>/dev/null; then
-  cleanup_partial
-  restart_services
-  fail "取得した書庫を読み取れません。"
-fi
+# 取得したものが、取り出せる形になっているかを確かめる。
+#
+# 暗号化した場合は、復号してから確かめる。復号の確認を省くと、
+# パスフレーズの取り違えに気付くのは復元を試みたときになる。
+if [ -n "${passphrase_file}" ]; then
+  if ! decrypt_to_stdout "${partial}" 2>/dev/null | tar --list --gzip >/dev/null 2>&1; then
+    cleanup_partial
+    restart_services
+    fail "取得した書庫を復号して読み取れません。"
+  fi
+else
+  if ! gzip --test "${partial}" 2>/dev/null; then
+    cleanup_partial
+    restart_services
+    fail "取得した書庫を読み取れません。"
+  fi
 
-if ! tar --list --gzip --file="${partial}" >/dev/null 2>&1; then
-  cleanup_partial
-  restart_services
-  fail "取得した書庫を書庫として読み取れません。"
+  if ! tar --list --gzip --file="${partial}" >/dev/null 2>&1; then
+    cleanup_partial
+    restart_services
+    fail "取得した書庫を書庫として読み取れません。"
+  fi
 fi
 
 mv "${partial}" "${archive}"
