@@ -103,7 +103,10 @@ session_cookie() {
 measure() {
   local path="$1" name="$2" cookie="$3"
 
+  # ホストの利用者として動かす。書き出し先はホスト側の作業ツリーであり、
+  # 別の利用者で動かすと書き込めない。
   docker run --rm --network host \
+    --user "$(id -u):$(id -g)" \
     -v "$PWD/$REPORT_DIR:/report" \
     "$GENERATOR" \
     -n "$REQUESTS" -c "$CONNECTIONS" --no-tui \

@@ -62,6 +62,11 @@ class LoadMeasurementScriptTest < ActiveSupport::TestCase
     assert_match(/報告として残/, @body)
   end
 
+  # 別の利用者で動かすと、ホスト側の作業ツリーへ書き込めない。
+  test "道具をホストの利用者として動かす" do
+    assert_match(/--user "\$\(id -u\):\$\(id -g\)"/, @body)
+  end
+
   test "報告を書き出す" do
     assert_match(/#{Regexp.escape(REPORT_DIR)}/, @body)
     assert_match(/^#{Regexp.escape(REPORT_DIR)}\/$/, Rails.root.join(".gitignore").read)
