@@ -32,9 +32,7 @@ INITIAL_USER_EMAIL     最初の管理者のメールアドレス
 INITIAL_USER_PASSWORD  15 文字以上のパスワード
 ```
 
-パスワードは 15 文字以上にします。大文字・数字・記号の混在は不要です。
-空白を含めても構いませんが、空白だけの値は使用できません。
-`change_me`、`password`、`officeweave` は、表記を変えても使用できません。
+パスワードの要件は [設定](docs/development/configuration.md) にあります。
 
 ```bash
 docker compose up -d --build
@@ -46,9 +44,8 @@ docker compose up -d --build
 script/seed_initial_user
 ```
 
-資格情報は、このとき作られる一時コンテナにだけ渡します。処理が終わると
-そのコンテナは削除されます。稼働中の web と worker には渡しません。
-値は `.env` から読みます。同名のホスト環境変数は使いません。
+資格情報は、このとき作られる一時コンテナにだけ渡します。稼働中の web と
+worker には渡しません。扱いの詳細は [設定](docs/development/configuration.md) にあります。
 
 作成後、`INITIAL_USER_PASSWORD` は `.env` から削除してください。
 web と worker を作り直す必要はありません。
