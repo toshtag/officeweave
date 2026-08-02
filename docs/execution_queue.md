@@ -12,8 +12,8 @@
 
 ```text
 現在の Phase: R2
-直近完了 Task: R2-T7A
-進行中:        R2-T7
+直近完了 Task: R2-T7
+進行中:        なし
 次に実行:      R2-T8
 ```
 
@@ -237,7 +237,7 @@ OIDC 連携は 3 つに分ける。設定と id_token の検証、認可サー�
 | R2-T6A | `r2/t6a-health-storage-check` | —       | 保存先が未作成でも稼働確認が通るようにする        | 完了  |
 | R2-T6 | `r2/t6-oidc-verification`     | —        | OIDC の設定と id_token の検証を用意する    | 完了  |
 | R2-T7A | `r2/t7a-health-probe-isolation` | —      | 稼働確認のテストを並列実行から切り離す         | 完了  |
-| R2-T7 | `r2/t7-oidc-client`           | —        | 認可サーバーとの通信を用意する               | 進行中 |
+| R2-T7 | `r2/t7-oidc-client`           | —        | 認可サーバーとの通信を用意する               | 完了  |
 | R2-T8 | `r2/t8-oidc-login`            | —        | OIDC でログインできるようにする             | 未着手 |
 
 ## R6 保守性
