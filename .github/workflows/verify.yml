@@ -72,6 +72,26 @@ jobs:
         if: always()
         run: docker compose down -v
 
+  image_scan:
+    name: コンテナの脆弱性
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: ソースを取得する
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: 配布するイメージを検査する
+        run: script/scan_container_image
+
+      - name: 検査の報告を成果物として残す
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: officeweave-image-scan
+          path: scan_report/
+          retention-days: 30
+
   package:
     name: 配布用の構成
     runs-on: ubuntu-latest
