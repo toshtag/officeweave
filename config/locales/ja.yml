@@ -107,6 +107,8 @@ ja:
         department_ids: 公開先の部門
         owner: 登録者
         participant_ids: 参加者
+        recurrence_frequency: 繰り返しの間隔
+        repeat_until: 繰り返しの終わり
       resource:
         name: 名称
         code: 識別子
@@ -241,6 +243,7 @@ ja:
       not_reservable: は予約を受け付けていません
       not_visible: には参照できる予定だけを指定できます
       not_after_start: は開始より後にしてください
+      too_many_occurrences: が遠すぎます。1 度に作れる回数を超えます
       cyclic: に自身または下位の部門は指定できません
       different_organization: に別の組織の記録は指定できません
       not_in_future: は未来の時刻にしてください
@@ -372,6 +375,12 @@ ja:
       long: "%Y年%m月%d日"
 
   events:
+    destroyed_following: この回以降の繰り返しを削除しました。
+    destroy_following: この回以降を削除する
+    frequencies:
+      daily: 毎日
+      weekly: 毎週
+      monthly: 毎月
     created: 予定を作成しました。
     updated: 予定を更新しました。
     destroyed: 予定を削除しました。
@@ -396,6 +405,9 @@ ja:
     form:
       departments_hint: 公開範囲が「指定した部門」の場合にだけ使われます。
       participants_hint: 指名した利用者は、公開範囲に関わらずこの予定を見られます。
+      recurrence: 繰り返し
+      no_recurrence: 繰り返さない
+      recurrence_hint: 繰り返す場合は、間隔と終わりの日を指定します。1 度に作れるのは %{count} 回までです。各回は独立した予定として作られ、1 回だけ直せます。
 
   resources:
     created: 設備・備品を登録しました。

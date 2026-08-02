@@ -15,6 +15,11 @@
       <div class="page-heading__actions">
         <%= link_to t("common.edit"), edit_event_path(@event), class: "button" %>
         <%= button_to t("common.destroy"), @event, method: :delete, class: "button" %>
+        <% if @event.recurring? %>
+          <%# この回以降をまとめて消す。前の回は消さない。 %>
+          <%= button_to t("events.destroy_following"), event_path(@event, scope: "following"),
+                        method: :delete, class: "button" %>
+        <% end %>
       </div>
     <% end %>
   </div>

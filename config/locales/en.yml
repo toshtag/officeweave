@@ -107,6 +107,8 @@ en:
         department_ids: Departments
         owner: Owner
         participant_ids: Participants
+        recurrence_frequency: Repeat interval
+        repeat_until: Repeat until
       resource:
         name: Name
         code: Code
@@ -221,6 +223,7 @@ en:
       not_reservable: is not accepting bookings
       not_visible: must be an event you can see
       not_after_start: must be after the start time
+      too_many_occurrences: is too far away. It would create more occurrences than allowed
       cyclic: cannot be this department or one of its descendants
       different_organization: must belong to the same organization
       not_in_future: must be in the future
@@ -352,6 +355,12 @@ en:
       long: "%B %-d, %Y"
 
   events:
+    destroyed_following: This and later occurrences have been deleted.
+    destroy_following: Delete this and later
+    frequencies:
+      daily: Daily
+      weekly: Weekly
+      monthly: Monthly
     created: The event has been created.
     updated: The event has been updated.
     destroyed: The event has been deleted.
@@ -376,6 +385,9 @@ en:
     form:
       departments_hint: These are used only when the visibility is set to selected departments.
       participants_hint: Selected users can see this event regardless of its visibility.
+      recurrence: Repeat
+      no_recurrence: Does not repeat
+      recurrence_hint: To repeat, choose an interval and an end date. Up to %{count} occurrences can be created at once. Each occurrence is a separate event and can be edited on its own.
 
   resources:
     created: The resource has been added.

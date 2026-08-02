@@ -31,11 +31,15 @@ class EventsController < ApplicationController
   def create
     @event = current_organization.events.new(event_params)
     @event.owner = Current.user
+    # 繰り返しの指定は保存しない。指定の妥当性と各回の作成だけを受け持つ。
+    @recurrence = Event::Recurrence.new(@event, frequency: params.dig(:event, :recurrence_frequency),
+                                                repeat_until: params.dig(:event, :repeat_until))
 
-    if @event.save
-      invite_participants
+    if @recurrence.save(participants: requested_participants)
       redirect_to @event, notice: t("events.created")
     else
+      # 繰り返しの指定の誤りも、予定の誤りと同じ場所へ出す。
+      @recurrence.errors.each { |error| @event.errors.add(error.attribute, error.message) }
       render :new, status: :unprocessable_content
     end
   end
@@ -50,9 +54,17 @@ class EventsController < ApplicationController
   end
 
   def destroy
-    @event.destroy
+    # 繰り返しの回は、この回以降をまとめて消せる。前の回は消さない。
+    # 既に終わった回を、後からの操作で消さない。
+    if params[:scope] == "following" && @event.recurring?
+      @event.destroy_following
+      notice = t("events.destroyed_following")
+    else
+      @event.destroy
+      notice = t("events.destroyed")
+    end
 
-    redirect_to events_path, notice: t("events.destroyed"), status: :see_other
+    redirect_to events_path, notice: notice, status: :see_other
   end
 
   private
@@ -77,14 +89,17 @@ class EventsController < ApplicationController
       attributes.except(:participant_ids)
     end
 
+    def invite_participants
+      @event.invite(users: requested_participants, actor: Current.user)
+    end
+
     # 参加者は自組織の有効な利用者だけから選ぶ。
     #
     # 画面は選択肢をその範囲に絞るが、受け入れ側に同じ判定がないと、
     # 選択肢に無い識別子をそのまま送れる。
-    def invite_participants
+    def requested_participants
       requested = params.dig(:event, :participant_ids).to_a.compact_blank
 
-      @event.invite(users: current_organization.users.active.where(id: requested).to_a,
-                    actor: Current.user)
+      current_organization.users.active.where(id: requested).to_a
     end
 end
