@@ -12,8 +12,8 @@
 
 ```text
 現在の Phase: R8
-直近完了 Task: R7-T9
-進行中:        R8-T1
+直近完了 Task: R8-T1
+進行中:        なし
 次に実行:      R8-T2
 ```
 
@@ -242,7 +242,7 @@ R7 の完了後に行った性能のレビューで確認した問題を、GitHu
 
 | Task  | ブランチ                            | 対応 Issue                                                  | 内容                        | 状態  |
 | ----- | ------------------------------- | --------------------------------------------------------- | ------------------------- | --- |
-| R8-T1 | `r8/t1-mail-fanout-preload`     | [#154](https://github.com/toshtag/OfficeWeave/issues/154) | メール配信の展開で利用者と配信設定を先読みする   | 進行中 |
+| R8-T1 | `r8/t1-mail-fanout-preload`     | [#154](https://github.com/toshtag/OfficeWeave/issues/154) | メール配信の展開で利用者と配信設定を先読みする   | 完了  |
 | R8-T2 | `r8/t2-document-list-projection` | [#155](https://github.com/toshtag/OfficeWeave/issues/155) | 文書一覧を表示に必要な列と関連へ絞る        | 未着手 |
 | R8-T3 | `r8/t3-home-request-scope`      | [#156](https://github.com/toshtag/OfficeWeave/issues/156) | 入口の申請を表示するぶんへ限る           | 未着手 |
 | R8-T4 | `r8/t4-unread-notification-index` | [#157](https://github.com/toshtag/OfficeWeave/issues/157) | 未読の通知件数に部分索引を置く          | 未着手 |
