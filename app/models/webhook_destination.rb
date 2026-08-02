@@ -88,21 +88,8 @@ class WebhookDestination
   # 名前解決の既定の実装。
   #
   # OS の設定と /etc/hosts に従う。追加の gem は使わない。
-  # getaddrinfo は C の中で止まるため、別のスレッドへ逃がして待ち時間を区切る。
   DEFAULT_RESOLVER = lambda do |hostname, port|
-    addresses = nil
-    failure = nil
-
-    worker = Thread.new do
-      addresses = Addrinfo.getaddrinfo(hostname, port, Socket::AF_UNSPEC, Socket::SOCK_STREAM)
-    rescue StandardError => exception
-      failure = exception
-    end
-
-    raise Error.new(:resolution_timeout) unless worker.join(DNS_RESOLUTION_TIMEOUT)
-    raise Error.new(:resolution_failed) if failure
-
-    addresses.map(&:ip_address)
+    IsolatedResolution.call(hostname, port)
   end
 
   attr_reader :uri, :ip_address
