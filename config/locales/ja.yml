@@ -265,6 +265,8 @@ ja:
     updated: 部門を更新しました。
     destroyed: 部門を削除しました。
     index:
+      query: 題名・本文
+      query: 題名・本文
       all_request_types: すべての種別
       title: 部門
       heading: 部門

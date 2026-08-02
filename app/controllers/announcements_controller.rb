@@ -5,7 +5,8 @@ class AnnouncementsController < ApplicationController
   before_action :set_announcement, only: %i[show edit update destroy]
 
   def index
-    visible = Announcement.visible_to(Current.user)
+    @query = params[:query]
+    visible = Announcement.visible_to(Current.user).search(@query)
 
     @announcements = listed(visible.recent_first)
     @unread_ids = visible.unread_for(Current.user).pluck(:id).to_set

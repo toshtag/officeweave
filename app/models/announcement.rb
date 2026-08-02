@@ -28,6 +28,18 @@ class Announcement < ApplicationRecord
   scope :awaiting_publication_notice, -> { published.where(notified_at: nil) }
   scope :recent_first, -> { order(published_at: :desc, created_at: :desc) }
 
+  # 題名と本文の部分一致で引く。
+  #
+  # 語の区切りを空白で判断する検索は、日本語の文章では語を切り出せない。
+  # 文書（Document.search）と同じ書き方でそろえる。
+  scope :search, ->(query) {
+    term = query.to_s.strip
+    next if term.blank?
+
+    pattern = "%#{sanitize_sql_like(term)}%"
+    where(arel_table[:title].matches(pattern).or(arel_table[:body].matches(pattern)))
+  }
+
   # 利用者が読める公開済みのお知らせ。
   # 公開範囲が部門指定の場合、その利用者の所属部門と重なるものだけを返す。
   scope :visible_to, ->(user) {

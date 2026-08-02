@@ -1710,6 +1710,13 @@ CREATE INDEX index_announcements_on_author_id ON public.announcements USING btre
 
 
 --
+-- Name: index_announcements_on_body_trigram; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_announcements_on_body_trigram ON public.announcements USING gin (body public.gin_trgm_ops);
+
+
+--
 -- Name: index_announcements_on_organization_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1728,6 +1735,13 @@ CREATE INDEX index_announcements_on_organization_id_and_published_at ON public.a
 --
 
 CREATE INDEX index_announcements_on_published_at_and_notified_at ON public.announcements USING btree (published_at, notified_at);
+
+
+--
+-- Name: index_announcements_on_title_trigram; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_announcements_on_title_trigram ON public.announcements USING gin (title public.gin_trgm_ops);
 
 
 --
@@ -2193,6 +2207,13 @@ CREATE INDEX index_requests_on_applicant_id_and_created_at ON public.requests US
 
 
 --
+-- Name: index_requests_on_body_trigram; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_requests_on_body_trigram ON public.requests USING gin (body public.gin_trgm_ops);
+
+
+--
 -- Name: index_requests_on_organization_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2211,6 +2232,13 @@ CREATE INDEX index_requests_on_organization_id_and_status ON public.requests USI
 --
 
 CREATE INDEX index_requests_on_request_type_id ON public.requests USING btree (request_type_id);
+
+
+--
+-- Name: index_requests_on_title_trigram; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_requests_on_title_trigram ON public.requests USING gin (title public.gin_trgm_ops);
 
 
 --
@@ -2786,6 +2814,7 @@ ALTER TABLE ONLY public.announcement_departments
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260803070000'),
 ('20260803060000'),
 ('20260803050000'),
 ('20260803040000'),

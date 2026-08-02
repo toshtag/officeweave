@@ -16,7 +16,10 @@ class RequestsController < ApplicationController
     @request_type_id = params[:request_type_id]
     @request_types = current_organization.request_types.ordered
 
-    @page = Pagination.new(scoped_requests.with_status(@status)
+    @query = params[:query]
+
+    @page = Pagination.new(scoped_requests.search(@query)
+                                          .with_status(@status)
                                           .with_request_type(@request_type_id)
                                           .recent_first
                                           .includes(:request_type, :applicant),

@@ -245,6 +245,8 @@ en:
     updated: The department has been updated.
     destroyed: The department has been deleted.
     index:
+      query: Title or body
+      query: Title or body
       all_request_types: All request types
       title: Departments
       heading: Departments
