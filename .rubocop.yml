@@ -8,7 +8,6 @@ AllCops:
   # 無効のままにすると、更新しても検査内容が変わらず、導入した意味が薄れる。
   NewCops: enable
   Exclude:
-    - "db/schema.rb"
     - "vendor/**/*"
     # 基盤から取り込んだ移行ファイル。手を入れる対象ではない。
     - "db/migrate/*.active_storage.rb"
