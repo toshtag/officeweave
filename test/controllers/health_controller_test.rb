@@ -22,9 +22,11 @@ class HealthControllerTest < ActionDispatch::IntegrationTest
     assert_equal "ok", body.dig("checks", "storage")
   end
 
-  test "保存領域へ書けない場合は 503 を返す" do
+  test "保存領域を作れない場合は 503 を返す" do
+    # 経路の途中がファイルであれば、保存先のディレクトリは作れない。
     service = ActiveStorage::Blob.service
-    service.define_singleton_method(:root) { "/officeweave-does-not-exist" }
+    blocked = Rails.root.join("Gemfile/storage").to_s
+    service.define_singleton_method(:root) { blocked }
 
     get health_url
 
