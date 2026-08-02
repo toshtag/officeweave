@@ -17,6 +17,7 @@ class AuditEvent < ApplicationRecord
     password_changed
     password_reset_requested
     password_reset_completed
+    sessions_revoked
     user_activated
     department_created
     department_updated

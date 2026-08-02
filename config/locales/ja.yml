@@ -583,6 +583,24 @@ ja:
       open: 次の場所で確認できます。
       settings_hint: このメールは OfficeWeave からの自動送信です。
 
+  logins:
+    revoked:
+      one: ログインを 1 件終了しました。
+      other: ログインを %{count} 件終了しました。
+    index:
+      title: ログイン中の端末
+      heading: ログイン中の端末
+      description: 心当たりのないログインがある場合は終了し、パスワードを変更してください。
+      device: 端末
+      started_at: ログイン
+      last_active_at: 最後の操作
+      action: 操作
+      current: この端末
+      unknown_device: 不明な端末
+      sign_out: ログアウト
+      revoke: 終了する
+      revoke_others: この端末以外を終了する
+      revoke_others_hint: この端末のログインは続きます。ログアウトは上の一覧から行います。
   password_resets:
     sent: 再設定の案内をメールで送りました。届かない場合は、メールアドレスと迷惑メールをご確認ください。
     updated: パスワードを再設定しました。新しいパスワードでログインしてください。
@@ -734,6 +752,7 @@ ja:
       password_changed: パスワードの変更
       password_reset_requested: パスワード再設定の要求
       password_reset_completed: パスワードの再設定
+      sessions_revoked: ログインの終了
       user_activated: 利用者の有効化
       department_created: 部門の追加
       department_updated: 部門の更新
