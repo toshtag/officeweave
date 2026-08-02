@@ -50,6 +50,21 @@ docker compose -f compose.production.yaml up -d --build
 docker compose -f compose.production.yaml exec web bin/diagnose
 ```
 
+### 部品表の取得
+
+その版が取り込んでいるものの一覧を書き出し、公開する版へ添える。
+
+```bash
+docker compose exec -T web bin/rails officeweave:sbom > officeweave-sbom.json
+```
+
+添えるのは、脆弱性の報告を受けた側が、自分の環境が対象かどうかを
+確かめられるようにするためである。版ごとに取り込んでいるものは違う。
+
+継続的インテグレーションでも検証のたびに書き出しており、成果物として
+30 日分が残る。公開の直前に手元で作れない事情がある場合は、そちらから
+その版の実行結果を取得する。
+
 ### 記録
 
 ```bash
@@ -70,6 +85,7 @@ git push origin main --tags
 変更履歴が最新の内容と一致している
 制限として残っている項目が記載されている
 設定項目が増えた場合、.env.example と設定の文書へ反映されている
+部品表を書き出し、公開する版へ添えている
 移行が必要な変更がある場合、アップグレードの手順へ注意点を追記している
 検証がすべて成功している
 配布用の構成でクリーンな環境から起動できる
