@@ -4,15 +4,11 @@
 
 ## 現在の状態
 
-```text
-0.2.0
-```
+組織の日常業務を一巡できる範囲を実装した段階です。互換性はまだ保証しません。
 
-組織の日常業務を一巡できる範囲を実装した段階です。
-互換性はまだ保証しません。変更の内容は [変更履歴](CHANGELOG.md) を参照してください。
-
-2026-08-02 より前にこのリポジトリを取得している場合は、この版へ入れ替えてください。
-セキュリティ修正を含みます。手順は [アップグレード](docs/operations/upgrade.md) を参照してください。
+現在の版は [VERSION](VERSION) にあります。
+版ごとの変更点と、入れ替えが必要な理由は [変更履歴](CHANGELOG.md) にあります。
+過去の版から入れ替える場合は [アップグレード](docs/operations/upgrade.md) を参照してください。
 
 ## 起動
 
@@ -228,12 +224,11 @@ docker compose up -d --build
 - [品質基盤](docs/development/quality.md) — 書式検査と各種検査の実行方法
 - [アクセシビリティ方針](docs/development/accessibility.md) — 画面が満たすべき最低要件
 - [認証方式の差し替え](docs/development/authentication.md) — 外部認証への差し替え手順
-- [総合検証](docs/development/verification.md) — 公開前に通す確認
-- [リリース手順](docs/development/release.md) — 版数の付け方と公開の手順
+- [リリース手順](docs/development/release.md) — 公開前の確認と、版を出す手順
 
 ### プロジェクト
 
-- [製品ビジョン](docs/vision.md) — 解決したい問題、初期範囲、非目標
+- [製品ビジョン](docs/vision.md) — 解決したい問題、製品範囲、非目標
 - [ライセンス方針](docs/licensing.md) — ライセンスの選定理由と名称の利用範囲
 
 いずれも日本語を正本とします。
