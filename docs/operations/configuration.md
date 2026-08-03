@@ -360,12 +360,6 @@ localhost とその下位の名前（portal.localhost）
 ジョブは PostgreSQL へ保存する。web も worker も入れ替えて構わない。
 未処理のジョブは残り、worker が起動した時点で処理される。
 
-```text
-db      業務データと未処理のジョブを、別のデータベースへ保持する
-web     画面と API。ジョブを積む
-worker  ジョブを実行する。ホストへポートを公開しない
-```
-
 `QUEUE_DATABASE_NAME` は、接続先のサービスは同じで論理データベースだけを分ける。
 新しい PostgreSQL コンテナやホストの公開ポートは増やさない。
 
