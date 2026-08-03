@@ -22,22 +22,6 @@ class RequestType < ApplicationRecord
   scope :ordered, -> { order(:position, :name) }
   scope :active, -> { where(active: true) }
 
-  # 最初に承認を待つ段。
-  def first_approval_step = approval_steps.ordered.first
-
-  # 指定の並び以降で、最初に現れる段。
-  #
-  # 並びの値で探す。段の構成を後から変えても、待っている段の位置が
-  # 別の段へずれない。
-  def approval_step_at(position)
-    approval_steps.ordered.detect { |step| step.position >= position }
-  end
-
-  # 指定の段より後にある段。無ければ nil。
-  def approval_step_after(position)
-    approval_steps.ordered.detect { |step| step.position > position }
-  end
-
   # この種別の申請を承認できる立場かどうか。
   #
   # いずれかの段を担当していれば、その種別の申請を参照できる。
@@ -46,11 +30,6 @@ class RequestType < ApplicationRecord
     return true if user.administrator?
 
     approval_steps.any? { |step| step.approvable_by?(user) }
-  end
-
-  # 段を担当する部門の識別子。参照範囲の絞り込みに使う。
-  def self.approver_department_ids
-    ApprovalStep.where(request_type_id: select(:id)).select(:approver_department_id)
   end
 
   private

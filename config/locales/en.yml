@@ -30,7 +30,6 @@ en:
     heading: Welcome
     description: Bring your organization's updates, schedules, and approvals together in one place.
     greeting: "Hello, %{name}."
-    primary_department: "Primary department: %{name}"
     profile:
       heading: Your details
       no_department: Not set
@@ -211,8 +210,6 @@ en:
     edit: Edit
     destroy: Delete
     actions: Actions
-    yes: Yes
-    no: "No"
 
   errors:
     messages:
@@ -478,7 +475,6 @@ en:
       approval_steps_hint: Approvals happen in order. A step without a department is handled by administrators. Lower position numbers come first. To add a step, choose a department in the empty step and save, then open this page again.
       remove_step: Remove this step
       approver_unset: Administrators approve
-      approver_hint: Members of the department you pick can approve. Leave it blank to let administrators approve.
       active_hint: When a type is no longer used, clear this instead of deleting it so past requests stay intact.
 
   requests:
@@ -673,7 +669,6 @@ en:
       heading: Change password
       current_password: Current password
       new_password: New password
-      confirmation: New password (confirmation)
       other_sessions_hint: Changing your password ends every session except this device.
       submit: Change
   settings:
@@ -811,9 +806,6 @@ en:
       all_actions: All actions
       all_actors: All users
       empty: There are no records.
-      pages: Pages
-      previous: Previous
-      next: Next
       total:
         zero: 0 records
         one: 1 record
