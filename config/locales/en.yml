@@ -71,6 +71,7 @@ en:
       approval_delegation:
         delegator: Delegator
         delegate: Delegate
+        delegate_id: Delegate
         starts_on: Starts on
         ends_on: Ends on
       user:
@@ -657,6 +658,7 @@ en:
       heading: Signed-in devices
       description: End any session you do not recognize, then change your password.
       device: Device
+      ip_address: Source
       started_at: Signed in
       last_active_at: Last activity
       action: Actions

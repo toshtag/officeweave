@@ -71,6 +71,7 @@ ja:
       approval_delegation:
         delegator: 委任した利用者
         delegate: 任せる利用者
+        delegate_id: 任せる利用者
         starts_on: 開始日
         ends_on: 終了日
       user:
@@ -681,6 +682,7 @@ ja:
       heading: ログイン中の端末
       description: 心当たりのないログインがある場合は終了し、パスワードを変更してください。
       device: 端末
+      ip_address: 接続元
       started_at: ログイン
       last_active_at: 最後の操作
       action: 操作
