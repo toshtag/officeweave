@@ -57,6 +57,21 @@ class DepartmentsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to departments_path
   end
 
+  # 主たる所属かどうかを、はい／いいえで示す。
+  #
+  # YAML は引用符の無い yes と no を真偽値として読む。鍵が :yes でなくなると
+  # 語句を引けず、表示だけが崩れる。例外にならないため、画面を出す側から見る。
+  test "所属の一覧が、主たる所属かどうかを示す" do
+    # 主たる所属は 1 人につき 1 つである。両方の表示を出すため、
+    # 主たるではない所属を足す。
+    users(:hanako).memberships.create!(department: departments(:sales), primary: false)
+
+    get department_url(departments(:sales))
+
+    assert_select "td", text: I18n.t("common.yes")
+    assert_select "td", text: I18n.t("common.no")
+  end
+
   test "ログインしていない場合は参照できない" do
     sign_out
 

@@ -210,6 +210,10 @@ en:
     edit: Edit
     destroy: Delete
     actions: Actions
+    # 鍵と値の両方を引用符で囲む。YAML は裸の yes、no、Yes、No を
+    # 真偽値として読む。
+    "yes": "Yes"
+    "no": "No"
 
   errors:
     messages:
