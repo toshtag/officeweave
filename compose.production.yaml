@@ -83,6 +83,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 20
+      # 起動のあいだだけ細かく見る。稼働中の判定は 10 秒ごとで足りるが、
+      # その間隔をそのまま起動へ使うと、準備が終わっていても次の確認まで待つ。
+      # 後ろに web と worker が続くため、この待ちは 3 段ぶん積み上がる。
+      start_period: 30s
+      start_interval: 1s
 
   web:
     build:
@@ -108,7 +113,8 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
-      start_period: 10s
+      start_period: 30s
+      start_interval: 1s
     ports:
       # 既定では loopback にだけ公開する。逆プロキシの背後へ置く構成を前提とする。
       # 逆プロキシを使わず外部へ直接公開する場合に限り、
@@ -141,7 +147,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 6
-      start_period: 20s
+      start_period: 30s
+      start_interval: 1s
     depends_on:
       web:
         condition: service_healthy
