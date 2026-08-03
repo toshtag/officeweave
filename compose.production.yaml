@@ -147,5 +147,9 @@ services:
         condition: service_healthy
 
 volumes:
+  # 開発用（compose.yaml）は、project 名にある語をキーから外して短くした。
+  # ここでは行わない。キーを変えると実際の名前が変わり、既に運用している
+  # 内容が参照されなくなる。入れ替えの時点で、空のボリュームから起動する。
+  # 一覧の読みやすさのために払う代償ではない。
   production_db_data:
   production_storage_data:
