@@ -121,6 +121,11 @@
 
 ### 変更
 
+- 必要な Docker の版を Docker Engine 25.0 以降、Docker Compose v2.24 以降と
+  した。構成が起動中の確認間隔（`start_interval`）を使うためである。これより
+  古い環境では、構成の読み取りの時点で止まる。あわせて、停止した状態から
+  すべてのコンテナが健全になるまでの時間が短くなる（手元の実測で約 17 秒
+  から約 8 秒）。設定と手順は変わらない
 - 配布用の web と worker が 1 つのイメージを共有するようにした。これまでは
   同じ内容のイメージが `officeweave_production-web` と
   `officeweave_production-worker` の 2 つでき、組み立ても 2 回走っていた。
