@@ -8,7 +8,7 @@ require "test_helper"
 # 実際、設計原則の側にだけ「『将来必要になりそう』という理由だけでは
 # 追加しない」があり、片側だけが持つ記述が既に生じていた。
 class DependencyReviewDocumentTest < ActiveSupport::TestCase
-  SOURCE = "docs/architecture/principles.md".freeze
+  SOURCE = "docs/development/architecture.md".freeze
   REFERRING = "docs/development/tech_stack.md".freeze
 
   # PR へ記録する項目。正本に並んでいることを、内容で確かめる。
@@ -50,7 +50,9 @@ class DependencyReviewDocumentTest < ActiveSupport::TestCase
 
   # 写しをやめるだけでは、技術構成だけを読む人が手順へ到達できない。
   test "技術構成から正本へ到達できる" do
-    link = read(REFERRING)[%r{\]\(([^)]*principles\.md[^)]*)\)}, 1]
+    # 探す名前は正本の経路から導く。書き写すと、改名したときに
+    # link が壊れているのか名前が古いのかを、この検査から判別できない。
+    link = read(REFERRING)[%r{\]\(([^)]*#{Regexp.escape(File.basename(SOURCE))}[^)]*)\)}, 1]
 
     assert_not_nil link, "#{REFERRING} から #{SOURCE} への link が無い"
 

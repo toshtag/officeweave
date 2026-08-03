@@ -210,7 +210,7 @@ docker compose up -d --build
 ## ドキュメント
 
 - [製品ビジョン](docs/vision.md) — 解決したい問題、初期範囲、非目標
-- [アーキテクチャ原則](docs/architecture/principles.md) — 設計契約と依存方針
+- [アーキテクチャ原則](docs/development/architecture.md) — 設計契約と依存方針
 - [開発規約](docs/development/conventions.md) — 命名、作業の進め方、多言語化の取り決め
 - [技術構成](docs/development/tech_stack.md) — 採用技術、版数、更新方針
 - [設定](docs/development/configuration.md) — 環境変数と稼働確認
