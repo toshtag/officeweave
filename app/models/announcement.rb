@@ -88,10 +88,6 @@ class Announcement < ApplicationRecord
     visibility == "departments"
   end
 
-  def scheduled?
-    published_at.present? && published_at > Time.current
-  end
-
   # 公開の知らせを 1 回だけ送る。
   #
   # 送ったことを記録しないと、更新のたびに送り直すことになる。記録の確定と
