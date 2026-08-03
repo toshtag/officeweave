@@ -82,7 +82,8 @@ WORKDIR /app
 # 入れないと、基盤のイメージに含まれる版で lock を読むことになる。
 COPY --from=build /app/Gemfile.lock ./
 RUN gem install bundler --no-document \
-      -v "$(sed -n '/^BUNDLED WITH$/{n;s/[[:space:]]//g;p;}' Gemfile.lock)"
+      -v "$(sed -n '/^BUNDLED WITH$/{n;s/[[:space:]]//g;p;}' Gemfile.lock)" && \
+    rm -rf /usr/local/bundle/cache
 
 COPY --from=build /usr/local/bundle /usr/local/bundle
 COPY --from=build /app /app
