@@ -43,25 +43,85 @@ jobs:
       - name: 分離の条件を検査する
         run: script/check_compose_isolation
 
-  verify:
+  checks:
+    name: 書式とセキュリティ
+    runs-on: ubuntu-latest
+    # 実測は 40 秒前後。上限は行き詰まりを止めるためだけに置く。
+    timeout-minutes: 10
+
+    steps:
+      - name: ソースを取得する
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # この範囲はデータベースへ触れない。実行環境を組み立てず、実行環境の
+      # Ruby と依存だけを用意する。組み立てに 30 秒かかるところが 20 秒で済む。
+      #
+      # クライアントの系列を揃える条件（runtime_version_test）は、スキーマ
+      # 定義の読み書きに掛かるものである。触れないこの範囲には及ばない。
+      # テストは触れるため、あちらはコンテナのままとする。
+      #
+      # 版は .ruby-version、依存は Gemfile.lock から復元する。手元と揃わない
+      # 余地は、どちらも正本が 1 つであるため小さい。
+      - name: Ruby と依存を用意する
+        uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
+        with:
+          bundler-cache: true
+
+      # 脆弱性の一覧を実行の間で持ち越す。取り直すと 20 秒から 27 秒かかる。
+      #
+      # 鍵は実行ごとに変え、直前のものを土台にする。同じ鍵では書き換えられず、
+      # 最初に取得した内容が残り続ける。中身の更新は bin/verify が行う。
+      - name: 脆弱性の一覧を持ち越す
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: tmp/ruby-advisory-db
+          key: ruby-advisory-db-${{ github.run_id }}
+          restore-keys: ruby-advisory-db-
+
+      - name: 検証を実行する
+        env:
+          BUNDLER_AUDIT_DB: ${{ github.workspace }}/tmp/ruby-advisory-db
+        run: bin/verify checks
+
+      # 部品表は公開する版へ添えるものであり、範囲に紐づかない。
+      # データベースへ触れないため、この仕事で書き出せる。
+      - name: 部品表を書き出す
+        run: |
+          bin/rails officeweave:sbom > officeweave-sbom.json
+          # 読める JSON であることと、対象と部品が入っていることを確かめる。
+          ruby -rjson -e '
+            document = JSON.parse(File.read("officeweave-sbom.json"))
+            abort "形式が違う" unless document["bomFormat"] == "CycloneDX"
+            abort "対象が無い" if document.dig("metadata", "component", "name").to_s.empty?
+            abort "部品が無い" if document["components"].to_a.empty?
+            puts "部品表: #{document["components"].size} 件"
+          '
+
+      - name: 部品表を成果物として残す
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: officeweave-sbom
+          path: officeweave-sbom.json
+          retention-days: 30
+
+  tests:
     name: ${{ matrix.name }}
     runs-on: ubuntu-latest
     # 実測は 1 分 30 秒前後、層が無い状態でも 4 分に収まる。上限は行き詰まりを
     # 止めるためだけに置く。長く取ると、止まったときに寄稿者がその分だけ待つ。
     timeout-minutes: 10
 
-    # 範囲を分けて同時に走らせる。ここに並べるのは範囲の名前だけとし、
-    # 手順は持たせない。手順を写すと、config/verify.rb へ検査を足しても
-    # 自動実行がそれを流さない状態が黙って生まれる。
+    # 分けて同時に走らせる。ここに並べるのは範囲と分け方だけとし、手順は
+    # 持たせない。手順を写すと、config/verify.rb へ検査を足しても自動実行が
+    # それを流さない状態が黙って生まれる。
     #
-    # 範囲がすべて挙がっていることは
+    # 範囲と分け方がすべて挙がっていることは
     # test/configuration/verification_scope_test.rb が確かめる。
     strategy:
-      # 1 つが落ちても残りを最後まで走らせる。落ちた範囲だけを見て直せる。
+      # 1 つが落ちても残りを最後まで走らせる。落ちた組だけを見て直せる。
       fail-fast: false
       matrix:
         include:
-          - { name: 書式とセキュリティ, scope: checks, shard: "" }
           - { name: テスト 1/3, scope: tests, shard: 1/3 }
           - { name: テスト 2/3, scope: tests, shard: 2/3 }
           - { name: テスト 3/3, scope: tests, shard: 3/3 }
@@ -93,69 +153,19 @@ jobs:
           tags: ${{ env.COMPOSE_PROJECT_NAME }}:development
           load: true
           cache-from: type=gha,scope=development
-          # 書き出すのは 1 つだけとする。分けた範囲がすべて書き出すと、同じ
-          # 内容を範囲の数だけ送ることになり、その分だけ組み立てが伸びる。
-          cache-to: ${{ matrix.scope == 'checks' && 'type=gha,scope=development,mode=max' || '' }}
-
-      # 脆弱性の一覧を実行の間で持ち越す。取り直すと 20 秒から 27 秒かかる。
-      #
-      # 鍵は実行ごとに変え、直前のものを土台にする。同じ鍵では書き換えられず、
-      # 最初に取得した内容が残り続ける。中身の更新は bin/verify が行う。
-      #
-      # 使うのは監査を含む範囲だけとする。他の範囲からも同じ鍵へ書くと、
-      # 同時に書き込んで先に終わった側の内容が捨てられる。
-      - name: 脆弱性の一覧を持ち越す
-        if: matrix.scope == 'checks'
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: tmp/ruby-advisory-db
-          key: ruby-advisory-db-${{ github.run_id }}
-          restore-keys: ruby-advisory-db-
+          # 書き出すのは 1 つだけとする。分けた組がすべて書き出すと、同じ
+          # 内容を組の数だけ送ることになり、その分だけ組み立てが伸びる。
+          cache-to: ${{ matrix.shard == '1/3' && 'type=gha,scope=development,mode=max' || '' }}
 
       - name: データベースを起動する
         run: docker compose up -d db
 
-      # 一覧の置き場所を作業ディレクトリへ移す。既定の置き場所はコンテナの
-      # 中にあり、実行のたびに捨てられる。
-      #
-      # 書き戻すのは実行環境の利用者、読むのはコンテナの中の root であり、
-      # 持ち主が食い違う。git はこれを拒むため、この 1 か所だけ例外にする。
-      # 全体を例外にはしない。緩める範囲は持ち越した一覧に限る。
       - name: 検証を実行する
         env:
           SCOPE: ${{ matrix.scope }}
           TEST_SHARD: ${{ matrix.shard }}
         run: |
-          docker compose run --rm \
-            -e BUNDLER_AUDIT_DB=/app/tmp/ruby-advisory-db \
-            -e GIT_CONFIG_COUNT=1 \
-            -e GIT_CONFIG_KEY_0=safe.directory \
-            -e GIT_CONFIG_VALUE_0=/app/tmp/ruby-advisory-db \
-            -e TEST_SHARD \
-            web bin/verify "${SCOPE}"
-
-      # 部品表は公開する版へ添えるものであり、範囲に紐づかない。
-      # どれか 1 つで書き出せば足りる。
-      - name: 部品表を書き出す
-        if: matrix.scope == 'checks'
-        run: |
-          docker compose run --rm -T web bin/rails officeweave:sbom > officeweave-sbom.json
-          # 読める JSON であることと、対象と部品が入っていることを確かめる。
-          ruby -rjson -e '
-            document = JSON.parse(File.read("officeweave-sbom.json"))
-            abort "形式が違う" unless document["bomFormat"] == "CycloneDX"
-            abort "対象が無い" if document.dig("metadata", "component", "name").to_s.empty?
-            abort "部品が無い" if document["components"].to_a.empty?
-            puts "部品表: #{document["components"].size} 件"
-          '
-
-      - name: 部品表を成果物として残す
-        if: matrix.scope == 'checks'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: officeweave-sbom
-          path: officeweave-sbom.json
-          retention-days: 30
+          docker compose run --rm -e TEST_SHARD web bin/verify "${SCOPE}"
 
       - name: 失敗した場合の記録を出す
         if: failure()
