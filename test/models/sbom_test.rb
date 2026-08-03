@@ -66,7 +66,7 @@ class SbomTest < ActiveSupport::TestCase
     # 配布するものの部品表である。開発と試験だけで使うものは含めない。
     names = @document["components"].map { |component| component["name"] }
 
-    %w[rubocop brakeman bundler-audit capybara debug web-console].each do |name|
+    %w[rubocop brakeman bundler-audit capybara debug selenium-webdriver].each do |name|
       refute_includes names, name
     end
   end
