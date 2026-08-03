@@ -657,6 +657,7 @@ en:
       heading: Signed-in devices
       description: End any session you do not recognize, then change your password.
       device: Device
+      ip_address: Source
       started_at: Signed in
       last_active_at: Last activity
       action: Actions
