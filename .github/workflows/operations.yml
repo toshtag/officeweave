@@ -1,0 +1,676 @@
+name: 運用の検証
+
+# 手元で実行できない検証を、main へ入ったあとにまとめて実行する。
+#
+# ここに置くのは、Docker やホスト側の操作、または追加の service を必要とし、
+# コンテナの中のテストとして書けないものである。いずれも起動と後片付けを
+# 含むため、1 回あたり 2 分前後かかる。
+#
+# PR では走らせない。変更を出した人が待つ時間は、その変更で壊れ得るものを
+# 確かめる時間に見合っている必要がある。ここに並ぶ検証が見ているのは、
+# 配布用の構成とホスト側の手順であり、変更のたびに動くものではない。
+#
+# 触れる変更を出す場合は、手元で通してから PR を出す。手順は
+# docs/development/release.md にある。この workflow は手動でも実行できる。
+#
+# 週次でも実行する。脆弱性の検査は、こちらが何も変えなくても結果が変わる。
+
+on:
+  push:
+    branches: [main]
+  # 日曜 18:00 UTC（月曜 03:00 JST）。
+  schedule:
+    - cron: "0 18 * * 0"
+  workflow_dispatch:
+
+jobs:
+  browser:
+    name: 実ブラウザー
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # 同じホストで複数の検証が並行しうる。
+    # 構成ファイルの name をそのまま使うと、互いのコンテナとボリュームを掴む。
+    env:
+      COMPOSE_PROJECT_NAME: officeweave_ci_${{ github.run_id }}_browser
+      COMPOSE_FILE: compose.yaml:compose.browser.yaml
+
+    steps:
+      - name: ソースを取得する
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: 実行環境を組み立てる
+        run: docker compose build web
+
+      - name: データベースとブラウザーを起動する
+        run: docker compose up -d db browser
+
+      # 一括検証は bin/setup が用意するが、この仕事はそこを通らない。
+      - name: テスト用のデータベースを用意する
+        run: docker compose run --rm web bin/rails db:test:prepare
+
+      # --use-aliases を付ける。付けないと、この一時コンテナへ service の名前が
+      # 割り当てられず、ブラウザーから web という宛先を引けない。
+      # 常駐の web は起動していないため、名前が重なることもない。
+      - name: 主要な流れを実ブラウザーで確かめる
+        run: docker compose run --rm --use-aliases web bin/rails test:browser
+
+      - name: 失敗した場合の画面を残す
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: officeweave-browser-screenshots
+          path: tmp/screenshots/
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: 失敗した場合の記録を出す
+        if: failure()
+        run: docker compose logs
+
+      - name: 後片付け
+        if: always()
+        run: docker compose down -v
+
+  image_scan:
+    name: コンテナの脆弱性
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: ソースを取得する
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: 配布するイメージを検査する
+        run: script/scan_container_image
+
+      - name: 検査の報告を成果物として残す
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: officeweave-image-scan
+          path: scan_report/
+          retention-days: 30
+
+  package:
+    name: 配布用の構成
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      COMPOSE_PROJECT_NAME: officeweave_ci_${{ github.run_id }}_package
+
+    steps:
+      - name: ソースを取得する
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: 設定を用意する
+        run: |
+          cat > .env <<'SETTINGS'
+          DATABASE_USER=officeweave
+          DATABASE_PASSWORD=verification-only-password
+          DATABASE_NAME=officeweave_production
+          APPLICATION_HOST=localhost
+          APPLICATION_PROTOCOL=http
+          FORCE_SSL=false
+          INITIAL_USER_NAME=検証用の管理者
+          INITIAL_USER_EMAIL=admin@example.invalid
+          INITIAL_USER_PASSWORD=verification-only-user-password
+          WEB_PORT=3210
+          QUEUE_DATABASE_NAME=officeweave_production_queue
+          SETTINGS
+          echo "SECRET_KEY_BASE=$(openssl rand -hex 64)" >> .env
+
+      - name: 配布用の構成で起動する
+        run: docker compose -f compose.production.yaml up -d --build
+
+      - name: 応答するまで待つ
+        run: |
+          for _ in $(seq 1 60); do
+            if curl -sf -H 'Host: localhost' http://127.0.0.1:3210/up > /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "起動しませんでした" >&2
+          exit 1
+
+      - name: 依存先まで含めて確認する
+        run: |
+          response="$(curl -sf -H 'Host: localhost' http://127.0.0.1:3210/health)"
+          echo "${response}"
+          echo "${response}" | grep -q '"status":"ok"'
+
+      - name: 想定外の Host を拒否することを確かめる
+        run: |
+          # 設定ファイルの文字列ではなく、起動した運用環境への要求で確かめる。
+          # 稼働確認の経路も例外にしない。
+          for path in /up /health /; do
+            status="$(
+              curl -s -o /dev/null -w '%{http_code}' \
+                -H 'Host: unexpected.example' "http://127.0.0.1:3210${path}"
+            )"
+            echo "${path}: ${status}"
+            if [ "${status}" != "403" ]; then
+              echo "${path} が想定外の Host を受け入れた" >&2
+              exit 1
+            fi
+          done
+
+      - name: 初期利用者を作成する
+        # 資格情報は常駐する web と worker へ渡さない。
+        # 一時コンテナへ変数名だけを指定して渡す経路をそのまま使う。
+        #
+        # 値の正本は .env とする。周囲のシェルへ別の値を置いた状態で実行し、
+        # そちらが採用されないことを次の手順で確かめる。
+        env:
+          INITIAL_USER_NAME: シェル側の管理者
+          INITIAL_USER_EMAIL: shell-admin@example.invalid
+          INITIAL_USER_PASSWORD: shell-defined-seed-password
+          ORGANIZATION_NAME: シェル側の組織
+          ORGANIZATION_CODE: shell-organization
+        run: script/seed_initial_user --production
+
+      - name: seed の値が .env から取られたことを確かめる
+        run: |
+          # 値そのものは出力しない。判定は runner の終了状態だけで行う。
+          docker compose -f compose.production.yaml exec -T \
+            -e EXPECTED_EMAIL=admin@example.invalid \
+            -e UNEXPECTED_EMAIL=shell-admin@example.invalid \
+            -e EXPECTED_PASSWORD=verification-only-user-password \
+            -e UNEXPECTED_PASSWORD=shell-defined-seed-password \
+            web bin/rails runner '
+              user = User.find_by(email_address: ENV.fetch("EXPECTED_EMAIL"))
+              raise ".env のメールアドレスで利用者が作られていない" if user.nil?
+              raise "シェル側のメールアドレスで利用者が作られている" if
+                User.exists?(email_address: ENV.fetch("UNEXPECTED_EMAIL"))
+              raise "組織が .env の設定になっていない" unless user.organization.code == "default"
+              raise ".env のパスワードで認証できない" unless
+                user.authenticate(ENV.fetch("EXPECTED_PASSWORD"))
+              raise "シェル側のパスワードで認証できてしまう" if
+                user.authenticate(ENV.fetch("UNEXPECTED_PASSWORD"))
+            '
+
+      - name: 初期利用者の資格情報が常駐サービスへ残らないことを確かめる
+        run: |
+          # 値そのものは出力しない。変数が定義されていないことだけを確かめる。
+          for service in web worker; do
+            if ! docker compose -f compose.production.yaml exec -T "${service}" \
+              sh -c 'test -z "${INITIAL_USER_PASSWORD+x}"'; then
+              echo "${service} に INITIAL_USER_PASSWORD が残っている" >&2
+              exit 1
+            fi
+          done
+          # 一時コンテナは --rm で消える。残っていないことを確かめる。
+          if docker compose -f compose.production.yaml ps -a --format '{{.Name}}' | grep -- '-run-'; then
+            echo "seed 用の一時コンテナが残っている" >&2
+            exit 1
+          fi
+
+      - name: worker が稼働することを確かめる
+        run: |
+          for _ in $(seq 1 60); do
+            if docker compose -f compose.production.yaml exec -T worker bin/jobs_alive >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "worker が起動しませんでした" >&2
+          docker compose -f compose.production.yaml logs worker >&2
+          exit 1
+
+      - name: 記録を構造化して出せることを確かめる
+        run: |
+          # 運用環境では記録を標準出力へ出す。一時コンテナの出力から読み取る。
+          output="$(docker compose -f compose.production.yaml run --rm --no-deps -T \
+            -e LOG_FORMAT=json web bin/rails runner 'Rails.logger.info(event: "check", value: 1)' 2>&1)"
+          echo "${output}"
+          echo "${output}" | grep -q '"event":"check"'
+          # 行形式では構造化しない。
+          text="$(docker compose -f compose.production.yaml run --rm --no-deps -T \
+            web bin/rails runner 'Rails.logger.info("行形式の確認")' 2>&1)"
+          echo "${text}" | grep -q '行形式の確認'
+          if echo "${text}" | grep -q '"level":"INFO"'; then
+            echo "行形式で JSON が出ている" >&2
+            exit 1
+          fi
+
+      - name: 構成を診断する
+        run: docker compose -f compose.production.yaml exec -T web bin/diagnose
+
+      # 応答の速さは動かす機械によって変わるため、合否には使わない。
+      # ここで確かめるのは、同時に要求が来たときに応答が返り続けることと、
+      # 測る手順そのものが動くことである。規模は仕事の時間に収まる量とする。
+      - name: 負荷測定用のデータを積む
+        run: |
+          docker compose -f compose.production.yaml exec -T \
+            -e LOAD_SAMPLE_SCALE=4 -e LOAD_SAMPLE_PASSWORD="${LOAD_SAMPLE_PASSWORD}" \
+            web bin/rails officeweave:load_sample
+        env:
+          LOAD_SAMPLE_PASSWORD: verification-only-load-password
+
+      - name: 負荷をかけて応答を測る
+        run: script/measure_load
+        env:
+          BASE_URL: http://127.0.0.1:3210
+          LOAD_MEASUREMENT_HOST: localhost
+          LOAD_MEASUREMENT_EMAIL: measure@load-sample.invalid
+          LOAD_MEASUREMENT_PASSWORD: verification-only-load-password
+          LOAD_MEASUREMENT_REQUESTS: "100"
+          LOAD_MEASUREMENT_CONNECTIONS: "5"
+
+      - name: 測定の報告を成果物として残す
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: officeweave-load-report
+          path: load_report/
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: 失敗した場合の記録を出す
+        if: failure()
+        run: docker compose -f compose.production.yaml logs
+
+      - name: 後片付け
+        if: always()
+        run: docker compose -f compose.production.yaml down -v
+
+  backup:
+    name: バックアップと復元
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    env:
+      COMPOSE_PROJECT_NAME: officeweave_ci_${{ github.run_id }}_backup
+
+    steps:
+      - name: ソースを取得する
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: 設定を用意する
+        run: |
+          cat > .env <<'SETTINGS'
+          DATABASE_USER=officeweave
+          DATABASE_PASSWORD=verification-only-password
+          DATABASE_NAME=officeweave_production
+          APPLICATION_HOST=localhost
+          APPLICATION_PROTOCOL=http
+          FORCE_SSL=false
+          INITIAL_USER_NAME=検証用の管理者
+          INITIAL_USER_EMAIL=admin@example.invalid
+          INITIAL_USER_PASSWORD=verification-only-user-password
+          WEB_PORT=3212
+          QUEUE_DATABASE_NAME=officeweave_production_queue
+          SETTINGS
+          echo "SECRET_KEY_BASE=$(openssl rand -hex 64)" >> .env
+
+      - name: 配布用の構成で起動する
+        run: docker compose -f compose.production.yaml up -d --build
+
+      - name: 応答するまで待つ
+        run: |
+          for _ in $(seq 1 90); do
+            if curl -sf -H 'Host: localhost' http://127.0.0.1:3212/up > /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "起動しませんでした" >&2
+          exit 1
+
+      - name: 初期利用者を作成する
+        # 資格情報は常駐する web と worker へ渡さない。
+        # 一時コンテナへ変数名だけを指定して渡す経路をそのまま使う。
+        run: script/seed_initial_user --production
+
+      - name: 取得前の状態を作る
+        run: |
+          docker compose -f compose.production.yaml exec -T web \
+            bin/rails runner 'Organization.create!(code: "backup-check", name: "取得前の組織")'
+          docker compose -f compose.production.yaml exec -T web \
+            sh -c 'echo "取得前のファイル" > storage/before-backup.txt'
+          # 実行予定のジョブを積む。外部へ出さないため、存在しない送信先を指す。
+          # job_id はホスト側で保持する。コンテナ内の tmp は作り直しで失われる。
+          job_id="$(docker compose -f compose.production.yaml exec -T web bin/rails runner '
+            puts DeliverWebhookJob.set(wait: 1.hour).perform_later(0, "request_submitted", { subject_id: 1 }).job_id
+          ' | tail -1 | tr -d '\r')"
+          echo "job_id=${job_id}"
+          test -n "${job_id}"
+          echo "BACKUP_JOB_ID=${job_id}" >> "$GITHUB_ENV"
+
+      - name: バックアップを取得する
+        run: script/production_backup
+
+      - name: ホストへ書庫があることを確かめる
+        run: |
+          archive="$(ls -1 backups/officeweave-*.tar.gz | head -1)"
+          test -f "${archive}"
+          tar --list --gzip --file="${archive}" | head
+          # 未処理のジョブを含む形式であることを確かめる。
+          tar --list --gzip --file="${archive}" | grep -qx "./queue_database.sql"
+          tar --extract --gzip --to-stdout --file="${archive}" ./metadata.txt | grep -qx "format_version=2"
+
+      - name: web を作り直しても書庫が残ることを確かめる
+        run: |
+          docker compose -f compose.production.yaml up -d --force-recreate web
+          for _ in $(seq 1 90); do
+            curl -sf -H 'Host: localhost' http://127.0.0.1:3212/up > /dev/null && break
+            sleep 2
+          done
+          test -f "$(ls -1 backups/officeweave-*.tar.gz | head -1)"
+
+      - name: 取得後に状態を変える
+        run: |
+          docker compose -f compose.production.yaml exec -T web \
+            bin/rails runner 'Organization.find_by!(code: "backup-check").destroy!'
+          docker compose -f compose.production.yaml exec -T web \
+            bin/rails runner 'Organization.create!(code: "after-backup", name: "取得後の組織")'
+          docker compose -f compose.production.yaml exec -T web \
+            sh -c 'echo "取得後のファイル" > storage/after-backup.txt; rm -f storage/before-backup.txt'
+          # 取得時のジョブを捨て、別のジョブを積む。
+          docker compose -f compose.production.yaml exec -T web bin/rails runner '
+            SolidQueue::Job.where(finished_at: nil).find_each(&:destroy)
+            DeliverWebhookJob.set(wait: 2.hours).perform_later(0, "request_submitted", { subject_id: 777 })
+          '
+
+      - name: 欠けた書庫では何も壊さないことを確かめる
+        run: |
+          printf 'これは書庫ではない' > backups/broken.tar.gz
+          if FORCE=1 script/production_restore backups/broken.tar.gz; then
+            echo "壊れた書庫で復元が成功してしまった" >&2
+            exit 1
+          fi
+          docker compose -f compose.production.yaml up -d web
+          for _ in $(seq 1 90); do
+            curl -sf -H 'Host: localhost' http://127.0.0.1:3212/up > /dev/null && break
+            sleep 2
+          done
+          docker compose -f compose.production.yaml exec -T web \
+            bin/rails runner 'raise "取得後のデータが失われた" unless Organization.exists?(code: "after-backup")'
+
+      - name: 復元する
+        run: FORCE=1 script/production_restore "$(ls -1 backups/officeweave-*.tar.gz | head -1)"
+
+      - name: データが取得時点へ戻ることを確かめる
+        run: |
+          docker compose -f compose.production.yaml exec -T web bin/rails runner '
+            raise "取得時点のデータが戻っていない" unless Organization.exists?(code: "backup-check")
+            raise "取得後のデータが残っている" if Organization.exists?(code: "after-backup")
+          '
+
+      - name: ファイルが置き換わることを確かめる
+        run: |
+          docker compose -f compose.production.yaml exec -T web sh -c '
+            test -f storage/before-backup.txt || { echo "取得時点のファイルが戻っていない" >&2; exit 1; }
+            test ! -f storage/after-backup.txt || { echo "書庫にない古いファイルが残っている" >&2; exit 1; }
+          '
+
+      - name: 未処理のジョブが取得時点へ戻ることを確かめる
+        run: |
+          docker compose -f compose.production.yaml exec -T -e BACKUP_JOB_ID web bin/rails runner '
+            unless SolidQueue::Job.exists?(active_job_id: ENV.fetch("BACKUP_JOB_ID"))
+              raise "取得時点のジョブが戻っていない"
+            end
+            if SolidQueue::Job.where(finished_at: nil).count != 1
+              raise "書庫にないジョブが残っている"
+            end
+          '
+
+      - name: 暗号化して取得する
+        run: |
+          printf '検証用の合言葉\n' > /tmp/officeweave-passphrase
+          chmod 600 /tmp/officeweave-passphrase
+          BACKUP_PASSPHRASE_FILE=/tmp/officeweave-passphrase script/production_backup
+
+      - name: 暗号化された書庫であることを確かめる
+        run: |
+          archive="$(ls -1 backups/officeweave-*.tar.gz.enc | head -1)"
+          test -f "${archive}"
+          # 先頭の印が付いていること。
+          test "$(head -c 8 "${archive}")" = "Salted__"
+          # そのままでは書庫として読めないこと。
+          if tar --list --gzip --file="${archive}" >/dev/null 2>&1; then
+            echo "暗号化した書庫がそのまま読める" >&2
+            exit 1
+          fi
+          # 製品を通さず、openssl だけで取り出せること。
+          openssl enc -d -aes-256-cbc -md sha256 -pbkdf2 -iter 600000 \
+            -pass file:/tmp/officeweave-passphrase -in "${archive}" |
+            tar --list --gzip | grep -qx "./database.sql"
+
+      - name: 復元の前に状態を変える
+        run: |
+          docker compose -f compose.production.yaml exec -T web \
+            bin/rails runner 'Organization.create!(code: "before-encrypted", name: "暗号化復元前の組織")'
+
+      - name: パスフレーズなしでは復元しないことを確かめる
+        run: |
+          archive="$(ls -1 backups/officeweave-*.tar.gz.enc | head -1)"
+          if FORCE=1 script/production_restore "${archive}"; then
+            echo "パスフレーズなしで復元が成功してしまった" >&2
+            exit 1
+          fi
+          # web は止まっていない。停止の前に拒否する契約である。
+          curl -sf -H 'Host: localhost' http://127.0.0.1:3212/up > /dev/null
+          docker compose -f compose.production.yaml exec -T web \
+            bin/rails runner 'raise "復元前のデータが失われた" unless Organization.exists?(code: "before-encrypted")'
+
+      - name: 暗号化された書庫から復元する
+        run: |
+          archive="$(ls -1 backups/officeweave-*.tar.gz.enc | head -1)"
+          BACKUP_PASSPHRASE_FILE=/tmp/officeweave-passphrase FORCE=1 \
+            script/production_restore "${archive}"
+
+      - name: 暗号化された書庫の内容が戻ることを確かめる
+        run: |
+          docker compose -f compose.production.yaml exec -T web bin/rails runner '
+            raise "取得時点のデータが戻っていない" unless Organization.exists?(code: "backup-check")
+            raise "復元前のデータが残っている" if Organization.exists?(code: "before-encrypted")
+          '
+
+      - name: 取得が重なった場合に取得しないことを確かめる
+        run: |
+          # ここまでの取得で、印が残っていないこと。
+          test ! -e backups/.production_backup.lock
+          before="$(ls -1 backups/officeweave-* | wc -l)"
+          # このジョブの shell を、取得中のプロセスとして印へ書く。
+          mkdir backups/.production_backup.lock
+          printf '%s %s\n' "$(uname -n)" "$$" > backups/.production_backup.lock/owner
+          if script/production_backup; then
+            echo "印が残っているのに取得してしまった" >&2
+            exit 1
+          fi
+          test "$(ls -1 backups/officeweave-* | wc -l)" = "${before}"
+          rm -rf backups/.production_backup.lock
+          # 印で止まった場合も、web は止めない。
+          curl -sf -H 'Host: localhost' http://127.0.0.1:3212/up > /dev/null
+
+      - name: 依存先まで含めて確認する
+        run: |
+          response="$(curl -sf -H 'Host: localhost' http://127.0.0.1:3212/health)"
+          echo "${response}"
+          echo "${response}" | grep -q '"status":"ok"'
+
+      - name: 構成を診断する
+        run: docker compose -f compose.production.yaml exec -T web bin/diagnose
+
+      - name: 失敗した場合の記録を出す
+        if: failure()
+        run: docker compose -f compose.production.yaml logs
+
+      - name: 後片付け
+        if: always()
+        run: |
+          docker compose -f compose.production.yaml down -v
+          # 書庫には検証用とはいえ組織のデータが入る。成果物として残さない。
+          rm -rf backups
+          rm -f /tmp/officeweave-passphrase
+
+  queue:
+    name: 永続キュー
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    env:
+      COMPOSE_PROJECT_NAME: officeweave_ci_${{ github.run_id }}_queue
+
+    steps:
+      - name: ソースを取得する
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: 設定を用意する
+        run: |
+          cat > .env <<'SETTINGS'
+          DATABASE_USER=officeweave
+          DATABASE_PASSWORD=verification-only-password
+          DATABASE_NAME=officeweave_production
+          QUEUE_DATABASE_NAME=officeweave_production_queue
+          APPLICATION_HOST=localhost
+          APPLICATION_PROTOCOL=http
+          FORCE_SSL=false
+          INITIAL_USER_NAME=検証用の管理者
+          INITIAL_USER_EMAIL=admin@example.invalid
+          INITIAL_USER_PASSWORD=verification-only-user-password
+          WEB_PORT=3213
+          SETTINGS
+          echo "SECRET_KEY_BASE=$(openssl rand -hex 64)" >> .env
+
+      - name: 配布用の構成で起動する
+        run: docker compose -f compose.production.yaml up -d --build
+
+      - name: 応答するまで待つ
+        run: |
+          for _ in $(seq 1 90); do
+            if curl -sf -H 'Host: localhost' http://127.0.0.1:3213/up > /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "起動しませんでした" >&2
+          docker compose -f compose.production.yaml logs >&2
+          exit 1
+
+      - name: 初期利用者を作成する
+        # 資格情報は常駐する web と worker へ渡らない。
+        # 起動時の db:prepare では作られないため、明示的に実行する。
+        run: script/seed_initial_user --production
+
+      - name: worker が稼働することを確かめる
+        run: |
+          for _ in $(seq 1 60); do
+            if docker compose -f compose.production.yaml exec -T worker bin/jobs_alive >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "worker が起動しませんでした" >&2
+          docker compose -f compose.production.yaml logs worker >&2
+          exit 1
+
+      - name: worker がホストへポートを公開していないことを確かめる
+        run: |
+          # compose port の終了状態は版によって異なる。公開の有無は ps の表示で判断する。
+          published="$(docker compose -f compose.production.yaml ps --format '{{.Ports}}' worker)"
+          echo "worker のポート: ${published}"
+          case "${published}" in
+            *"->"*)
+              echo "worker がホストへポートを公開している" >&2
+              exit 1
+              ;;
+          esac
+
+      - name: ジョブ用データベースと表があることを確かめる
+        run: |
+          docker compose -f compose.production.yaml exec -T db \
+            psql -U officeweave -d officeweave_production_queue -tAc \
+            "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name LIKE 'solid_queue%';" \
+            | tr -d ' ' | grep -qx '11'
+
+      - name: worker を止めてジョブを積む
+        run: |
+          docker compose -f compose.production.yaml stop worker
+          # 外部へ出さないため、存在しない送信先を指す。
+          # job_id はホスト側で保持する。コンテナ内の tmp は作り直しで失われる。
+          job_id="$(docker compose -f compose.production.yaml exec -T web bin/rails runner '
+            puts DeliverWebhookJob.set(wait: 10.minutes).perform_later(0, "request_submitted", { subject_id: 1 }).job_id
+          ' | tail -1 | tr -d '\r')"
+          echo "job_id=${job_id}"
+          test -n "${job_id}"
+          echo "QUEUE_JOB_ID=${job_id}" >> "$GITHUB_ENV"
+          docker compose -f compose.production.yaml exec -T web \
+            bin/rails runner 'raise "ジョブが保存されていない" if SolidQueue::Job.where(finished_at: nil).count.zero?'
+
+      - name: web を作り直してもジョブが残ることを確かめる
+        run: |
+          docker compose -f compose.production.yaml up -d --force-recreate web
+          for _ in $(seq 1 90); do
+            curl -sf -H 'Host: localhost' http://127.0.0.1:3213/up > /dev/null && break
+            sleep 2
+          done
+          docker compose -f compose.production.yaml exec -T -e QUEUE_JOB_ID web bin/rails runner '
+            raise "ジョブが失われた" unless SolidQueue::Job.exists?(active_job_id: ENV.fetch("QUEUE_JOB_ID"))
+          '
+
+      - name: worker を作り直してもジョブが残ることを確かめる
+        run: |
+          docker compose -f compose.production.yaml rm -f -s worker
+          docker compose -f compose.production.yaml exec -T -e QUEUE_JOB_ID web bin/rails runner '
+            raise "ジョブが失われた" unless SolidQueue::Job.exists?(active_job_id: ENV.fetch("QUEUE_JOB_ID"))
+          '
+
+      - name: データベースを再起動してもジョブが残ることを確かめる
+        run: |
+          docker compose -f compose.production.yaml restart db
+          for _ in $(seq 1 60); do
+            docker compose -f compose.production.yaml exec -T db pg_isready -U officeweave >/dev/null 2>&1 && break
+            sleep 2
+          done
+          docker compose -f compose.production.yaml exec -T -e QUEUE_JOB_ID web bin/rails runner '
+            raise "ジョブが失われた" unless SolidQueue::Job.exists?(active_job_id: ENV.fetch("QUEUE_JOB_ID"))
+          '
+
+      - name: worker を起動するとジョブが処理されることを確かめる
+        run: |
+          # 待機時間を過ぎた状態にし、すぐ実行させる。
+          docker compose -f compose.production.yaml exec -T web bin/rails runner '
+            SolidQueue::ScheduledExecution.update_all(scheduled_at: 1.minute.ago)
+          '
+          docker compose -f compose.production.yaml up -d worker
+          for _ in $(seq 1 60); do
+            if docker compose -f compose.production.yaml exec -T -e QUEUE_JOB_ID web bin/rails runner '
+              exit(SolidQueue::Job.exists?(active_job_id: ENV.fetch("QUEUE_JOB_ID"), finished_at: nil) ? 1 : 0)
+            '; then
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "ジョブが処理されませんでした" >&2
+          docker compose -f compose.production.yaml logs worker >&2
+          exit 1
+
+      - name: 失敗したジョブが残ることを確かめる
+        run: |
+          docker compose -f compose.production.yaml exec -T web \
+            bin/rails runner 'DeliverWebhookJob.perform_later("引数が足りない")'
+          for _ in $(seq 1 40); do
+            if docker compose -f compose.production.yaml exec -T web \
+              bin/rails runner 'exit(SolidQueue::FailedExecution.exists? ? 0 : 1)'; then
+              docker compose -f compose.production.yaml exec -T web bin/jobs_status --failed
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "失敗したジョブが残りませんでした" >&2
+          exit 1
+
+      - name: 失敗の存在で診断を止めないことを確かめる
+        run: docker compose -f compose.production.yaml exec -T web bin/diagnose
+
+      - name: 失敗した場合の記録を出す
+        if: failure()
+        run: docker compose -f compose.production.yaml logs
+
+      - name: 後片付け
+        if: always()
+        run: docker compose -f compose.production.yaml down -v
