@@ -35,7 +35,7 @@ INITIAL_USER_EMAIL     最初の管理者のメールアドレス
 INITIAL_USER_PASSWORD  15 文字以上のパスワード
 ```
 
-パスワードの要件は [設定](docs/development/configuration.md) にあります。
+パスワードの要件は [設定](docs/operations/configuration.md) にあります。
 
 ```bash
 docker compose up -d --build
@@ -48,7 +48,7 @@ script/seed_initial_user
 ```
 
 資格情報は、このとき作られる一時コンテナにだけ渡します。稼働中の web と
-worker には渡しません。扱いの詳細は [設定](docs/development/configuration.md) にあります。
+worker には渡しません。扱いの詳細は [設定](docs/operations/configuration.md) にあります。
 
 作成後、`INITIAL_USER_PASSWORD` は `.env` から削除してください。
 web と worker を作り直す必要はありません。
@@ -75,7 +75,7 @@ worker が止まっていると、送信は行われずジョブが溜まりま�
 公開先は既定で loopback だけです。同じ端末の他の開発環境と衝突する場合や、
 別の端末から接続したい場合は `.env` の `WEB_BIND_ADDRESS` と `WEB_PORT` を変更します。
 
-設定を変更する場合は `.env` を編集します。設定可能な項目は [設定](docs/development/configuration.md) を参照してください。
+設定を変更する場合は `.env` を編集します。設定可能な項目は [設定](docs/operations/configuration.md) を参照してください。
 
 稼働確認は次のとおりです。
 
@@ -213,7 +213,7 @@ docker compose up -d --build
 - [アーキテクチャ原則](docs/development/architecture.md) — 設計契約と依存方針
 - [開発規約](docs/development/conventions.md) — 命名、作業の進め方、多言語化の取り決め
 - [技術構成](docs/development/tech_stack.md) — 採用技術、版数、更新方針
-- [設定](docs/development/configuration.md) — 環境変数と稼働確認
+- [設定](docs/operations/configuration.md) — 環境変数と稼働確認
 - [テスト方針](docs/development/testing.md) — テストの層と実行方法
 - [認証方式の差し替え](docs/development/authentication.md) — 外部認証への差し替え手順
 - [品質基盤](docs/development/quality.md) — 書式検査と各種検査の実行方法

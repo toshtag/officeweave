@@ -374,7 +374,7 @@ OPERATIONS_EMAIL=ops@example.com
 異常が無い日は何も届かない。届かないことを、異常が無いことの知らせとする。
 
 メールの送信を設定していない場合は届かない。送信の設定は
-[設定](../development/configuration.md) を参照。
+[設定](configuration.md) を参照。
 `bin/diagnose` の「メールの送信」で、送る先があるかを確認できる。
 
 ## 4. 監査
