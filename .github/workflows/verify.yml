@@ -81,7 +81,9 @@ jobs:
           tags: ${{ env.COMPOSE_PROJECT_NAME }}:development
           load: true
           cache-from: type=gha,scope=development
-          cache-to: type=gha,scope=development,mode=max
+          # 書き出すのは 1 つだけとする。分けた範囲がすべて書き出すと、同じ
+          # 内容を範囲の数だけ送ることになり、その分だけ組み立てが伸びる。
+          cache-to: ${{ matrix.scope == 'checks' && 'type=gha,scope=development,mode=max' || '' }}
 
       # 脆弱性の一覧を実行の間で持ち越す。取り直すと 20 秒から 27 秒かかる。
       #
