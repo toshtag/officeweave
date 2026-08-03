@@ -1,6 +1,6 @@
 # 開発用のアプリケーションコンテナ。
 # 配布用の構成は P12 で別途用意する。
-ARG RUBY_VERSION=3.4.10
+ARG RUBY_VERSION=4.0.6
 FROM ruby:${RUBY_VERSION}-slim-bookworm
 
 # データベースと同じ系列のクライアントを入れる。
