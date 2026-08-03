@@ -600,6 +600,7 @@ en:
       empty: You have no notifications.
     events:
       announcement_published: "New announcement: %{title}"
+      event_invited: "You were added to an event: %{title}"
       request_submitted: "A request was submitted: %{title}"
       request_approved: "Your request was approved: %{title}"
       request_returned: "Your request was returned: %{title}"
