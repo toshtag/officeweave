@@ -214,6 +214,10 @@ ja:
     edit: 編集
     destroy: 削除
     actions: 操作
+    # 鍵を引用符で囲む。YAML は裸の yes と no を真偽値として読むため、
+    # 外すと t("common.yes") から引けないキーになる。
+    "yes": はい
+    "no": いいえ
 
   errors:
     format: "%{attribute}%{message}"
