@@ -52,8 +52,6 @@ services:
   web:
     build:
       context: .
-      args:
-        RUBY_VERSION: "3.4.10"
     environment:
       <<: *application_environment
     volumes:
@@ -85,8 +83,6 @@ services:
   worker:
     build:
       context: .
-      args:
-        RUBY_VERSION: "3.4.10"
     command: bin/jobs
     stop_grace_period: 30s
     environment:
