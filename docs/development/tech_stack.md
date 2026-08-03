@@ -107,6 +107,26 @@ CVE-2026-33210（format string injection、2026-03-19 公開）の影響範囲
 まま残り、組み立てたイメージが `Gemfile.lock` を書いたものと違う道具で依存を
 解決する。この決め方は `test/configuration/bundler_version_test.rb` が確かめる。
 
+### 読み取る形にできないもの
+
+Ruby とデータベースの版は、この形にできない。`FROM` は組み立てが始まる前に
+評価され、その時点でファイルを読めない。基盤のイメージを決める値は、
+定義ファイルが直接持つしかない。
+
+まとめきれない分は、食い違ったときに気づける形にする。
+`test/configuration/runtime_version_test.rb` が次を確かめる。
+
+| 確かめること                         | 食い違ったときに起きること              |
+| ------------------------------ | --------------------------- |
+| Ruby の版が定義ファイルで一致する            | 開発用と配布用が別の処理系で動く            |
+| 構成ファイルが Ruby の版を書き直さない         | どちらが版を決めているのかが読めなくなる        |
+| 開発用と配布用が同じデータベースのイメージを使う       | 手元で通ったものが配布先で通らない           |
+| 取り込むクライアントの系列がデータベースの系列と一致する   | スキーマ定義の書き出しとバックアップの取得が失敗する  |
+
+構成ファイルからは、組み立ての引数としての版の指定を外してある。
+`Dockerfile` の既定と同じ値になるだけであり、渡す側と渡さない側が生まれると、
+版を決めている場所が読めなくなる。
+
 ## 4. 採用する構成
 
 ```text
@@ -159,9 +179,9 @@ P1-T1 で、候補どおりの構成が動作することを確認した。
 
 | 対象           | 確定値      | 定義場所                        |
 | ------------ | -------- | --------------------------- |
-| Ruby         | `3.4.10` | `.ruby-version`、`Dockerfile` と `Dockerfile.production` の `RUBY_VERSION`、`compose.yaml` の `web` と `worker` |
+| Ruby         | `3.4.10` | `.ruby-version`、`Dockerfile` と `Dockerfile.production` の `RUBY_VERSION` |
 | Ruby on Rails | `8.1.3`  | `Gemfile` と `Gemfile.lock`   |
-| PostgreSQL   | `18.4`   | `compose.yaml` の `db` サービス   |
+| PostgreSQL   | `18.4`   | `compose.yaml` と `compose.production.yaml` の `db` サービス。取り込むクライアントの系列は 2 つの `Dockerfile` の `POSTGRESQL_MAJOR_VERSION` |
 | jwt          | `3.2.0`  | `Gemfile` と `Gemfile.lock`   |
 | selenium-webdriver | `4.46.0` | `Gemfile` と `Gemfile.lock`（試験のみ） |
 | axe-core-capybara | `4.12.0` | `Gemfile` と `Gemfile.lock`（試験のみ） |
