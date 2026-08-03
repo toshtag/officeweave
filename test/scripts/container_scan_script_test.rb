@@ -11,7 +11,9 @@ require "test_helper"
 # 指摘の件数ではない。
 class ContainerScanScriptTest < ActiveSupport::TestCase
   SCRIPT = Rails.root.join("script/scan_container_image").freeze
-  WORKFLOW = Rails.root.join(".github/workflows/verify.yml").freeze
+  # 仕事の置き場所は 1 つに限らない。ファイルの名前ではなく、継続的
+  # インテグレーションのどこかで実行されることを確かめる。
+  WORKFLOWS = Rails.root.glob(".github/workflows/*.yml").map(&:read).join("\n").freeze
   VERIFY = Rails.root.join("config/verify.rb").freeze
   REPORT_DIR = "scan_report".freeze
 
@@ -72,7 +74,7 @@ class ContainerScanScriptTest < ActiveSupport::TestCase
   end
 
   test "継続的インテグレーションが報告を残す" do
-    assert_match(/#{Regexp.escape(REPORT_DIR)}/, WORKFLOW.read)
+    assert_match(/#{Regexp.escape(REPORT_DIR)}/, WORKFLOWS)
   end
 
   # socket を渡すと、検査器がホストの Docker を操作できる。
@@ -102,6 +104,6 @@ class ContainerScanScriptTest < ActiveSupport::TestCase
   end
 
   test "継続的インテグレーションが検査を実行する" do
-    assert_match(/script\/scan_container_image/, WORKFLOW.read)
+    assert_match(/script\/scan_container_image/, WORKFLOWS)
   end
 end

@@ -7,7 +7,10 @@ require "test_helper"
 class BrowserVerificationTest < ActiveSupport::TestCase
   BROWSER_COMPOSE = Rails.root.join("compose.browser.yaml").freeze
   VERIFY = Rails.root.join("config/verify.rb").freeze
-  WORKFLOW = Rails.root.join(".github/workflows/verify.yml").freeze
+  # 仕事の置き場所は 1 つに限らない。ファイルの名前ではなく、継続的
+  # インテグレーションのどこかで実行されることを確かめる。名前で指すと、
+  # 仕事を移しただけで、実行されなくなったのと同じ失敗になる。
+  WORKFLOWS = Rails.root.glob(".github/workflows/*.yml").map(&:read).join("\n").freeze
   SYSTEM_TEST_CASE = Rails.root.join("test/application_system_test_case.rb").freeze
   BROWSER_TEST_CASE = Rails.root.join("test/browser_test_case.rb").freeze
 
@@ -40,8 +43,8 @@ class BrowserVerificationTest < ActiveSupport::TestCase
 
   # 外していることを黙って済ませない。
   test "継続的インテグレーションがブラウザーの層を実行する" do
-    assert_match(/test:browser/, WORKFLOW.read)
-    assert_match(/compose\.browser\.yaml/, WORKFLOW.read)
+    assert_match(/test:browser/, WORKFLOWS)
+    assert_match(/compose\.browser\.yaml/, WORKFLOWS)
   end
 
   test "ブラウザーへ渡す宛先を実行環境から受け取る" do
