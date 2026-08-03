@@ -4,9 +4,23 @@
 # 同じ名前を使うと、開発用の `docker compose down -v` が
 # 配布用として運用しているデータベースを削除し得る。
 #
+# 名前に開発用であることを書き足さない。この構成を `-f` 無しで扱えるのは
+# 開発用だけであり、配布用は必ず `-f compose.production.yaml` を伴う。
+# 書き足すと、一覧に並ぶ 1 行から読み取る語が増えるだけになる。
+#
 # 使い方:
 #   docker compose up -d --build
-name: officeweave_development
+name: officeweave
+
+# web と worker が動かすイメージ。
+#
+# 名前を与えないと、compose は service ごとに別のイメージを作る。中身は同じ
+# であり、一覧には同じものが 2 行並び、組み立ても 2 回走る。
+#
+# 名前は project 名から作る。継続的インテグレーションは、同じホストで並行しても
+# 互いのものを掴まないよう project 名を分けている。ここだけを固定の名前にすると、
+# その分離がイメージには効かず、別の commit の内容で起動し得る。
+x-application-image: &application_image ${COMPOSE_PROJECT_NAME}:development
 
 # web と worker は同じ設定で動く。
 x-application-environment: &application_environment
@@ -39,7 +53,7 @@ services:
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-officeweave_development}
       POSTGRES_DB: ${DATABASE_NAME:-officeweave_development}
     volumes:
-      - development_db_data:/var/lib/postgresql
+      - db_data:/var/lib/postgresql
     # ホストへは公開しない。web からは db:5432 で到達できる。
     # ホストの DB クライアントから直接つなぐ場合だけ、compose.database.yaml を重ねる。
     healthcheck:
@@ -52,6 +66,7 @@ services:
   web:
     build:
       context: .
+    image: *application_image
     environment:
       <<: *application_environment
     volumes:
@@ -83,6 +98,7 @@ services:
   worker:
     build:
       context: .
+    image: *application_image
     command: bin/jobs
     stop_grace_period: 30s
     environment:
@@ -100,4 +116,6 @@ services:
         condition: service_healthy
 
 volumes:
-  development_db_data:
+  # 実際の名前は project 名が前に付き、officeweave_db_data になる。
+  # キーへ開発用であることを書き足すと、一覧にはその語が 2 度並ぶ。
+  db_data:

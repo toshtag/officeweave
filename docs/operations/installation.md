@@ -255,9 +255,13 @@ docker compose -f compose.production.yaml exec -T web bin/jobs_status
 | 実行利用者       | 管理者                  | 専用の利用者                        |
 | 依存          | 開発と検証の分も含む           | 実行に必要な分のみ                     |
 | 暗号化された通信    | 必須にしない               | 既定で必須（`FORCE_SSL` で切り替え）      |
-| project 名     | `officeweave_development` | `officeweave_production`   |
-| データボリューム     | `development_db_data`     | `production_db_data` `production_storage_data` |
+| project 名     | `officeweave`        | `officeweave_production`      |
+| イメージ        | `officeweave:development`（project 名から作る） | `officeweave:production` |
+| データボリューム     | `officeweave_db_data`   | `officeweave_production_production_db_data` `officeweave_production_production_storage_data` |
 | ジョブ用データベース   | `officeweave_development_queue` | `officeweave_production_queue` |
+
+web と worker は 1 つのイメージを共有する。同じコードを同じ依存で動かすため、
+分けても中身が同じものが 2 つできるだけで、組み立ても 2 回走る。
 
 ## 5. 最初の利用者の作成
 
