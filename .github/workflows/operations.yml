@@ -39,8 +39,22 @@ jobs:
       - name: ソースを取得する
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: 組み立ての道具を用意する
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+
+      # 層は verify.yml と同じものを使う。同じ Dockerfile を組み立てており、
+      # 片方だけ持ち越すと、2 か所で同じ待ち時間を別々に払うことになる。
+      #
+      # 書き出す側は verify.yml だけとする。両方から書くと、同じ鍵へ同時に
+      # 書き込み、先に終わった側の内容が捨てられる。
       - name: 実行環境を組み立てる
-        run: docker compose build web
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: .
+          file: Dockerfile
+          tags: ${{ env.COMPOSE_PROJECT_NAME }}:development
+          load: true
+          cache-from: type=gha,scope=development
 
       - name: データベースとブラウザーを起動する
         run: docker compose up -d db browser
