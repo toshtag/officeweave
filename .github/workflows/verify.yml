@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - name: ソースを取得する
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: 分離の条件を検査する
         run: script/check_compose_isolation
@@ -34,7 +34,7 @@ jobs:
 
     steps:
       - name: ソースを取得する
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: 実行環境を組み立てる
         run: docker compose build
@@ -85,7 +85,7 @@ jobs:
 
     steps:
       - name: ソースを取得する
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: 実行環境を組み立てる
         run: docker compose build web
@@ -127,7 +127,7 @@ jobs:
 
     steps:
       - name: ソースを取得する
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: 配布するイメージを検査する
         run: script/scan_container_image
@@ -150,7 +150,7 @@ jobs:
 
     steps:
       - name: ソースを取得する
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: 設定を用意する
         run: |
@@ -334,7 +334,7 @@ jobs:
 
     steps:
       - name: ソースを取得する
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: 設定を用意する
         run: |
@@ -565,7 +565,7 @@ jobs:
 
     steps:
       - name: ソースを取得する
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: 設定を用意する
         run: |

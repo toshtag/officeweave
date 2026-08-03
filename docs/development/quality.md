@@ -231,7 +231,7 @@ docker compose exec web bin/verify
 workflow が参照する外部の動作は、commit の識別子で固定する。
 
 ```yaml
-uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 ```
 
 移動する tag（`v4` など）で参照すると、参照先の中身が後から変わる。
