@@ -55,6 +55,15 @@ class VerificationScopeTest < ActiveSupport::TestCase
     assert_equal (1..total.first).map { |index| "#{index}/#{total.first}" }.sort, shards.sort
   end
 
+  # 止めないと、寄稿者は自分が捨てた commit の結果を待つことになる。
+  test "同じ枝で続けて出した場合は古い実行を止める" do
+    concurrency = YAML.safe_load_file(PULL_REQUEST, aliases: true)["concurrency"]
+
+    assert_not_nil concurrency, "#{PULL_REQUEST.basename} に重なりの扱いが無い"
+    assert_includes concurrency["group"].to_s, "github.ref"
+    assert_includes concurrency["cancel-in-progress"].to_s, "refs/heads/main"
+  end
+
   # 手順を workflow へ写すと、一覧が 2 か所になる。config/verify.rb へ検査を
   # 足しても自動実行がそれを流さない状態が、黙って生まれる。
   test "検証の手順を workflow へ書き写さない" do
