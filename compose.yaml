@@ -130,3 +130,12 @@ volumes:
   # 実際の名前は project 名が前に付き、officeweave_db_data になる。
   # キーへ開発用であることを書き足すと、一覧にはその語が 2 度並ぶ。
   db_data:
+
+networks:
+  # 名前を与えないと officeweave_default になる。ネットワークは 1 つしか
+  # 無く、default であることは名前から読み取る必要がない。
+  #
+  # イメージと同じく project 名から作る。書き写すと、project 名を変えたときに
+  # 片方だけが古いまま残る。
+  default:
+    name: ${COMPOSE_PROJECT_NAME}
