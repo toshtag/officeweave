@@ -226,7 +226,8 @@ ja:
               unsupported_scheme: は http または https だけを指定できます
               missing_host: にホスト名が含まれていません
               credentials_not_allowed: に利用者名やパスワードを含められません
-              fragment_not_allowed: に # 以降の指定を含められません
+              # 引用符を外さない。YAML は引用符の外の " #" 以降をコメントとして読む。
+              fragment_not_allowed: "に # 以降の指定を含められません"
               port_not_allowed: は 80 番または 443 番だけを指定できます
               resolution_failed: のホスト名を解決できませんでした
               resolution_timeout: のホスト名の解決に時間がかかりすぎました
@@ -810,7 +811,7 @@ ja:
       unsupported_scheme: http または https ではありません
       missing_host: ホスト名がありません
       credentials_not_allowed: URL に資格情報が含まれています
-      fragment_not_allowed: URL に # 以降の指定が含まれています
+      fragment_not_allowed: "URL に # 以降の指定が含まれています"
       port_not_allowed: 許可されていないポートです
       resolution_failed: ホスト名を解決できません
       resolution_timeout: ホスト名の解決が時間切れになりました
