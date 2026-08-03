@@ -246,9 +246,6 @@ en:
     updated: The department has been updated.
     destroyed: The department has been deleted.
     index:
-      query: Title or body
-      query: Title or body
-      all_request_types: All request types
       title: Departments
       heading: Departments
       new: Add department
@@ -339,6 +336,7 @@ en:
       organization: Everyone in the organization
       departments: Selected departments
     index:
+      query: Title or body
       title: Announcements
       heading: Announcements
       new: Write an announcement
@@ -501,11 +499,13 @@ en:
       returned: Returned
       withdrawn: Withdrawn
     index:
+      query: Title or body
       title: Requests
       heading: Requests
       new: Start a request
       empty: There are no requests to show.
       all_statuses: All
+      all_request_types: All request types
       scopes:
         label: What to show
         all: All

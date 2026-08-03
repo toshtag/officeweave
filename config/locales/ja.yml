@@ -266,9 +266,6 @@ ja:
     updated: 部門を更新しました。
     destroyed: 部門を削除しました。
     index:
-      query: 題名・本文
-      query: 題名・本文
-      all_request_types: すべての種別
       title: 部門
       heading: 部門
       new: 部門を追加
@@ -359,6 +356,7 @@ ja:
       organization: 組織全体
       departments: 指定した部門
     index:
+      query: 題名・本文
       title: お知らせ
       heading: お知らせ
       new: お知らせを作成
@@ -521,11 +519,13 @@ ja:
       returned: 差し戻し
       withdrawn: 取り下げ
     index:
+      query: 題名・本文
       title: 申請
       heading: 申請
       new: 申請する
       empty: 表示できる申請がありません。
       all_statuses: すべて
+      all_request_types: すべての種別
       scopes:
         label: 一覧の対象
         all: すべて
