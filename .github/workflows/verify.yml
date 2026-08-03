@@ -36,8 +36,25 @@ jobs:
       - name: ソースを取得する
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: 組み立ての道具を用意する
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+
+      # 組み立てた層を実行の間で持ち越す。
+      #
+      # 依存の解決は、依存の定義が変わらなければ毎回同じ結果になる。
+      # 実行のたびにやり直すと、その待ち時間が変更を出した人へそのまま乗る。
+      #
+      # 名前は compose が使うものへそろえる。食い違うと、この手順で組み立てた
+      # ものが使われず、compose が改めて組み立て直す。
       - name: 実行環境を組み立てる
-        run: docker compose build
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: .
+          file: Dockerfile
+          tags: ${{ env.COMPOSE_PROJECT_NAME }}:development
+          load: true
+          cache-from: type=gha,scope=development
+          cache-to: type=gha,scope=development,mode=max
 
       - name: データベースを起動する
         run: docker compose up -d db
