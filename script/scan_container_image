@@ -47,7 +47,11 @@ APP_IMAGE="officeweave-scan-target:latest"
 REPORT_DIR="scan_report"
 
 WORK="$(mktemp -d)"
-trap 'rm -rf "$WORK"' EXIT
+
+# 組み立てたイメージは、検査のあいだだけ要る。置いていくと、次の実行が同じ
+# 名前で組み立て直し、前の内容が参照されないまま残る。層は組み立ての記録へ
+# 残るため、取り除いても次の実行が遅くなることはない。
+trap 'rm -rf "$WORK"; docker rmi "$APP_IMAGE" > /dev/null 2>&1 || true' EXIT
 
 # 脆弱性のデータベースは取得に時間がかかる。1 回の実行の中では使い回す。
 mkdir -p "$WORK/cache"
