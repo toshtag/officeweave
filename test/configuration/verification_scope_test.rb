@@ -85,13 +85,19 @@ class VerificationScopeTest < ActiveSupport::TestCase
       document["on"] || document[true]
     end
 
+    # 分け方を持つ仕事の一覧。仕事の名前では探さない。名前を変えただけで
+    # 検査が空振りする。
     def matrix
-      YAML.safe_load_file(PULL_REQUEST, aliases: true)
-          .dig("jobs", "verify", "strategy", "matrix", "include")
+      YAML.safe_load_file(PULL_REQUEST, aliases: true)["jobs"].values
+          .filter_map { |job| job.dig("strategy", "matrix", "include") }.flatten
     end
 
+    # 範囲は 2 通りの渡し方がある。分け方から渡すものと、直接書くものである。
     def executed_scopes
-      matrix.map { |entry| entry.fetch("scope") }.uniq
+      from_matrix = matrix.filter_map { |entry| entry["scope"] }
+      written = PULL_REQUEST.read.scan(%r{bin/verify\s+(\w+)}).flatten
+
+      (from_matrix + written).uniq
     end
 
     # 手元での既定（all）は分けた側には現れない。分けた範囲だけを取り出す。

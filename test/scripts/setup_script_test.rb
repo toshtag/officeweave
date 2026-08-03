@@ -22,6 +22,15 @@ class SetupScriptTest < ActiveSupport::TestCase
     assert_no_match(/skip-server/, SETUP.read)
   end
 
+  # server の場合と違い、既定が成り立っていないわけではない。既定はこれまで
+  # どおりデータベースを用意する。指定を持つのは、そこへ触れない検査
+  # （書式、依存の監査、静的解析）だけを走らせる経路があるためである。
+  #
+  # 用意すると、接続を必要としない検査にその待ち時間が乗る。
+  test "準備コマンドがデータベースを用意しない指定を持つ" do
+    assert_match(/--skip-database/, SETUP.read)
+  end
+
   test "準備コマンドが依存、データベース、一時ファイルを整える" do
     body = SETUP.read
 
