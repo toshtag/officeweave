@@ -11,7 +11,9 @@ CI.run do
 
   step "書式: Ruby", "bin/rubocop"
 
-  step "セキュリティ: 依存の脆弱性", "bin/bundler-audit"
+  # 取得済みの一覧をそのまま使わず、実行のたびに更新する。
+  # 古い一覧で通っても、新しい指摘を見落としたことには気付けない。
+  step "セキュリティ: 依存の脆弱性", "bin/bundler-audit check --update"
   step "セキュリティ: 静的解析", "bin/brakeman --quiet --no-pager --exit-on-warn --exit-on-error"
 
   # 実ブラウザーを要する層は外す。ブラウザーは別の service として動かすため、

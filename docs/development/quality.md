@@ -75,8 +75,11 @@ docker compose exec web bin/brakeman --quiet --no-pager --exit-on-warn --exit-on
 依存として取り込んでいるライブラリに、公開済みの脆弱性がないかを確認する。
 
 ```bash
-docker compose exec web bin/bundler-audit
+docker compose exec web bin/bundler-audit check --update
 ```
+
+脆弱性の一覧は実行のたびに更新する。取得済みのものをそのまま使うと、
+古い一覧で通ったのか、指摘が無いのかを区別できない。
 
 ブラウザーへ配信するスクリプトは持たないため、その監査は行わない。
 配信するようになった時点で、その方式に合う監査を検証へ加える。

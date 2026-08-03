@@ -64,11 +64,34 @@ jobs:
           cache-from: type=gha,scope=development
           cache-to: type=gha,scope=development,mode=max
 
+      # 脆弱性の一覧を実行の間で持ち越す。取り直すと 20 秒から 27 秒かかる。
+      #
+      # 鍵は実行ごとに変え、直前のものを土台にする。同じ鍵では書き換えられず、
+      # 最初に取得した内容が残り続ける。中身の更新は bin/verify が行う。
+      - name: 脆弱性の一覧を持ち越す
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: tmp/ruby-advisory-db
+          key: ruby-advisory-db-${{ github.run_id }}
+          restore-keys: ruby-advisory-db-
+
       - name: データベースを起動する
         run: docker compose up -d db
 
+      # 一覧の置き場所を作業ディレクトリへ移す。既定の置き場所はコンテナの
+      # 中にあり、実行のたびに捨てられる。
+      #
+      # 書き戻すのは実行環境の利用者、読むのはコンテナの中の root であり、
+      # 持ち主が食い違う。git はこれを拒むため、この 1 か所だけ例外にする。
+      # 全体を例外にはしない。緩める範囲は持ち越した一覧に限る。
       - name: 検証を実行する
-        run: docker compose run --rm web bin/verify
+        run: |
+          docker compose run --rm \
+            -e BUNDLER_AUDIT_DB=/app/tmp/ruby-advisory-db \
+            -e GIT_CONFIG_COUNT=1 \
+            -e GIT_CONFIG_KEY_0=safe.directory \
+            -e GIT_CONFIG_VALUE_0=/app/tmp/ruby-advisory-db \
+            web bin/verify
 
       - name: 部品表を書き出す
         run: |
