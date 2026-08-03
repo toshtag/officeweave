@@ -20,6 +20,16 @@ on:
     branches: [main]
   pull_request:
 
+# 同じ枝で続けて push した場合、古い実行を止める。
+#
+# 止めないと、寄稿者は自分が捨てた commit の結果を待つことになる。実行の
+# 順番も保証されないため、古い方が後に終わって最後の結果として残り得る。
+#
+# main は止めない。そこへ入ったものは、どの commit も結果を残す必要がある。
+concurrency:
+  group: 検証-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   compose:
     name: 構成の分離
@@ -36,7 +46,9 @@ jobs:
   verify:
     name: ${{ matrix.name }}
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # 実測は 1 分 30 秒前後、層が無い状態でも 4 分に収まる。上限は行き詰まりを
+    # 止めるためだけに置く。長く取ると、止まったときに寄稿者がその分だけ待つ。
+    timeout-minutes: 10
 
     # 範囲を分けて同時に走らせる。ここに並べるのは範囲の名前だけとし、
     # 手順は持たせない。手順を写すと、config/verify.rb へ検査を足しても
