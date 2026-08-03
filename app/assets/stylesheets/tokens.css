@@ -9,7 +9,6 @@
     /* 配色。明度差で階層を作り、色相への依存を減らす。 */
     --color-surface: #ffffff;
     --color-surface-sunken: #f4f5f7;
-    --color-surface-raised: #ffffff;
     --color-border: #d8dce3;
     /* 操作できる部品の輪郭。背景との明度差を 3:1 以上にする。 */
     --color-border-interactive: #7d8794;
@@ -30,7 +29,6 @@
     --space-4: 1rem;
     --space-5: 1.5rem;
     --space-6: 2rem;
-    --space-7: 3rem;
 
     /* 字。利用者のブラウザー設定を尊重するため rem で指定する。 */
     --font-family-base:
@@ -49,8 +47,6 @@
     --radius-md: 6px;
     --border-width: 1px;
     --shadow-raised: 0 1px 2px rgb(28 32 40 / 8%);
-    /* 動きの量。動きを減らす設定では 0 にする。 */
-    --motion-duration: 150ms;
 
     /* 寸法 */
     --measure-max: 68rem;
@@ -65,7 +61,6 @@
     :root {
       --color-surface: #171a1f;
       --color-surface-sunken: #101318;
-      --color-surface-raised: #1e222a;
       --color-border: #333a45;
       --color-border-interactive: #6b7484;
       --color-border-strong: #4a5361;
