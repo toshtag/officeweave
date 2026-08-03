@@ -88,6 +88,13 @@ class ContainerScanScriptTest < ActiveSupport::TestCase
     assert_match(/--user "\$\(id -u\):\$\(id -g\)"/, @body)
   end
 
+  # 置いていくと、次の実行が同じ名前で組み立て直し、前の内容が参照されない
+  # まま残る。検査は繰り返し実行するため、実行の回数だけ溜まる。
+  test "組み立てたイメージを後片付けする" do
+    assert_match(/trap '[^']*docker rmi "\$APP_IMAGE"[^']*' EXIT/, @body,
+                 "組み立てたイメージを EXIT で取り除いていない")
+  end
+
   # 脆弱性のデータベースは日々変わる。一括検証は実行のたびに同じ結果になる
   # ことを条件にしているため、そこへは含めない。
   test "一括検証へ含めない" do
