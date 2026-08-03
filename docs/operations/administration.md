@@ -276,8 +276,8 @@ docker compose -f compose.production.yaml logs -f worker
 
 #### 構造化した記録
 
-`LOG_FORMAT=json` を指定すると、記録を 1 行 1 件の JSON で出す。
-指定した場合だけ働き、既定は人が読む行形式である。
+`LOG_FORMAT=json` を指定すると、記録を 1 行 1 件の JSON で出す
+（[設定](configuration.md#記録)）。
 
 ```json
 {"time":"2026-08-03T02:30:00.123Z","level":"INFO","event":"http_request","method":"GET","path":"/documents","status":200,"controller":"DocumentsController","action":"index","duration_ms":12.3,"user_id":1,"organization_id":1,"request_id":"a1b2c3"}
@@ -301,7 +301,6 @@ event=job_performed  job job_id queue attempt duration_ms
 
 書き出し先は変わらない。運用環境では標準出力へ出る。
 値を変更したら web と worker を再起動する。
-`text` と `json` 以外を指定した場合は起動しない。
 
 ### 送信の状況
 
@@ -343,8 +342,8 @@ API（`/api/v1/...`）の応答には付けていない。
 
 ### 稼働の通知
 
-`OPERATIONS_EMAIL` を指定すると、稼働の異常を 1 日 1 回知らせる。
-指定した場合だけ働き、既定値は持たない。
+`OPERATIONS_EMAIL` を指定すると、稼働の異常を 1 日 1 回知らせる
+（[設定](configuration.md#稼働の通知)）。
 
 ```text
 OPERATIONS_EMAIL=ops@example.com
@@ -355,7 +354,6 @@ OPERATIONS_EMAIL=ops@example.com
 - 送るのは異常があるときだけとする。無事は知らせない
 - 知らせるのは、診断の失敗と、放っておくと運用が成り立たなくなる注意だけ
 - 設定として選んだ結果の注意（内部宛先の許可など）は送らない
-- 宛先は 1 つだけとする。複数へ配る場合は受け取る側の仕組みで分ける
 ```
 
 届く文面は次の形である。
@@ -386,8 +384,8 @@ OPERATIONS_EMAIL=ops@example.com
 
 ### 保持期間
 
-`AUDIT_RETENTION_DAYS` を指定すると、その日数を過ぎた記録を毎日削除する。
-指定した場合だけ働き、既定値は持たない。指定しなければ記録は消えない。
+`AUDIT_RETENTION_DAYS` を指定すると、その日数を過ぎた記録を毎日削除する
+（[設定](configuration.md#監査記録)）。指定しなければ記録は消えない。
 
 ```text
 AUDIT_RETENTION_DAYS=365
@@ -395,14 +393,11 @@ AUDIT_RETENTION_DAYS=365
 
 ```text
 - 削除は毎日 1 回、worker が行う
-- 指定した日数の内側にある記録は消えない。境界の時刻ちょうども残す
 - 消えるのは古い記録だけで、操作や利用者では選ばない
 - 現在の設定は監査記録の画面に出る
 ```
 
 値を変更したら web と worker を再起動する。
-整数でない値や 0 を指定した場合は起動しない。誤りに気付かないまま
-記録が消え続ける状態、あるいは溜まり続ける状態を作らない。
 
 消えた記録は戻せない。長期の保存が必要な場合は、消える前に書き出す。
 

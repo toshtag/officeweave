@@ -5,6 +5,9 @@
 既定は内部認証とする。外部の認証基盤を必須にしない。
 セルフホストで、外部サービスへの接続を動作の前提にしないためである。
 
+同梱しているのは内部認証と OIDC の 2 つである。それ以外の方式は、
+差し替え口へ実装を足して使う。
+
 ## 1. 差し替え口
 
 認証は次の 3 つの呼び出しだけを通る。
@@ -41,112 +44,7 @@ module Authentication
 end
 ```
 
-## 3. OIDC の検証
-
-OIDC の id_token の検証は `app/models/authentication/oidc/id_token.rb` にある。
-認可の開始と受け取りは、この文書の版では扱っていない。
-
-検証で確かめるものは次のとおりである。
-
-```text
-署名        公開鍵の方式だけを認める。alg=none と共通鍵の方式は通らない
-発行者      設定した OIDC_ISSUER と一致すること
-宛先        OIDC_CLIENT_ID を含むこと
-期限        exp を過ぎていないこと
-発行時刻    iat が未来でないこと（30 秒までのずれは吸収する）
-nonce       要求のときに作った値と一致すること
-email       あること。email_verified の記載がある場合は true であること
-sub         あること
-```
-
-仕様が任意としている `nonce` と `email` を必須にしている。
-`nonce` は要求と応答の対応を確かめる唯一の手がかりであり、
-`email` は利用者の突き合わせに使う。
-
-署名の検証、期限の判定、鍵の選択は `jwt` へ委ねている。
-委ねる範囲は `JWT.decode` の 1 か所に閉じている。
-
-## 4. 認可サーバーとの通信
-
-`app/models/authentication/oidc/client.rb` が扱う。
-
-```text
-発見    {OIDC_ISSUER}/.well-known/openid-configuration から端点と鍵の場所を読む
-鍵      jwks_uri から署名の検証に使う鍵を読む
-交換    token_endpoint へ code を送り、id_token を受け取る
-```
-
-相手の応答を信じる範囲は次のとおりである。
-
-```text
-- 名乗る issuer が OIDC_ISSUER と一致すること
-- 端点が https で、同じ発行者の下にあること
-- 3 つの端点（authorization、token、jwks）がそろっていること
-- 転送（3xx）には従わない
-- 受け取る量は 256 KiB まで。超えた時点で接続を切る
-```
-
-発見の結果は 1 時間だけ共有する。鍵を入れ替えた場合、反映されるまでに
-最大 1 時間かかる。
-
-`client_secret` は Basic 認証で送る。本文へは入れない。
-
-## 5. OIDC を使う
-
-`AUTHENTICATION_PROVIDER=oidc` と、3 つの設定を指定する。
-
-```text
-AUTHENTICATION_PROVIDER=oidc
-OIDC_ISSUER=https://idp.example.com
-OIDC_CLIENT_ID=officeweave
-OIDC_CLIENT_SECRET=...
-```
-
-認可サーバーへ登録する戻り先は次のとおりである。
-
-```text
-https://<APPLICATION_HOST>/oidc/callback
-```
-
-`APPLICATION_HOST` と `APPLICATION_PROTOCOL` から組み立てる。
-逆プロキシの背後では、利用者が接続する側の名前を指定する。
-
-### ログインの流れ
-
-```text
-1. ログイン画面の「認可サーバーでログイン」を押す（POST /oidc/session）
-2. state、nonce、検証用の値をこの端末のセッションへ保持する
-3. 認可サーバーへ転送する（PKCE の S256 を伴う）
-4. 戻り（GET /oidc/callback）で state を照合する
-5. code を id_token へ交換する
-6. id_token を検証する
-7. メールアドレスで既にいる利用者を探す
-8. 見つかり、無効化されていなければログインする
-```
-
-### 利用者を自動で作らない
-
-認可サーバーが認証した相手でも、この製品の利用者として登録されていなければ
-ログインできない。作ると、認可サーバーへ登録された相手が、この製品の組織へ
-そのまま入れる。利用者の追加は管理者の操作として残す。
-
-利用者の突き合わせにはメールアドレスを使う。認可サーバー側で
-メールアドレスを変えた場合は、この製品側も合わせて変える。
-
-### 失敗したとき
-
-画面へは同じ文面を返す。理由は出さない。出すと、利用者が居るかどうかや、
-認可サーバーの構成を外から読み取れる。
-
-監査記録には、利用者を特定できた場合だけ残る。無効化された利用者の
-試みは記録され、登録の無いメールアドレスの試みは記録されない。
-
-### パスワードの経路
-
-この方式では、パスワードの入力欄、変更、再設定の経路をいずれも出さない。
-資格情報はこの製品の中に無い。
-
-## 6. 実装が守ること
+## 3. 実装が守ること
 
 - `name_key` は空でない識別子とし、先頭または末尾へ空白を含めない。
   不正な `name_key` は登録の時点で拒否する。取り除いて受理することはない
@@ -173,6 +71,7 @@ https://<APPLICATION_HOST>/oidc/callback
 | ---------- | -------- |
 | 未設定        | 内部認証     |
 | `internal` | 内部認証     |
+| `oidc`     | OIDC     |
 | 登録済みの名前    | 指定した方式   |
 | 未登録の名前     | 起動しない    |
 | 空文字        | 起動しない    |
@@ -181,7 +80,7 @@ https://<APPLICATION_HOST>/oidc/callback
 例外には、環境変数名、指定された値、利用可能な方式が載る。
 
 ```text
-AUTHENTICATION_PROVIDER="oidc" は登録されていません。利用可能な認証方式: internal
+AUTHENTICATION_PROVIDER="okta" は登録されていません。利用可能な認証方式: internal, oidc
 ```
 
 判定は `config/initializers/authentication_providers.rb` が起動時に行う。
@@ -189,9 +88,115 @@ AUTHENTICATION_PROVIDER="oidc" は登録されていません。利用可能な�
 
 登録した後は `bin/diagnose` の「認証方式」で、解決された名前を確かめる。
 
-## 5. 現時点で用意していないもの
+## 5. OIDC
 
-外部の認証基盤に対応する実装は同梱していない。
+### 5.1 設定
+
+`AUTHENTICATION_PROVIDER=oidc` と、3 つの設定を指定する。
+
+```text
+AUTHENTICATION_PROVIDER=oidc
+OIDC_ISSUER=https://idp.example.com
+OIDC_CLIENT_ID=officeweave
+OIDC_CLIENT_SECRET=...
+```
+
+各変数の条件は [設定](../operations/configuration.md#oidc) にある。
+
+認可サーバーへ登録する戻り先は次のとおりである。
+
+```text
+https://<APPLICATION_HOST>/oidc/callback
+```
+
+`APPLICATION_HOST` と `APPLICATION_PROTOCOL` から組み立てる。
+逆プロキシの背後では、利用者が接続する側の名前を指定する。
+
+### 5.2 ログインの流れ
+
+```text
+1. ログイン画面の「認可サーバーでログイン」を押す（POST /oidc/session）
+2. state、nonce、検証用の値をこの端末のセッションへ保持する
+3. 認可サーバーへ転送する（PKCE の S256 を伴う）
+4. 戻り（GET /oidc/callback）で state を照合する
+5. code を id_token へ交換する
+6. id_token を検証する
+7. メールアドレスで既にいる利用者を探す
+8. 見つかり、無効化されていなければログインする
+```
+
+### 5.3 id_token の検証
+
+`app/models/authentication/oidc/id_token.rb` が扱う。
+
+```text
+署名        公開鍵の方式だけを認める。alg=none と共通鍵の方式は通らない
+発行者      設定した OIDC_ISSUER と一致すること
+宛先        OIDC_CLIENT_ID を含むこと
+期限        exp を過ぎていないこと
+発行時刻    iat が未来でないこと（30 秒までのずれは吸収する）
+nonce       要求のときに作った値と一致すること
+email       あること。email_verified の記載がある場合は true であること
+sub         あること
+```
+
+仕様が任意としている `nonce` と `email` を必須にしている。
+`nonce` は要求と応答の対応を確かめる唯一の手がかりであり、
+`email` は利用者の突き合わせに使う。
+
+署名の検証、期限の判定、鍵の選択は `jwt` へ委ねている。
+委ねる範囲は `JWT.decode` の 1 か所に閉じている。
+
+### 5.4 認可サーバーとの通信
+
+`app/models/authentication/oidc/client.rb` が扱う。
+
+```text
+発見    {OIDC_ISSUER}/.well-known/openid-configuration から端点と鍵の場所を読む
+鍵      jwks_uri から署名の検証に使う鍵を読む
+交換    token_endpoint へ code を送り、id_token を受け取る
+```
+
+相手の応答を信じる範囲は次のとおりである。
+
+```text
+- 名乗る issuer が OIDC_ISSUER と一致すること
+- 端点が https で、同じ発行者の下にあること
+- 3 つの端点（authorization、token、jwks）がそろっていること
+- 転送（3xx）には従わない
+- 受け取る量は 256 KiB まで。超えた時点で接続を切る
+```
+
+発見の結果は 1 時間だけ共有する。鍵を入れ替えた場合、反映されるまでに
+最大 1 時間かかる。
+
+`client_secret` は Basic 認証で送る。本文へは入れない。
+
+### 5.5 利用者を自動で作らない
+
+認可サーバーが認証した相手でも、この製品の利用者として登録されていなければ
+ログインできない。作ると、認可サーバーへ登録された相手が、この製品の組織へ
+そのまま入れる。利用者の追加は管理者の操作として残す。
+
+利用者の突き合わせにはメールアドレスを使う。認可サーバー側で
+メールアドレスを変えた場合は、この製品側も合わせて変える。
+
+### 5.6 失敗したとき
+
+画面へは同じ文面を返す。理由は出さない。出すと、利用者が居るかどうかや、
+認可サーバーの構成を外から読み取れる。
+
+監査記録には、利用者を特定できた場合だけ残る。無効化された利用者の
+試みは記録され、登録の無いメールアドレスの試みは記録されない。
+
+### 5.7 パスワードの経路
+
+この方式では、パスワードの入力欄、変更、再設定の経路をいずれも出さない。
+資格情報はこの製品の中に無い。
+
+## 6. 同梱していない方式
+
+OIDC 以外の外部認証基盤に対応する実装は同梱していない。
 差し替え口だけを用意し、必要になった時点で実装を足す。
 
 同梱していない理由は、対応先ごとに必要な設定と検証が異なり、
