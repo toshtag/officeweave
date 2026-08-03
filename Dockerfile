@@ -32,8 +32,7 @@ RUN apt-get update -qq && \
     rm -rf /var/lib/apt/lists/*
 
 ENV LANG=C.UTF-8 \
-    BUNDLE_PATH=/usr/local/bundle \
-    BUNDLE_JOBS=4
+    BUNDLE_PATH=/usr/local/bundle
 
 WORKDIR /app
 
@@ -50,7 +49,14 @@ RUN gem install bundler --no-document \
 
 RUN bundle install
 
-COPY . .
+# ソースコードは写さない。compose がホストの内容を /app へ重ねるため、
+# 写しても実行時には必ず覆われる。
+#
+# 写すと、書き換えのたびに新しい層ができ、前のイメージが参照されないまま
+# 残る。捨てられると分かっているものを、組み立てのたびに作ることになる。
+#
+# このイメージは、ホストの作業ディレクトリを /app へ重ねて使う。
+# 重ねずに起動すると、/app が空のため bin/docker-entrypoint を見つけられない。
 
 EXPOSE 3000
 
