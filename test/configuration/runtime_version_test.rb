@@ -16,8 +16,10 @@ class RuntimeVersionTest < ActiveSupport::TestCase
   COMPOSE_FILES = [ ROOT.join("compose.yaml"), ROOT.join("compose.production.yaml") ].freeze
 
   test "Ruby の版が実行環境の定義ファイルで一致する" do
+    # 書き方の違いをここで吸収しない。接頭辞を剥がして比べると、定義場所ごとに
+    # 別の書き方が残ったままになり、そろっているかどうかを目で確かめられない。
     versions = DOCKERFILES.to_h { |path| [ path.basename.to_s, ruby_version_in(path) ] }
-      .merge("\.ruby-version" => ROOT.join(".ruby-version").read.strip.delete_prefix("ruby-"))
+      .merge(".ruby-version" => ROOT.join(".ruby-version").read.strip)
 
     assert_not_includes versions.values, nil, "版を拾えない定義ファイルがある: #{versions.inspect}"
     assert_equal 1, versions.values.uniq.size, "版が食い違っている: #{versions.inspect}"
