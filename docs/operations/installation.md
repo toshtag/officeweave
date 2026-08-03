@@ -134,6 +134,8 @@ web と worker を作り直す必要はない。もともと渡していない�
 不正な値のまま稼働確認だけが通る構成は作れない。
 稼働確認も同じ値を `Host` ヘッダーへ付けるためである。
 
+値ごとの起動の可否は [設定](configuration.md#値の検査) にある。
+
 形式が正しくても、利用者が接続するホスト名と違えば正規の要求は 403 になる。
 値を変えたら、web を再起動する。
 
@@ -155,29 +157,13 @@ curl -fsS -H "Host: officeweave.example.com" http://127.0.0.1:3210/up
 ### 公開するポート
 
 利用者が 80 または 443 以外のポートへ接続する場合は、
-`APPLICATION_PORT` へその公開ポートを設定する。
-逆プロキシの有無とは関係しない。
+`APPLICATION_PORT` へその公開ポートを設定する。逆プロキシの有無とは関係しない。
 
-```text
-WEB_PORT          ホストから web コンテナへ公開する
-APPLICATION_PORT  利用者が接続する公開ポート
-```
+設定しないと、通知メールの URL からポートが落ち、利用者は画面へ戻れない。
+逆に、利用者が 443 へ接続する構成で設定すると、内部のポートが URL へ入る。
 
-直接公開して両者が同じになる場合もあれば、
-逆プロキシが変換して異なる場合もある。
-
-```text
-逆プロキシが 443 を公開する:
-  WEB_PORT=3210 / APPLICATION_PORT は未設定
-逆プロキシが 8443 を公開する:
-  WEB_PORT=3210 / APPLICATION_PORT=8443
-逆プロキシを使わず 3210 を直接公開する:
-  WEB_PORT=3210 / APPLICATION_PORT=3210
-```
-
-`APPLICATION_PORT` を設定しないと、通知メールの URL からポートが落ち、
-利用者は画面へ戻れない。逆に、利用者が 443 へ接続する構成で設定すると、
-内部のポートがメール本文の URL へ入る。
+`WEB_PORT` との違いと、構成ごとの組み合わせは
+[設定](configuration.md#メール送信) にある。
 
 設定後は `bin/diagnose` の「メール本文の URL」で、
 利用者が接続する形になっているかを確認する。
@@ -339,24 +325,19 @@ script/production_restore backups/<書庫>
 
 ### 送信の状況
 
-メールと Webhook はやり直しを含めて最大 5 回まで実行する。
-実行は at-least-once であり、同じ通知が二度届くことがある。
-
 やり直しを尽くした失敗は消さずに残る。定期的に確認する。
 
 ```bash
 docker compose -f compose.production.yaml exec -T web bin/jobs_status --failed
 ```
 
-詳しくは [設定](configuration.md) を参照する。
+やり直しの回数と間隔、失敗の扱いは
+[設定](configuration.md#ジョブの実行) にある。日々の確認は
+[運用管理](administration.md) を参照する。
 
 ### Webhook の送信先
 
-Webhook は既定で、組織の外にある http / https の宛先だけへ送信する。
-ポートは 80 番または 443 番に限る。https を推奨する。
-
-ループバックや私用アドレスへは送信しない。保存時と送信時の両方で検査する。
-
+Webhook は既定で、組織の外にある宛先だけへ送信する。
 閉じたネットワーク内の宛先へ送る必要がある場合だけ、`.env` へ次を設定する。
 防御を弱める設定であるため、必要な origin だけを挙げる。
 
@@ -364,13 +345,14 @@ Webhook は既定で、組織の外にある http / https の宛先だけへ送�
 WEBHOOK_PRIVATE_DESTINATION_ALLOWLIST=http://hooks.internal.example
 ```
 
+送信できる宛先の条件と、書式が不正な場合の扱いは
+[設定](configuration.md#webhook-の送信先) にある。
+
 設定したら診断で確認する。
 
 ```bash
 docker compose -f compose.production.yaml exec web bin/diagnose
 ```
-
-詳しくは [設定](configuration.md) を参照する。
 
 ### 更新
 
