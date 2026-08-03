@@ -71,6 +71,7 @@ ja:
       approval_delegation:
         delegator: 委任した利用者
         delegate: 任せる利用者
+        delegate_id: 任せる利用者
         starts_on: 開始日
         ends_on: 終了日
       user:

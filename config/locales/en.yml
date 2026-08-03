@@ -71,6 +71,7 @@ en:
       approval_delegation:
         delegator: Delegator
         delegate: Delegate
+        delegate_id: Delegate
         starts_on: Starts on
         ends_on: Ends on
       user:
