@@ -222,8 +222,8 @@ docker compose up -d --build
 - [運用管理](docs/operations/administration.md) — 利用者と組織の管理、監視、監査
 - [バックアップと復元](docs/operations/backup.md) — 取得と復元の手順
 - [アップグレード](docs/operations/upgrade.md) — 入れ替えの手順と診断
-- [総合検証](docs/operations/verification.md) — 公開前に通す確認
-- [リリース手順](docs/operations/release.md) — 版数の付け方と公開の手順
+- [総合検証](docs/development/verification.md) — 公開前に通す確認
+- [リリース手順](docs/development/release.md) — 版数の付け方と公開の手順
 - [変更履歴](CHANGELOG.md) — 版ごとの変更点
 - [脆弱性の報告](SECURITY.md) — 報告の方法と対応の流れ
 - [ライセンス方針](docs/licensing.md) — ライセンスの選定理由と名称の利用範囲
