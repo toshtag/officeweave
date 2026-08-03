@@ -43,7 +43,10 @@ Rails.application.configure do
   config.active_support.deprecation = :stderr
 
   # Raises error for missing translations.
-  # config.i18n.raise_on_missing_translations = true
+  # 引けない語句は、画面では鍵の名前や探索の一覧に化けるだけで、例外にならない。
+  # 崩れているのはその 1 か所だけであり、他が動いているぶん気付けない。
+  # 検査の中では止める。
+  config.i18n.raise_on_missing_translations = true
 
   # Annotate rendered view with file names.
   # config.action_view.annotate_rendered_view_with_filenames = true
