@@ -121,6 +121,13 @@
 
 ### 変更
 
+- 配布用の web と worker が 1 つのイメージを共有するようにした。これまでは
+  同じ内容のイメージが `officeweave_production-web` と
+  `officeweave_production-worker` の 2 つでき、組み立ても 2 回走っていた。
+  入れ替え後は `officeweave:production` だけになる。設定、データボリューム、
+  実行する手順は変わらない。以前の 2 つは参照されなくなるため、
+  `docker image rm officeweave_production-web officeweave_production-worker`
+  で取り除ける
 - 入口の画面へ並べる申請を、承認待ちと進行中の自分の申請のそれぞれ 5 件までに
   した。並びきらない分へは、追加した「すべての承認待ちを見る」と
   「すべての自分の申請を見る」から移動できる。承認待ちの件数の表示は、
