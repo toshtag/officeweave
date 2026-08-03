@@ -19,11 +19,26 @@ storage/*
 backups/
 public/assets/
 
+# 検査と測定が書き出すもの。
+# 組み立てのたびに内容が変わるため、入れると同じ内容の写しが記録へ積み上がる。
+# 走査の報告には、見つかった脆弱性の一覧が入る。配布物へ含めない。
+scan_report/
+load_report/
+
 # 開発と検証にだけ使うもの
 test/
 docs/
 compose.yaml
 compose.production.yaml
+compose.browser.yaml
+compose.database.yaml
 Dockerfile
 Dockerfile.production
 .dockerignore
+Dockerfile.dockerignore
+.rubocop.yml
+.gitignore
+
+# ホスト側で実行する手順。コンテナの中からは呼ばない。
+# 止める、作り直す、書き出すといった操作を伴い、コンテナへは Docker を渡さない。
+script/

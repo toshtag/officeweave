@@ -41,9 +41,13 @@ COPY . .
 
 # 起動のたびに配信物を組み立てない。
 # 署名に使う鍵は、この時点では本物である必要がない。
+#
+# 組み立ての途中で作られる作業用の記録は取り除く。次に使う相手がいない。
+# 実行側は /app をそのまま写すため、残すと配布物へそのまま入る。
 RUN SECRET_KEY_BASE=placeholder-for-asset-build \
     RAILS_ENV=production \
-    bin/rails assets:precompile
+    bin/rails assets:precompile && \
+    rm -rf tmp/cache
 
 # ---- 実行 ----
 FROM ruby:${RUBY_VERSION}-slim-bookworm
