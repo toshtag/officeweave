@@ -29,6 +29,12 @@ ENV BUNDLE_PATH=/usr/local/bundle \
 WORKDIR /app
 
 COPY Gemfile Gemfile.lock ./
+
+# 依存を解決する道具は、Gemfile.lock が記録している版を入れる。
+# 版をここへ書き写さない。lock を上げたときに片方だけが古いまま残る。
+RUN gem install bundler --no-document \
+      -v "$(sed -n '/^BUNDLED WITH$/{n;s/[[:space:]]//g;p;}' Gemfile.lock)"
+
 RUN bundle install && \
     rm -rf /usr/local/bundle/cache
 
@@ -72,6 +78,12 @@ ENV LANG=C.UTF-8 \
     RAILS_ENV=production
 
 WORKDIR /app
+
+# 実行する側にも道具を入れる。組み立て側へ入れたものは、この段には移らない。
+# 入れないと、基盤のイメージに含まれる版で lock を読むことになる。
+COPY --from=build /app/Gemfile.lock ./
+RUN gem install bundler --no-document \
+      -v "$(sed -n '/^BUNDLED WITH$/{n;s/[[:space:]]//g;p;}' Gemfile.lock)"
 
 COPY --from=build /usr/local/bundle /usr/local/bundle
 COPY --from=build /app /app

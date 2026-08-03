@@ -40,6 +40,14 @@ WORKDIR /app
 # 依存定義だけを先に取り込み、アプリケーションコードの変更で
 # bundle install が再実行されないようにする。
 COPY Gemfile Gemfile.lock ./
+
+# 依存を解決する道具は、Gemfile.lock が記録している版を入れる。
+# 基盤のイメージに含まれる版に任せると、それが変わったときに、
+# 依存の解決だけが黙って別の道具へ移る。
+# 版をここへ書き写さないのは、lock を上げたときに片方だけが古いまま残るため。
+RUN gem install bundler --no-document \
+      -v "$(sed -n '/^BUNDLED WITH$/{n;s/[[:space:]]//g;p;}' Gemfile.lock)"
+
 RUN bundle install
 
 COPY . .
