@@ -22,7 +22,6 @@ RUN apt-get update -qq && \
     rm -rf /var/lib/apt/lists/*
 
 ENV BUNDLE_PATH=/usr/local/bundle \
-    BUNDLE_JOBS=4 \
     BUNDLE_WITHOUT=development:test \
     BUNDLE_DEPLOYMENT=1
 
@@ -83,7 +82,8 @@ WORKDIR /app
 # 入れないと、基盤のイメージに含まれる版で lock を読むことになる。
 COPY --from=build /app/Gemfile.lock ./
 RUN gem install bundler --no-document \
-      -v "$(sed -n '/^BUNDLED WITH$/{n;s/[[:space:]]//g;p;}' Gemfile.lock)"
+      -v "$(sed -n '/^BUNDLED WITH$/{n;s/[[:space:]]//g;p;}' Gemfile.lock)" && \
+    rm -rf /usr/local/bundle/cache
 
 COPY --from=build /usr/local/bundle /usr/local/bundle
 COPY --from=build /app /app
