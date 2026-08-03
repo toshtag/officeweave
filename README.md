@@ -219,7 +219,7 @@ docker compose up -d --build
 - [品質基盤](docs/development/quality.md) — 書式検査と各種検査の実行方法
 - [アクセシビリティ方針](docs/development/accessibility.md) — 画面が満たすべき最低要件
 - [導入手順](docs/operations/installation.md) — 自組織の環境への導入
-- [運用](docs/operations/operations.md) — 日常的な運用と監視
+- [運用管理](docs/operations/administration.md) — 利用者と組織の管理、監視、監査
 - [バックアップと復元](docs/operations/backup.md) — 取得と復元の手順
 - [アップグレード](docs/operations/upgrade.md) — 入れ替えの手順と診断
 - [総合検証](docs/operations/verification.md) — 公開前に通す確認

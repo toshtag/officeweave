@@ -302,7 +302,7 @@ localhost とその下位の名前（portal.localhost）
 
 `json` を指定すると、記録を 1 行 1 件の JSON で出す。
 要求と送信については、それぞれ 1 行の要約を足す。項目は
-[運用](../operations/operations.md) にある。
+[運用管理](../operations/administration.md) にある。
 
 既定は `text` とする。既定を変えると、この版へ入れ替えただけで記録の形が
 変わり、既に組んである回収の仕組みが読めなくなる。
@@ -328,7 +328,7 @@ localhost とその下位の名前（portal.localhost）
 区切り文字を使った複数指定は受け付けない。複数へ配る場合は、
 受け取る側の仕組み（転送や配布用のアドレス）で分ける。
 
-知らせる内容と条件は [運用](../operations/operations.md) を参照。
+知らせる内容と条件は [運用管理](../operations/administration.md) を参照。
 
 ### 監査記録
 
@@ -347,7 +347,7 @@ localhost とその下位の名前（portal.localhost）
 削除は worker が毎日 1 回行う。指定した日数の内側にある記録は消えない。
 境界の時刻ちょうども残す。現在の設定は監査記録の画面に出る。
 
-運用上の扱いは [運用](../operations/operations.md) を参照。
+運用上の扱いは [運用管理](../operations/administration.md) を参照。
 
 ### ジョブの実行
 
