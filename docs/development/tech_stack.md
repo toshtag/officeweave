@@ -142,7 +142,7 @@ P1-T1 で、候補どおりの構成が動作することを確認した。
 
 | 対象           | 確定値      | 定義場所                        |
 | ------------ | -------- | --------------------------- |
-| Ruby         | `3.4.10` | `.ruby-version` と `Dockerfile` の `RUBY_VERSION` |
+| Ruby         | `4.0.6`  | `.ruby-version`、`Dockerfile` と `Dockerfile.production` の `RUBY_VERSION`、`compose.yaml` の `web` と `worker` |
 | Ruby on Rails | `8.1.3`  | `Gemfile` と `Gemfile.lock`   |
 | PostgreSQL   | `18.4`   | `compose.yaml` の `db` サービス   |
 | jwt          | `3.2.0`  | `Gemfile` と `Gemfile.lock`   |
