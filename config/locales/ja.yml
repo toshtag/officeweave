@@ -89,6 +89,9 @@ ja:
         parent: 上位部門
         parent_id: 上位部門
         position: 表示順
+        # 削除できない理由の文面へ、そのまま差し込まれる関連の名前。
+        children: 下位部門
+        approval_steps: 承認の段
       announcement:
         title: 件名
         body: 本文
@@ -179,11 +182,16 @@ ja:
         user_id: 利用者
         department: 部門
         primary: 主たる所属
+      event_participant:
+        user: 参加者
     errors:
       # 画面を通らない経路で保存に失敗した場合の文言。
       # bin/rails db:seed の失敗はここだけが理由を伝える。
       messages:
         record_invalid: "検証に失敗しました: %{errors}"
+        # 参照が残る記録を消せない理由。Rails は英語の既定を持つが日本語は持たない。
+        restrict_dependent_destroy:
+          has_many: "%{record}が存在するため削除できません"
       models:
         user:
           attributes:
@@ -195,6 +203,22 @@ ja:
           attributes:
             user:
               inactive: が無効になっているため token を発行できません
+        approval_delegation:
+          attributes:
+            delegate:
+              same_as_delegator: は委任した利用者と同じにできません
+              inactive: が無効になっているため委任できません
+            starts_on:
+              overlapping_delegation: が同じ相手への委任と重なっています
+        approval_step:
+          attributes:
+            base:
+              last_approval_step: 承認の段は少なくとも 1 つ必要です
+        event_participant:
+          attributes:
+            user:
+              event_owner: は予定の作成者のため指名できません
+              inactive: が無効になっているため指名できません
         webhook_endpoint:
           attributes:
             url:

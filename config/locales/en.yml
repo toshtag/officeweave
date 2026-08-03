@@ -89,6 +89,8 @@ en:
         parent: Parent department
         parent_id: Parent department
         position: Display order
+        children: Child departments
+        approval_steps: Approval steps
       announcement:
         title: Subject
         body: Body
@@ -179,6 +181,8 @@ en:
         user_id: User
         department: Department
         primary: Primary department
+      event_participant:
+        user: Participant
     errors:
       models:
         user:
@@ -191,6 +195,22 @@ en:
           attributes:
             user:
               inactive: is deactivated, so no token can be issued
+        approval_delegation:
+          attributes:
+            delegate:
+              same_as_delegator: cannot be the same as the delegating user
+              inactive: is deactivated, so no delegation can be made
+            starts_on:
+              overlapping_delegation: overlaps an existing delegation to the same user
+        approval_step:
+          attributes:
+            base:
+              last_approval_step: At least one approval step must remain
+        event_participant:
+          attributes:
+            user:
+              event_owner: owns the event and cannot be added as a participant
+              inactive: is deactivated and cannot be added as a participant
         webhook_endpoint:
           attributes:
             url:
