@@ -8,6 +8,16 @@
 #   docker compose up -d --build
 name: officeweave_development
 
+# web と worker が動かすイメージ。
+#
+# 名前を与えないと、compose は service ごとに別のイメージを作る。中身は同じ
+# であり、一覧には同じものが 2 行並び、組み立ても 2 回走る。
+#
+# 名前は project 名から作る。継続的インテグレーションは、同じホストで並行しても
+# 互いのものを掴まないよう project 名を分けている。ここだけを固定の名前にすると、
+# その分離がイメージには効かず、別の commit の内容で起動し得る。
+x-application-image: &application_image ${COMPOSE_PROJECT_NAME}:development
+
 # web と worker は同じ設定で動く。
 x-application-environment: &application_environment
   DATABASE_HOST: db
@@ -52,6 +62,7 @@ services:
   web:
     build:
       context: .
+    image: *application_image
     environment:
       <<: *application_environment
     volumes:
@@ -83,6 +94,7 @@ services:
   worker:
     build:
       context: .
+    image: *application_image
     command: bin/jobs
     stop_grace_period: 30s
     environment:

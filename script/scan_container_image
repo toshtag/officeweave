@@ -142,8 +142,12 @@ docker build --quiet -f Dockerfile.production -t "$APP_IMAGE" . > /dev/null
 
 scan_and_gate "配布用のイメージ" "$APP_IMAGE" application
 
-# 構成から読む。名前を書き写すと、構成の側を上げたときに古い版を検査し続ける。
-db_image="$(grep -E '^[[:space:]]+image:[[:space:]]' compose.production.yaml | head -n 1 | awk '{ print $2 }')"
+# 構成から読む。版を書き写すと、構成の側を上げたときに古い版を検査し続ける。
+#
+# 行の順ではなく、名前で選ぶ。構成には web と worker のイメージも書いてあり、
+# 順で選ぶと、その並びを入れ替えただけで別のものを検査することになる。
+db_image="$(grep -oE '^[[:space:]]+image:[[:space:]]+postgres:[^[:space:]]+' compose.production.yaml |
+  head -n 1 | awk '{ print $2 }')"
 
 if [ -z "$db_image" ]; then
   echo "配布用の構成からデータベースのイメージ名を読めませんでした" >&2

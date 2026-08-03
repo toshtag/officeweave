@@ -14,6 +14,15 @@
 #   docker compose -f compose.production.yaml up -d --build
 name: officeweave_production
 
+# web と worker が動かすイメージ。
+#
+# 名前を与えないと、compose は service ごとに別のイメージを作る。中身は同じ
+# であり、一覧には同じものが 2 行並び、組み立ても 2 回走る。
+#
+# 開発用（compose.yaml）と違い、project 名からは作らない。配布先で動くのは
+# この構成 1 つであり、並行する別の project と分ける必要が無い。
+x-application-image: &application_image officeweave:production
+
 # web と worker は同じ設定で動く。
 # 片方だけへ設定を足すと、画面では通るのに送信だけが失敗する状態が生まれる。
 x-application-environment: &application_environment
@@ -79,6 +88,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.production
+    image: *application_image
     restart: unless-stopped
     environment:
       <<: *application_environment
@@ -116,6 +126,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.production
+    image: *application_image
     command: bin/jobs
     restart: unless-stopped
     # 実行中のジョブを終わらせる時間を与える。
