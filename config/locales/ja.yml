@@ -30,7 +30,6 @@ ja:
     heading: ようこそ
     description: 組織の情報共有と日常の手続きを、ひとつの場所で行えるようにします。
     greeting: "%{name} さん、こんにちは。"
-    primary_department: "主たる所属: %{name}"
     profile:
       heading: あなたの情報
       no_department: 未設定
@@ -215,8 +214,6 @@ ja:
     edit: 編集
     destroy: 削除
     actions: 操作
-    yes: はい
-    no: いいえ
 
   errors:
     format: "%{attribute}%{message}"
@@ -498,7 +495,6 @@ ja:
       approval_steps_hint: 上から順に承認します。部門を選ばない段は管理者が担当します。並びの数字が小さい段から進みます。段を増やす場合は、空の段へ部門を選んで保存し、もう一度開きます。
       remove_step: この段を削除する
       approver_unset: 管理者が承認する
-      approver_hint: 指定した部門の所属者が承認できます。未指定の場合は管理者だけが承認します。
       active_hint: 使わなくなった種別は、削除せずにここを外してください。過去の申請の記録が残ります。
 
   requests:
@@ -694,7 +690,6 @@ ja:
       heading: パスワードの変更
       current_password: 現在のパスワード
       new_password: 新しいパスワード
-      confirmation: 新しいパスワード（確認）
       other_sessions_hint: 変更すると、この端末以外のログインはすべて終了します。
       submit: 変更する
   settings:
@@ -832,9 +827,6 @@ ja:
       all_actions: すべての操作
       all_actors: すべての利用者
       empty: 記録がありません。
-      pages: ページ
-      previous: 前へ
-      next: 次へ
       total:
         zero: 記録は 0 件です
         one: 記録は 1 件です
