@@ -56,6 +56,23 @@ class GeneratedPlaceholderTest < ActiveSupport::TestCase
     assert_no_match(/serviceWorker/, layout)
   end
 
+  # 秘密は環境変数で与える。鍵をリポジトリへ含めない以上、暗号化した入れ物は
+  # 誰にも開けられない。開けられないものが構成の中にあると、秘密がそこにも
+  # あるように読める。
+  test "読み手のいない秘密の入れ物が残らない" do
+    assert_not Rails.root.join("config/credentials.yml.enc").exist?,
+               "credentials.yml.enc が残っている"
+  end
+
+  # 入れ物だけを消して読む側が残ると、そこからは nil が返る。
+  # 設定は例外にならず、静かに外れる。
+  test "設定が credentials を読まない" do
+    settings = Rails.root.glob("config/**/*.rb").map(&:read).join("\n")
+
+    assert_no_match(/Rails\.application\.credentials/, settings,
+                    "設定が credentials を読んでいる")
+  end
+
   # 例示のコメントだけの initializer は、設定済みに見えて何も設定しない。
   test "設定を行わない initializer が残らない" do
     empty = Rails.root.glob("config/initializers/*.rb").select do |path|
