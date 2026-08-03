@@ -36,6 +36,15 @@ class ContainerNameTest < ActiveSupport::TestCase
     assert_equal [ "${COMPOSE_PROJECT_NAME}:development" ], application_images(DEVELOPMENT).values.uniq
   end
 
+  test "開発用のネットワーク名は project 名をそのまま使う" do
+    # 名前を与えないと officeweave_default になる。ネットワークは 1 つしか無く、
+    # default であることを名前から読み取る必要がない。
+    #
+    # イメージと同じく project 名から作る。書き写すと、project 名を変えたときに
+    # 片方だけが古いまま残る。
+    assert_equal "${COMPOSE_PROJECT_NAME}", DEVELOPMENT.dig("networks", "default", "name")
+  end
+
   test "配布用のイメージ名は製品の技術識別子を使う" do
     # 配布先では 1 つの project しか動かない。project 名から作る理由が無い。
     assert_equal [ "officeweave:production" ], application_images(PRODUCTION).values.uniq
