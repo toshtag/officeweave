@@ -80,6 +80,12 @@ rails 8.1.3                   公開ゲムリポジトリの最新安定版と�
 同じ値を複数箇所へ書き写す必要が生じた場合は、
 参照元をひとつに決め、他方はそれを読み取る形にする。
 
+依存を解決する道具の版は、この形で扱う。正本は `Gemfile.lock` の
+`BUNDLED WITH` とし、`Dockerfile` と `Dockerfile.production` はそこから読む。
+版を定義ファイルへ書き写すと、`Gemfile.lock` を上げたときに片方だけが古い
+まま残り、組み立てたイメージが `Gemfile.lock` を書いたものと違う道具で依存を
+解決する。この決め方は `test/configuration/bundler_version_test.rb` が確かめる。
+
 ## 4. 採用する構成
 
 ```text
