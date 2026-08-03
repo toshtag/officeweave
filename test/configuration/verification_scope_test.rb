@@ -40,11 +40,57 @@ class VerificationScopeTest < ActiveSupport::TestCase
     assert_empty started, "#{PULL_REQUEST.basename} が配布用の構成を起動している"
   end
 
+  # 範囲を分けて同時に走らせている。挙げ忘れた範囲は誰も実行しない。
+  # 実行されなくても、残りの範囲は緑になる。
+  test "config/verify.rb が持つ範囲はすべて自動実行で走る" do
+    assert_equal defined_scopes.sort, executed_scopes.sort
+  end
+
+  # 分けたうちの 1 つを挙げ忘れると、その範囲のテストが誰にも実行されない。
+  test "テストの分割は数え上げた分だけ挙がる" do
+    shards = matrix.filter_map { |entry| entry["shard"].presence }
+    total = shards.filter_map { |shard| shard.split("/").last.to_i }.uniq
+
+    assert_equal 1, total.size, "分割の数が食い違っている: #{shards.join("、")}"
+    assert_equal (1..total.first).map { |index| "#{index}/#{total.first}" }.sort, shards.sort
+  end
+
+  # 手順を workflow へ写すと、一覧が 2 か所になる。config/verify.rb へ検査を
+  # 足しても自動実行がそれを流さない状態が、黙って生まれる。
+  test "検証の手順を workflow へ書き写さない" do
+    copied = COMMANDS.select { |command| PULL_REQUEST.read.include?(command) }
+
+    assert_empty copied, "#{PULL_REQUEST.basename} へ手順が写っている"
+  end
+
   private
+    # config/verify.rb が呼ぶもの。ここへ現れたら、一覧が 2 か所になっている。
+    COMMANDS = %w[bin/rubocop bin/brakeman bin/bundler-audit test:except_browser].freeze
+
+    VERIFY = Rails.root.join("config/verify.rb").freeze
+
     # on: は YAML の真偽値として読まれる。書き方を変えずに両方を受ける。
     def triggers(path)
       document = YAML.safe_load_file(path, aliases: true)
 
       document["on"] || document[true]
+    end
+
+    def matrix
+      YAML.safe_load_file(PULL_REQUEST, aliases: true)
+          .dig("jobs", "verify", "strategy", "matrix", "include")
+    end
+
+    def executed_scopes
+      matrix.map { |entry| entry.fetch("scope") }.uniq
+    end
+
+    # 手元での既定（all）は分けた側には現れない。分けた範囲だけを取り出す。
+    def defined_scopes
+      listed = VERIFY.read[/^SCOPES = %w\[([^\]]+)\]/, 1]
+
+      assert_not_nil listed, "config/verify.rb から範囲を読み取れない"
+
+      listed.split - [ "all" ]
     end
 end
