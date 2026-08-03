@@ -56,6 +56,38 @@ CVE-2026-33210（format string injection、2026-03-19 公開）の影響範囲
 再検討の条件は、4.0 系が影響範囲の外にある json を同梱して出ることとする。
 それ以外の非互換は R10-T4 の時点で確かめており、障害にならない。
 
+### データベースのイメージに alpine を採らない理由
+
+PostgreSQL の公式イメージには alpine 版もあり、同じ版数で配布されている
+（`18.4-alpine`）。小さく、既知の脆弱性の指摘も少ない。それでも bookworm を使う。
+
+alpine の C ライブラリ（musl）は locale を実装していない。名前としては受け取る
+が、並びはバイト順になる。同じ 8 語を `ORDER BY` した実測結果である。
+
+```text
+bookworm(glibc)  apple | apricot | Banana | Cherry | あんない | サッカー | ざっし | 会議室
+alpine(musl)     Banana | Cherry | apple | apricot | あんない | ざっし | サッカー | 会議室
+```
+
+この製品は利用者、部門、設備・備品、申請種別などを名前順で並べる。
+乗り換えれば、その並びが変わる。
+
+危険なのは、この違いが記録に現れないことである。どちらも `datcollate` は
+`en_US.utf8`、`datlocprovider` は `c` と報告する。データベース自身の
+照合順序の不一致の警告も出ない。
+
+既にある導入先がデータディレクトリを引き継いだ場合、text 列の btree 索引は
+作られたときの並びのまま残り、実際の比較と食い違う。`REINDEX` するまで、
+検索と絞り込みが取りこぼす。
+
+小ささと指摘の少なさは、これと釣り合わない。指摘の件数については、
+データベースのイメージを合否に使わないと決めている（[品質基盤](quality.md)）。
+
+再検討の条件は、照合順序を C ライブラリから切り離した場合とする。
+PostgreSQL 18 は ICU と builtin の provider を持つ。そちらへ移すのであれば、
+基盤の C ライブラリは判断の材料から外れる。ただしそれは、既にある
+データベースの並びを変える作業であり、イメージの選択とは別に扱う。
+
 ### スキーマ定義の形式
 
 スキーマ定義は SQL 形式（`db/structure.sql`）で保持する。
@@ -106,6 +138,26 @@ CVE-2026-33210（format string injection、2026-03-19 公開）の影響範囲
 版を定義ファイルへ書き写すと、`Gemfile.lock` を上げたときに片方だけが古い
 まま残り、組み立てたイメージが `Gemfile.lock` を書いたものと違う道具で依存を
 解決する。この決め方は `test/configuration/bundler_version_test.rb` が確かめる。
+
+### 読み取る形にできないもの
+
+Ruby とデータベースの版は、この形にできない。`FROM` は組み立てが始まる前に
+評価され、その時点でファイルを読めない。基盤のイメージを決める値は、
+定義ファイルが直接持つしかない。
+
+まとめきれない分は、食い違ったときに気づける形にする。
+`test/configuration/runtime_version_test.rb` が次を確かめる。
+
+| 確かめること                         | 食い違ったときに起きること              |
+| ------------------------------ | --------------------------- |
+| Ruby の版が定義ファイルで一致する            | 開発用と配布用が別の処理系で動く            |
+| 構成ファイルが Ruby の版を書き直さない         | どちらが版を決めているのかが読めなくなる        |
+| 開発用と配布用が同じデータベースのイメージを使う       | 手元で通ったものが配布先で通らない           |
+| 取り込むクライアントの系列がデータベースの系列と一致する   | スキーマ定義の書き出しとバックアップの取得が失敗する  |
+
+構成ファイルからは、組み立ての引数としての版の指定を外してある。
+`Dockerfile` の既定と同じ値になるだけであり、渡す側と渡さない側が生まれると、
+版を決めている場所が読めなくなる。
 
 ## 4. 採用する構成
 
@@ -159,9 +211,9 @@ P1-T1 で、候補どおりの構成が動作することを確認した。
 
 | 対象           | 確定値      | 定義場所                        |
 | ------------ | -------- | --------------------------- |
-| Ruby         | `3.4.10` | `.ruby-version`、`Dockerfile` と `Dockerfile.production` の `RUBY_VERSION`、`compose.yaml` の `web` と `worker` |
+| Ruby         | `3.4.10` | `.ruby-version`、`Dockerfile` と `Dockerfile.production` の `RUBY_VERSION` |
 | Ruby on Rails | `8.1.3`  | `Gemfile` と `Gemfile.lock`   |
-| PostgreSQL   | `18.4`   | `compose.yaml` の `db` サービス   |
+| PostgreSQL   | `18.4`   | `compose.yaml` と `compose.production.yaml` の `db` サービス。取り込むクライアントの系列は 2 つの `Dockerfile` の `POSTGRESQL_MAJOR_VERSION` |
 | jwt          | `3.2.0`  | `Gemfile` と `Gemfile.lock`   |
 | selenium-webdriver | `4.46.0` | `Gemfile` と `Gemfile.lock`（試験のみ） |
 | axe-core-capybara | `4.12.0` | `Gemfile` と `Gemfile.lock`（試験のみ） |
