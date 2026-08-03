@@ -211,9 +211,7 @@ docker compose up -d --build
 
 - [製品ビジョン](docs/product/vision.md) — 解決したい問題、初期範囲、非目標
 - [アーキテクチャ原則](docs/architecture/principles.md) — 設計契約と依存方針
-- [開発規約](docs/development/conventions.md) — 命名、言語、多言語化の取り決め
-- [ロードマップ](docs/roadmap.md) — Phase 一覧と進行規則
-- [実行キュー](docs/execution_queue.md) — タスク分解と現在地
+- [開発規約](docs/development/conventions.md) — 命名、作業の進め方、多言語化の取り決め
 - [技術構成](docs/development/tech_stack.md) — 採用技術、版数、更新方針
 - [設定](docs/development/configuration.md) — 環境変数と稼働確認
 - [テスト方針](docs/development/testing.md) — テストの層と実行方法
@@ -245,6 +243,8 @@ Copyright (C) 2026 OfficeWeave contributors
 
 ## 開発状況
 
-現在の実行順と完了状況は [実行キュー](docs/execution_queue.md) を参照してください。
+セルフホスト版として想定した機能範囲と検証手段は、ひととおり実装しています。
+互換性の保証はまだ行いません。
 
-README にはタスク番号も完了状況も複製しません。現在地の正本は実行キューだけです。
+今後の作業と既知の不具合は [Issues](https://github.com/toshtag/OfficeWeave/issues) で
+管理します。実際に何をどう変えたかは PR と `git log` から辿れます。
