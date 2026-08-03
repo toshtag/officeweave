@@ -3,7 +3,7 @@
 inherit_gem: { rubocop-rails-omakase: rubocop.yml }
 
 AllCops:
-  TargetRubyVersion: 3.4
+  TargetRubyVersion: 4.0
   # 追加された規則を既定で有効にする。
   # 無効のままにすると、更新しても検査内容が変わらず、導入した意味が薄れる。
   NewCops: enable
