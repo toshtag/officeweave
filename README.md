@@ -35,7 +35,7 @@ INITIAL_USER_EMAIL     最初の管理者のメールアドレス
 INITIAL_USER_PASSWORD  15 文字以上のパスワード
 ```
 
-パスワードの要件は [設定](docs/development/configuration.md) にあります。
+パスワードの要件は [設定](docs/operations/configuration.md) にあります。
 
 ```bash
 docker compose up -d --build
@@ -48,7 +48,7 @@ script/seed_initial_user
 ```
 
 資格情報は、このとき作られる一時コンテナにだけ渡します。稼働中の web と
-worker には渡しません。扱いの詳細は [設定](docs/development/configuration.md) にあります。
+worker には渡しません。扱いの詳細は [設定](docs/operations/configuration.md) にあります。
 
 作成後、`INITIAL_USER_PASSWORD` は `.env` から削除してください。
 web と worker を作り直す必要はありません。
@@ -75,7 +75,7 @@ worker が止まっていると、送信は行われずジョブが溜まりま�
 公開先は既定で loopback だけです。同じ端末の他の開発環境と衝突する場合や、
 別の端末から接続したい場合は `.env` の `WEB_BIND_ADDRESS` と `WEB_PORT` を変更します。
 
-設定を変更する場合は `.env` を編集します。設定可能な項目は [設定](docs/development/configuration.md) を参照してください。
+設定を変更する場合は `.env` を編集します。設定可能な項目は [設定](docs/operations/configuration.md) を参照してください。
 
 稼働確認は次のとおりです。
 
@@ -209,23 +209,31 @@ docker compose up -d --build
 
 ## ドキュメント
 
-- [製品ビジョン](docs/product/vision.md) — 解決したい問題、初期範囲、非目標
-- [アーキテクチャ原則](docs/architecture/principles.md) — 設計契約と依存方針
-- [開発規約](docs/development/conventions.md) — 命名、作業の進め方、多言語化の取り決め
-- [技術構成](docs/development/tech_stack.md) — 採用技術、版数、更新方針
-- [設定](docs/development/configuration.md) — 環境変数と稼働確認
-- [テスト方針](docs/development/testing.md) — テストの層と実行方法
-- [認証方式の差し替え](docs/development/authentication.md) — 外部認証への差し替え手順
-- [品質基盤](docs/development/quality.md) — 書式検査と各種検査の実行方法
-- [アクセシビリティ方針](docs/development/accessibility.md) — 画面が満たすべき最低要件
+### 導入して運用する
+
 - [導入手順](docs/operations/installation.md) — 自組織の環境への導入
-- [運用](docs/operations/operations.md) — 日常的な運用と監視
+- [設定](docs/operations/configuration.md) — 環境変数と稼働確認
+- [運用管理](docs/operations/administration.md) — 利用者と組織の管理、監視、監査
 - [バックアップと復元](docs/operations/backup.md) — 取得と復元の手順
 - [アップグレード](docs/operations/upgrade.md) — 入れ替えの手順と診断
-- [総合検証](docs/operations/verification.md) — 公開前に通す確認
-- [リリース手順](docs/operations/release.md) — 版数の付け方と公開の手順
 - [変更履歴](CHANGELOG.md) — 版ごとの変更点
 - [脆弱性の報告](SECURITY.md) — 報告の方法と対応の流れ
+
+### 開発する
+
+- [アーキテクチャ原則](docs/development/architecture.md) — 設計契約と依存方針
+- [開発規約](docs/development/conventions.md) — 命名、作業の進め方、多言語化の取り決め
+- [技術構成](docs/development/tech_stack.md) — 採用技術、版数、更新方針
+- [テスト方針](docs/development/testing.md) — テストの層と実行方法
+- [品質基盤](docs/development/quality.md) — 書式検査と各種検査の実行方法
+- [アクセシビリティ方針](docs/development/accessibility.md) — 画面が満たすべき最低要件
+- [認証方式の差し替え](docs/development/authentication.md) — 外部認証への差し替え手順
+- [総合検証](docs/development/verification.md) — 公開前に通す確認
+- [リリース手順](docs/development/release.md) — 版数の付け方と公開の手順
+
+### プロジェクト
+
+- [製品ビジョン](docs/vision.md) — 解決したい問題、初期範囲、非目標
 - [ライセンス方針](docs/licensing.md) — ライセンスの選定理由と名称の利用範囲
 
 いずれも日本語を正本とします。

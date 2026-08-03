@@ -113,7 +113,7 @@ docker compose exec -T web bin/rails officeweave:sbom > officeweave-sbom.json
 実行環境の情報や設定の値は含めない。部品表は組織の外へ渡ることがある。
 
 継続的インテグレーションでは毎回書き出し、成果物として残す。
-公開する版へ添える手順は [リリース手順](../operations/release.md) に定義する。
+公開する版へ添える手順は [リリース手順](release.md) に定義する。
 
 ## 4. 配布するイメージの脆弱性検査
 

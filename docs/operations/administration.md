@@ -1,6 +1,6 @@
-# OfficeWeave 運用
+# OfficeWeave 運用管理
 
-本書は、導入後の日常的な運用を定義する。
+本書は、導入後に管理者と運用者が行う作業を定義する。
 
 本書のコマンドは、すべて配布用の構成に対して実行する。
 Compose を呼び出すコマンドには必ず `-f compose.production.yaml` を付ける。
@@ -374,7 +374,7 @@ OPERATIONS_EMAIL=ops@example.com
 異常が無い日は何も届かない。届かないことを、異常が無いことの知らせとする。
 
 メールの送信を設定していない場合は届かない。送信の設定は
-[設定](../development/configuration.md) を参照。
+[設定](configuration.md) を参照。
 `bin/diagnose` の「メールの送信」で、送る先があるかを確認できる。
 
 ## 4. 監査

@@ -13,7 +13,7 @@ class EnvironmentTemplateTest < ActiveSupport::TestCase
   COMPOSE_FILES = %w[compose.yaml compose.production.yaml compose.database.yaml].freeze
 
   TEMPLATE = ".env.example"
-  DOCUMENT = "docs/development/configuration.md"
+  DOCUMENT = "docs/operations/configuration.md"
 
   # compose 自身が与える変数。利用者が `.env` へ書くものではない。
   #

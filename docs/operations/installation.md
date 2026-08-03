@@ -61,7 +61,7 @@ SECRET_KEY_BASE        署名に使う鍵
 
 `.env.example` の秘密情報は空欄である。空欄のままでは構成を解決できず、起動しない。
 
-設定できる項目の一覧は [設定](../development/configuration.md) にある。
+設定できる項目の一覧は [設定](configuration.md) にある。
 
 ### 最初の管理者の資格情報
 
@@ -73,7 +73,7 @@ INITIAL_USER_PASSWORD  必須。既定値はない。15 文字以上とする
 ```
 
 要件を満たさない値を設定した場合、作成は失敗し、利用者を作らない。
-要件は [設定](../development/configuration.md) にある。
+要件は [設定](configuration.md) にある。
 
 実際に設定した値を、コマンドの例や作業記録へ書き写さない。
 本書と `.env.example` に載る値は、いずれも使用できない値である。
@@ -92,7 +92,7 @@ ORGANIZATION_NAME      組織を新しく作る場合の表示名。既定は Of
 `INITIAL_USER_*` は、稼働し続ける web と worker へは渡さない。
 `script/seed_initial_user` が作る一時コンテナにだけ渡し、処理が終わると
 そのコンテナは削除される。値の入力元と、そう決めた理由は
-[設定](../development/configuration.md) にある。
+[設定](configuration.md) にある。
 
 初期利用者の作成後は、次の順で片付ける。
 
@@ -348,7 +348,7 @@ script/production_restore backups/<書庫>
 docker compose -f compose.production.yaml exec -T web bin/jobs_status --failed
 ```
 
-詳しくは [設定](../development/configuration.md) を参照する。
+詳しくは [設定](configuration.md) を参照する。
 
 ### Webhook の送信先
 
@@ -370,7 +370,7 @@ WEBHOOK_PRIVATE_DESTINATION_ALLOWLIST=http://hooks.internal.example
 docker compose -f compose.production.yaml exec web bin/diagnose
 ```
 
-詳しくは [設定](../development/configuration.md) を参照する。
+詳しくは [設定](configuration.md) を参照する。
 
 ### 更新
 
