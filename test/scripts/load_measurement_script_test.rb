@@ -10,7 +10,9 @@ require "test_helper"
 class LoadMeasurementScriptTest < ActiveSupport::TestCase
   SCRIPT = Rails.root.join("script/measure_load").freeze
   VERIFY = Rails.root.join("config/verify.rb").freeze
-  WORKFLOW = Rails.root.join(".github/workflows/verify.yml").freeze
+  # 仕事の置き場所は 1 つに限らない。ファイルの名前ではなく、継続的
+  # インテグレーションのどこかで実行されることを確かめる。
+  WORKFLOWS = Rails.root.glob(".github/workflows/*.yml").map(&:read).join("\n").freeze
   REPORT_DIR = "load_report".freeze
 
   setup do
@@ -78,7 +80,7 @@ class LoadMeasurementScriptTest < ActiveSupport::TestCase
   end
 
   test "継続的インテグレーションが測定を実行する" do
-    assert_match(/script\/measure_load/, WORKFLOW.read)
+    assert_match(/script\/measure_load/, WORKFLOWS)
   end
 
   test "測るためのデータを積む手順がある" do
