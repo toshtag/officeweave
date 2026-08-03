@@ -25,7 +25,12 @@ unless SCOPES.include?(scope)
 end
 
 CI.run do
-  step "準備: 依存とデータベース", "bin/setup"
+  # 書式とセキュリティはデータベースへ触れない。用意すると、その分だけ待たせる。
+  if scope == "checks"
+    step "準備: 依存", "bin/setup --skip-database"
+  else
+    step "準備: 依存とデータベース", "bin/setup"
+  end
 
   if %w[all checks].include?(scope)
     step "書式: Ruby", "bin/rubocop"
