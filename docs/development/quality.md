@@ -203,6 +203,25 @@ docker compose exec web bin/verify
 | テスト: 全件（実ブラウザーを除く）    | 実ブラウザーを要する層を除くすべてのテスト |
 | テスト: 初期データ            | 初期データの投入が成功すること       |
 
+### 範囲を絞って実行する
+
+引数で範囲を選べる。自動実行が、分けて同時に走らせるために使う。
+
+```bash
+docker compose exec web bin/verify checks   # 書式とセキュリティ
+docker compose exec web bin/verify tests    # テスト
+```
+
+テストはさらに分けられる。分け方は `lib/tasks/test_files.rb` が、その場の
+ファイルから作る。一覧を書き写すと、層を足したときに片方だけが古くなる。
+
+```bash
+docker compose exec -e TEST_SHARD=1/3 web bin/rails test:except_browser
+```
+
+知らない名前は受け付けずに終了する。受け付けると、綴りを誤ったときに
+何も実行せずに成功として返る。
+
 ### 継続的インテグレーション
 
 手順の一覧は作り直さず、`bin/verify` をそのまま呼び出している。
@@ -214,10 +233,22 @@ docker compose exec web bin/verify
 
 #### 変更を出すたびに走るもの（`.github/workflows/verify.yml`）
 
-| 仕事         | 内容                                |
-| ---------- | --------------------------------- |
-| 構成の分離      | 開発用と配布用の構成が分離されていることを検査する         |
-| bin/verify | 開発用の構成で、書式、セキュリティ、テストを実行し、部品表を書き出す |
+| 仕事          | 内容                            |
+| ----------- | ----------------------------- |
+| 構成の分離       | 開発用と配布用の構成が分離されていることを検査する     |
+| 書式とセキュリティ   | `bin/verify checks` と部品表の書き出し |
+| テスト 1/3〜3/3 | `bin/verify tests` を 3 つへ分けて実行 |
+
+4 つを同時に走らせる。1 つが落ちても残りは最後まで走らせ、落ちた範囲だけを
+見て直せるようにする。
+
+workflow へ渡すのは範囲の名前だけとし、どのコマンドを流すかは `bin/verify`
+が決める。手順を写すと一覧が 2 か所になり、`config/verify.rb` へ検査を
+足しても自動実行がそれを流さない状態が、黙って生まれる。
+
+範囲や分割の挙げ忘れは `test/configuration/verification_scope_test.rb` と
+`test/lib/tasks/test_files_test.rb` が見る。実行されない範囲があっても、
+残りの範囲は緑になるため、結果からは気付けない。
 
 #### main へ入ったあとに走るもの（`.github/workflows/operations.yml`）
 
