@@ -5,11 +5,14 @@
 ## 1. 必要なもの
 
 ```text
-Docker
-Docker Compose
+Docker Engine 25.0 以降
+Docker Compose v2.24 以降
 アプリケーションへ到達できるホスト名（運用環境）
 メールを送信できる SMTP サーバー（通知を使う場合）
 ```
+
+版を示すのは、構成が起動中の確認間隔（`start_interval`）を使うためである。
+これより古い環境では、構成の読み取りの時点で止まる。
 
 Ruby と PostgreSQL をホストへ導入する必要はない。すべてコンテナ内で動作する。
 

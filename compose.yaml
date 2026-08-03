@@ -62,6 +62,15 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+      # 起動のあいだだけ細かく見る。
+      #
+      # 稼働中の判定は 5 秒ごとで足りるが、その間隔をそのまま起動へ使うと、
+      # 準備が終わっていても次の確認まで待つ。後ろに web と worker が続くため、
+      # この待ちは 3 段ぶん積み上がる。
+      #
+      # 猶予のあいだの失敗は回数に数えない。健全になった時点で猶予は終わる。
+      start_period: 30s
+      start_interval: 1s
 
   web:
     build:
@@ -81,7 +90,8 @@ services:
       interval: 5s
       timeout: 3s
       retries: 30
-      start_period: 10s
+      start_period: 30s
+      start_interval: 1s
     ports:
       # 既定では loopback にだけ公開する。
       # 同じ端末で他の開発環境が動いていても衝突しにくい値を選ぶ。
@@ -110,7 +120,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 6
-      start_period: 20s
+      start_period: 30s
+      start_interval: 1s
     depends_on:
       web:
         condition: service_healthy

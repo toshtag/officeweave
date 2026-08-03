@@ -16,7 +16,7 @@
 
 ## 起動
 
-必要なものは Docker と Docker Compose だけです。
+必要なものは Docker Engine 25.0 以降と Docker Compose v2.24 以降だけです。
 Ruby と PostgreSQL をホストへ導入する必要はありません。
 
 ```bash
