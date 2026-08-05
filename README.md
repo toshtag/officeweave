@@ -4,7 +4,14 @@
 
 ## 現在の状態
 
-組織の日常業務を一巡できる範囲を実装した段階です。互換性はまだ保証しません。
+Core の領域には、利用者・管理者・運用者が使う入口と、その基礎の実装があります。
+ただし [受入条件](docs/product/acceptance_criteria.md) を満たした機能は一部で、
+既知の未達と不具合が残ります。本番準備済みと判定した版はありません。
+互換性もまだ保証しません。
+
+「入口と基礎の実装がある」ことと「実装済み」を分けて扱います。
+このリポジトリで「実装済み」と書くのは、受入条件を満たした機能だけです。
+機能ごとの到達度は [機能到達度](docs/product/capability_matrix.md) にあります。
 
 現在の版は [VERSION](VERSION) にあります。
 版ごとの変更点と、入れ替えが必要な理由は [変更履歴](CHANGELOG.md) にあります。
@@ -196,6 +203,10 @@ docker compose up -d --build
 ### プロジェクト
 
 - [製品ビジョン](docs/vision.md) — 解決したい問題、製品範囲、非目標
+- [製品範囲](docs/product/product_scope.md) — 機能をどの段階へ置くかの決め方
+- [受入条件](docs/product/acceptance_criteria.md) — 到達度と本番準備の判定条件
+- [機能到達度](docs/product/capability_matrix.md) — 機能ごとの段階と、いまの到達度
+- [決定記録](docs/decisions) — 製品の方向を決めた判断とその理由
 - [ライセンス方針](docs/licensing.md) — ライセンスの選定理由と名称の利用範囲
 
 いずれも日本語を正本とします。
@@ -213,7 +224,11 @@ Copyright (C) 2026 OfficeWeave contributors
 
 ## 開発状況
 
-セルフホスト版として想定した機能範囲と検証手段は、ひととおり実装しています。
+Core の 26 機能には、入口とその基礎の実装があります。一方、
+[受入条件](docs/product/acceptance_criteria.md) を満たした機能は 1 件です。
+残りは未達の項目を持ち、申請の多段承認には既知の不具合があります。
+内訳は [機能到達度](docs/product/capability_matrix.md) にあります。
+
 互換性の保証はまだ行いません。
 
 今後の作業と既知の不具合は [Issues](https://github.com/toshtag/OfficeWeave/issues) で
