@@ -439,15 +439,13 @@ Core や Suite として数えない。件数も別に数える。
 - 2: 表示言語の変更が監査へ残らない
 - 9: 利用者向けの切り替え手順が文書に無い
 
-### 稼働確認と診断
+### 稼働確認
 
 ```text
 状態  complete
 経路  /up, /health
-入口  bin/diagnose, bin/jobs_status
-模型  Diagnostics
-検証  test/controllers/health_controller_test.rb, test/models/diagnostics_test.rb,
-      test/system/health_test.rb
+模型  なし（HealthController が依存先への到達可否だけを返す）
+検証  test/controllers/health_controller_test.rb, test/system/health_test.rb
 文書  docs/operations/configuration.md, docs/operations/administration.md
 ```
 
@@ -459,16 +457,36 @@ Core や Suite として数えない。件数も別に数える。
 1  満たす    認証を要さない経路だが、返すのは依存先への到達可否だけで、
              組織に属する情報を含まない
 2  非該当    状態を変えない
-3  非該当    通知を作らない。運用異常の通知は別の機能として扱う
+3  非該当    通知を作らない
 4  非該当    一覧を持たない
 5  非該当    利用者・部門・設備を選ばせる欄を持たない
 6  非該当    記録を持たない
 7  非該当    蓄積する記録を残さない
-8  満たす    経路、診断の判定、画面からの確認にテストがある
+8  満たす    応答の形、健全なときと異常なときの状態符号、画面からの確認に
+             テストがある
 9  満たす    設定と運用管理の両方に手順がある
 10 非該当    応答が機械向けの形式で、画面へ出す語句を持たない
 11 非該当    操作する画面を持たない
 ```
+
+### 構成とジョブの診断
+
+```text
+状態  partial
+入口  bin/diagnose, bin/jobs_status
+模型  Diagnostics
+検証  test/models/diagnostics_test.rb
+文書  docs/operations/configuration.md, docs/operations/administration.md
+```
+
+未達:
+
+- 8: コマンドとしての契約にテストが無い。判定そのものは `Diagnostics` の
+  テストが固定しているが、`lib/tasks/diagnose.rake` の出力と、失敗があるときに
+  0 以外で終わる契約は確かめていない。`bin/jobs_status` は
+  `test/configuration/persistent_queue_test.rb` が実行できることだけを見ており、
+  通常の表示、`--failed`、上限、誤った引数、終了状態、
+  ジョブの引数や送信内容を表示しないことは固定していない
 
 ### 運用異常の通知
 
