@@ -445,16 +445,47 @@ Core の大半が `partial` で止まる理由は、次の 2 つがどの機能�
 状態  complete
 経路  /up, /health
 入口  bin/diagnose, bin/jobs_status
-模型  Diagnostics, OperationalReport
+模型  Diagnostics
 検証  test/controllers/health_controller_test.rb, test/models/diagnostics_test.rb,
-      test/system/health_test.rb, test/jobs/report_operational_issues_job_test.rb
+      test/system/health_test.rb
 文書  docs/operations/configuration.md, docs/operations/administration.md
 ```
 
 未達: なし。
 
-条件 2 から 7 は、状態を変える経路と蓄積する記録を持たないため該当しない。
-条件 10 と 11 は、応答が機械向けの形式であるため該当しない。
+共通条件のうち、満たすものと該当しないものを番号ごとに示す。
+
+```text
+1  満たす    認証を要さない経路だが、返すのは依存先への到達可否だけで、
+             組織に属する情報を含まない
+2  非該当    状態を変えない
+3  非該当    通知を作らない。運用異常の通知は別の機能として扱う
+4  非該当    一覧を持たない
+5  非該当    利用者・部門・設備を選ばせる欄を持たない
+6  非該当    記録を持たない
+7  非該当    蓄積する記録を残さない
+8  満たす    経路、診断の判定、画面からの確認にテストがある
+9  満たす    設定と運用管理の両方に手順がある
+10 非該当    応答が機械向けの形式で、画面へ出す語句を持たない
+11 非該当    操作する画面を持たない
+```
+
+### 運用異常の通知
+
+```text
+状態  partial
+入口  定期実行（ReportOperationalIssuesJob）
+模型  OperationalReport, OperationsMailer
+検証  test/models/operational_report_test.rb,
+      test/jobs/report_operational_issues_job_test.rb
+文書  docs/operations/administration.md, docs/operations/configuration.md
+```
+
+未達:
+
+- 3: 送信に発生の単位が無い（`app/jobs/report_operational_issues_job.rb`）。
+  ジョブを再試行すると、同じ異常が改めて送られる
+- 送った記録を残さないため、届かなかったことに運用者が気付けない
 
 ### バックアップと復元
 
