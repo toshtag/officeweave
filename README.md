@@ -6,6 +6,10 @@
 
 組織の日常業務を一巡できる範囲を実装した段階です。互換性はまだ保証しません。
 
+「実装した」ことと「本番運用に耐える」ことは分けて扱います。
+機能ごとの到達度は [機能到達度](docs/product/capability_matrix.md) にあります。
+本番準備済みと判定した機能は、現時点でありません。
+
 現在の版は [VERSION](VERSION) にあります。
 版ごとの変更点と、入れ替えが必要な理由は [変更履歴](CHANGELOG.md) にあります。
 過去の版から入れ替える場合は [アップグレード](docs/operations/upgrade.md) を参照してください。
@@ -196,6 +200,10 @@ docker compose up -d --build
 ### プロジェクト
 
 - [製品ビジョン](docs/vision.md) — 解決したい問題、製品範囲、非目標
+- [製品範囲](docs/product/product_scope.md) — 機能をどの段階へ置くかの決め方
+- [受入条件](docs/product/acceptance_criteria.md) — 到達度と本番準備の判定条件
+- [機能到達度](docs/product/capability_matrix.md) — 機能ごとの段階と、いまの到達度
+- [決定記録](docs/decisions) — 製品の方向を決めた判断とその理由
 - [ライセンス方針](docs/licensing.md) — ライセンスの選定理由と名称の利用範囲
 
 いずれも日本語を正本とします。
@@ -213,7 +221,11 @@ Copyright (C) 2026 OfficeWeave contributors
 
 ## 開発状況
 
-セルフホスト版として想定した機能範囲と検証手段は、ひととおり実装しています。
+現在の範囲の機能は、経路と検証手段までひととおり実装しています。
+一方、[受入条件](docs/product/acceptance_criteria.md) を満たしたと判定した機能は
+1 件だけで、残りは未達の項目を持ちます。内訳は
+[機能到達度](docs/product/capability_matrix.md) にあります。
+
 互換性の保証はまだ行いません。
 
 今後の作業と既知の不具合は [Issues](https://github.com/toshtag/OfficeWeave/issues) で
