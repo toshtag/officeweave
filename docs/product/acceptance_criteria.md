@@ -35,8 +35,9 @@ cross_cutting_gate
 
 release_gate
   段階            持たない
-  状態            持たない。版と commit に対する結果を持つ
-  結果            not_evaluated / passed / failed
+  状態            持たない
+  評価            版と commit の組ごとに 1 件。結果は
+                  not_evaluated / passed / failed
 ```
 
 段階は Core・Suite・Extended の 3 つだけである。
@@ -116,15 +117,24 @@ model を要求すると、そういう機能はどれだけ仕上げても `com
 
 版全体の検証は、機能ではなくこの節が持つ。
 
+gate の定義と、版ごとの評価を分ける。結果は必ず対象に対する結果である。
+対象を持たない結果は、何を評価していないのかを判別できない。
+
 ```text
-識別子  release.production_readiness
-種類    release_gate
-対象    版と commit の組
-結果    not_evaluated / passed / failed
-現在    not_evaluated
+gate の定義
+  識別子      release.production_readiness
+  種類        release_gate
+  必要な証拠   下に挙げる一覧
+
+版ごとの評価
+  gate の識別子
+  版
+  commit
+  結果        not_evaluated / passed / failed
+  証拠の文書   docs/releases/<版>_verification.md
 ```
 
-`release_gate` は `capability` の状態を使わない。結果だけを持つ。
+`release_gate` は `capability` の状態を使わない。
 機能の一覧へ混ぜると、どの機能も進んでいないのに一覧だけが伸びる。
 
 この 2 つを同じ語で表さない。単位が違う。
@@ -151,8 +161,16 @@ Core の機能が目指すのは `complete` までである。
 実行できなかった項目は、成功として数えず、実行できなかったこととして残す。
 未実施が 1 つでもあるあいだは `passed` としない。
 
-現時点で `docs/releases/` は存在しない。結果は `not_evaluated` であり、
-本番準備済みと判定した版は無い。
+現時点で `docs/releases/` は存在しない。
+
+```text
+gate の定義   1 件
+版ごとの評価   0 件
+passed した版  0 件
+```
+
+評価が 1 件も無いため、本番準備済みと判定した版は無い。
+評価の記録を持たないまま `not_evaluated` を現在の結果として置かない。
 
 ## 5. Core に共通の受入条件
 

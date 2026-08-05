@@ -78,7 +78,8 @@ capability          54
 
 cross_cutting_gate   2  partial 1、planned 1
 
-release_gate         1  release.production_readiness、結果は not_evaluated
+release_gate         1  release.production_readiness（定義）
+  版ごとの評価       0  passed した版も 0
 ```
 
 段階は Core・Suite・Extended の 3 つである。範囲外は第 4 の段階ではない。
@@ -97,9 +98,8 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 粒度、一覧の上限、選択欄の描画量、データベースの不変条件、想定規模での実測、
 操作の文書といった別の未達が残る。機能ごとの未達は、それぞれの節に書いた。
 
-本番準備は機能ではなく版に対して判定する。判定に使う検証の記録がまだ無いため、
-`release.production_readiness` の結果は `not_evaluated` であり、
-本番準備済みと判定した版は無い。
+本番準備は機能ではなく版に対して判定する。判定に使う検証の記録がまだ無く、
+版ごとの評価が 1 件も無いため、本番準備済みと判定した版は無い。
 
 ## 2. Core
 
