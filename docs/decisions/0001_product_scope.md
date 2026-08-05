@@ -155,15 +155,27 @@ Markdown を解析する形にはしない。解析器が正本になると、
 ```text
 id                  安定した識別子。意味を変えて再利用しない
 kind                capability / cross_cutting_gate / release_gate
+lifecycle           active / retired
 stage               capability だけ。範囲外は持たない
 state               capability と cross_cutting_gate
-result              release_gate だけ
 implementation_paths
-routes_or_entries
+routes_or_entries   経路、製品用のコマンド、定期実行
+entry_class         product / development_tool / internal
 tests
 documents
 criteria            条件ごとに 満たす / 未達 / 非該当 / 未評価 と、理由と証拠
-replacement         外部連携で代替した機能の置き換え先
+disposition         retired だけ。外部連携で代替 / 取りやめ
+replacement         retired だけ。置き換え先の識別子
+decision_record     retired だけ
+retired_at          retired だけ
+```
+
+`release_gate` は、定義と評価を別に持つ。
+
+```text
+定義  id / kind / 必要な証拠
+評価  gate の id / 版 / commit / result / 証拠の文書
+      result は not_evaluated / passed / failed
 ```
 
 検査は次を失敗として扱う。
@@ -174,9 +186,13 @@ complete に 未達 または 未評価 の条件がある
 記載した path が存在しない
 段階と状態の組合せが許可表に無い
 rejected に段階が付いている
+Suite の planned に実装がある、または partial に実装が無い
+Suite に公開の入口がある
 release_gate に capability の状態が付いている
-置き換え先の識別子が存在しない
-識別子の意味を変えた、または再利用した
+対象の版と commit を持たない評価がある
+retired に置き換え先が無い、または置き換え先が現役の Suite に無い
+識別子が、現役と廃止を合わせて一意でない
+bin/、script/、config/recurring.yml のうち、分類の無いものがある
 ```
 
 ## 畳んだ帳簿との違い
