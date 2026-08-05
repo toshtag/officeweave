@@ -144,7 +144,40 @@ Issue は個々の作業を持つ。「いま何ができるのか」は、
 
 何を満たせば `complete` かは人が決める必要があり、その定義は文書でしか持てない。
 ただし、文書だけでは実装から離れる。次の作業として、
-機能と経路・テスト・文書の対応を検査で確かめられるようにする。
+機能と入口・テスト・文書の対応を検査で確かめられるようにする。
+
+## 次に作る一覧が持つ項目
+
+本書で決めた契約を機械が読めるようにするため、次の作業で作る一覧は次を持つ。
+Markdown を解析する形にはしない。解析器が正本になると、
+書き方を変えるたびに判定が変わる。
+
+```text
+id                  安定した識別子。意味を変えて再利用しない
+kind                capability / cross_cutting_gate / release_gate
+stage               capability だけ。範囲外は持たない
+state               capability と cross_cutting_gate
+result              release_gate だけ
+implementation_paths
+routes_or_entries
+tests
+documents
+criteria            条件ごとに 満たす / 未達 / 非該当 / 未評価 と、理由と証拠
+replacement         外部連携で代替した機能の置き換え先
+```
+
+検査は次を失敗として扱う。
+
+```text
+complete に 未達 または 未評価 の条件がある
+非該当 に理由が無い
+記載した path が存在しない
+段階と状態の組合せが許可表に無い
+rejected に段階が付いている
+release_gate に capability の状態が付いている
+置き換え先の識別子が存在しない
+識別子の意味を変えた、または再利用した
+```
 
 ## 畳んだ帳簿との違い
 
