@@ -274,12 +274,25 @@ Core の大半が `partial` で止まる理由は、次の 2 つがどの機能�
 
 未達:
 
-- 2: 作成・変更・提出・取り下げが監査へ残らない。中間の承認も残らない
+- 2: 作成・変更・提出・取り下げが監査へ残らない
+- 中間の段の承認は、監査に残らないだけでなく応答が失敗し得る。
+  `advance_step` は状態を `pending` のまま次の段へ進めるため
+  （`app/models/request.rb:184`）、controller が組み立てる監査の action は
+  `request_pending` になる（`app/controllers/request_decisions_controller.rb:19`）。
+  この値は `AuditEvent::ACTIONS`（`app/models/audit_event.rb:10`）に無く、
+  `AuditEvent.record` は `create!` で送出する（同 `:77`）。controller に
+  受け止めが無いため、段の進行と履歴を確定したあとで 500 になり得る。
+  controller を通した多段の決裁を確かめるテストは無い
 - 決裁の権限を、行を確保する前の段に対して判定している
   （`app/controllers/request_decisions_controller.rb:37`、`app/models/request.rb:236`）。
   確保後に読み直した段に対する再判定が無い。並行した決裁で段を飛ばし得る
 - 申請の項目が題名と本文だけで、種別ごとの入力欄を持たない
 - 経路の種別が直列の承認だけで、全員承認、いずれか 1 人、最終決定、確認を持たない
+
+行を確保したあとの認可、期待した段との一致、段の進行、履歴、代理元、監査を
+ひとつの transaction へまとめ、通知は commit のあとへ積む。この 6 つは
+別々に直せない。片方だけ直すと、いま失敗している経路が黙って通るようになり、
+段を飛ばした記録だけが残る。
 
 ### 承認の委任
 
