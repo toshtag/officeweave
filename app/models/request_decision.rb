@@ -52,16 +52,26 @@ class RequestDecision
   def success? = outcome == :success
 
   private
+    # 判定の順は、返す理由が食い違わないように決めてある。
+    #
+    #   1. 段        位置が違えば、その先は問うだけ無駄である
+    #   2. 立場      担当でないことは、状態より先に伝える。担当外へ競合を
+    #                返すと、待てば通ると読める
+    #   3. 見ていた状態  担当であっても、見ていたものが古ければ競合とする
+    #   4. 遷移      ここまで通って初めて、いまの状態から動かせるかを問う
+    #
+    # 状態の確認を先に置かない。置くと、画面を開いたあとに承認済みや差し戻し
+    # まで進んだ場合だけ、競合ではなく一般の失敗として返る。古い要求である
+    # ことは同じであり、扱いを分ける理由がない。
     def decide
-      return :invalid_transition unless @request.status == "pending"
-
       step = @request.current_step
       return :stale unless step && step.position == @expected_step_position
+      # 立場は、占有して読み直した段に対して確かめる。
+      return :unauthorized unless @request.decision_authorized_for?(@actor)
       # 位置が合うだけでは足りない。位置は同じ値へ戻り得るため、要求を作った
       # 時点の申請の版まで照らす。
       return :stale unless RequestDecisionToken.matches?(@state_token, request: @request, actor: @actor)
-      # 立場は、占有して読み直した段に対して確かめる。
-      return :unauthorized unless @request.decision_authorized_for?(@actor)
+      return :invalid_transition unless @request.status == "pending"
 
       # 代理元も、段を動かす前に解く。動かしたあとに解くと、
       # 次の段の担当を代理元として残すことになる。

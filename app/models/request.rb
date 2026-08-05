@@ -242,6 +242,10 @@ class Request < ApplicationRecord
   # 現在の状態は見ない。状態は競合で変わり得るため、
   # 実際に処理できるかどうかは行を占有した change_status だけが決める。
   def decision_authorized_for?(user)
+    # 立場の判定は、この 1 か所で完結させる。制御部の参照範囲に頼ると、
+    # 画面を通らない経路から呼んだときに、その分の判定が抜ける。
+    return false unless user.active?
+    return false unless user.organization_id == organization_id
     return false if applicant_id == user.id
 
     step = current_step
