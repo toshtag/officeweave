@@ -98,15 +98,22 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 ```text
 状態  partial
 経路  /session
-実装  Session, User, Authentication::*
+実装  Session, User, Authentication::*, config/recurring.yml（毎時 Session.delete_expired）
 検証  test/models/session_test.rb, test/controllers/sessions_controller_test.rb,
-      test/controllers/session_activity_test.rb, test/system/authentication_test.rb
+      test/controllers/session_activity_test.rb, test/system/authentication_test.rb,
+      test/configuration/persistent_queue_test.rb
 文書  docs/operations/administration.md, docs/operations/configuration.md
 ```
 
 未達:
 
-- 7: 期限を過ぎたログインの記録に、削除の方針が無い
+- 試行の上限が、動かしている web の数に依存する。
+  `app/controllers/sessions_controller.rb:6` の上限はキャッシュ領域で数えるが、
+  配布用の設定は共有の置き場を持たない（`config/environments/production.rb:57`）。
+  web を増やすと、その数だけ上限が実質的に増える
+
+条件 7 は満たす。期限を過ぎた記録は `Session.delete_expired`
+（`app/models/session.rb:35`）が毎時消す。
 
 ### 外部認証
 
@@ -137,7 +144,13 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 
 未達:
 
-- 7: 使い終わった再設定の token に、削除の方針が無い
+- 試行の上限が、動かしている web の数に依存する。
+  `app/controllers/password_resets_controller.rb:14` の上限も、
+  ログインと同じくキャッシュ領域で数える
+
+条件 7 は非該当。再設定の案内は署名した値であり、記録として持たない
+（`app/models/user.rb:19`）。期限は 15 分で、一度使うと再び使えない。
+消す対象の行が無いため、保持の方針を問えない。
 
 ### ログイン中の端末
 
@@ -151,7 +164,10 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 
 未達:
 
-- 7: ログインとセッションと同じ
+- 4: 有効なログインを上限なく並べる（`app/controllers/logins_controller.rb:11`）。
+  ページ送りも表示の上限も、有効なログインの数そのものの上限も持たない
+
+条件 7 は、ログインとセッションと同じく満たす。
 
 ### 自分の設定
 
