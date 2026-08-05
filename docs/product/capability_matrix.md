@@ -6,7 +6,7 @@
 `未達` の番号は、受入条件「5. Core に共通の受入条件」の番号を指す。
 
 対象は `4167436` 時点のリポジトリである。
-経路は `config/routes.rb` に、模型は `app/models/` にある。
+経路は `config/routes.rb` にある。
 
 ## 1. 読み方
 
@@ -15,7 +15,7 @@
 ```text
 状態  planned / partial / complete / deferred / rejected
 経路  画面と API の入口。持たない機能は「入口」へ運用の入口や定期実行を書く
-模型  その機能を支える app/models/ のクラス
+実装  その機能を成立させる実装の位置。model に限らない
 検証  その機能の退行を止めるテスト。代表的なものを挙げる
 文書  操作の手順を読める文書。無い場合は「なし」と書く
 未達  受入条件のうち、まだ満たしていないもの
@@ -90,7 +90,7 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 ```text
 状態  partial
 経路  /session
-模型  Session, User, Authentication::*
+実装  Session, User, Authentication::*
 検証  test/models/session_test.rb, test/controllers/sessions_controller_test.rb,
       test/controllers/session_activity_test.rb, test/system/authentication_test.rb
 文書  docs/operations/administration.md, docs/operations/configuration.md
@@ -105,7 +105,7 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 ```text
 状態  partial
 経路  /oidc/session, /oidc/callback
-模型  Authentication::OidcClient, Authentication::OidcIdToken
+実装  Authentication::OidcClient, Authentication::OidcIdToken
 検証  test/controllers/oidc_login_test.rb, test/models/authentication/oidc_client_test.rb,
       test/models/authentication/oidc_id_token_test.rb
 文書  docs/development/authentication.md, docs/operations/configuration.md
@@ -121,7 +121,7 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 ```text
 状態  partial
 経路  /password, /password/edit, /password_resets
-模型  User, Authentication::PasswordPolicy
+実装  User, Authentication::PasswordPolicy
 検証  test/controllers/password_change_test.rb, test/controllers/password_reset_test.rb,
       test/models/authentication/password_policy_test.rb
 文書  docs/operations/administration.md, docs/operations/configuration.md
@@ -136,7 +136,7 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 ```text
 状態  partial
 経路  /logins
-模型  Session
+実装  Session
 検証  test/controllers/logins_controller_test.rb, test/system/authentication_test.rb
 文書  docs/operations/administration.md
 ```
@@ -150,7 +150,7 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 ```text
 状態  partial
 経路  /settings
-模型  User, NotificationPreference
+実装  User, NotificationPreference
 検証  test/controllers/settings_controller_test.rb, test/models/notification_preference_test.rb,
       test/system/settings_test.rb
 文書  なし
@@ -166,7 +166,7 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 ```text
 状態  partial
 経路  /users, /users/:user_id/activation
-模型  User, Organization
+実装  User, Organization
 検証  test/controllers/users_controller_test.rb, test/controllers/user_activations_controller_test.rb,
       test/models/user_administrator_concurrency_test.rb, test/system/users_test.rb
 文書  docs/operations/administration.md
@@ -182,7 +182,7 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 ```text
 状態  partial
 経路  /departments, /departments/:department_id/memberships
-模型  Department, Membership
+実装  Department, Membership
 検証  test/models/department_hierarchy_test.rb, test/controllers/departments_controller_test.rb,
       test/controllers/memberships_controller_test.rb, test/system/departments_test.rb
 文書  docs/operations/administration.md
@@ -199,7 +199,7 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 ```text
 状態  partial
 経路  /data_transfers
-模型  CsvTransfer, UserCsv, DepartmentCsv
+実装  CsvTransfer, UserCsv, DepartmentCsv
 検証  test/models/user_csv_test.rb, test/models/department_csv_import_test.rb,
       test/controllers/data_transfers_controller_test.rb, test/system/data_transfers_test.rb
 文書  docs/operations/administration.md
@@ -214,7 +214,7 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 ```text
 状態  partial
 経路  /
-模型  Announcement, Request, Department
+実装  Announcement, Request, Department
 検証  test/controllers/home_controller_test.rb, test/controllers/home_unread_test.rb,
       test/controllers/home_request_test.rb
 文書  なし
@@ -233,7 +233,7 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 ```text
 状態  partial
 経路  /announcements
-模型  Announcement, AnnouncementDepartment, AnnouncementRead
+実装  Announcement, AnnouncementDepartment, AnnouncementRead
 検証  test/models/announcement_test.rb, test/controllers/announcements_controller_test.rb,
       test/models/scheduled_announcement_test.rb, test/system/announcements_test.rb
 文書  なし
@@ -250,7 +250,7 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 ```text
 状態  partial
 経路  /events
-模型  Event, Event::Recurrence, EventDepartment, EventParticipant
+実装  Event, Event::Recurrence, EventDepartment, EventParticipant
 検証  test/models/event_test.rb, test/models/recurring_event_test.rb,
       test/controllers/event_participants_test.rb, test/system/events_test.rb
 文書  なし
@@ -269,7 +269,7 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 ```text
 状態  partial
 経路  /resources
-模型  Resource
+実装  Resource
 検証  test/models/resource_test.rb, test/controllers/resources_controller_test.rb,
       test/system/resources_test.rb
 文書  なし
@@ -286,7 +286,7 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 ```text
 状態  partial
 経路  /reservations
-模型  Reservation
+実装  Reservation
 検証  test/models/reservation_test.rb, test/controllers/reservation_change_test.rb,
       test/system/reservations_test.rb
 文書  docs/operations/administration.md（重なった場合の対処のみ）
@@ -304,7 +304,7 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 ```text
 状態  partial
 経路  /requests, /requests/:request_id/submission, /requests/:request_id/decision, /request_types
-模型  Request, RequestType, ApprovalStep, RequestApprovalStep, RequestActivity
+実装  Request, RequestType, ApprovalStep, RequestApprovalStep, RequestActivity
 検証  test/models/multi_step_approval_test.rb, test/models/request_concurrency_test.rb,
       test/controllers/request_decisions_controller_test.rb, test/system/request_decisions_test.rb
 文書  docs/operations/administration.md
@@ -337,7 +337,7 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 ```text
 状態  partial
 経路  /approval_delegations
-模型  ApprovalDelegation
+実装  ApprovalDelegation
 検証  test/models/approval_delegation_test.rb, test/models/delegated_approval_test.rb,
       test/controllers/approval_delegations_controller_test.rb
 文書  docs/operations/administration.md
@@ -352,7 +352,7 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 ```text
 状態  partial
 経路  /documents, /documents/:document_id/attachments/:id, /document_categories
-模型  Document, DocumentCategory, DocumentDepartment
+実装  Document, DocumentCategory, DocumentDepartment
 検証  test/models/document_access_test.rb, test/models/document_search_test.rb,
       test/controllers/attachment_delivery_test.rb, test/system/document_access_test.rb
 文書  docs/operations/administration.md（添付が開けない場合の対処のみ）
@@ -370,7 +370,7 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 ```text
 状態  partial
 経路  /notifications
-模型  Notification, NotificationPreference
+実装  Notification, NotificationPreference
 検証  test/models/notification_test.rb, test/models/notification_delivery_test.rb,
       test/models/notification_batch_delivery_test.rb, test/system/notifications_test.rb
 文書  docs/operations/administration.md, docs/operations/configuration.md
@@ -389,7 +389,7 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 ```text
 状態  partial
 経路  /audit_events, /audit_events/export
-模型  AuditEvent, AuditEventCsv
+実装  AuditEvent, AuditEventCsv
 検証  test/models/audit_event_test.rb, test/models/audit_event_retention_test.rb,
       test/controllers/audit_events_export_test.rb
 文書  docs/operations/administration.md, docs/operations/configuration.md
@@ -411,7 +411,7 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 ```text
 状態  partial
 経路  /api/v1/announcements, /api/v1/events, /api/v1/departments, /api/v1/users, /api_tokens
-模型  ApiToken, RateLimitStore, Pagination
+実装  ApiToken, RateLimitStore, Pagination
 検証  test/controllers/api/v1/api_access_test.rb, test/controllers/api/v1/api_paging_test.rb,
       test/controllers/api/v1/api_rate_limit_test.rb, test/models/api_token_scope_test.rb
 文書  docs/operations/administration.md
@@ -431,7 +431,7 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 ```text
 状態  partial
 経路  /webhook_endpoints
-模型  WebhookEndpoint, WebhookDestination, WebhookDelivery
+実装  WebhookEndpoint, WebhookDestination, WebhookDelivery
 検証  test/models/webhook_destination_test.rb, test/models/webhook_publishing_test.rb,
       test/jobs/deliver_webhook_job_test.rb
 文書  docs/operations/configuration.md, docs/operations/administration.md
@@ -448,7 +448,7 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 ```text
 状態  partial
 経路  /locale
-模型  Localizable（app/controllers/concerns/localizable.rb）
+実装  Localizable（app/controllers/concerns/localizable.rb）
 検証  test/configuration/locale_symmetry_test.rb, test/controllers/locale_negotiation_test.rb,
       test/system/locale_switching_test.rb
 文書  docs/development/conventions.md
@@ -463,8 +463,9 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 
 ```text
 状態  complete
-経路  /up, /health
-模型  なし（HealthController が依存先への到達可否だけを返す）
+経路  /up, /health（config/routes.rb）
+実装  app/controllers/health_controller.rb。/up は framework が持つ。
+      独立した model は持たない。依存先への到達可否を返すだけで、記録しない
 検証  test/controllers/health_controller_test.rb, test/system/health_test.rb
 文書  docs/operations/configuration.md, docs/operations/administration.md
 ```
@@ -494,7 +495,7 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 ```text
 状態  partial
 入口  bin/diagnose, bin/jobs_status
-模型  Diagnostics
+実装  Diagnostics
 検証  test/models/diagnostics_test.rb
 文書  docs/operations/configuration.md, docs/operations/administration.md
 ```
@@ -513,7 +514,7 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 ```text
 状態  partial
 入口  定期実行（ReportOperationalIssuesJob）
-模型  OperationalReport, OperationsMailer
+実装  OperationalReport, OperationsMailer
 検証  test/models/operational_report_test.rb,
       test/jobs/report_operational_issues_job_test.rb
 文書  docs/operations/administration.md, docs/operations/configuration.md
@@ -530,7 +531,7 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 ```text
 状態  partial
 入口  bin/backup, bin/restore, script/production_backup, script/production_restore
-模型  なし
+実装  なし
 検証  test/scripts/backup_script_test.rb, test/scripts/restore_script_test.rb,
       test/scripts/production_backup_scripts_test.rb
 文書  docs/operations/backup.md
@@ -546,7 +547,7 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 ```text
 状態  partial
 入口  compose.production.yaml, script/seed_initial_user, bin/setup
-模型  InitialUser
+実装  InitialUser
 検証  test/scripts/setup_script_test.rb, test/scripts/seed_initial_user_script_test.rb,
       test/configuration/container_startup_test.rb
 文書  docs/operations/installation.md, docs/operations/upgrade.md
