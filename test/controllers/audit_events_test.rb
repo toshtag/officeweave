@@ -51,7 +51,8 @@ class AuditEventsTest < ActionDispatch::IntegrationTest
     sign_in_as users(:taro)
 
     assert_difference -> { AuditEvent.with_action("request_approved").count }, 1 do
-      post request_decision_url(requests(:hanako_expense_pending)), params: { decision: "approve" }
+      post request_decision_url(requests(:hanako_expense_pending)),
+           params: { decision: "approve", expected_step_position: 10 }
     end
   end
 

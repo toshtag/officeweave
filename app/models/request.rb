@@ -181,14 +181,17 @@ class Request < ApplicationRecord
   # 現在の段を承認する。
   #
   # 次の段があれば、その段を待つ状態のまま進める。最後の段であれば承認済みとする。
-  def approve(actor:, comment: nil)
-    return advance_step(actor: actor, comment: comment) if next_step.present?
-
-    decide(to: "approved", action: "approved", actor: actor, comment: comment, event: "request_approved")
+  #
+  # 判定と記録は RequestDecision が持つ。ここへ置くと、立場の判定だけが
+  # 呼び出し側へ散り、占有の外で判定する形へ戻る。
+  def approve(actor:, comment: nil, expected_step_position: nil)
+    commit_decision(:approve, actor: actor, comment: comment,
+                    expected_step_position: expected_step_position)
   end
 
-  def return_to_applicant(actor:, comment: nil)
-    decide(to: "returned", action: "returned", actor: actor, comment: comment, event: "request_returned")
+  def return_to_applicant(actor:, comment: nil, expected_step_position: nil)
+    commit_decision(:return, actor: actor, comment: comment,
+                    expected_step_position: expected_step_position)
   end
 
   # この申請が通る経路。
@@ -276,61 +279,13 @@ class Request < ApplicationRecord
       end
     end
 
-    # 写した経路の段へ、承認したことを残す。
-    # 写した経路が無い申請では、残す先が無い。何もしない。
-    def record_route_approval(position:, actor:)
-      request_approval_steps.detect { |step| step.position == position }&.record_approval!(actor: actor)
-    end
-
-    # 次の段へ進める。状態は pending のままとする。
-    #
-    # 段の記録は決裁と同じ形で残す。承認済みへ至らない承認も、誰がいつ
-    # 決裁したかを追える必要がある。
-    def advance_step(actor:, comment:)
-      advanced = false
-      following = nil
-      on_behalf_of = delegated_approver_for(actor)
-
-      with_lock do
-        next unless status == "pending"
-
-        following = next_step
-        next if following.nil?
-
-        decided = current_step_position
-        self.current_step_position = following.position
-        save!
-        record_route_approval(position: decided, actor: actor)
-        request_activities.create!(actor: actor, action: "approved", comment: comment,
-                                  step_position: decided, on_behalf_of: on_behalf_of)
-        advanced = true
-      end
-
-      # 次の段の担当へ知らせる。占有したまま送らない。
-      if advanced
-        Notification.deliver_to_all(users: approvers(following), subject: self, event: "request_submitted")
-      end
-
-      advanced
-    end
-
-    def decide(to:, action:, actor:, comment:, event:)
-      decided_position = current_step_position
-      on_behalf_of = delegated_approver_for(actor)
-
-      changed = change_status(to: to, actor: actor, action: action, comment: comment,
-                              step_position: decided_position, on_behalf_of: on_behalf_of) do
-        self.decided_at = Time.current
-        # 承認した段だけへ印を残す。差し戻しは、その段を通していない。
-        record_route_approval(position: decided_position, actor: actor) if to == "approved"
-      end
-
-      if changed
-        Notification.deliver(user: applicant, subject: self, event: event)
-        Notification.publish(organization: organization, subject: self, event: event)
-      end
-
-      changed
+    # 期待する段の指定が無い呼び出しは、いま待っている段を期待したものとして
+    # 扱う。画面からの決裁では、制御部が要求の値を渡す。
+    def commit_decision(decision, actor:, comment:, expected_step_position:)
+      RequestDecision.call(
+        request: self, actor: actor, decision: decision, comment: comment,
+        expected_step_position: expected_step_position || current_step&.position
+      ).success?
     end
 
     def notify_approvers

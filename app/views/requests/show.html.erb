@@ -59,6 +59,10 @@
       <h2 id="request-decision"><%= t("request_decisions.heading") %></h2>
 
       <%= form_with url: request_decision_path(@request), class: "form stack" do |form| %>
+        <%# 見ていた段を送る。送らないと、開いたまま別の決裁で進んだ画面から
+            そのまま次の段を通せる。段が違えば競合として拒む。 %>
+        <%= hidden_field_tag :expected_step_position, @request.current_step&.position %>
+
         <%= form_field hint: t("request_decisions.comment_hint") do %>
           <%= label_tag :comment, t("request_decisions.comment"), class: "form__label" %>
           <%= text_area_tag :comment, nil, rows: 4, class: "form__input" %>
