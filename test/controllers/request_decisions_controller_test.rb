@@ -108,6 +108,67 @@ class RequestDecisionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "approved", request.reload.status
   end
 
+  # 画面を開いたあとに終端の状態まで進んだ場合も、古い要求であることは変わらない。
+  test "承認済みになったあとの古い画面からの決裁は競合として拒む" do
+    request = three_step_request
+    sign_in_as users(:approver)
+    stale = token_for(request)
+
+    approve_first_step(request)
+    approve_step(request.reload, actor: users(:outsider_free))
+    approve_step(request.reload, actor: users(:taro))
+
+    post request_decision_url(request), params: { decision: "approve", expected_step_position: FIRST_STEP,
+                                                 state_token: stale }
+
+    assert_response :conflict
+    assert_equal "approved", request.reload.status
+  end
+
+  test "差し戻されたあとの古い画面からの決裁は競合として拒む" do
+    request = three_step_request
+    sign_in_as users(:approver)
+    stale = token_for(request)
+
+    request.return_to_applicant(actor: users(:approver))
+
+    post request_decision_url(request), params: { decision: "approve", expected_step_position: FIRST_STEP,
+                                                 state_token: stale }
+
+    assert_response :conflict
+    assert_equal "returned", request.reload.status
+  end
+
+  # 担当でないことは、見ていた状態より先に伝える。
+  # 担当外へ競合を返すと、待てば通ると読める。
+  test "担当でない利用者は、値を持たなくても立場として拒む" do
+    request = three_step_request
+    sign_in_as users(:outsider_free)
+
+    post request_decision_url(request), params: { decision: "approve", expected_step_position: FIRST_STEP }
+
+    assert_response :forbidden
+  end
+
+  test "競合の画面は、状態を確認できなかったことを日本語で示す" do
+    request = three_step_request
+    sign_in_as users(:approver)
+
+    post request_decision_url(request), params: { decision: "approve" }
+
+    assert_select "h1", I18n.t("request_decisions.conflict.heading", locale: :ja)
+  end
+
+  test "競合の画面は、状態を確認できなかったことを英語でも示す" do
+    request = three_step_request
+    sign_in_as users(:hanako)
+    users(:hanako).update!(locale: "en")
+
+    post request_decision_url(request), params: { decision: "approve" }
+
+    assert_select "h1", I18n.t("request_decisions.conflict.heading", locale: :en)
+  end
+
   test "差し戻しでコメントを残せる" do
     sign_in_as users(:taro)
 

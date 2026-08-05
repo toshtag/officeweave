@@ -394,6 +394,144 @@ class RequestConcurrencyTest < ActiveSupport::TestCase
     assert_nil request.decided_at
   end
 
+  # 画面を開いたあとに終端の状態まで進んだ場合も、古い要求であることは変わらない。
+  # 状態の確認を先に置くと、ここだけが競合ではなく一般の失敗として返る。
+  test "承認済みになったあとの古い要求は競合として拒む" do
+    assert_equal :stale, outcome_of_stale_request { |request| approve_all_steps(request) }
+  end
+
+  test "差し戻されたあとの古い要求は競合として拒む" do
+    assert_equal :stale, outcome_of_stale_request { |request|
+      request.return_to_applicant(actor: @first_approver)
+    }
+  end
+
+  test "取り下げられたあとの古い要求は競合として拒む" do
+    assert_equal :stale, outcome_of_stale_request { |request| request.withdraw(actor: @applicant) }
+  end
+
+  # 立場の判定は、制御部の参照範囲に頼らず、この経路だけで完結させる。
+  test "別の組織の管理者は決裁できない" do
+    request = multi_step_request
+    outsider = create_isolated_organization(name: "別の組織", code: "other-org-decision")
+    intruder = outsider.users.create!(name: "外", email_address: "outside@example.com",
+                                      password: "a-long-secret-value", role: "administrator")
+
+    result = RequestDecision.call(request: request, actor: intruder, decision: :approve,
+                                  expected_step_position: MULTI_FIRST, state_token: nil)
+
+    assert_equal :unauthorized, result.outcome
+    assert_equal "pending", request.reload.status
+    assert_equal 0, request.request_activities.where(action: "approved").count
+  ensure
+    discard_organization(outsider)
+  end
+
+  test "無効にした担当者は決裁できない" do
+    request = multi_step_request
+    token = state_token(request, @first_approver)
+    @first_approver.update!(deactivated_at: Time.current)
+
+    result = RequestDecision.call(request: request.reload, actor: @first_approver, decision: :approve,
+                                  expected_step_position: MULTI_FIRST, state_token: token)
+
+    assert_equal :unauthorized, result.outcome
+    assert_equal MULTI_FIRST, request.reload.current_step_position
+  end
+
+  # 担当でないことは、見ていた状態より先に伝える。担当外へ競合を返すと、
+  # 待てば通ると読める。
+  test "担当でない利用者は、値を持たなくても立場として拒む" do
+    request = multi_step_request
+
+    result = RequestDecision.call(request: request, actor: @second_approver, decision: :approve,
+                                  expected_step_position: MULTI_FIRST, state_token: nil)
+
+    assert_equal :unauthorized, result.outcome
+  end
+
+  # 外側の確定を待たずに知らせると、戻された処理の通知だけが残る。
+  test "外側の確定より前には通知も送信も作らない" do
+    request = multi_step_request
+    notifications = Notification.count
+    jobs = enqueued_jobs.size
+
+    ActiveRecord::Base.transaction do
+      assert approve_by(@first_approver, MULTI_FIRST).call(request)
+
+      assert_equal notifications, Notification.count, "確定の前に通知が作られました"
+      assert_equal jobs, enqueued_jobs.size, "確定の前に送信が積まれました"
+    end
+
+    assert_equal notifications + 1, Notification.count
+  end
+
+  test "外側が戻されると、決裁も通知も送信も残らない" do
+    request = multi_step_request
+
+    assert_no_difference [ -> { RequestActivity.count }, -> { AuditEvent.count },
+                           -> { Notification.count }, -> { enqueued_jobs.size } ] do
+      ActiveRecord::Base.transaction do
+        assert approve_by(@first_approver, MULTI_FIRST).call(request)
+        raise ActiveRecord::Rollback
+      end
+    end
+
+    assert_equal MULTI_FIRST, request.reload.current_step_position
+  end
+
+  # 同じ 1 つの値を、別々の接続から同時に送る。
+  # それぞれが自分で値を作ると、同じ値の送り直しを確かめたことにならない。
+  test "同じ値を共有した同時の二重送信でも成立は 1 件だけ" do
+    request = multi_step_request
+    shared = state_token(request, @first_approver)
+    send_shared = approve_with(@first_approver, MULTI_FIRST, shared)
+
+    outcomes = concurrently(send_shared, send_shared, request: request)
+
+    assert_equal 1, outcomes.count(true)
+    assert_equal MULTI_SECOND, request.reload.current_step_position
+    assert_equal 1, request.request_activities.where(action: "approved").count
+    assert_equal 1, request.request_approval_steps.approved.count
+    assert_equal 1, AuditEvent.where(organization: @organization, action: "request_approved").count
+  end
+
+  # 監査の記録そのものが失敗した場合も、その手前までが残ってはならない。
+  # 監査だけを後ろへ移した変更を、このテストが止める。
+  test "監査の記録が失敗すると、状態も段の印も履歴も戻る" do
+    request = multi_step_request
+
+    assert_no_difference [ -> { RequestActivity.count }, -> { AuditEvent.count },
+                           -> { Notification.count }, -> { enqueued_jobs.size } ] do
+      assert_raises(ActiveRecord::RecordInvalid) do
+        failing_audit { approve_by(@first_approver, MULTI_FIRST).call(request) }
+      end
+    end
+
+    request.reload
+
+    assert_equal "pending", request.status
+    assert_equal MULTI_FIRST, request.current_step_position
+    assert_nil request.decided_at
+    assert_empty request.request_approval_steps.approved
+  end
+
+  test "差し戻しでも、監査の記録が失敗すれば戻る" do
+    request = multi_step_request
+
+    assert_no_difference [ -> { RequestActivity.count }, -> { AuditEvent.count },
+                           -> { Notification.count }, -> { enqueued_jobs.size } ] do
+      assert_raises(ActiveRecord::RecordInvalid) do
+        failing_audit { return_by(@first_approver, MULTI_FIRST).call(request) }
+      end
+    end
+
+    request.reload
+
+    assert_equal "pending", request.status
+    assert_nil request.decided_at
+  end
+
   test "許可されていない決裁の種類では何も変わらない" do
     request = multi_step_request
 
@@ -455,6 +593,46 @@ class RequestConcurrencyTest < ActiveSupport::TestCase
 
     # 履歴の作成を必ず失敗させる長さ。上限は 2,000 文字である。
     def too_long_comment = "あ" * 2_001
+
+    # 画面を開いたあとに状態が変わった場合の結果。
+    #
+    # 送るのは、開いたときに見えていた段である。いまの段ではない。
+    def outcome_of_stale_request
+      request = multi_step_request
+      stale = state_token(request, @first_approver)
+
+      yield request
+
+      RequestDecision.call(request: request.reload, actor: @first_approver, decision: :approve,
+                           expected_step_position: MULTI_FIRST, state_token: stale).outcome
+    end
+
+    # 決められた値を渡す決裁。同じ値を共有した送り直しを確かめるために使う。
+    def approve_with(actor, position, token)
+      lambda do |request|
+        request.approve(actor: actor, comment: DECISION_COMMENTS.fetch("approved"),
+                        expected_step_position: position, state_token: token)
+      end
+    end
+
+    # 最後の段まで通す。終端の状態を作るために使う。
+    def approve_all_steps(request)
+      approve_by(@first_approver, MULTI_FIRST).call(request)
+      approve_by(@second_approver, MULTI_SECOND).call(request.reload)
+      approve_by(@approver, MULTI_LAST).call(request.reload)
+    end
+
+    # 監査の記録だけを失敗させる。実際の構成は壊さずに戻す。
+    #
+    # 元の定義を控えてから差し替える。消すだけで戻すと、元から特異メソッドで
+    # あるため、この定義そのものが失われる。
+    def failing_audit
+      original = AuditEvent.method(:record)
+      AuditEvent.define_singleton_method(:record) { |**| raise ActiveRecord::RecordInvalid, AuditEvent.new }
+      yield
+    ensure
+      AuditEvent.define_singleton_method(:record, original)
+    end
 
     # 期待する段を指定した決裁。画面からの決裁と同じ形にする。
     def approve_by(actor, position)
