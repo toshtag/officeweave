@@ -53,17 +53,21 @@ Core や Suite として数えない。件数も別に数える。
 現在の件数は次のとおりである。
 
 ```text
-capability          54  Core 26、Suite 19、Extended 4、範囲外 5
-  complete           1  稼働確認
-  partial           25  Core の残り
-  planned           19  Suite
-  deferred           4  Extended
-  rejected           5  範囲外
+capability          54
+  段階あり           49  Core 26、Suite 19、Extended 4
+    complete         1  稼働確認
+    partial         25  Core の残り
+    planned         19  Suite
+    deferred         4  Extended
+  段階なし            5
+    rejected         5  製品ビジョンの非目標と 1 対 1
 
 cross_cutting_gate   2  partial 1、planned 1
 
-release_gate         1  受入条件が持つ
+release_gate         1  release.production_readiness、結果は not_evaluated
 ```
+
+段階は Core・Suite・Extended の 3 つである。範囲外は第 4 の段階ではない。
 
 次の 2 つは、複数の Core 機能にまたがる横断の課題である。
 
@@ -635,7 +639,8 @@ GitHub Issue が持つ。識別子は決定記録と対応させる。
 
 ## 6. 範囲外
 
-[製品ビジョン](../vision.md) の非目標に挙がる領域である。状態はすべて `rejected` とする。
+[製品ビジョン](../vision.md) の非目標に挙がる領域である。
+段階を持たず、状態はすべて `rejected` とする。
 一覧は製品ビジョンの非目標と 1 対 1 で対応させる。含める場合は、先に製品ビジョンを更新する。
 
 | 領域        | 範囲へ含めない理由                       |

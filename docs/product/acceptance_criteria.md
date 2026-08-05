@@ -24,25 +24,52 @@
 
 ```text
 capability
-  段階            Core / Suite / Extended / 範囲外
-  取り得る状態      planned / partial / complete / deferred / rejected
+  段階            Core / Suite / Extended / なし
+  状態            下の表のとおり
   complete の条件  第 3 節の証拠と、第 5 節・第 6 節の条件
 
 cross_cutting_gate
   段階            持たない
-  取り得る状態      planned / partial / complete
+  状態            planned / partial / complete
   complete の条件  対象の範囲、測定できる条件、検査またはテスト、証拠となる文書
 
 release_gate
   段階            持たない
-  取り得る状態      版ごとに判定する
-  complete の条件  第 4 節の検証の記録がそろっている
+  状態            持たない。版と commit に対する結果を持つ
+  結果            not_evaluated / passed / failed
 ```
 
-`deferred` は Extended の `capability` だけ、
-`rejected` は範囲外の `capability` だけが持つ。
+段階は Core・Suite・Extended の 3 つだけである。
+範囲へ含めないと判断した機能は、第 4 の段階ではなく、
+段階を持たない `rejected` の `capability` として扱う。
 
-`cross_cutting_gate` は特定の機能に属さないため、模型と操作の手順を持たない。
+### 2.1 段階と状態の組合せ
+
+許可する組合せは次に限る。ここに無い組合せは誤りとする。
+
+| 分類                   | 許可する状態                             |
+| -------------------- | ---------------------------------- |
+| Core                 | `partial` `complete`               |
+| Suite                | `planned`                          |
+| Extended             | `deferred`                         |
+| 段階なし                 | `rejected`                         |
+| `cross_cutting_gate` | `planned` `partial` `complete`     |
+
+Core が `planned` を取らないのは、入口があることが Core の条件だからである。
+Suite が `planned` だけなのも同じ理由による。入口を公開した時点で Core へ移る
+ため、入口を持つ Suite は存在しない。
+
+`release_gate` は `capability` の状態を使わない。結果だけを持つ。
+
+### 2.2 横断の品質の状態
+
+```text
+planned   対象と条件は決めたが、それを確かめる検査もテストも無い
+partial   確かめる手段はあるが、条件のうち満たしていないものが残る
+complete  条件をすべて満たし、確かめる手段と根拠の文書がそろう
+```
+
+`cross_cutting_gate` は特定の機能に属さないため、操作の手順を持たない。
 第 3 節の証拠をそのまま当てはめない。代わりに、何を対象とし、
 何が成り立てば満たしたと言えるかを、gate 自身が持つ。
 
