@@ -637,7 +637,8 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 
 ## 4. Suite
 
-いずれも入口を持たない。状態はすべて `planned` とする。
+いずれも公開の入口を持たない。
+実装を始めていないため、状態は現在すべて `planned` である。
 採用の判断は [決定記録](../decisions/0001_product_scope.md) が持ち、着手する順序は
 GitHub Issue が持つ。識別子は決定記録と対応させる。
 

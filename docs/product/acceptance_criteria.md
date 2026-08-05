@@ -50,14 +50,22 @@ release_gate
 | 分類                   | 許可する状態                             |
 | -------------------- | ---------------------------------- |
 | Core                 | `partial` `complete`               |
-| Suite                | `planned`                          |
+| Suite                | `planned` `partial`                |
 | Extended             | `deferred`                         |
 | 段階なし                 | `rejected`                         |
 | `cross_cutting_gate` | `planned` `partial` `complete`     |
 
 Core が `planned` を取らないのは、入口があることが Core の条件だからである。
-Suite が `planned` だけなのも同じ理由による。入口を公開した時点で Core へ移る
-ため、入口を持つ Suite は存在しない。
+
+Suite の 2 つは、実装を始めたかどうかで分かれる。
+
+```text
+planned  正式に採用したが、実装も公開の入口も無い
+partial  実装はあるが、公開の入口をまだ持たない
+```
+
+Suite が `complete` を取らないのは、公開の入口を足した時点で Core へ移るため
+である。入口を持つ Suite は存在しない。
 
 `release_gate` は `capability` の状態を使わない。結果だけを持つ。
 
