@@ -87,7 +87,9 @@ release_gate         1  release.production_readiness、結果は not_evaluated
 粒度、一覧の上限、選択欄の描画量、データベースの不変条件、想定規模での実測、
 操作の文書といった別の未達が残る。機能ごとの未達は、それぞれの節に書いた。
 
-本番準備済みの機能は無い。判定に使う検証の記録が存在しないためである。
+本番準備は機能ではなく版に対して判定する。判定に使う検証の記録がまだ無いため、
+`release.production_readiness` の結果は `not_evaluated` であり、
+本番準備済みと判定した版は無い。
 
 ## 2. Core
 
