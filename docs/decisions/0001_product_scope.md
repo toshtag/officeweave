@@ -71,6 +71,40 @@ release_gate        版全体の検証
 `planned` と書けば作る約束になり、書かなければ検討していないことになる。
 `deferred` を持たせて、決めていない状態のまま置けるようにする。
 
+## Suite として 19 件を採用する
+
+Suite へ入れてよいのは、製品ビジョンまたは決定記録で正式に採用したものだけと
+定めた。その採用をここで行う。到達度への登録だけを採用の代わりにすると、
+一覧へ書き足すだけで正式な範囲が広がり、閉じた集合にした意図が失われる。
+
+次の 19 件を Suite として採用する。識別子は以後変えない。
+
+```text
+suite.dashboard_layout          入口の部品配置
+suite.global_search             横断検索
+suite.calendar_views            予定の暦表示
+suite.availability_response     空き時間と出欠
+suite.event_series              予定の系列
+suite.resource_timeline         設備の時間軸
+suite.document_folders          文書の階層と権限
+suite.document_versions         文書の版とごみ箱
+suite.board_posts               掲示
+suite.application_roles         機能別の運用権限
+suite.internal_messages         内部メッセージ
+suite.personal_notes            個人メモ
+suite.todos                     ToDo
+suite.presence_and_phone_memos  在席と電話メモ
+suite.address_book              アドレス帳
+suite.shared_links              リンク集
+suite.reports                   報告
+suite.projects                  プロジェクト
+suite.request_forms             申請の様式と経路の種別
+```
+
+これ以上を Suite へ足す場合は、新しい決定記録を作る。
+
+採用は着手の約束ではない。Core に未達が残るあいだは、どれにも着手しない。
+
 ## 製品ビジョンの非目標から 2 件を外す
 
 メールの送受信と、利用者が定義を作る業務アプリ基盤は、非目標に挙がっていた。
