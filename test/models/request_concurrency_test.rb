@@ -181,9 +181,6 @@ class RequestConcurrencyTest < ActiveSupport::TestCase
     assert_predicate statements, :any?
   end
 
-  # 後片付けが 1 件でも取りこぼすと、組織が残る。残った組織は次の実行の
-  # 作成を識別子の重複で失敗させ、さらに連番の次の値を占めることで、
-  # 無関係なテストの採番まで巻き込む。
   # 多段の経路。
   #
   # 段ごとに担当を分けないと、段が進んだかどうかが担当の違いに現れない。
@@ -279,6 +276,140 @@ class RequestConcurrencyTest < ActiveSupport::TestCase
     assert_equal 1, request.request_activities.where(action: %w[approved returned]).count
   end
 
+  # 段 2 の担当が、段 1 を待っているあいだに用意した要求。
+  #
+  # 段の位置だけで照らすと、段 1 の承認が先に成立した直後にこの要求が通り、
+  # ひとつの初期状態から 2 段進む。段 2 の判断が、段 1 の結果を前提にしていない。
+  test "先の段を指して先に用意した要求は、段が進んだあとでも成立しない" do
+    request = multi_step_request
+    ahead = state_token(request, @second_approver)
+
+    assert approve_by(@first_approver, MULTI_FIRST).call(request)
+    assert_not request.reload.approve(actor: @second_approver, expected_step_position: MULTI_SECOND,
+                                      state_token: ahead)
+
+    assert_equal MULTI_SECOND, request.reload.current_step_position
+    assert_equal 1, request.request_activities.where(action: "approved").count
+  end
+
+  # すべての段を担当する利用者は、占有のなかの立場の判定を必ず通る。
+  # 送り直しを止められるのは、状態に結び付いた値だけである。
+  test "同じ値を段の位置だけ変えて送り直しても成立しない" do
+    request = multi_step_request
+    token = state_token(request, @approver)
+
+    assert request.approve(actor: @approver, expected_step_position: MULTI_FIRST, state_token: token)
+    assert_not request.reload.approve(actor: @approver, expected_step_position: MULTI_SECOND,
+                                      state_token: token)
+
+    assert_equal MULTI_SECOND, request.reload.current_step_position
+  end
+
+  # 差し戻して再提出すると、待っている段は 1 段目へ戻る。位置は同じ値になるが、
+  # 申請の内容は変わっている。古い画面からの承認を通してはならない。
+  test "差し戻して再提出したあと、前の提出のときの要求は成立しない" do
+    request = multi_step_request
+    before_return = state_token(request, @first_approver)
+
+    assert request.return_to_applicant(actor: @first_approver, expected_step_position: MULTI_FIRST)
+    assert request.reload.submit(actor: @applicant)
+    assert_equal MULTI_FIRST, request.reload.current_step_position
+
+    assert_not request.approve(actor: @first_approver, expected_step_position: MULTI_FIRST,
+                               state_token: before_return)
+    assert request.reload.approve(actor: @first_approver, expected_step_position: MULTI_FIRST,
+                                  state_token: state_token(request, @first_approver))
+  end
+
+  # 制御部が渡すのは、要求に入っていた値そのものである。無い場合は nil になる。
+  # 模型の呼び口は指定が無ければ自分で作るため、ここは決裁の単位を直に呼ぶ。
+  test "改ざんした値、別の利用者の値、無い値では成立しない" do
+    request = multi_step_request
+    valid = state_token(request, @first_approver)
+
+    [ nil, "", "#{valid}x", state_token(request, @second_approver) ].each do |token|
+      result = RequestDecision.call(request: request.reload, actor: @first_approver, decision: :approve,
+                                    expected_step_position: MULTI_FIRST, state_token: token)
+
+      assert_equal :stale, result.outcome, "#{token.inspect} で成立しました"
+    end
+
+    assert_equal MULTI_FIRST, request.reload.current_step_position
+    assert_equal 0, request.request_activities.where(action: "approved").count
+  end
+
+  test "期限を過ぎた値では成立しない" do
+    request = multi_step_request
+    token = state_token(request, @first_approver)
+
+    travel RequestDecisionToken::EXPIRES_IN + 1.minute do
+      assert_not request.reload.approve(actor: @first_approver, expected_step_position: MULTI_FIRST,
+                                        state_token: token)
+    end
+
+    assert_equal MULTI_FIRST, request.reload.current_step_position
+  end
+
+  # 記録のどれかで失敗したときに、その手前までが残ってはならない。
+  #
+  # 失敗は履歴の作成で起こす。申請の更新と段の印のあとに来るためである。
+  # 監査はさらにそのあとに書くため、ここで落ちれば監査も残らない。
+  # 実際に到達し得る失敗で確かめる。差し替えを持ち込むと、確かめているのが
+  # 経路そのものなのか差し替えなのかが分からなくなる。
+  test "記録の途中で失敗すると、状態も段の印も戻る" do
+    request = multi_step_request
+
+    assert_no_difference [ -> { RequestActivity.count }, -> { AuditEvent.count },
+                           -> { Notification.count }, -> { enqueued_jobs.size } ] do
+      assert_raises(ActiveRecord::RecordInvalid) do
+        request.approve(actor: @first_approver, comment: too_long_comment,
+                        expected_step_position: MULTI_FIRST,
+                        state_token: state_token(request, @first_approver))
+      end
+    end
+
+    request.reload
+
+    assert_equal "pending", request.status
+    assert_equal MULTI_FIRST, request.current_step_position
+    assert_nil request.decided_at
+    assert_empty request.request_approval_steps.approved
+  end
+
+  test "差し戻しでも、記録の途中で失敗すれば戻る" do
+    request = multi_step_request
+
+    assert_no_difference [ -> { RequestActivity.count }, -> { AuditEvent.count },
+                           -> { Notification.count }, -> { enqueued_jobs.size } ] do
+      assert_raises(ActiveRecord::RecordInvalid) do
+        request.return_to_applicant(actor: @first_approver, comment: too_long_comment,
+                                    expected_step_position: MULTI_FIRST,
+                                    state_token: state_token(request, @first_approver))
+      end
+    end
+
+    request.reload
+
+    assert_equal "pending", request.status
+    assert_nil request.decided_at
+  end
+
+  test "許可されていない決裁の種類では何も変わらない" do
+    request = multi_step_request
+
+    result = RequestDecision.call(request: request, actor: @first_approver, decision: :cancel,
+                                  expected_step_position: MULTI_FIRST,
+                                  state_token: state_token(request, @first_approver))
+
+    assert_equal :invalid_decision, result.outcome
+    assert_equal "pending", request.reload.status
+    assert_equal MULTI_FIRST, request.current_step_position
+    assert_equal 0, request.request_activities.where(action: %w[approved returned]).count
+  end
+
+  # 後片付けが 1 件でも取りこぼすと、組織が残る。残った組織は次の実行の
+  # 作成を識別子の重複で失敗させ、さらに連番の次の値を占めることで、
+  # 無関係なテストの採番まで巻き込む。
   test "後片付けは読み込んだあとに増えた記録も取り除く" do
     @organization.users.load
     @organization.departments.load
@@ -316,6 +447,14 @@ class RequestConcurrencyTest < ActiveSupport::TestCase
     def approve
       ->(request) { request.approve(actor: @approver, comment: DECISION_COMMENTS.fetch("approved")) }
     end
+
+    # 画面が持ち帰る、いま見えている状態の値。
+    def state_token(request, actor)
+      request.reload.decision_state_token_for(actor)
+    end
+
+    # 履歴の作成を必ず失敗させる長さ。上限は 2,000 文字である。
+    def too_long_comment = "あ" * 2_001
 
     # 期待する段を指定した決裁。画面からの決裁と同じ形にする。
     def approve_by(actor, position)

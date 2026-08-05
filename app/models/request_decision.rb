@@ -13,25 +13,32 @@ class RequestDecision
   # 結果の種類。
   #
   #   success             成立した
-  #   stale               期待した段と、占有して読み直した段が違う
+  #   stale               要求を作った時点の状態と、占有して読み直した状態が違う
   #   unauthorized        占有して読み直した段の担当ではない
   #   invalid_transition  その状態からは決裁できない
-  OUTCOMES = %i[success stale unauthorized invalid_transition].freeze
+  #   invalid_decision    決裁の種類が許可された値ではない
+  OUTCOMES = %i[success stale unauthorized invalid_transition invalid_decision].freeze
 
   attr_reader :outcome
 
   def self.call(...) = new(...).call
 
-  def initialize(request:, actor:, decision:, expected_step_position:, comment: nil, ip_address: nil)
+  def initialize(request:, actor:, decision:, expected_step_position:, state_token:,
+                 comment: nil, ip_address: nil)
     @request = request
     @actor = actor
     @decision = decision
     @expected_step_position = expected_step_position
+    @state_token = state_token
     @comment = comment
     @ip_address = ip_address
   end
 
   def call
+    # 許可された種類かどうかは、占有する前に確かめる。
+    # 一覧に無い値をここで落とさないと、承認でないものが差し戻しとして通る。
+    return tap { @outcome = :invalid_decision } unless DECISIONS.include?(@decision)
+
     @request.with_lock { @outcome = decide }
 
     # 通知と外部への送信は確定したあとに行う。占有したまま外へ出ると、
@@ -50,6 +57,9 @@ class RequestDecision
 
       step = @request.current_step
       return :stale unless step && step.position == @expected_step_position
+      # 位置が合うだけでは足りない。位置は同じ値へ戻り得るため、要求を作った
+      # 時点の申請の版まで照らす。
+      return :stale unless RequestDecisionToken.matches?(@state_token, request: @request, actor: @actor)
       # 立場は、占有して読み直した段に対して確かめる。
       return :unauthorized unless @request.decision_authorized_for?(@actor)
 

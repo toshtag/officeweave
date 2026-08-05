@@ -18,8 +18,8 @@ class RequestDecisionsController < ApplicationController
 
     result = RequestDecision.call(
       request: @request, actor: Current.user, decision: decision[:decision],
-      expected_step_position: expected_step_position, comment: decision_comment,
-      ip_address: request.remote_ip
+      expected_step_position: expected_step_position, state_token: params[:state_token],
+      comment: decision_comment, ip_address: request.remote_ip
     )
 
     respond_to_outcome(result.outcome, decision[:notice])
@@ -37,8 +37,8 @@ class RequestDecisionsController < ApplicationController
       when :success
         redirect_to @request, notice: t("request_decisions.#{notice}")
       when :stale
-        # 見ていた段と、いま待っている段が違う。やり直せば通る種類の失敗で
-        # あるため、立場の拒否とは分ける。
+        # 見ていた状態と、いま保存されている状態が違う。やり直せば通る種類の
+        # 失敗であるため、立場の拒否とは分ける。
         render "requests/conflict", status: :conflict, formats: :html
       when :unauthorized
         render "shared/forbidden", status: :forbidden, formats: :html
@@ -51,6 +51,8 @@ class RequestDecisionsController < ApplicationController
     #
     # 無指定を「いま待っている段」として扱わない。扱うと、すべての段を担当
     # する利用者の二重送信で、段を 2 つ進められる。
+    #
+    # 位置そのものは利用者が書き換えられる。実際の照合は state_token が行う。
     def expected_step_position
       Integer(params[:expected_step_position], exception: false)
     end

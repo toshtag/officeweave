@@ -13,7 +13,8 @@ class RequestDecisionsControllerTest < ActionDispatch::IntegrationTest
     sign_in_as users(:taro)
 
     post request_decision_url(requests(:hanako_expense_pending)),
-         params: { decision: "approve", expected_step_position: FIRST_STEP }
+         params: { decision: "approve", expected_step_position: FIRST_STEP,
+                  state_token: token_for(requests(:hanako_expense_pending)) }
 
     assert_equal "approved", requests(:hanako_expense_pending).reload.status
   end
@@ -22,7 +23,8 @@ class RequestDecisionsControllerTest < ActionDispatch::IntegrationTest
     request = three_step_request
     sign_in_as users(:approver)
 
-    post request_decision_url(request), params: { decision: "approve", expected_step_position: FIRST_STEP }
+    post request_decision_url(request), params: { decision: "approve", expected_step_position: FIRST_STEP,
+                                                 state_token: token_for(request) }
 
     assert_redirected_to request
     assert_equal "pending", request.reload.status
@@ -36,7 +38,8 @@ class RequestDecisionsControllerTest < ActionDispatch::IntegrationTest
     sign_in_as users(:approver)
 
     assert_difference -> { AuditEvent.count }, 1 do
-      post request_decision_url(request), params: { decision: "approve", expected_step_position: FIRST_STEP }
+      post request_decision_url(request), params: { decision: "approve", expected_step_position: FIRST_STEP,
+                                                   state_token: token_for(request) }
     end
 
     assert_equal "request_approved", AuditEvent.order(:id).last.action
@@ -47,7 +50,8 @@ class RequestDecisionsControllerTest < ActionDispatch::IntegrationTest
     approve_first_step(request)
 
     sign_in_as users(:taro)
-    post request_decision_url(request), params: { decision: "approve", expected_step_position: FIRST_STEP }
+    post request_decision_url(request), params: { decision: "approve", expected_step_position: FIRST_STEP,
+                                                 state_token: token_for(request) }
 
     assert_response :conflict
     assert_equal SECOND_STEP, request.reload.current_step_position
@@ -69,7 +73,8 @@ class RequestDecisionsControllerTest < ActionDispatch::IntegrationTest
     approve_first_step(request)
 
     sign_in_as users(:approver)
-    post request_decision_url(request), params: { decision: "approve", expected_step_position: SECOND_STEP }
+    post request_decision_url(request), params: { decision: "approve", expected_step_position: SECOND_STEP,
+                                                 state_token: token_for(request) }
 
     assert_response :forbidden
     assert_equal SECOND_STEP, request.reload.current_step_position
@@ -83,7 +88,8 @@ class RequestDecisionsControllerTest < ActionDispatch::IntegrationTest
 
     assert_no_difference [ -> { RequestActivity.count }, -> { Notification.count }, -> { AuditEvent.count },
                            -> { RequestApprovalStep.approved.count } ] do
-      post request_decision_url(request), params: { decision: "approve", expected_step_position: SECOND_STEP }
+      post request_decision_url(request), params: { decision: "approve", expected_step_position: SECOND_STEP,
+                                                   state_token: token_for(request) }
     end
 
     assert_equal SECOND_STEP, request.reload.current_step_position
@@ -95,7 +101,8 @@ class RequestDecisionsControllerTest < ActionDispatch::IntegrationTest
     approve_step(request, actor: users(:outsider_free))
 
     sign_in_as users(:taro)
-    post request_decision_url(request), params: { decision: "approve", expected_step_position: LAST_STEP }
+    post request_decision_url(request), params: { decision: "approve", expected_step_position: LAST_STEP,
+                                                 state_token: token_for(request) }
 
     assert_redirected_to request
     assert_equal "approved", request.reload.status
@@ -105,7 +112,8 @@ class RequestDecisionsControllerTest < ActionDispatch::IntegrationTest
     sign_in_as users(:taro)
 
     post request_decision_url(requests(:hanako_expense_pending)),
-         params: { decision: "return", comment: "領収書を添えてください", expected_step_position: FIRST_STEP }
+         params: { decision: "return", comment: "領収書を添えてください", expected_step_position: FIRST_STEP,
+                  state_token: token_for(requests(:hanako_expense_pending)) }
 
     request = requests(:hanako_expense_pending).reload
 
@@ -119,7 +127,8 @@ class RequestDecisionsControllerTest < ActionDispatch::IntegrationTest
     sign_in_as users(:taro)
 
     post request_decision_url(requests(:hanako_expense_pending)),
-         params: { decision: "return", expected_step_position: FIRST_STEP }
+         params: { decision: "return", expected_step_position: FIRST_STEP,
+                  state_token: token_for(requests(:hanako_expense_pending)) }
 
     assert_equal I18n.t("request_decisions.returned"), flash[:notice]
   end
@@ -136,7 +145,8 @@ class RequestDecisionsControllerTest < ActionDispatch::IntegrationTest
     sign_in_as users(:taro)
 
     post request_decision_url(requests(:hanako_expense_pending)),
-         params: { decision: "returnd", expected_step_position: FIRST_STEP }
+         params: { decision: "returnd", expected_step_position: FIRST_STEP,
+                  state_token: token_for(requests(:hanako_expense_pending)) }
 
     assert_equal I18n.t("request_decisions.failed"), flash[:alert]
     assert_equal "pending", requests(:hanako_expense_pending).reload.status
@@ -146,7 +156,8 @@ class RequestDecisionsControllerTest < ActionDispatch::IntegrationTest
     sign_in_as users(:taro)
 
     post request_decision_url(requests(:taro_leave_pending)),
-         params: { decision: "approve", expected_step_position: FIRST_STEP }
+         params: { decision: "approve", expected_step_position: FIRST_STEP,
+                  state_token: token_for(requests(:taro_leave_pending)) }
 
     assert_response :forbidden
     assert_equal "pending", requests(:taro_leave_pending).reload.status
@@ -156,7 +167,8 @@ class RequestDecisionsControllerTest < ActionDispatch::IntegrationTest
     sign_in_as users(:hanako)
 
     post request_decision_url(requests(:hanako_expense_pending)),
-         params: { decision: "approve", expected_step_position: FIRST_STEP }
+         params: { decision: "approve", expected_step_position: FIRST_STEP,
+                  state_token: token_for(requests(:hanako_expense_pending)) }
 
     assert_response :forbidden
   end
@@ -170,7 +182,8 @@ class RequestDecisionsControllerTest < ActionDispatch::IntegrationTest
     sign_in_as users(:taro)
 
     post request_decision_url(requests(:hanako_leave_returned)),
-         params: { decision: "approve", expected_step_position: FIRST_STEP }
+         params: { decision: "approve", expected_step_position: FIRST_STEP,
+                  state_token: token_for(requests(:hanako_leave_returned)) }
 
     assert_redirected_to requests(:hanako_leave_returned)
     assert_equal I18n.t("request_decisions.failed"), flash[:alert]
@@ -182,7 +195,8 @@ class RequestDecisionsControllerTest < ActionDispatch::IntegrationTest
 
     assert_no_difference [ -> { RequestActivity.count }, -> { Notification.count }, -> { AuditEvent.count } ] do
       post request_decision_url(requests(:hanako_leave_returned)),
-           params: { decision: "approve", expected_step_position: FIRST_STEP }
+           params: { decision: "approve", expected_step_position: FIRST_STEP,
+                    state_token: token_for(requests(:hanako_leave_returned)) }
     end
   end
 
@@ -192,7 +206,8 @@ class RequestDecisionsControllerTest < ActionDispatch::IntegrationTest
     sign_in_as users(:taro)
 
     post request_decision_url(requests(:hanako_leave_draft)),
-         params: { decision: "approve", expected_step_position: FIRST_STEP }
+         params: { decision: "approve", expected_step_position: FIRST_STEP,
+                  state_token: token_for(requests(:hanako_leave_draft)) }
 
     assert_response :not_found
     assert_equal "draft", requests(:hanako_leave_draft).reload.status
@@ -203,7 +218,8 @@ class RequestDecisionsControllerTest < ActionDispatch::IntegrationTest
 
     assert_no_difference [ -> { RequestActivity.count }, -> { Notification.count }, -> { AuditEvent.count } ] do
       post request_decision_url(requests(:hanako_expense_pending)),
-           params: { decision: "approve", expected_step_position: FIRST_STEP }
+           params: { decision: "approve", expected_step_position: FIRST_STEP,
+                    state_token: token_for(requests(:hanako_expense_pending)) }
     end
   end
 
@@ -216,6 +232,17 @@ class RequestDecisionsControllerTest < ActionDispatch::IntegrationTest
   end
 
   private
+    # 署名した値は決裁する利用者へ結び付く。誰として送るのかを覚えておく。
+    def sign_in_as(user)
+      @signed_in = user
+      super
+    end
+
+    # いま署名した状態の値。画面が hidden field で送るものと同じ形になる。
+    def token_for(request, actor = @signed_in)
+      request.reload.decision_state_token_for(actor)
+    end
+
     # 段ごとに担当を分けた 3 段の申請を、提出済みの状態で作る。
     #
     # 3 段目は部門を指定しない。管理者が担当する段を 1 つ置くことで、

@@ -184,14 +184,19 @@ class Request < ApplicationRecord
   #
   # 判定と記録は RequestDecision が持つ。ここへ置くと、立場の判定だけが
   # 呼び出し側へ散り、占有の外で判定する形へ戻る。
-  def approve(actor:, comment: nil, expected_step_position: nil)
+  def approve(actor:, comment: nil, expected_step_position: nil, state_token: nil)
     commit_decision(:approve, actor: actor, comment: comment,
-                    expected_step_position: expected_step_position)
+                    expected_step_position: expected_step_position, state_token: state_token)
   end
 
-  def return_to_applicant(actor:, comment: nil, expected_step_position: nil)
+  def return_to_applicant(actor:, comment: nil, expected_step_position: nil, state_token: nil)
     commit_decision(:return, actor: actor, comment: comment,
-                    expected_step_position: expected_step_position)
+                    expected_step_position: expected_step_position, state_token: state_token)
+  end
+
+  # 決裁の画面が、いま見えている状態を持ち帰るための値。
+  def decision_state_token_for(user)
+    RequestDecisionToken.issue(request: self, actor: user)
   end
 
   # この申請が通る経路。
@@ -279,12 +284,16 @@ class Request < ApplicationRecord
       end
     end
 
-    # 期待する段の指定が無い呼び出しは、いま待っている段を期待したものとして
-    # 扱う。画面からの決裁では、制御部が要求の値を渡す。
-    def commit_decision(decision, actor:, comment:, expected_step_position:)
+    # 指定が無い呼び出しは、いま見えている状態を期待したものとして扱う。
+    # 画面からの決裁では、制御部が要求の値を渡す。
+    #
+    # 値は占有する前に作る。占有したあとに作ると、そのあいだに起きた変更を
+    # 自分で打ち消すことになり、競合を見つけられなくなる。
+    def commit_decision(decision, actor:, comment:, expected_step_position:, state_token:)
       RequestDecision.call(
         request: self, actor: actor, decision: decision, comment: comment,
-        expected_step_position: expected_step_position || current_step&.position
+        expected_step_position: expected_step_position || current_step&.position,
+        state_token: state_token || decision_state_token_for(actor)
       ).success?
     end
 
