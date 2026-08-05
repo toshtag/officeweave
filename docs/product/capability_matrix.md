@@ -50,7 +50,20 @@ Core や Suite として数えない。件数も別に数える。
 識別子は、採用の判断と対応させる必要がある Suite にだけ付けてある。
 次の作業で機械が読む一覧を作るときに、残りへも付ける。
 
-`complete` は現在 1 件である。
+現在の件数は次のとおりである。
+
+```text
+capability          54  Core 26、Suite 19、Extended 4、範囲外 5
+  complete           1  稼働確認
+  partial           25  Core の残り
+  planned           19  Suite
+  deferred           4  Extended
+  rejected           5  範囲外
+
+cross_cutting_gate   2  partial 1、planned 1
+
+release_gate         1  受入条件が持つ
+```
 
 次の 2 つは、複数の Core 機能にまたがる横断の課題である。
 
