@@ -551,9 +551,9 @@ en:
     returned: The request has been returned.
     failed: This request cannot be processed in its current state.
     conflict:
-      title: The request has changed
-      heading: Another decision has already moved this request forward
-      description: The step you were looking at has already been passed. Reload the request and try again.
+      title: The request state cannot be confirmed
+      heading: The request state you were looking at could not be confirmed
+      description: The request changed after you opened it, or the time allowed for this action has passed. Reload the request and try again.
       back: Back to the request
     comment: Comment
     comment_hint: When returning a request, explain what needs to change.
