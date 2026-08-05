@@ -58,6 +58,7 @@ module IsolatedOrganizationTestHelper
     def delete_owned_records(ids)
       Request.where(id: ids.requests).delete_all
       RequestType.where(organization_id: ids.organization).delete_all
+      ApprovalDelegation.where(organization_id: ids.organization).delete_all
       Reservation.where(organization_id: ids.organization).delete_all
       Resource.where(organization_id: ids.organization).delete_all
       Event.where(id: ids.events).delete_all
