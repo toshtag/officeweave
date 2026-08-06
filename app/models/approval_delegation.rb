@@ -4,7 +4,14 @@
 # 決裁できるようにする。担当そのものは移さない。委任は期間で切れる。
 #
 # 期間は日の単位とする。時刻まで扱うと、不在の申し出と噛み合わない。
+#
+# 同じ組への委任が期間で重ならないことは、データベース側の制約で保証する。
+# 模型側の確認だけでは、確かめてから INSERT するまでの間に相手も確かめ終え、
+# 両方が通る。
 class ApprovalDelegation < ApplicationRecord
+  # 重なりを禁じる制約の名前。判定はこの名前と状態コードで行う。
+  OVERLAP_CONSTRAINT = "approval_delegations_must_not_overlap".freeze
+
   belongs_to :organization
   belongs_to :delegator, class_name: "User"
   belongs_to :delegate, class_name: "User"
@@ -22,6 +29,19 @@ class ApprovalDelegation < ApplicationRecord
   }
 
   scope :recent_first, -> { order(starts_on: :desc, id: :desc) }
+
+  # データベースの制約に触れた場合も、画面へ理由を返せるようにする。
+  #
+  # 制約に触れるのは、模型の確認を抜けた同時の書き込みだけである。
+  # 画面から見える結果は、確認で弾かれた場合と同じにする。
+  def save_with_overlap_check
+    save
+  rescue ActiveRecord::StatementInvalid => error
+    raise unless DatabaseConstraint.exclusion_violation?(error, constraint: OVERLAP_CONSTRAINT)
+
+    errors.add(:starts_on, :overlapping_delegation)
+    false
+  end
 
   def active?(on: Date.current)
     starts_on <= on && (ends_on.nil? || ends_on >= on)

@@ -38,6 +38,52 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
 COMMENT ON EXTENSION pg_trgm IS 'text similarity measurement and index searching based on trigrams';
 
 
+--
+-- Name: departments_reject_cycle(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.departments_reject_cycle() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  ancestor_id bigint;
+  steps integer := 0;
+BEGIN
+  IF NEW.parent_id IS NULL THEN
+    RETURN NEW;
+  END IF;
+
+  IF NEW.parent_id = NEW.id THEN
+    RAISE EXCEPTION 'department cannot be its own parent'
+      USING ERRCODE = '23514', CONSTRAINT = 'departments_must_not_form_a_cycle';
+  END IF;
+
+  ancestor_id := NEW.parent_id;
+
+  WHILE ancestor_id IS NOT NULL LOOP
+    IF ancestor_id = NEW.id THEN
+      RAISE EXCEPTION 'department hierarchy would form a cycle'
+        USING ERRCODE = '23514', CONSTRAINT = 'departments_must_not_form_a_cycle';
+    END IF;
+
+    steps := steps + 1;
+
+    IF steps > 100 THEN
+      RAISE EXCEPTION 'department hierarchy is too deep to verify'
+        USING ERRCODE = '23514', CONSTRAINT = 'departments_must_not_form_a_cycle';
+    END IF;
+
+    SELECT parent_id INTO ancestor_id
+      FROM departments
+     WHERE id = ancestor_id
+       FOR SHARE;
+  END LOOP;
+
+  RETURN NEW;
+END;
+$$;
+
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -1458,6 +1504,14 @@ ALTER TABLE ONLY public.api_tokens
 
 
 --
+-- Name: approval_delegations approval_delegations_must_not_overlap; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.approval_delegations
+    ADD CONSTRAINT approval_delegations_must_not_overlap EXCLUDE USING gist (delegator_id WITH =, delegate_id WITH =, daterange(starts_on, ends_on, '[]'::text) WITH &&);
+
+
+--
 -- Name: approval_delegations approval_delegations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2431,6 +2485,13 @@ CREATE INDEX index_webhook_endpoints_on_organization_id ON public.webhook_endpoi
 
 
 --
+-- Name: departments departments_reject_cycle; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER departments_reject_cycle BEFORE INSERT OR UPDATE OF parent_id ON public.departments FOR EACH ROW EXECUTE FUNCTION public.departments_reject_cycle();
+
+
+--
 -- Name: announcements fk_rails_092f822a9d; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2877,6 +2938,8 @@ ALTER TABLE ONLY public.announcement_departments
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260806050000'),
+('20260806040000'),
 ('20260806030000'),
 ('20260806020000'),
 ('20260806010000'),

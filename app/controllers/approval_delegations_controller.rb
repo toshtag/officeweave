@@ -16,7 +16,7 @@ class ApprovalDelegationsController < ApplicationController
     @delegation = Current.user.approval_delegations_as_delegator.new(delegation_params)
     @delegation.organization = current_organization
 
-    if @delegation.save
+    if @delegation.save_with_overlap_check
       record_audit_event("approval_delegation_created", target: @delegation,
                                                        details: { delegate: @delegation.delegate.name })
       redirect_to approval_delegations_path, notice: t("approval_delegations.created")
