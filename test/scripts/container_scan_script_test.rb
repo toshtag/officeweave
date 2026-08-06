@@ -49,9 +49,17 @@ class ContainerScanScriptTest < ActiveSupport::TestCase
 
   # 修正版が出ていない指摘で失敗させると、自分たちで解消できない状態で
   # 検証が止まり続ける。
-  test "修正版のある指摘で失敗する" do
+  test "合否には修正版のある指摘だけを使う" do
     assert_match(/--ignore-unfixed/, @body)
-    assert_match(/--exit-code[= ]1/, @body)
+  end
+
+  # 合否は書き出した報告に対して決める。表を読んで数える形にすると、
+  # 表の書式が変わっただけで合否が変わる。
+  # 判定そのものの契約は container_scan_exception_test が持つ。
+  test "合否は記録との突き合わせで決める" do
+    assert_match(/--ignore-unfixed --exit-code 0 --format json/, @body)
+    assert_match(/if ! evaluate /, @body)
+    assert_match(/failed=1/, @body)
   end
 
   # 失敗させないことと、見せないことは別である。
