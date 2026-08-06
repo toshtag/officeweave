@@ -25,7 +25,7 @@ class DepartmentsController < ApplicationController
   def create
     @department = current_organization.departments.new(department_params)
 
-    if @department.save
+    if @department.save_with_cycle_check
       record_audit_event("department_created", target: @department, details: { code: @department.code })
       redirect_to @department, notice: t("departments.created")
     else
@@ -34,7 +34,7 @@ class DepartmentsController < ApplicationController
   end
 
   def update
-    if @department.update(department_params)
+    if @department.update_with_cycle_check(department_params)
       record_audit_event("department_updated", target: @department, details: { code: @department.code })
       redirect_to @department, notice: t("departments.updated")
     else
