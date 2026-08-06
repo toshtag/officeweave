@@ -8,9 +8,10 @@ class EventsController < ApplicationController
   before_action :require_editable, only: %i[edit update destroy]
 
   def index
-    @from = date_param(:from) || Date.current
+    @window = DateWindow.new(from: date_param(:from), to: date_param(:to))
     @events = Event.visible_to(Current.user)
-                   .starting_from(@from.beginning_of_day)
+                   .starting_from(@window.from.beginning_of_day)
+                   .starting_before(@window.to.end_of_day)
                    .chronological
                    .includes(:owner)
   rescue TimeParameters::InvalidParameter

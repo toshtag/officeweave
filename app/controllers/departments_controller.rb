@@ -7,7 +7,11 @@ class DepartmentsController < ApplicationController
   before_action :set_department, only: %i[show edit update destroy]
 
   def index
-    @departments = current_organization.departments.ordered.includes(:parent)
+    @page = Pagination.new(current_organization.departments.ordered.includes(:parent),
+                           page: params[:page])
+    # 階層の表示は 1 ページ分だけへ広げる。全件へ広げると、上限を置いた
+    # 意味が無くなる。
+    @departments = Department.with_ancestors(@page.records)
   end
 
   def show

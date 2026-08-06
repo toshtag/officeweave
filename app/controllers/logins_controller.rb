@@ -11,7 +11,9 @@ class LoginsController < ApplicationController
   def index
     # 期限を過ぎた記録は並べない。認証には使えず、並べると終わらせる操作が
     # 必要に見える。消すのは定期実行が行う。
-    @logins = Current.user.sessions.usable.order(last_active_at: :desc)
+    @page = Pagination.new(Current.user.sessions.usable.order(last_active_at: :desc, id: :desc),
+                           page: params[:page])
+    @logins = @page.records
   end
 
   def destroy

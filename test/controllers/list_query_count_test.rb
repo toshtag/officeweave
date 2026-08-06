@@ -103,7 +103,8 @@ class ListQueryCountTest < ActionDispatch::IntegrationTest
 
     def create_reservation(index)
       # 日を分ける。同じ設備の同じ時間帯は重ねられない。
-      start = (Date.current + 30 + index).to_time.change(hour: 9)
+      # 一覧が読む期間の内側へ収める。外へ出すと、増やした記録が並ばない。
+      start = (Date.current + 1 + index).to_time.change(hour: 9)
 
       current_organization.reservations.create!(
         resource: create_resource(index), reserver: create_user(index),

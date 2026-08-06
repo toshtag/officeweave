@@ -48,4 +48,6 @@
   <%= button_to t("logins.index.revoke_others"), all_logins_path, method: :delete,
                 class: "button button--quiet" %>
   <p class="form__hint"><%= t("logins.index.revoke_others_hint") %></p>
+
+  <%= render "shared/pagination", page: @page, parameters: {} %>
 </div>

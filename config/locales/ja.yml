@@ -441,6 +441,8 @@ ja:
       empty: 表示できる予定がありません。
       from: 表示開始日
       filter: 絞り込む
+      to: 表示終了日
+      period: "%{from} から %{to} まで"
     new:
       title: 予定の作成
       heading: 予定の作成
@@ -906,3 +908,6 @@ ja:
       departments_imported: 部門の取り込み
       departments_exported: 部門の書き出し
       audit_events_exported: 監査記録の書き出し
+  shared:
+    window:
+      truncated: "指定できる期間は %{days} 日までです。切り詰めて表示しています。"

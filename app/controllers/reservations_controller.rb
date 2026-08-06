@@ -8,9 +8,10 @@ class ReservationsController < ApplicationController
   before_action :require_modifiable, only: %i[edit update destroy]
 
   def index
-    @from = date_param(:from) || Date.current
+    @window = DateWindow.new(from: date_param(:from), to: date_param(:to))
     @reservations = current_organization.reservations
-                                        .starting_from(@from.beginning_of_day)
+                                        .starting_from(@window.from.beginning_of_day)
+                                        .starting_before(@window.to.end_of_day)
                                         .chronological
                                         .includes(:resource, :reserver)
   rescue TimeParameters::InvalidParameter

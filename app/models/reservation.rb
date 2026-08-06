@@ -21,6 +21,9 @@ class Reservation < ApplicationRecord
 
   scope :chronological, -> { order(:starts_at, :id) }
   scope :starting_from, ->(time) { where(ends_at: time..) }
+  # 期間の終わりで区切る。始まりだけで絞ると、蓄積した記録がそのまま
+  # 読み込む量になる。終わりの日を含む。
+  scope :starting_before, ->(time) { where(arel_table[:starts_at].lt(time)) }
   # 終端を含まない範囲として重なりを判定する。
   # 直前の終了時刻と次の開始時刻が同じ場合は重ならない扱いにする。
   # データベース側の制約と同じ判定にそろえる。

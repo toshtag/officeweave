@@ -67,6 +67,9 @@ class Event < ApplicationRecord
     added
   end
   scope :chronological, -> { order(:starts_at, :id) }
+  # 期間の終わりで区切る。始まりだけで絞ると、蓄積した記録がそのまま
+  # 読み込む量になる。終わりの日を含む。
+  scope :starting_before, ->(time) { where(arel_table[:starts_at].lt(time)) }
 
   # 利用者が見られる予定。
   # 自分の予定は公開範囲に関わらず見える。

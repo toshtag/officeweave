@@ -417,6 +417,10 @@ en:
       empty: There are no events to show.
       from: Showing from
       filter: Apply
+      to: To
+      period: "%{from} to %{to}"
+      to: To
+      period: "%{from} to %{to}"
     new:
       title: Add event
       heading: Add event
@@ -882,3 +886,6 @@ en:
       departments_imported: Departments imported
       departments_exported: Departments exported
       audit_events_exported: Audit log exported
+  shared:
+    window:
+      truncated: "The period is limited to %{days} days. Showing a shortened range."

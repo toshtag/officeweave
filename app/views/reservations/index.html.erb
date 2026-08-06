@@ -9,10 +9,21 @@
   <form class="form form--inline" method="get" action="<%= reservations_path %>">
     <%= form_field do %>
       <%= label_tag :from, t("events.index.from"), class: "form__label" %>
-      <%= date_field_tag :from, @from, class: "form__input" %>
+      <%= date_field_tag :from, @window.from, class: "form__input" %>
+    <% end %>
+    <%= form_field do %>
+      <%= label_tag :to, t("events.index.to"), class: "form__label" %>
+      <%= date_field_tag :to, @window.to, class: "form__input" %>
     <% end %>
     <%= submit_tag t("events.index.filter"), class: "button", name: nil %>
   </form>
+
+  <p role="status">
+    <%= t("events.index.period", from: l(@window.from, format: :long), to: l(@window.to, format: :long)) %>
+    <% if @window.truncated? %>
+      <%= t("shared.window.truncated", days: DateWindow::MAXIMUM_DAYS) %>
+    <% end %>
+  </p>
 
   <% if @reservations.any? %>
     <div class="panel">
