@@ -177,6 +177,7 @@ OfficeWeave 固有の判断や制約を記録する必要がある場合に限�
 完了時点で確かめたことの記録    PR の本文と、その実行結果
 実装上の判断とその根拠          実装またはテストのコメント
 機能の段階と到達度              docs/product/
+自分の差分を見る観点            docs/development/self_review.md
 製品の方向を決めた判断          docs/decisions/
 版ごとの変更点                  CHANGELOG.md
 実際の変更と検証の証跡          PR と Git の履歴
