@@ -25,7 +25,14 @@
     <legend class="form__label"><%= Document.human_attribute_name(:department_ids) %></legend>
     <%= form_hints t("documents.form.departments_hint") %>
 
-    <% Department.with_ancestors(current_organization.departments.ordered).each do |department| %>
+    <% departments = Candidates.new(current_organization.departments.ordered,
+                                    query: params[:department_query],
+                                    selected_ids: document.department_ids) %>
+    <%= render "shared/candidate_search", candidates: departments, name: :department_query,
+                                         action: request.path, label: t("shared.candidates.departments"),
+                                         parameters: {} %>
+
+    <% Department.with_ancestors(departments.records).each do |department| %>
       <%= inline_field do %>
         <%= check_box_tag "document[department_ids][]", department.id,
                           selected_department_ids.include?(department.id),

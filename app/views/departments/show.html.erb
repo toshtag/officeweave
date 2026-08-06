@@ -54,9 +54,13 @@
     <div class="panel panel--narrow stack">
       <h2><%= t("memberships.new.heading") %></h2>
 
+    <%= render "shared/candidate_search", candidates: @assignable_users, name: :user_query,
+                                         action: department_path(@department),
+                                         label: t("memberships.new.search"), parameters: {} %>
+
     <% if @assignable_users.any? %>
       <%= form_with model: [ @department, Membership.new ], class: "form stack" do |form| %>
-        <%= form.field :user_id, :collection_select, @assignable_users, :id, :name, {},
+        <%= form.field :user_id, :collection_select, @assignable_users.records, :id, :name, {},
                        label: User.model_name.human %>
 
         <%= inline_field do %>

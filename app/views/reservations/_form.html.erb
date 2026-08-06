@@ -1,14 +1,25 @@
+<% resources = Candidates.new(current_organization.resources.reservable.ordered,
+                              query: params[:resource_query],
+                              selected_ids: [ reservation.resource_id ]) %>
+<% events = Candidates.new(Event.visible_to(Current.user).starting_from(Time.current).chronological,
+                           selected_ids: [ reservation.event_id ]) %>
+<%= render "shared/candidate_search", candidates: resources, name: :resource_query,
+                                     action: request.path, label: t("shared.candidates.resources"),
+                                     parameters: {} %>
+
 <%= form_with model: reservation, class: "form stack" do |form| %>
   <%= render "shared/error_messages", record: reservation %>
 
   <%= form.field :resource_id, :collection_select,
-                 current_organization.resources.reservable.ordered, :id, :name,
+                 resources.records, :id, :name,
                  { include_blank: true }, required: true %>
   <%= form.field :starts_at, :datetime_field, required: true %>
   <%= form.field :ends_at, :datetime_field, required: true %>
   <%= form.field :purpose, :text_field %>
+  <%# 予定は「これから始まる分」だけを並べる。上限を置かないと、
+      先まで積んだ組織で選択欄がそのまま伸びる。 %>
   <%= form.field :event_id, :collection_select,
-                 Event.visible_to(Current.user).starting_from(Time.current).chronological, :id, :title,
+                 events.records, :id, :title,
                  { include_blank: t("reservations.form.no_event") },
                  hint: t("reservations.form.event_hint") %>
 

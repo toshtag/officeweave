@@ -16,14 +16,20 @@ class DepartmentsController < ApplicationController
 
   def show
     @memberships = @department.memberships.includes(:user).joins(:user).merge(User.ordered)
-    @assignable_users = current_organization.users.ordered.where.not(id: @department.user_ids)
+    # 候補は上限を置いて並べる。全件描くと、描く量が組織の人数に比例する。
+    @assignable_users = Candidates.new(
+      current_organization.users.ordered.where.not(id: @department.user_ids),
+      query: params[:user_query]
+    )
   end
 
   def new
     @department = current_organization.departments.new
+    @parent_candidates = parent_candidates
   end
 
   def edit
+    @parent_candidates = parent_candidates(except: @department)
   end
 
   def create
@@ -33,6 +39,7 @@ class DepartmentsController < ApplicationController
       record_audit_event("department_created", target: @department, details: { code: @department.code })
       redirect_to @department, notice: t("departments.created")
     else
+      @parent_candidates = parent_candidates
       render :new, status: :unprocessable_content
     end
   end
@@ -42,6 +49,7 @@ class DepartmentsController < ApplicationController
       record_audit_event("department_updated", target: @department, details: { code: @department.code })
       redirect_to @department, notice: t("departments.updated")
     else
+      @parent_candidates = parent_candidates(except: @department)
       render :edit, status: :unprocessable_content
     end
   end
@@ -56,6 +64,14 @@ class DepartmentsController < ApplicationController
   end
 
   private
+    # 上位に選べる部門。全件描くと、描く量が部門の数に比例する。
+    def parent_candidates(except: nil)
+      scope = current_organization.departments.ordered
+      scope = scope.where.not(id: except.id) if except
+
+      Candidates.new(scope, query: params[:parent_query], selected_ids: [ @department&.parent_id ])
+    end
+
     def set_department
       @department = current_organization.departments.find(params[:id])
     end

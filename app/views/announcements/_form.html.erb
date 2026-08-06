@@ -19,7 +19,14 @@
     <legend class="form__label"><%= Announcement.human_attribute_name(:department_ids) %></legend>
     <%= form_hints t("announcements.form.departments_hint") %>
 
-    <% Department.with_ancestors(current_organization.departments.ordered).each do |department| %>
+    <% departments = Candidates.new(current_organization.departments.ordered,
+                                    query: params[:department_query],
+                                    selected_ids: announcement.department_ids) %>
+    <%= render "shared/candidate_search", candidates: departments, name: :department_query,
+                                         action: request.path, label: t("shared.candidates.departments"),
+                                         parameters: {} %>
+
+    <% Department.with_ancestors(departments.records).each do |department| %>
       <%= inline_field do %>
         <%= check_box_tag "announcement[department_ids][]", department.id,
                           announcement.department_ids.include?(department.id),

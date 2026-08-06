@@ -27,7 +27,14 @@
     <legend class="form__label"><%= Event.human_attribute_name(:department_ids) %></legend>
     <%= form_hints t("events.form.departments_hint") %>
 
-    <% Department.with_ancestors(current_organization.departments.ordered).each do |department| %>
+    <% departments = Candidates.new(current_organization.departments.ordered,
+                                    query: params[:department_query],
+                                    selected_ids: event.department_ids) %>
+    <%= render "shared/candidate_search", candidates: departments, name: :department_query,
+                                         action: request.path, label: t("shared.candidates.departments"),
+                                         parameters: {} %>
+
+    <% Department.with_ancestors(departments.records).each do |department| %>
       <%= inline_field do %>
         <%= check_box_tag "event[department_ids][]", department.id,
                           event.department_ids.include?(department.id),
@@ -43,7 +50,14 @@
     <%= form_hints t("events.form.participants_hint") %>
 
     <%# 自分自身は並べない。所有者は指名しなくても見られる。 %>
-    <% current_organization.users.active.where.not(id: event.owner_id || Current.user.id).ordered.each do |user| %>
+    <% participants = Candidates.new(
+         current_organization.users.active.where.not(id: event.owner_id || Current.user.id).ordered,
+         query: params[:participant_query], selected_ids: event.participant_ids) %>
+    <%= render "shared/candidate_search", candidates: participants, name: :participant_query,
+                                         action: request.path, label: t("shared.candidates.users"),
+                                         parameters: {} %>
+
+    <% participants.records.each do |user| %>
       <%= inline_field do %>
         <%= check_box_tag "event[participant_ids][]", user.id,
                           event.participant_ids.include?(user.id),
