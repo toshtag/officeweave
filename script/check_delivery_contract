@@ -67,7 +67,10 @@ if $PROGRAM_NAME == __FILE__
 
   # 読み取りの符号化を明示する。既定に任せると、日本語の題名を読めない環境で
   # この検査そのものが落ちる。規約を確かめる側が規約に落ちるのは筋が通らない。
-  log, status = Open3.capture2("git", "log", "--format=%H%x00%s%x00%B%x1e", range)
+  # 合流は対象にしない。自動で作られるものが混ざり、その題名は自分たちが
+  # 書いたものではない。継続的インテグレーションが照合のために作る仮の合流も
+  # 同じである。
+  log, status = Open3.capture2("git", "log", "--no-merges", "--format=%H%x00%s%x00%B%x1e", range)
   log = log.dup.force_encoding(Encoding::UTF_8)
   abort "commit を読めませんでした: #{range}" unless status.success?
 

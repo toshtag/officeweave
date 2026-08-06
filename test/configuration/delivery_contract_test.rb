@@ -56,6 +56,13 @@ class DeliveryContractTest < ActiveSupport::TestCase
     assert_empty contract(messages: [ [ "abc1234 fix: 直す", "fix: 直す\n\nexample-product を参考にした" ] ]).violations
   end
 
+  # 自動で作られる合流の題名は、自分たちが書いたものではない。
+  test "合流は照合の対象にしない" do
+    body = SCRIPT.read
+
+    assert_includes body, "--no-merges"
+  end
+
   test "commit の題名が日本語かどうかを見分ける" do
     assert japanese?("fix: 段の判定を直す")
     assert_not japanese?("fix: correct the step check")
