@@ -117,25 +117,29 @@ class RequestDecision
       approvers = @request.approvers(following)
 
       @request.update!(current_step_position: following.position)
-      record(step: step, action: "approved", audit: "request_approved")
+      activity = record(step: step, action: "approved", audit: "request_approved")
+      occurrence = occurrence_for(activity)
 
-      @announce = -> { Notification.deliver_to_all(users: approvers, subject: @request, event: "request_submitted") }
+      @announce = lambda do
+        Notification.deliver_to_all(users: approvers, subject: @request, event: "request_submitted",
+                                    occurrence: occurrence)
+      end
     end
 
     # 最後の段の承認。ここで承認済みとする。
     def conclude(step)
       @request.update!(status: "approved", decided_at: Time.current)
-      record(step: step, action: "approved", audit: "request_approved")
+      activity = record(step: step, action: "approved", audit: "request_approved")
 
-      announce_to_applicant("request_approved")
+      announce_to_applicant("request_approved", activity)
     end
 
     def return_to_applicant(step)
       @request.update!(status: "returned", decided_at: Time.current)
       # 差し戻しは、その段を通していない。段への印は残さない。
-      record(step: step, action: "returned", audit: "request_returned", approve_step: false)
+      activity = record(step: step, action: "returned", audit: "request_returned", approve_step: false)
 
-      announce_to_applicant("request_returned")
+      announce_to_applicant("request_returned", activity)
 
       :success
     end
@@ -146,7 +150,7 @@ class RequestDecision
     def record(step:, action:, audit:, approve_step: true)
       step.record_approval!(actor: actor) if approve_step && step.is_a?(RequestApprovalStep)
 
-      @request.request_activities.create!(
+      activity = @request.request_activities.create!(
         actor: actor, action: action, comment: @comment,
         step_position: step.position, on_behalf_of: @authorization.on_behalf_of
       )
@@ -157,6 +161,9 @@ class RequestDecision
         organization: @request.organization, actor: actor, action: audit,
         target: @request, details: { title: @request.title }, ip_address: @ip_address
       )
+
+      # 通知の発生を表す値の元になる。同じ決裁で何度呼んでも同じ値になる。
+      activity
     end
 
     # 確定した決裁を、知らせに失敗しただけで失敗として返さない。
@@ -174,13 +181,21 @@ class RequestDecision
                          context: { announce: "request_decision", request_id: @request.id })
     end
 
-    def announce_to_applicant(event)
+    # 発生は、その決裁を表す履歴の識別子とする。同じ利用者が複数の段を
+    # 担当する場合も、段ごとに別の履歴になるため、それぞれで未読が作られる。
+    def announce_to_applicant(event, activity)
       applicant = @request.applicant
       organization = @request.organization
+      occurrence = occurrence_for(activity)
 
       @announce = lambda do
-        Notification.deliver(user: applicant, subject: @request, event: event)
-        Notification.publish(organization: organization, subject: @request, event: event)
+        Notification.deliver(user: applicant, subject: @request, event: event, occurrence: occurrence)
+        Notification.publish(organization: organization, subject: @request, event: event,
+                             occurrence: occurrence)
       end
+    end
+
+    def occurrence_for(activity)
+      activity ? "activity:#{activity.id}" : Notification::DEFAULT_OCCURRENCE
     end
 end

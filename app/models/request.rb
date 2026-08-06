@@ -195,7 +195,7 @@ class Request < ApplicationRecord
       self.current_step_position = route_steps.first&.position || 0
     end
 
-    notify_approvers if changed
+    notify_approvers(latest_activity) if changed
     changed
   end
 
@@ -350,9 +350,24 @@ class Request < ApplicationRecord
       ).success?
     end
 
-    def notify_approvers
-      Notification.deliver_to_all(users: approvers, subject: self, event: "request_submitted")
-      Notification.publish(organization: organization, subject: self, event: "request_submitted")
+    # 発生は、その提出を表す履歴の識別子とする。差し戻したあとの再提出は
+    # 別の履歴になるため、承認者へ新しい未読が作られる。やり直しでは同じ
+    # 履歴を指すため、増えない。
+    def notify_approvers(activity)
+      occurrence = occurrence_for(activity)
+
+      Notification.deliver_to_all(users: approvers, subject: self, event: "request_submitted",
+                                  occurrence: occurrence)
+      Notification.publish(organization: organization, subject: self, event: "request_submitted",
+                           occurrence: occurrence)
+    end
+
+    def latest_activity
+      request_activities.order(:id).last
+    end
+
+    def occurrence_for(activity)
+      activity ? "activity:#{activity.id}" : Notification::DEFAULT_OCCURRENCE
     end
 
     # 状態の変更と記録を必ず一緒に行う。

@@ -29,6 +29,20 @@ production:
   delete_expired_rate_limit_counters:
     command: "RateLimitCounter.delete_expired"
     schedule: every hour at minute 42
+  # 画面へ出す通知。指定した場合だけ、その日数より古いものを消す。
+  # 監査記録と同じく 1 日 1 回とする。日の単位で判断する設定である。
+  delete_expired_notifications:
+    command: "Notification.delete_expired"
+    schedule: every day at 3:42am
+  # 外部への送信の記録。試行ごとに増える。
+  delete_expired_webhook_deliveries:
+    command: "WebhookDelivery.delete_expired"
+    schedule: every day at 3:52am
+  # 運用の異常を知らせた記録。知らせ直す判断に使うのは直近の 1 件だけで、
+  # それより古いものは運用の履歴としてだけ残る。
+  delete_expired_operational_alerts:
+    command: "OperationalAlert.delete_expired"
+    schedule: every day at 4:02am
   # 放っておくと運用が成り立たなくなるものを、1 日 1 回だけ知らせる。
   # 宛先を設定していない場合と、異常が無い場合は何も送らない。
   report_operational_issues:

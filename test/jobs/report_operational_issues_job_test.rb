@@ -7,6 +7,10 @@ require "test_helper"
 class ReportOperationalIssuesJobTest < ActiveJob::TestCase
   include ActionMailer::TestHelper
 
+  setup do
+    ActionMailer::Base.deliveries.clear
+  end
+
   teardown do
     ENV.delete("OPERATIONS_EMAIL")
   end
@@ -64,7 +68,67 @@ class ReportOperationalIssuesJobTest < ActiveJob::TestCase
     refute_includes ActionMailer::Base.deliveries.last.to, users(:taro).email_address
   end
 
+
+  test "同じ異常が続くあいだは送り直さない" do
+    ENV["OPERATIONS_EMAIL"] = "ops@example.com"
+
+    stub_report([ failure ]) do
+      ReportOperationalIssuesJob.perform_now
+      ReportOperationalIssuesJob.perform_now
+    end
+
+    # 毎日同じ内容が届くと、通知そのものが読まれなくなる。
+    assert_equal 1, ActionMailer::Base.deliveries.size
+  end
+
+  test "送ったことを記録に残す" do
+    ENV["OPERATIONS_EMAIL"] = "ops@example.com"
+
+    stub_report([ failure ]) do
+      ReportOperationalIssuesJob.perform_now
+    end
+
+    # 記録がないと、送っていないのか届かなかったのかを区別できない。
+    assert_equal 1, OperationalAlert.count
+  end
+
+  test "異常が変われば改めて送る" do
+    ENV["OPERATIONS_EMAIL"] = "ops@example.com"
+
+    stub_report([ failure ]) { ReportOperationalIssuesJob.perform_now }
+    stub_report([ failure, another_failure ]) { ReportOperationalIssuesJob.perform_now }
+
+    assert_equal 2, ActionMailer::Base.deliveries.size
+  end
+
+  test "間隔を過ぎれば、同じ異常でも知らせ直す" do
+    ENV["OPERATIONS_EMAIL"] = "ops@example.com"
+
+    stub_report([ failure ]) do
+      ReportOperationalIssuesJob.perform_now
+
+      travel OperationalAlert::REMINDER_INTERVAL + 1.day do
+        ReportOperationalIssuesJob.perform_now
+      end
+    end
+
+    # 読み流したまま忘れられると、知らせない期間がそのまま放置の期間になる。
+    assert_equal 2, ActionMailer::Base.deliveries.size
+  end
+
+  test "宛先が無ければ記録も残さない" do
+    ENV["OPERATIONS_EMAIL"] = nil
+
+    stub_report([ failure ]) { ReportOperationalIssuesJob.perform_now }
+
+    assert_equal 0, OperationalAlert.count
+  end
+
   private
+    def another_failure
+      { name: "メールの送信", status: :error, detail: "送信できません", notify: true }
+    end
+
     def failure
       { name: "データベースへの接続", status: :error, detail: "接続できません", notify: true }
     end
