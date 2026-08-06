@@ -82,7 +82,7 @@ capability          54
   段階なし            5
     rejected         5  製品ビジョンの非目標と 1 対 1
 
-cross_cutting_gate   2  partial 1、planned 1
+cross_cutting_gate   2  complete 2
 
 release_gate         1  release.production_readiness（定義）
   版ごとの評価       0  passed した版も 0
@@ -130,7 +130,6 @@ release_gate         1  release.production_readiness（定義）
 
 未達:
 
-- 9: 利用者がログインし、端末を確認して終わらせる手順の文書が無い
 
 条件 1・2・8 は満たす。試行の上限はデータベースで数えるため、動かしている
 web の数に依存しない（`app/models/rate_limit_counter.rb`）。
@@ -170,7 +169,6 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 
 未達:
 
-- 9: 利用者がパスワードを忘れたときの手順の文書が無い
 
 条件 1・2・8 は満たす。試行の上限はログインと同じ置き場で数えるため、
 動かしている web の数に依存しない。
@@ -213,7 +211,6 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 
 - 2 は満たす。自分の表示言語と通知の受け取り方であり、他の利用者から見える
   情報は変わらないため、記録しないことを理由とともに宣言する
-- 9: 利用者がこの画面で何を変えられるかを読める文書が無い
 
 ### 利用者の管理
 
@@ -276,7 +273,6 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 
 未達:
 
-- 9: 入口に何が出るかを読める文書が無い
 
 区画が固定であることは未達に数えない。
 利用者が区画を選び、並べ替えるのは Suite の拡張であり、Core の条件は
@@ -297,7 +293,6 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 
 - 2 は満たす。業務の内容そのものであり、作成者と更新時刻を記録自身が持つため、
   記録しないことを理由とともに宣言する
-- 9: 操作を読める文書が無い
 
 ### 予定
 
@@ -314,7 +309,6 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 
 - 2 は満たす。業務の内容そのものであり、作成者と更新時刻を記録自身が持つため、
   記録しないことを理由とともに宣言する
-- 9: 操作を読める文書が無い
 
 ### 設備・備品
 
@@ -330,7 +324,6 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 未達:
 
 - 2 は満たす。読める範囲も権限も決めないため、記録しないことを理由とともに宣言する
-- 9: 操作を読める文書が無い
 
 ### 設備・備品の予約
 
@@ -346,7 +339,6 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 未達:
 
 - 2 は満たす。予約自身が誰のものかを持つため、記録しないことを理由とともに宣言する
-- 9: 操作を読める文書が無い
 - 重なりの判定が、データベースが返す文面に制約名が含まれるかどうかに依存する
 
 ### 申請と承認
@@ -364,7 +356,6 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 
 - 2 は満たす。経過は RequestActivity が持つため、作成・変更・提出・取り下げは
   記録しないことを理由とともに宣言する。決裁は監査へ残す
-- 9: 操作を読める文書が無い
 - 申請の項目が題名と本文だけで、種別ごとの入力欄を持たない
 - 経路の種別が直列の承認だけで、全員承認、いずれか 1 人、最終決定、確認を持たない
 
@@ -429,7 +420,6 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 
 - 2 は満たす。業務の内容そのものであり、作成者と更新時刻を記録自身が持つため、
   記録しないことを理由とともに宣言する。添付の取得は参照であり、条件 2 に問えない
-- 9: 操作を読める文書が無い
 - 階層、版、編集の占有、ごみ箱、容量の把握を持たない
 
 ### 通知
@@ -466,7 +456,6 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 
 未達:
 
-- 9: 管理者が記録を読み、絞り込み、書き出す手順の文書が無い
 
 条件 1・2・8 は満たす。状態を変える入口はすべて、記録する・しないのどちらかを
 宣言する（`app/controllers/concerns/auditable.rb`）。宣言の無い入口は
@@ -490,7 +479,6 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 
 未達:
 
-- 9: 呼び出す側が読める文書が無い
 - 応答の形を版として固定した定義が無い
 - 読み取りだけで、書き込みの経路が無い
 
@@ -536,7 +524,6 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 
 - 2 は満たす。権限にも組織の資料にも影響しないため、記録しないことを理由と
   ともに宣言する
-- 9: 利用者向けの切り替え手順が文書に無い
 
 ### 稼働確認
 
@@ -652,35 +639,46 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 ### 画面の到達性
 
 ```text
-状態  partial
+状態  complete
 対象  すべての画面
 条件  320 CSS px と 400% 拡大で主要機能へ到達し、キーボードだけで操作を完了できる。
       支援技術で読み上げたときに、現在地と操作の結果が伝わる
-検査  test/system/accessibility_test.rb, test/browser/accessibility_audit_test.rb,
-      test/configuration/accessibility_check_test.rb
+検査  test/browser/narrow_screen_test.rb, test/browser/accessibility_audit_test.rb,
+      test/system/accessibility_test.rb, test/configuration/accessibility_check_test.rb
 文書  docs/development/accessibility.md
 ```
 
 未達:
 
-- 狭い画面から主要機能へ到達できない。320 px と 400% 拡大での案内が無い
-- 実際の支援技術と実機での確認が無い
+- 実際の支援技術と実機での確認が無い。自動で判定できるのは基準の一部であり、
+  読み上げの順序と文言の分かりやすさは人が確かめる
+
+狭い画面は解消した。表を持つ画面が横へあふれていたが、表だけをその箱の中で
+横へ動かす形にした。箱には名前と役割を与え、焦点が届く。320 px での到達と
+キーボードだけでの操作は `test/browser/narrow_screen_test.rb` が固定する。
+
+`complete` の判定は、この gate が持つ 3 つの条件に対して行う。機能ごとの
+11 条件は、特定の機能に属さないこの品質には問えない。
 
 ### 利用者向けの操作文書
 
 ```text
-状態  planned
+状態  complete
 対象  画面を持つすべての機能
 条件  利用者と管理者が、各機能の操作、権限による見え方の違い、
       失敗したときの対処を読める
-検査  なし
-文書  なし
+検査  test/configuration/usage_documentation_test.rb
+文書  docs/usage/index.md
 ```
 
-未達:
+未達: なし。
 
-- 文書そのものが無い。共通条件 9 は機能ごとに課されるため、
-  この gate が `complete` になるまで、画面を持つ機能はどれも `complete` にならない
+画面を持つ Core すべてに手引きがある。書き忘れは、機械が読む一覧との
+突き合わせで落とす。中身の良し悪しは検査では見ない。読んで分かるかどうかは
+人が読んで判断する。
+
+`complete` の判定は、この gate が持つ 1 つの条件に対して行う。機能ごとの
+11 条件は、特定の機能に属さないこの品質には問えない。
 
 ## 4. Suite
 

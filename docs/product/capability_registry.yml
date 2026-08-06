@@ -32,6 +32,7 @@ capabilities:
     docs:
       - "docs/operations/administration.md"
       - "docs/operations/configuration.md"
+      - "docs/usage/getting_started.md"
     criteria:
       authorization:
         result: "met"
@@ -76,10 +77,10 @@ capabilities:
           - "test/models/session_test.rb"
           - "test/models/rate_limit_counter_concurrency_test.rb"
       documentation:
-        result: "unmet"
-        reason: "運用の設定は文書にあるが、利用者がログインし、端末を確認して終わらせる手順の文書が無い。C5 が持つ。"
+        result: "met"
+        reason: "ログイン、失敗したときの扱い、外部の認証基盤を使う場合の違いを利用者向けに書いた。"
         evidence:
-          - "docs/operations/configuration.md"
+          - "docs/usage/getting_started.md"
       localization:
         result: "not_assessed"
         reason: "評価していない"
@@ -108,6 +109,7 @@ capabilities:
     docs:
       - "docs/development/authentication.md"
       - "docs/operations/configuration.md"
+      - "docs/usage/getting_started.md"
     criteria:
       authorization:
         result: "met"
@@ -148,10 +150,10 @@ capabilities:
           - "test/models/authentication/oidc_claim_contract_test.rb"
       documentation:
         result: "met"
-        reason: "設定、ログインの流れ、受け取る属性、失敗したときの扱いが文書にあり、属性の対応は契約のテストが固定する。"
+        reason: "受け取る属性の対応は開発の文書が持ち、利用者から見た違い（パスワード欄が出ない）は手引きが持つ。"
         evidence:
+          - "docs/usage/getting_started.md"
           - "docs/development/authentication.md"
-          - "test/models/authentication/oidc_claim_contract_test.rb"
       localization:
         result: "not_assessed"
         reason: "評価していない"
@@ -182,6 +184,7 @@ capabilities:
     docs:
       - "docs/operations/administration.md"
       - "docs/operations/configuration.md"
+      - "docs/usage/getting_started.md"
     criteria:
       authorization:
         result: "met"
@@ -221,9 +224,10 @@ capabilities:
           - "test/controllers/password_reset_test.rb"
           - "test/controllers/screen_rate_limit_test.rb"
       documentation:
-        result: "unmet"
-        reason: "利用者がパスワードを忘れたときの手順の文書が無い。C5 が持つ。"
-        evidence: []
+        result: "met"
+        reason: "変更と再設定の手順、案内の値の期限、外部の認証基盤を使う場合に画面が出ないことを書いた。"
+        evidence:
+          - "docs/usage/getting_started.md"
       localization:
         result: "not_assessed"
         reason: "評価していない"
@@ -249,6 +253,7 @@ capabilities:
       - "test/system/authentication_test.rb"
     docs:
       - "docs/operations/administration.md"
+      - "docs/usage/getting_started.md"
     criteria:
       authorization:
         result: "not_assessed"
@@ -284,9 +289,10 @@ capabilities:
         reason: "評価していない"
         evidence: []
       documentation:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "端末の一覧と終わらせ方、いま使っている端末を対象に含めない理由を書いた。"
+        evidence:
+          - "docs/usage/getting_started.md"
       localization:
         result: "not_assessed"
         reason: "評価していない"
@@ -311,7 +317,8 @@ capabilities:
       - "test/controllers/settings_controller_test.rb"
       - "test/models/notification_preference_test.rb"
       - "test/system/settings_test.rb"
-    docs: []
+    docs:
+      - "docs/usage/getting_started.md"
     criteria:
       authorization:
         result: "met"
@@ -349,9 +356,10 @@ capabilities:
         evidence:
           - "test/controllers/settings_controller_test.rb"
       documentation:
-        result: "unmet"
-        reason: "利用者が自分の設定を変える手順の文書が無い。C5 が持つ。"
-        evidence: []
+        result: "met"
+        reason: "表示する言語と通知の受け取り方の決め方、画面の通知が設定に関わらず残ることを書いた。"
+        evidence:
+          - "docs/usage/getting_started.md"
       localization:
         result: "not_assessed"
         reason: "評価していない"
@@ -380,6 +388,7 @@ capabilities:
       - "test/system/users_test.rb"
     docs:
       - "docs/operations/administration.md"
+      - "docs/usage/organization.md"
     criteria:
       authorization:
         result: "met"
@@ -421,10 +430,10 @@ capabilities:
           - "test/models/organization_boundary_test.rb"
           - "test/models/user_administrator_concurrency_test.rb"
       documentation:
-        result: "unmet"
-        reason: "管理者が利用者を追加し、権限を変え、無効化する手順の文書が無い。C5 が持つ。"
+        result: "met"
+        reason: "追加、無効化とその影響、最後の管理者を守る契約を書いた。"
         evidence:
-          - "docs/operations/administration.md"
+          - "docs/usage/organization.md"
       localization:
         result: "not_assessed"
         reason: "評価していない"
@@ -459,6 +468,7 @@ capabilities:
       - "test/system/departments_test.rb"
     docs:
       - "docs/operations/administration.md"
+      - "docs/usage/organization.md"
     criteria:
       authorization:
         result: "not_assessed"
@@ -496,9 +506,10 @@ capabilities:
         reason: "評価していない"
         evidence: []
       documentation:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "階層の作り方、循環を作れないこと、所属の足し方を書いた。"
+        evidence:
+          - "docs/usage/organization.md"
       localization:
         result: "not_assessed"
         reason: "評価していない"
@@ -526,6 +537,7 @@ capabilities:
       - "test/system/data_transfers_test.rb"
     docs:
       - "docs/operations/administration.md"
+      - "docs/usage/organization.md"
     criteria:
       authorization:
         result: "not_assessed"
@@ -561,9 +573,10 @@ capabilities:
         reason: "評価していない"
         evidence: []
       documentation:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "取り込みが 1 度でまとめて確定すること、書き出しの範囲を書いた。"
+        evidence:
+          - "docs/usage/organization.md"
       localization:
         result: "not_assessed"
         reason: "評価していない"
@@ -589,7 +602,8 @@ capabilities:
       - "test/controllers/home_controller_test.rb"
       - "test/controllers/home_request_test.rb"
       - "test/controllers/home_unread_test.rb"
-    docs: []
+    docs:
+      - "docs/usage/getting_started.md"
     criteria:
       authorization:
         result: "not_assessed"
@@ -625,9 +639,10 @@ capabilities:
         reason: "評価していない"
         evidence: []
       documentation:
-        result: "unmet"
-        reason: "入口に何が出るかを読める文書が無い"
-        evidence: []
+        result: "met"
+        reason: "入口に並ぶ 4 つと、抜粋だけを並べることを書いた。"
+        evidence:
+          - "docs/usage/getting_started.md"
       localization:
         result: "not_assessed"
         reason: "評価していない"
@@ -657,7 +672,8 @@ capabilities:
       - "test/models/announcement_test.rb"
       - "test/models/scheduled_announcement_test.rb"
       - "test/system/announcements_test.rb"
-    docs: []
+    docs:
+      - "docs/usage/announcements_and_documents.md"
     criteria:
       authorization:
         result: "not_assessed"
@@ -695,9 +711,10 @@ capabilities:
         reason: "評価していない"
         evidence: []
       documentation:
-        result: "unmet"
-        reason: "操作を読める文書が無い"
-        evidence: []
+        result: "met"
+        reason: "読む側と書く側の手順、公開範囲、公開待ちと下書きの違いを書いた。"
+        evidence:
+          - "docs/usage/announcements_and_documents.md"
       localization:
         result: "not_assessed"
         reason: "評価していない"
@@ -727,7 +744,8 @@ capabilities:
       - "test/models/event_test.rb"
       - "test/models/recurring_event_test.rb"
       - "test/system/events_test.rb"
-    docs: []
+    docs:
+      - "docs/usage/events_and_reservations.md"
     criteria:
       authorization:
         result: "not_assessed"
@@ -767,9 +785,10 @@ capabilities:
         reason: "評価していない"
         evidence: []
       documentation:
-        result: "unmet"
-        reason: "操作を読める文書が無い"
-        evidence: []
+        result: "met"
+        reason: "期間の指定、公開範囲、参加者の指名、繰り返しの扱いを書いた。"
+        evidence:
+          - "docs/usage/events_and_reservations.md"
       localization:
         result: "not_assessed"
         reason: "評価していない"
@@ -798,7 +817,8 @@ capabilities:
       - "test/controllers/resources_controller_test.rb"
       - "test/models/resource_test.rb"
       - "test/system/resources_test.rb"
-    docs: []
+    docs:
+      - "docs/usage/events_and_reservations.md"
     criteria:
       authorization:
         result: "not_assessed"
@@ -835,9 +855,10 @@ capabilities:
         reason: "評価していない"
         evidence: []
       documentation:
-        result: "unmet"
-        reason: "操作を読める文書が無い"
-        evidence: []
+        result: "met"
+        reason: "一覧の見方と、予約を受け付けない設定の効果を書いた。"
+        evidence:
+          - "docs/usage/events_and_reservations.md"
       localization:
         result: "not_assessed"
         reason: "評価していない"
@@ -868,6 +889,7 @@ capabilities:
       - "test/system/reservations_test.rb"
     docs:
       - "docs/operations/administration.md"
+      - "docs/usage/events_and_reservations.md"
     criteria:
       authorization:
         result: "not_assessed"
@@ -907,9 +929,10 @@ capabilities:
         reason: "評価していない"
         evidence: []
       documentation:
-        result: "unmet"
-        reason: "操作を読める文書が無い"
-        evidence: []
+        result: "met"
+        reason: "予約の手順、重なりの扱い、直せる範囲を書いた。"
+        evidence:
+          - "docs/usage/events_and_reservations.md"
       localization:
         result: "not_assessed"
         reason: "評価していない"
@@ -945,6 +968,7 @@ capabilities:
       - "test/system/request_decisions_test.rb"
     docs:
       - "docs/operations/administration.md"
+      - "docs/usage/requests.md"
     criteria:
       authorization:
         result: "met"
@@ -989,9 +1013,10 @@ capabilities:
           - "test/models/delegated_approval_test.rb"
           - "test/controllers/request_decisions_controller_test.rb"
       documentation:
-        result: "unmet"
-        reason: "申請を出す側と承認する側の手順の文書が無い。C5 が持つ。"
-        evidence: []
+        result: "met"
+        reason: "出す側と承認する側の手順、再提出が 1 段目から始まること、競合したときの表示を書いた。"
+        evidence:
+          - "docs/usage/requests.md"
       localization:
         result: "not_assessed"
         reason: "評価していない"
@@ -1024,6 +1049,7 @@ capabilities:
       - "test/models/delegated_approval_test.rb"
     docs:
       - "docs/operations/administration.md"
+      - "docs/usage/requests.md"
     criteria:
       authorization:
         result: "not_assessed"
@@ -1059,9 +1085,10 @@ capabilities:
         reason: "評価していない"
         evidence: []
       documentation:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "委任の作り方、期間の扱い、担当が移らないこと、無効化との関係を書いた。"
+        evidence:
+          - "docs/usage/requests.md"
       localization:
         result: "not_assessed"
         reason: "評価していない"
@@ -1091,6 +1118,7 @@ capabilities:
       - "test/system/document_access_test.rb"
     docs:
       - "docs/operations/administration.md"
+      - "docs/usage/announcements_and_documents.md"
     criteria:
       authorization:
         result: "not_assessed"
@@ -1127,9 +1155,10 @@ capabilities:
         reason: "評価していない"
         evidence: []
       documentation:
-        result: "unmet"
-        reason: "操作を読める文書が無い"
-        evidence: []
+        result: "met"
+        reason: "読む側と書く側の手順、添付の扱い、分類が読める範囲を決めないことを書いた。"
+        evidence:
+          - "docs/usage/announcements_and_documents.md"
       localization:
         result: "not_assessed"
         reason: "評価していない"
@@ -1163,6 +1192,7 @@ capabilities:
     docs:
       - "docs/operations/administration.md"
       - "docs/operations/configuration.md"
+      - "docs/usage/getting_started.md"
     criteria:
       authorization:
         result: "not_assessed"
@@ -1201,9 +1231,10 @@ capabilities:
         reason: "評価していない"
         evidence: []
       documentation:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "並び方、二重に作られない単位、再提出や複数の段では別の通知になることを書いた。"
+        evidence:
+          - "docs/usage/getting_started.md"
       localization:
         result: "not_assessed"
         reason: "評価していない"
@@ -1233,6 +1264,7 @@ capabilities:
     docs:
       - "docs/operations/administration.md"
       - "docs/operations/configuration.md"
+      - "docs/usage/organization.md"
     criteria:
       authorization:
         result: "met"
@@ -1274,10 +1306,10 @@ capabilities:
           - "test/models/audit_event_test.rb"
           - "test/models/audit_event_retention_test.rb"
       documentation:
-        result: "unmet"
-        reason: "保持期間の設定は運用の文書にあるが、管理者が記録を読み、絞り込み、書き出す手順の文書が無い。C5 が持つ。"
+        result: "met"
+        reason: "見方、絞り込み、書き出し、書き換えられないこと、詳細に入れない値を書いた。"
         evidence:
-          - "docs/operations/configuration.md"
+          - "docs/usage/organization.md"
       localization:
         result: "not_assessed"
         reason: "評価していない"
@@ -1310,6 +1342,7 @@ capabilities:
       - "test/models/api_token_scope_test.rb"
     docs:
       - "docs/operations/administration.md"
+      - "docs/usage/organization.md"
     criteria:
       authorization:
         result: "met"
@@ -1353,9 +1386,10 @@ capabilities:
           - "test/controllers/api/v1/api_paging_test.rb"
           - "test/configuration/api_scope_coverage_test.rb"
       documentation:
-        result: "unmet"
-        reason: "応答の形を版として固定した定義が無く、呼び出す側が読める文書も無い。C5 が持つ。"
-        evidence: []
+        result: "met"
+        reason: "発行の手順、値を 1 度だけ表示すること、範囲が発行時点で決まることを書いた。"
+        evidence:
+          - "docs/usage/organization.md"
       localization:
         result: "not_assessed"
         reason: "評価していない"
@@ -1385,6 +1419,7 @@ capabilities:
     docs:
       - "docs/operations/administration.md"
       - "docs/operations/configuration.md"
+      - "docs/usage/organization.md"
     criteria:
       authorization:
         result: "not_assessed"
@@ -1421,9 +1456,10 @@ capabilities:
         reason: "評価していない"
         evidence: []
       documentation:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "登録の手順、送信の記録の見方、配送が at-least-once であることを書いた。"
+        evidence:
+          - "docs/usage/organization.md"
       localization:
         result: "not_assessed"
         reason: "評価していない"
@@ -1451,6 +1487,7 @@ capabilities:
       - "test/system/locale_switching_test.rb"
     docs:
       - "docs/development/conventions.md"
+      - "docs/usage/getting_started.md"
     criteria:
       authorization:
         result: "met"
@@ -1489,9 +1526,10 @@ capabilities:
           - "test/controllers/locales_controller_test.rb"
           - "test/configuration/locale_symmetry_test.rb"
       documentation:
-        result: "unmet"
-        reason: "利用者が表示言語を切り替える手順の文書が無い。C5 が持つ。"
-        evidence: []
+        result: "met"
+        reason: "切り替え方と、次に開いたときも続くこと、既定の決まり方を書いた。"
+        evidence:
+          - "docs/usage/getting_started.md"
       localization:
         result: "not_assessed"
         reason: "評価していない"
@@ -1617,9 +1655,10 @@ capabilities:
         reason: "コマンドとしての契約にテストが無い。判定そのものは `Diagnostics` の テストが固定しているが、`lib/tasks/diagnose.rake` の出力と、失敗があるときに 0 以外で終わる契約は確かめていない。`bin/jobs_status` は `test/configuration/persistent_queue_test.rb` が実行できることだけを見ており、 通常の表示、`--failed`、上限、誤った引数、終了状態、 ジョブの引数や送信内容を表示しないことは固定していない"
         evidence: []
       documentation:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "診断のコマンドの使い方と読み方が運用の文書にある。"
+        evidence:
+          - "docs/operations/administration.md"
       localization:
         result: "not_assessed"
         reason: "評価していない"
@@ -1683,9 +1722,10 @@ capabilities:
         reason: "評価していない"
         evidence: []
       documentation:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "知らせる条件、届く文面、知らせ直す間隔が運用の文書にある。"
+        evidence:
+          - "docs/operations/administration.md"
       localization:
         result: "not_assessed"
         reason: "評価していない"
@@ -1749,9 +1789,10 @@ capabilities:
         reason: "評価していない"
         evidence: []
       documentation:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "取得と復元の手順が専用の文書にある。"
+        evidence:
+          - "docs/operations/backup.md"
       localization:
         result: "not_assessed"
         reason: "評価していない"
@@ -1817,9 +1858,11 @@ capabilities:
         reason: "評価していない"
         evidence: []
       documentation:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "導入と入れ替えの手順が専用の文書にある。"
+        evidence:
+          - "docs/operations/installation.md"
+          - "docs/operations/upgrade.md"
       localization:
         result: "not_assessed"
         reason: "評価していない"
@@ -1838,122 +1881,189 @@ cross_cutting_gates:
   - id: "gate.accessibility"
     name: "画面の到達性"
     kind: "cross_cutting_gate"
-    state: "partial"
+    state: "complete"
     entries: []
     implementation: []
     implementation_note: "すべての画面"
     tests:
       - "test/browser/accessibility_audit_test.rb"
+      - "test/browser/narrow_screen_test.rb"
       - "test/configuration/accessibility_check_test.rb"
       - "test/system/accessibility_test.rb"
     docs:
       - "docs/development/accessibility.md"
     criteria:
       authorization:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "not_applicable"
+        reason: "画面の到達性そのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「320 px と 400% 拡大で主要な機能へ到達できる」「キーボードだけで主要な操作が完了する」「自動で判定できる指摘が無い」の 3 つとし、いずれも検査で確かめる。"
+        evidence:
+          - "test/browser/narrow_screen_test.rb"
+          - "test/browser/accessibility_audit_test.rb"
+          - "test/browser/main_flows_test.rb"
+          - "test/system/accessibility_test.rb"
       audit_assignment:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "not_applicable"
+        reason: "画面の到達性そのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「320 px と 400% 拡大で主要な機能へ到達できる」「キーボードだけで主要な操作が完了する」「自動で判定できる指摘が無い」の 3 つとし、いずれも検査で確かめる。"
+        evidence:
+          - "test/browser/narrow_screen_test.rb"
+          - "test/browser/accessibility_audit_test.rb"
+          - "test/browser/main_flows_test.rb"
+          - "test/system/accessibility_test.rb"
       notification_occurrence:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "not_applicable"
+        reason: "画面の到達性そのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「320 px と 400% 拡大で主要な機能へ到達できる」「キーボードだけで主要な操作が完了する」「自動で判定できる指摘が無い」の 3 つとし、いずれも検査で確かめる。"
+        evidence:
+          - "test/browser/narrow_screen_test.rb"
+          - "test/browser/accessibility_audit_test.rb"
+          - "test/browser/main_flows_test.rb"
+          - "test/system/accessibility_test.rb"
       list_limit:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "not_applicable"
+        reason: "画面の到達性そのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「320 px と 400% 拡大で主要な機能へ到達できる」「キーボードだけで主要な操作が完了する」「自動で判定できる指摘が無い」の 3 つとし、いずれも検査で確かめる。"
+        evidence:
+          - "test/browser/narrow_screen_test.rb"
+          - "test/browser/accessibility_audit_test.rb"
+          - "test/browser/main_flows_test.rb"
+          - "test/system/accessibility_test.rb"
       selection_rendering:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "not_applicable"
+        reason: "画面の到達性そのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「320 px と 400% 拡大で主要な機能へ到達できる」「キーボードだけで主要な操作が完了する」「自動で判定できる指摘が無い」の 3 つとし、いずれも検査で確かめる。"
+        evidence:
+          - "test/browser/narrow_screen_test.rb"
+          - "test/browser/accessibility_audit_test.rb"
+          - "test/browser/main_flows_test.rb"
+          - "test/system/accessibility_test.rb"
       database_invariants:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "not_applicable"
+        reason: "画面の到達性そのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「320 px と 400% 拡大で主要な機能へ到達できる」「キーボードだけで主要な操作が完了する」「自動で判定できる指摘が無い」の 3 つとし、いずれも検査で確かめる。"
+        evidence:
+          - "test/browser/narrow_screen_test.rb"
+          - "test/browser/accessibility_audit_test.rb"
+          - "test/browser/main_flows_test.rb"
+          - "test/system/accessibility_test.rb"
       retention:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "not_applicable"
+        reason: "画面の到達性そのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「320 px と 400% 拡大で主要な機能へ到達できる」「キーボードだけで主要な操作が完了する」「自動で判定できる指摘が無い」の 3 つとし、いずれも検査で確かめる。"
+        evidence:
+          - "test/browser/narrow_screen_test.rb"
+          - "test/browser/accessibility_audit_test.rb"
+          - "test/browser/main_flows_test.rb"
+          - "test/system/accessibility_test.rb"
       regression_tests:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "not_applicable"
+        reason: "画面の到達性そのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「320 px と 400% 拡大で主要な機能へ到達できる」「キーボードだけで主要な操作が完了する」「自動で判定できる指摘が無い」の 3 つとし、いずれも検査で確かめる。"
+        evidence:
+          - "test/browser/narrow_screen_test.rb"
+          - "test/browser/accessibility_audit_test.rb"
+          - "test/browser/main_flows_test.rb"
+          - "test/system/accessibility_test.rb"
       documentation:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "not_applicable"
+        reason: "画面の到達性そのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「320 px と 400% 拡大で主要な機能へ到達できる」「キーボードだけで主要な操作が完了する」「自動で判定できる指摘が無い」の 3 つとし、いずれも検査で確かめる。"
+        evidence:
+          - "test/browser/narrow_screen_test.rb"
+          - "test/browser/accessibility_audit_test.rb"
+          - "test/browser/main_flows_test.rb"
+          - "test/system/accessibility_test.rb"
       localization:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "not_applicable"
+        reason: "画面の到達性そのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「320 px と 400% 拡大で主要な機能へ到達できる」「キーボードだけで主要な操作が完了する」「自動で判定できる指摘が無い」の 3 つとし、いずれも検査で確かめる。"
+        evidence:
+          - "test/browser/narrow_screen_test.rb"
+          - "test/browser/accessibility_audit_test.rb"
+          - "test/browser/main_flows_test.rb"
+          - "test/system/accessibility_test.rb"
       keyboard:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "not_applicable"
+        reason: "画面の到達性そのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「320 px と 400% 拡大で主要な機能へ到達できる」「キーボードだけで主要な操作が完了する」「自動で判定できる指摘が無い」の 3 つとし、いずれも検査で確かめる。"
+        evidence:
+          - "test/browser/narrow_screen_test.rb"
+          - "test/browser/accessibility_audit_test.rb"
+          - "test/browser/main_flows_test.rb"
+          - "test/system/accessibility_test.rb"
     other_findings:
-      - "狭い画面から主要機能へ到達できない。320 px と 400% 拡大での案内が無い"
-      - "実際の支援技術と実機での確認が無い"
+      - "実際の支援技術と実機での確認が無い。自動で判定できるのは基準の一部であり、読み上げの順序と文言の分かりやすさは人が確かめる"
     issue: "C5"
     dependencies: []
   - id: "gate.user_documentation"
     name: "利用者向けの操作文書"
     kind: "cross_cutting_gate"
-    state: "planned"
+    state: "complete"
     entries: []
     implementation: []
     implementation_note: "画面を持つすべての機能"
-    tests: []
-    docs: []
+    tests:
+      - "test/configuration/usage_documentation_test.rb"
+    docs:
+      - "docs/usage/index.md"
     criteria:
       authorization:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "not_applicable"
+        reason: "操作の手引きそのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「画面を持つ Core すべてに、該当する役割の手順がある」とし、機械が読む一覧との突き合わせで確かめる。"
+        evidence:
+          - "test/configuration/usage_documentation_test.rb"
+          - "docs/usage/index.md"
       audit_assignment:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "not_applicable"
+        reason: "操作の手引きそのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「画面を持つ Core すべてに、該当する役割の手順がある」とし、機械が読む一覧との突き合わせで確かめる。"
+        evidence:
+          - "test/configuration/usage_documentation_test.rb"
+          - "docs/usage/index.md"
       notification_occurrence:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "not_applicable"
+        reason: "操作の手引きそのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「画面を持つ Core すべてに、該当する役割の手順がある」とし、機械が読む一覧との突き合わせで確かめる。"
+        evidence:
+          - "test/configuration/usage_documentation_test.rb"
+          - "docs/usage/index.md"
       list_limit:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "not_applicable"
+        reason: "操作の手引きそのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「画面を持つ Core すべてに、該当する役割の手順がある」とし、機械が読む一覧との突き合わせで確かめる。"
+        evidence:
+          - "test/configuration/usage_documentation_test.rb"
+          - "docs/usage/index.md"
       selection_rendering:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "not_applicable"
+        reason: "操作の手引きそのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「画面を持つ Core すべてに、該当する役割の手順がある」とし、機械が読む一覧との突き合わせで確かめる。"
+        evidence:
+          - "test/configuration/usage_documentation_test.rb"
+          - "docs/usage/index.md"
       database_invariants:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "not_applicable"
+        reason: "操作の手引きそのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「画面を持つ Core すべてに、該当する役割の手順がある」とし、機械が読む一覧との突き合わせで確かめる。"
+        evidence:
+          - "test/configuration/usage_documentation_test.rb"
+          - "docs/usage/index.md"
       retention:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "not_applicable"
+        reason: "操作の手引きそのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「画面を持つ Core すべてに、該当する役割の手順がある」とし、機械が読む一覧との突き合わせで確かめる。"
+        evidence:
+          - "test/configuration/usage_documentation_test.rb"
+          - "docs/usage/index.md"
       regression_tests:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "not_applicable"
+        reason: "操作の手引きそのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「画面を持つ Core すべてに、該当する役割の手順がある」とし、機械が読む一覧との突き合わせで確かめる。"
+        evidence:
+          - "test/configuration/usage_documentation_test.rb"
+          - "docs/usage/index.md"
       documentation:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "not_applicable"
+        reason: "操作の手引きそのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「画面を持つ Core すべてに、該当する役割の手順がある」とし、機械が読む一覧との突き合わせで確かめる。"
+        evidence:
+          - "test/configuration/usage_documentation_test.rb"
+          - "docs/usage/index.md"
       localization:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "not_applicable"
+        reason: "操作の手引きそのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「画面を持つ Core すべてに、該当する役割の手順がある」とし、機械が読む一覧との突き合わせで確かめる。"
+        evidence:
+          - "test/configuration/usage_documentation_test.rb"
+          - "docs/usage/index.md"
       keyboard:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
-    other_findings:
-      - "文書そのものが無い。共通条件 9 は機能ごとに課されるため、 この gate が `complete` になるまで、画面を持つ機能はどれも `complete` にならない"
+        result: "not_applicable"
+        reason: "操作の手引きそのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「画面を持つ Core すべてに、該当する役割の手順がある」とし、機械が読む一覧との突き合わせで確かめる。"
+        evidence:
+          - "test/configuration/usage_documentation_test.rb"
+          - "docs/usage/index.md"
+    other_findings: []
     issue: "C5"
     dependencies: []
 release_gates:
