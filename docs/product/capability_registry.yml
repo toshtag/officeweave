@@ -263,12 +263,13 @@ capabilities:
         reason: "通知を伴う出来事を持たない。"
         evidence: []
       list_limit:
-        result: "unmet"
-        reason: "有効なログインを上限なく並べる（`app/controllers/logins_controller.rb:11`）。 ページ送りも表示の上限も、有効なログインの数そのものの上限も持たない"
-        evidence: []
+        result: "met"
+        reason: "ログイン中の端末はページ送りを持つ。"
+        evidence:
+          - "test/controllers/list_query_count_test.rb"
       selection_rendering:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "利用者・部門・設備を選ばせる欄を持たない。"
         evidence: []
       database_invariants:
         result: "met"
@@ -472,13 +473,15 @@ capabilities:
         reason: "通知を伴う出来事を持たない。"
         evidence: []
       list_limit:
-        result: "unmet"
-        reason: "一覧に上限が無い"
-        evidence: []
+        result: "met"
+        reason: "部門の一覧はページ送りを持つ。階層の表示も 1 ページ分だけへ広げる。"
+        evidence:
+          - "test/controllers/list_query_count_test.rb"
       selection_rendering:
-        result: "unmet"
-        reason: "所属を足す欄が利用者を全件描く"
-        evidence: []
+        result: "met"
+        reason: "上位に選べる部門と、所属を足す利用者の欄は上限を置き、絞り込みで残りへ到達できる。既に選んである候補は必ず含める。"
+        evidence:
+          - "test/models/candidates_test.rb"
       database_invariants:
         result: "met"
         reason: "組織のなかの識別子の一意は索引が保ち、階層の循環は引き金 `departments_must_not_form_a_cycle` が拒む。所属の組の一意も索引が保つ。"
@@ -537,12 +540,12 @@ capabilities:
         reason: "通知を伴う出来事を持たない。"
         evidence: []
       list_limit:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "一覧を持たない。取り込みと書き出しの画面だけである。"
         evidence: []
       selection_rendering:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "利用者・部門・設備を選ばせる欄を持たない。"
         evidence: []
       database_invariants:
         result: "met"
@@ -601,12 +604,13 @@ capabilities:
         reason: "通知を伴う出来事を持たない。"
         evidence: []
       list_limit:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "並べるのはいずれも件数の上限を持つ抜粋であり、全件は各機能の一覧が扱う。"
+        evidence:
+          - "test/controllers/home_request_test.rb"
       selection_rendering:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "利用者・部門・設備を選ばせる欄を持たない。"
         evidence: []
       database_invariants:
         result: "not_applicable"
@@ -669,13 +673,15 @@ capabilities:
         evidence:
           - "test/models/notification_occurrence_test.rb"
       list_limit:
-        result: "unmet"
-        reason: "一覧に上限が無い"
-        evidence: []
+        result: "met"
+        reason: "公開済みの一覧はページ送りを持つ。下書きと公開待ちにも件数の上限を置く。"
+        evidence:
+          - "test/controllers/list_query_count_test.rb"
       selection_rendering:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "公開範囲の部門の欄は上限を置き、絞り込みで残りへ到達できる。"
+        evidence:
+          - "test/models/candidates_test.rb"
       database_invariants:
         result: "met"
         reason: "公開範囲の組と既読の組は、それぞれ `index_announcement_departments_on_pair` と `index_announcement_reads_on_pair` が保つ。"
@@ -738,13 +744,16 @@ capabilities:
           - "test/models/notification_occurrence_test.rb"
           - "test/models/webhook_payload_contract_test.rb"
       list_limit:
-        result: "unmet"
-        reason: "開始日以降を上限なく並べる"
-        evidence: []
+        result: "met"
+        reason: "指定できる期間を持ち、期間の長さにも上限がある。期間の内側でもページ送りを持つ。"
+        evidence:
+          - "test/models/date_window_test.rb"
+          - "test/controllers/list_query_count_test.rb"
       selection_rendering:
-        result: "unmet"
-        reason: "参加者と公開範囲の欄が、利用者と部門を全件描く"
-        evidence: []
+        result: "met"
+        reason: "参加者と公開範囲の欄は上限を置き、絞り込みで残りへ到達できる。"
+        evidence:
+          - "test/models/candidates_test.rb"
       database_invariants:
         result: "met"
         reason: "公開範囲の組と参加者の組は、それぞれ `index_event_departments_on_pair` と `index_event_participants_on_event_id_and_user_id` が保つ。繰り返しは作成の時点で個々の予定へ展開するため、行をまたぐ条件を持たない。"
@@ -804,13 +813,15 @@ capabilities:
         reason: "通知を伴う出来事を持たない。"
         evidence: []
       list_limit:
-        result: "unmet"
-        reason: "一覧に上限が無い"
-        evidence: []
+        result: "met"
+        reason: "設備・備品の一覧はページ送りを持つ。"
+        evidence:
+          - "test/controllers/list_query_count_test.rb"
       selection_rendering:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "予約で設備を選ぶ欄は上限を置き、絞り込みで残りへ到達できる。"
+        evidence:
+          - "test/models/candidates_test.rb"
       database_invariants:
         result: "met"
         reason: "組織のなかの識別子の一意は `index_resources_on_organization_id_and_code` が保つ。"
@@ -871,13 +882,16 @@ capabilities:
         reason: "通知を伴う出来事を持たない。"
         evidence: []
       list_limit:
-        result: "unmet"
-        reason: "開始日以降を上限なく並べる"
-        evidence: []
+        result: "met"
+        reason: "指定できる期間を持ち、期間の長さにも上限がある。期間の内側でもページ送りを持つ。"
+        evidence:
+          - "test/models/date_window_test.rb"
+          - "test/controllers/list_query_count_test.rb"
       selection_rendering:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "設備を選ぶ欄は上限を置き、絞り込みで残りへ到達できる。"
+        evidence:
+          - "test/models/candidates_test.rb"
       database_invariants:
         result: "met"
         reason: "同じ設備の時間帯が重ならないことは `reservations_must_not_overlap` が保つ。判定は状態コードと制約の名前で行い、例外の文面に依存しない。"
@@ -954,9 +968,10 @@ capabilities:
         reason: "評価していない"
         evidence: []
       selection_rendering:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "承認の経路で部門を選ぶ欄は上限を置き、絞り込みで残りへ到達できる。"
+        evidence:
+          - "test/models/candidates_test.rb"
       database_invariants:
         result: "met"
         reason: "様式の識別子と、承認の段の位置の一意は索引が保つ。状態の変化は行を占有したうえで決めるため、同時の決裁でも段が 2 つ進まない。"
@@ -1090,13 +1105,15 @@ capabilities:
         reason: "通知を伴う出来事を持たない。"
         evidence: []
       list_limit:
-        result: "unmet"
-        reason: "分類の一覧に上限が無い"
-        evidence: []
+        result: "met"
+        reason: "文書の一覧はページ送りを持ち、分類の一覧もページ送りを持つ。"
+        evidence:
+          - "test/controllers/document_list_test.rb"
       selection_rendering:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "公開範囲の部門の欄は上限を置き、絞り込みで残りへ到達できる。"
+        evidence:
+          - "test/models/candidates_test.rb"
       database_invariants:
         result: "met"
         reason: "分類の識別子と公開範囲の組は、それぞれ `index_document_categories_on_organization_id_and_code` と `index_document_departments_on_pair` が保つ。"
