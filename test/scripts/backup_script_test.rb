@@ -80,7 +80,7 @@ class BackupScriptTest < ActiveSupport::TestCase
       assert_includes metadata, "schema_version=20260101000000"
       assert_includes metadata, "database_name="
       # 形式 2 から未処理のジョブを含む。
-      assert_includes metadata, "format_version=2"
+      assert_includes metadata, "format_version=3"
       assert_includes metadata, "queue_database_name="
     end
   end
