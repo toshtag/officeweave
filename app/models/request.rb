@@ -260,7 +260,7 @@ class Request < ApplicationRecord
   #
   # 立場の判定は、この 1 か所で完結させる。制御部の参照範囲に頼ると、
   # 画面を通らない経路から呼んだときに、その分の判定が抜ける。
-  def decision_authorization_for(user)
+  def decision_authorization_for(user, lock: false)
     return nil if user.nil?
     return nil unless user.active?
     return nil unless user.organization_id == organization_id
@@ -274,7 +274,7 @@ class Request < ApplicationRecord
     return authorization(user, source: :responsible) if step.approvable_by?(user)
 
     # 委任を受けている相手が担当なら、代わりに決裁できる。
-    delegator = delegators_of(user).detect { |candidate| step.approvable_by?(candidate) }
+    delegator = delegators_of(user, lock: lock).detect { |candidate| step.approvable_by?(candidate) }
     return nil if delegator.nil?
 
     authorization(user, on_behalf_of: delegator, source: :delegated)
@@ -303,8 +303,16 @@ class Request < ApplicationRecord
     end
 
     # その利用者が代わりに決裁できる相手。
-    def delegators_of(user)
-      organization.users.where(id: ApprovalDelegation.delegators_for(user)).to_a
+    #
+    # 決裁のときは占有して読む。読んだあとに委任を取り消されると、取り消し後の
+    # 決裁が通り得る。占有する順は、申請、決裁する利用者、委任元の識別子順と
+    # 決めてある。画面の表示では占有しない。表示のたびに他の利用者の行を
+    # 押さえることになる。
+    def delegators_of(user, lock: false)
+      scope = organization.users.where(id: ApprovalDelegation.delegators_for(user))
+      scope = scope.order(:id).lock if lock
+
+      scope.to_a
     end
 
     # 提出の時点の段を写す。前の提出の分は残さない。

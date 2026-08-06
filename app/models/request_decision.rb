@@ -80,7 +80,7 @@ class RequestDecision
       #
       # 立場と代理元は 1 回で解く。別々に解くと、そのあいだに委任が変わった
       # 場合に、委任で通したのに代理元が残らない、という食い違いが起きる。
-      @authorization = @request.decision_authorization_for(locked_actor)
+      @authorization = @request.decision_authorization_for(locked_actor, lock: true)
       return :unauthorized if @authorization.nil?
 
       # 位置が合うだけでは足りない。位置は同じ値へ戻り得るため、要求を作った
