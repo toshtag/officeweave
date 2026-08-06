@@ -47,7 +47,7 @@ class ApiTokenExpiryTest < ActiveSupport::TestCase
     # 秒より細かい端数を持たせない。travel_to は秒までしか合わせられず、
     # 端数があると「ちょうど」を作れない。
     at = 30.days.from_now.change(usec: 0)
-    token = @user.api_tokens.create!(organization: @user.organization, name: "境界", expires_at: at)
+    token = @user.api_tokens.create!(organization: @user.organization, name: "境界", expires_at: at, scopes: ApiToken::SCOPES)
     value = token.token
 
     travel_to at do
@@ -65,7 +65,7 @@ class ApiTokenExpiryTest < ActiveSupport::TestCase
   end
 
   test "期限が過去の指定は受け付けない" do
-    token = @user.api_tokens.new(organization: @user.organization, name: "過去", expires_at: 1.minute.ago)
+    token = @user.api_tokens.new(organization: @user.organization, name: "過去", expires_at: 1.minute.ago, scopes: ApiToken::SCOPES)
 
     assert_not token.valid?
     assert_includes token.errors.attribute_names, :expires_at
@@ -108,7 +108,8 @@ class ApiTokenExpiryTest < ActiveSupport::TestCase
       @user.api_tokens.create!(
         organization: @user.organization,
         name: "検証用 #{expires_in_days.inspect}",
-        expires_at: expires_in_days&.days&.from_now
+        expires_at: expires_in_days&.days&.from_now,
+        scopes: ApiToken::SCOPES
       )
     end
 end

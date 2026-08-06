@@ -2,6 +2,8 @@
 #
 # 取り込みは既存の記録を書き換えるため、管理者へ限定する。
 class DataTransfersController < ApplicationController
+  records_audit :users_import, :departments_import
+
   before_action :require_administrator
 
   def show

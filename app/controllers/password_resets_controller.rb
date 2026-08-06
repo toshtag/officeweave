@@ -6,13 +6,17 @@
 # 応答は、利用者がいてもいなくても同じにする。違えると、組織に属する
 # メールアドレスの一覧をこの経路から作れる。
 class PasswordResetsController < ApplicationController
+  records_audit :create, :update
+
   allow_unauthenticated_access
   before_action :require_internal_credentials
 
   # 総当たりと、宛先へ大量に送りつけることを抑える。
-  # 数え上げはキャッシュ領域に保持するため、複数の処理系で運用する場合は共有設定が必要になる。
+  # 数え上げは web の外（RateLimitStore）で共有する。web ごとに数えると、
+  # 台数を増やしただけで、宛先へ送りつけられる数がその数だけ増える。
   rate_limit to: 5, within: 3.minutes, only: :create,
-             with: -> { redirect_to new_password_reset_path, alert: t("password_resets.rate_limited") }
+             with: -> { redirect_to new_password_reset_path, alert: t("password_resets.rate_limited") },
+             store: RateLimitStore
 
   before_action :set_user_from_token, only: %i[edit update]
 

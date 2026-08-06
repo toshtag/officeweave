@@ -2,6 +2,8 @@
 #
 # 任意の URL へ送るため、登録できる利用者を管理者に限る。
 class WebhookEndpointsController < ApplicationController
+  records_audit :create, :update, :destroy
+
   before_action :require_administrator
   before_action :set_webhook_endpoint, only: %i[show update destroy]
 

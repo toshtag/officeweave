@@ -1,6 +1,9 @@
 # 申請の作成、提出、取り下げ。
 # 承認と差し戻しは P7-T2 で扱う。
 class RequestsController < ApplicationController
+  records_no_audit :create, :update,
+                   reason: "申請の経過は RequestActivity が持つ。監査へ写すと、題名と本文が監査の詳細へ流れる"
+
   before_action :set_request, only: %i[show edit update]
   before_action :require_editable, only: %i[edit update]
 

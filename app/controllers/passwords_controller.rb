@@ -7,6 +7,8 @@
 # パスワードを扱わない認証方式では、この経路自体を無いものとする。
 # 資格情報がこの製品の中に無いため、変えられるものが無い。
 class PasswordsController < ApplicationController
+  records_audit :update
+
   before_action :require_internal_credentials
 
   def edit

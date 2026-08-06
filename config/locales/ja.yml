@@ -766,7 +766,6 @@ ja:
     revoke: 無効にする
     never_used: 未使用
     no_expiry: 期限なし
-    all_scopes: すべて
     index:
       title: 外部接続用の token
       heading: 外部接続用の token
@@ -895,6 +894,8 @@ ja:
       approval_delegation_deleted: 承認の委任の終了
       request_approved: 申請の承認
       request_returned: 申請の差し戻し
+      request_type_created: 申請種別の登録
+      request_type_updated: 申請種別の変更
       api_token_issued: token の発行
       api_token_revoked: token の無効化
       webhook_endpoint_created: 送信先の登録

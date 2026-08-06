@@ -6,6 +6,8 @@
 # 資格情報の置き場所とは関わらない。外部の認証方式へ切り替えた環境でも、
 # ログインの記録はこの製品が持つ。
 class LoginsController < ApplicationController
+  records_audit :destroy, :destroy_all
+
   def index
     # 期限を過ぎた記録は並べない。認証には使えず、並べると終わらせる操作が
     # 必要に見える。消すのは定期実行が行う。

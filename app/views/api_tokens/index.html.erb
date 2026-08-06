@@ -61,11 +61,7 @@
               <td><%= api_token.last_used_at ? l(api_token.last_used_at, format: :short) : t("api_tokens.never_used") %></td>
               <td><%= api_token.expires_at ? l(api_token.expires_at.to_date, format: :long) : t("api_tokens.no_expiry") %></td>
               <td>
-                <%= if api_token.scopes.nil?
-                      t("api_tokens.all_scopes")
-                    else
-                      api_token.scopes.map { |scope| t("api_tokens.scopes.#{scope}") }.join("、")
-                    end %>
+                <%= api_token.scopes.map { |scope| t("api_tokens.scopes.#{scope}") }.join("、") %>
               </td>
               <td>
                 <% if api_token.revoked? %>

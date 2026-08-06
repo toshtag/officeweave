@@ -24,6 +24,11 @@ production:
   delete_expired_audit_events:
     command: "AuditEvent.delete_expired"
     schedule: every day at 3:32am
+  # 期限を過ぎた数え上げの行。次の要求が来る key は自分で置き換わるため、
+  # 残るのは二度と来ない接続元や token のぶんだけである。
+  delete_expired_rate_limit_counters:
+    command: "RateLimitCounter.delete_expired"
+    schedule: every hour at minute 42
   # 放っておくと運用が成り立たなくなるものを、1 日 1 回だけ知らせる。
   # 宛先を設定していない場合と、異常が無い場合は何も送らない。
   report_operational_issues:

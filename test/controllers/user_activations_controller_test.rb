@@ -19,7 +19,7 @@ class UserActivationsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "無効にすると発行済みの token も失効する" do
-    token = organizations(:main).api_tokens.create!(user: users(:hanako), name: "連携用")
+    token = organizations(:main).api_tokens.create!(user: users(:hanako), name: "連携用", scopes: ApiToken::SCOPES)
 
     delete user_activation_url(users(:hanako))
 
@@ -35,7 +35,7 @@ class UserActivationsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "再び有効にしても失効した token は戻らない" do
-    token = organizations(:main).api_tokens.create!(user: users(:hanako), name: "連携用")
+    token = organizations(:main).api_tokens.create!(user: users(:hanako), name: "連携用", scopes: ApiToken::SCOPES)
     users(:hanako).deactivate!
 
     post user_activation_url(users(:hanako))

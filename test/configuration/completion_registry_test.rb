@@ -93,6 +93,18 @@ class CompletionRegistryTest < ActiveSupport::TestCase
     end
   end
 
+  # 条件ごとの証拠も、実在するものだけを挙げる。挙げただけで確かめられない
+  # 経路が残ると、判定の根拠をたどれない。
+  test "条件の判定に挙げた証拠が実際にある" do
+    all_entries.each do |entry|
+      entry.fetch("criteria").each do |name, judgement|
+        judgement.fetch("evidence").each do |path|
+          assert File.exist?(Rails.root.join(path)), "#{entry["id"]} の条件 #{name}: #{path} がありません"
+        end
+      end
+    end
+  end
+
   test "条件の判定が 4 つの値のいずれかである" do
     all_entries.each do |entry|
       entry.fetch("criteria").each do |key, judgement|

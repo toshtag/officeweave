@@ -86,7 +86,7 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
   # 順序も併せて見る。組織を先に取ることが、管理者の無効化と
   # 循環しないための条件そのものである。
   test "token の発行では組織から利用者の順に行をロックする" do
-    statements = sql_statements { @organization.api_tokens.create!(user: @user, name: "ロック順序の確認") }
+    statements = sql_statements { @organization.api_tokens.create!(user: @user, name: "ロック順序の確認", scopes: ApiToken::SCOPES) }
 
     organization_index = statements.index { |sql| sql.match?(/organizations/i) && sql.match?(/FOR KEY SHARE/i) }
     user_index = statements.index { |sql| sql.match?(/users/i) && sql.match?(/FOR UPDATE/i) }
@@ -221,7 +221,7 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
     @organization.users.load
     User.create!(organization_id: @organization.id, name: "遅れて増えた利用者",
                  email_address: "late@example.com", password: "a-long-secret-value")
-    @organization.api_tokens.create!(user: @user, name: "残った token")
+    @organization.api_tokens.create!(user: @user, name: "残った token", scopes: ApiToken::SCOPES)
 
     discard_organization(@organization)
 
@@ -264,7 +264,7 @@ class ApiTokenConcurrencyTest < ActiveSupport::TestCase
     end
 
     def build_token(user = @user)
-      Organization.find(@organization.id).api_tokens.new(user_id: user.id, name: "同時発行")
+      Organization.find(@organization.id).api_tokens.new(user_id: user.id, name: "同時発行", scopes: ApiToken::SCOPES)
     end
 
     # 管理者の無効化が最初に取る占有。同じ形で先に取ることで、

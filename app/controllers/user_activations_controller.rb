@@ -3,6 +3,8 @@
 # 利用者そのものを削除する経路は用意しない。
 # 削除すると、過去の申請や監査の記録から利用者をたどれなくなる。
 class UserActivationsController < ApplicationController
+  records_audit :create, :destroy
+
   before_action :require_administrator
   before_action :set_user
 

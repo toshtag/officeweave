@@ -22,7 +22,7 @@ capabilities:
       - "/session"
     implementation:
       - "config/recurring.yml"
-    implementation_note: "Session, User, Authentication::*, config/recurring.yml（毎時 Session.delete_expired）"
+    implementation_note: "Session, User, Authentication::*, RateLimitCounter, config/recurring.yml（毎時 Session.delete_expired）"
     tests:
       - "test/configuration/persistent_queue_test.rb"
       - "test/controllers/session_activity_test.rb"
@@ -34,13 +34,17 @@ capabilities:
       - "docs/operations/configuration.md"
     criteria:
       authorization:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "参照と更新の入口は `ApplicationController` の既定で認証を要し、ログインの入口だけが `allow_unauthenticated_access` で開く。組織はログインした利用者から決まり、要求の値からは決まらない。"
+        evidence:
+          - "test/controllers/sessions_controller_test.rb"
+          - "test/controllers/screen_rate_limit_test.rb"
       audit_assignment:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "`create` と `destroy` を `records_audit` で宣言し、成功と失敗の両方を記録へ残す。"
+        evidence:
+          - "test/configuration/audit_assignment_test.rb"
+          - "test/controllers/sessions_controller_test.rb"
       notification_occurrence:
         result: "not_assessed"
         reason: "評価していない"
@@ -62,13 +66,18 @@ capabilities:
         reason: "期限を過ぎた記録は `Session.delete_expired` （`app/models/session.rb:35`）が毎時消す。"
         evidence: []
       regression_tests:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "入口、実装、試行の上限、期限切れの後始末に、退行を止めるテストがある。"
+        evidence:
+          - "test/controllers/sessions_controller_test.rb"
+          - "test/controllers/screen_rate_limit_test.rb"
+          - "test/models/session_test.rb"
+          - "test/models/rate_limit_counter_concurrency_test.rb"
       documentation:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "unmet"
+        reason: "運用の設定は文書にあるが、利用者がログインし、端末を確認して終わらせる手順の文書が無い。C5 が持つ。"
+        evidence:
+          - "docs/operations/configuration.md"
       localization:
         result: "not_assessed"
         reason: "評価していない"
@@ -77,8 +86,7 @@ capabilities:
         result: "not_assessed"
         reason: "評価していない"
         evidence: []
-    other_findings:
-      - "試行の上限が、動かしている web の数に依存する。 `app/controllers/sessions_controller.rb:6` の上限はキャッシュ領域で数えるが、 配布用の設定は共有の置き場を持たない（`config/environments/production.rb:57`）。 web を増やすと、その数だけ上限が実質的に増える"
+    other_findings: []
     issue: "C1"
     dependencies: []
     stage: "core"
@@ -100,13 +108,16 @@ capabilities:
       - "docs/operations/configuration.md"
     criteria:
       authorization:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "認可の開始と戻りだけを開き、利用者は自動で作らない。権限は認可サーバーの属性から決めない。"
+        evidence:
+          - "test/models/authentication/oidc_claim_contract_test.rb"
+          - "test/controllers/oidc_login_test.rb"
       audit_assignment:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "`create` を `records_audit` で宣言し、成功と、利用者を特定できた失敗を記録へ残す。"
+        evidence:
+          - "test/configuration/audit_assignment_test.rb"
       notification_occurrence:
         result: "not_assessed"
         reason: "評価していない"
@@ -128,13 +139,17 @@ capabilities:
         reason: "評価していない"
         evidence: []
       regression_tests:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "署名、発行者、宛先、期限、nonce、受け取る属性の対応にテストがある。"
+        evidence:
+          - "test/models/authentication/oidc_id_token_test.rb"
+          - "test/models/authentication/oidc_claim_contract_test.rb"
       documentation:
-        result: "unmet"
-        reason: "受け取った属性を利用者のどの項目へ結び付けるかが文書に無い"
-        evidence: []
+        result: "met"
+        reason: "設定、ログインの流れ、受け取る属性、失敗したときの扱いが文書にあり、属性の対応は契約のテストが固定する。"
+        evidence:
+          - "docs/development/authentication.md"
+          - "test/models/authentication/oidc_claim_contract_test.rb"
       localization:
         result: "not_assessed"
         reason: "評価していない"
@@ -167,13 +182,16 @@ capabilities:
       - "docs/operations/configuration.md"
     criteria:
       authorization:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "再設定の入口は認証を要さないが、受け取れる相手をメールの宛先に限り、応答は利用者の有無で変えない。変更の入口は本人のみを対象にする。"
+        evidence:
+          - "test/controllers/password_reset_test.rb"
+          - "test/controllers/password_change_test.rb"
       audit_assignment:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "再設定の要求・完了とパスワードの変更を `records_audit` で宣言し、記録へ残す。"
+        evidence:
+          - "test/configuration/audit_assignment_test.rb"
       notification_occurrence:
         result: "not_assessed"
         reason: "評価していない"
@@ -195,12 +213,14 @@ capabilities:
         reason: "再設定の案内は署名した値であり、記録として持たない （`app/models/user.rb:19`）。期限は 15 分で、一度使うと再び使えない。 消す対象の行が無いため、保持の方針を問えない。"
         evidence: []
       regression_tests:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "案内の値の期限と使い回し、試行の上限、内部認証以外での経路の閉鎖にテストがある。"
+        evidence:
+          - "test/controllers/password_reset_test.rb"
+          - "test/controllers/screen_rate_limit_test.rb"
       documentation:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "unmet"
+        reason: "利用者がパスワードを忘れたときの手順の文書が無い。C5 が持つ。"
         evidence: []
       localization:
         result: "not_assessed"
@@ -210,8 +230,7 @@ capabilities:
         result: "not_assessed"
         reason: "評価していない"
         evidence: []
-    other_findings:
-      - "試行の上限が、動かしている web の数に依存する。 `app/controllers/password_resets_controller.rb:14` の上限も、 ログインと同じくキャッシュ領域で数える"
+    other_findings: []
     issue: "C1"
     dependencies: []
     stage: "core"
@@ -292,13 +311,15 @@ capabilities:
     docs: []
     criteria:
       authorization:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "対象は常に操作した本人であり、要求の値から対象を決めない。"
+        evidence:
+          - "test/controllers/settings_controller_test.rb"
       audit_assignment:
-        result: "unmet"
-        reason: "表示言語と配信設定の変更が監査へ残らない"
-        evidence: []
+        result: "met"
+        reason: "記録しないことを理由とともに宣言する。自分の表示言語と通知の受け取り方であり、他の利用者から見える情報は変わらない。"
+        evidence:
+          - "test/configuration/audit_assignment_test.rb"
       notification_occurrence:
         result: "not_assessed"
         reason: "評価していない"
@@ -320,12 +341,13 @@ capabilities:
         reason: "評価していない"
         evidence: []
       regression_tests:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "本人以外を対象にできないこと、言語と通知設定を 1 つの確定で保存することにテストがある。"
+        evidence:
+          - "test/controllers/settings_controller_test.rb"
       documentation:
         result: "unmet"
-        reason: "利用者がこの画面で何を変えられるかを読める文書が無い"
+        reason: "利用者が自分の設定を変える手順の文書が無い。C5 が持つ。"
         evidence: []
       localization:
         result: "not_assessed"
@@ -357,13 +379,16 @@ capabilities:
       - "docs/operations/administration.md"
     criteria:
       authorization:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "変更は管理者だけに開き、対象は自分の組織の利用者に限る。最後の管理者を無効化できない契約は、行の占有のなかで確かめる。"
+        evidence:
+          - "test/controllers/users_controller_test.rb"
+          - "test/models/user_administrator_concurrency_test.rb"
       audit_assignment:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "作成・更新・有効化・無効化を `records_audit` で宣言し、記録へ残す。"
+        evidence:
+          - "test/configuration/audit_assignment_test.rb"
       notification_occurrence:
         result: "not_assessed"
         reason: "評価していない"
@@ -385,13 +410,17 @@ capabilities:
         reason: "評価していない"
         evidence: []
       regression_tests:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "権限、組織の境界、最後の管理者の競合にテストがある。"
+        evidence:
+          - "test/controllers/users_controller_test.rb"
+          - "test/models/organization_boundary_test.rb"
+          - "test/models/user_administrator_concurrency_test.rb"
       documentation:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "unmet"
+        reason: "管理者が利用者を追加し、権限を変え、無効化する手順の文書が無い。C5 が持つ。"
+        evidence:
+          - "docs/operations/administration.md"
       localization:
         result: "not_assessed"
         reason: "評価していない"
@@ -894,13 +923,16 @@ capabilities:
       - "docs/operations/administration.md"
     criteria:
       authorization:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "参照は `Request.visible_to` で申請者・承認者・委任先に限り、提出と取り下げは申請者本人だけ、決裁は占有のなかで承認の権限を確かめる。"
+        evidence:
+          - "test/models/request_test.rb"
+          - "test/controllers/request_decisions_controller_test.rb"
       audit_assignment:
-        result: "unmet"
-        reason: "作成・変更・提出・取り下げが監査へ残らない"
-        evidence: []
+        result: "met"
+        reason: "決裁は `records_audit` で宣言し、`RequestDecision` が状態の変更と同じ確定のなかで記録する。作成・更新・提出・取り下げは、経過を `RequestActivity` が持つため記録しないことを理由とともに宣言する。"
+        evidence:
+          - "test/configuration/audit_assignment_test.rb"
       notification_occurrence:
         result: "not_assessed"
         reason: "評価していない"
@@ -922,12 +954,15 @@ capabilities:
         reason: "評価していない"
         evidence: []
       regression_tests:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "権限、段の進み方、競合、委任の届く範囲にテストがある。"
+        evidence:
+          - "test/models/request_concurrency_test.rb"
+          - "test/models/delegated_approval_test.rb"
+          - "test/controllers/request_decisions_controller_test.rb"
       documentation:
         result: "unmet"
-        reason: "操作を読める文書が無い"
+        reason: "申請を出す側と承認する側の手順の文書が無い。C5 が持つ。"
         evidence: []
       localization:
         result: "not_assessed"
@@ -1165,13 +1200,15 @@ capabilities:
       - "docs/operations/configuration.md"
     criteria:
       authorization:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "参照と書き出しは管理者だけに開き、対象は自分の組織の記録に限る。"
+        evidence:
+          - "test/controllers/audit_events_test.rb"
       audit_assignment:
-        result: "unmet"
-        reason: "更新の経路に対して、監査へ記録するかしないかの割り当てが網羅されていない。 お知らせ、予定、文書、文書の分類、設備、予約、申請の作成と変更と提出と 取り下げ、申請の種別、自分の設定には割り当てが無い。 運用管理は「重要な操作は監査記録として残る」と書いており、実装と一致しない"
-        evidence: []
+        result: "met"
+        reason: "状態を変える入口すべてが、記録する・しないのどちらかを宣言する。記録しない側は理由を持つ。"
+        evidence:
+          - "test/configuration/audit_assignment_test.rb"
       notification_occurrence:
         result: "not_assessed"
         reason: "評価していない"
@@ -1193,13 +1230,18 @@ capabilities:
         reason: "評価していない"
         evidence: []
       regression_tests:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "割り当ての網羅、詳細に置く値、書き換えの禁止、保持期間、書き出しにテストがある。"
+        evidence:
+          - "test/configuration/audit_assignment_test.rb"
+          - "test/models/audit_event_details_test.rb"
+          - "test/models/audit_event_test.rb"
+          - "test/models/audit_event_retention_test.rb"
       documentation:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "unmet"
+        reason: "保持期間の設定は運用の文書にあるが、管理者が記録を読み、絞り込み、書き出す手順の文書が無い。C5 が持つ。"
+        evidence:
+          - "docs/operations/configuration.md"
       localization:
         result: "not_assessed"
         reason: "評価していない"
@@ -1223,22 +1265,26 @@ capabilities:
       - "/api/v1/users"
       - "/api_tokens"
     implementation: []
-    implementation_note: "ApiToken, RateLimitStore, Pagination"
+    implementation_note: "ApiToken, RateLimitCounter, RateLimitStore, Pagination"
     tests:
       - "test/controllers/api/v1/api_access_test.rb"
       - "test/controllers/api/v1/api_paging_test.rb"
+      - "test/configuration/api_scope_coverage_test.rb"
       - "test/controllers/api/v1/api_rate_limit_test.rb"
       - "test/models/api_token_scope_test.rb"
     docs:
       - "docs/operations/administration.md"
     criteria:
       authorization:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "認証は token で行い、範囲の判定を認証の後へ置く。範囲は token が持つ値だけを許し、資源を足しても既存の token へ開かない。権限は発行した利用者から引き継ぎ、範囲では広がらない。"
+        evidence:
+          - "test/configuration/api_scope_coverage_test.rb"
+          - "test/models/api_token_scope_test.rb"
+          - "test/controllers/api/v1/api_access_test.rb"
       audit_assignment:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "読み取りだけであり、状態を変える入口を持たない。token の発行と失効は `core.user_administration` の画面側が記録する。"
         evidence: []
       notification_occurrence:
         result: "not_assessed"
@@ -1261,12 +1307,16 @@ capabilities:
         reason: "評価していない"
         evidence: []
       regression_tests:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "認証、範囲、組織の境界、期限、上限、ページ送りにテストがある。"
+        evidence:
+          - "test/controllers/api/v1/api_access_test.rb"
+          - "test/controllers/api/v1/api_rate_limit_test.rb"
+          - "test/controllers/api/v1/api_paging_test.rb"
+          - "test/configuration/api_scope_coverage_test.rb"
       documentation:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "unmet"
+        reason: "応答の形を版として固定した定義が無く、呼び出す側が読める文書も無い。C5 が持つ。"
         evidence: []
       localization:
         result: "not_assessed"
@@ -1277,8 +1327,6 @@ capabilities:
         reason: "評価していない"
         evidence: []
     other_findings:
-      - "範囲が未設定の token を全範囲の許可として扱う（`app/models/api_token.rb`）。 資源を足すと、過去に発行した token へ自動で開く"
-      - "上限の計数を web の内側に持つ（`app/models/rate_limit_store.rb`）。 配布用の構成は共有の置き場を持たず、web の数だけ上限が増える"
       - "応答の形を版として固定した定義が無い"
       - "読み取りだけで、書き込みの経路が無い"
     issue: "C1"
@@ -1367,13 +1415,15 @@ capabilities:
       - "docs/development/conventions.md"
     criteria:
       authorization:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "切り替えの対象は操作した本人の表示だけであり、他の利用者の表示も権限も変えない。"
+        evidence:
+          - "test/controllers/locales_controller_test.rb"
       audit_assignment:
-        result: "unmet"
-        reason: "表示言語の変更が監査へ残らない"
-        evidence: []
+        result: "met"
+        reason: "記録しないことを理由とともに宣言する。表示言語の切り替えであり、権限にも組織の資料にも影響しない。"
+        evidence:
+          - "test/configuration/audit_assignment_test.rb"
       notification_occurrence:
         result: "not_assessed"
         reason: "評価していない"
@@ -1395,12 +1445,14 @@ capabilities:
         reason: "評価していない"
         evidence: []
       regression_tests:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "決め方の順、対応しない言語の落とし方、2 つの言語の鍵がそろうことにテストがある。"
+        evidence:
+          - "test/controllers/locales_controller_test.rb"
+          - "test/configuration/locale_symmetry_test.rb"
       documentation:
         result: "unmet"
-        reason: "利用者向けの切り替え手順が文書に無い"
+        reason: "利用者が表示言語を切り替える手順の文書が無い。C5 が持つ。"
         evidence: []
       localization:
         result: "not_assessed"

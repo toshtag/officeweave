@@ -1,5 +1,8 @@
 # 文書の分類の管理。参照は全員に開き、変更は管理者へ限定する。
 class DocumentCategoriesController < ApplicationController
+  records_no_audit :create, :update,
+                   reason: "文書の並べ方であり、読める範囲を決めない。読める範囲は文書ごとの公開範囲が持つ"
+
   before_action :require_administrator
   before_action :set_document_category, only: %i[edit update]
 

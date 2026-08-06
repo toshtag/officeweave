@@ -1,5 +1,7 @@
 # 管理者による利用者の管理。
 class UsersController < ApplicationController
+  records_audit :create, :update
+
   before_action :require_administrator
   before_action :set_user, only: %i[edit update]
 

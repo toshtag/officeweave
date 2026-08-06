@@ -1,6 +1,8 @@
 # 部門の一覧と管理。
 # 参照は所属の確認に使うため全員に開き、変更は管理者へ限定する。
 class DepartmentsController < ApplicationController
+  records_audit :create, :update, :destroy
+
   before_action :require_administrator, only: %i[new create edit update destroy]
   before_action :set_department, only: %i[show edit update destroy]
 
