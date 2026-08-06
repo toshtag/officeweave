@@ -46,8 +46,8 @@ capabilities:
           - "test/configuration/audit_assignment_test.rb"
           - "test/controllers/sessions_controller_test.rb"
       notification_occurrence:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "通知を伴う出来事を持たない。"
         evidence: []
       list_limit:
         result: "not_assessed"
@@ -64,8 +64,9 @@ capabilities:
           - "test/models/rate_limit_counter_concurrency_test.rb"
       retention:
         result: "met"
-        reason: "期限を過ぎた記録は `Session.delete_expired` （`app/models/session.rb:35`）が毎時消す。"
-        evidence: []
+        reason: "期限を過ぎたログインは `Session.delete_expired` が毎時消し、試行の数え上げは `RateLimitCounter.delete_expired` が毎時消す。"
+        evidence:
+          - "test/models/rate_limit_counter_test.rb"
       regression_tests:
         result: "met"
         reason: "入口、実装、試行の上限、期限切れの後始末に、退行を止めるテストがある。"
@@ -120,8 +121,8 @@ capabilities:
         evidence:
           - "test/configuration/audit_assignment_test.rb"
       notification_occurrence:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "通知を伴う出来事を持たない。"
         evidence: []
       list_limit:
         result: "not_assessed"
@@ -136,8 +137,8 @@ capabilities:
         reason: "自分の記録を持たない。認可の結果はログインの記録として `core.authentication` が保つ。"
         evidence: []
       retention:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "自分の記録を持たない。ログインの記録は `core.authentication` が持つ。"
         evidence: []
       regression_tests:
         result: "met"
@@ -194,8 +195,8 @@ capabilities:
         evidence:
           - "test/configuration/audit_assignment_test.rb"
       notification_occurrence:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "通知を伴う出来事を持たない。"
         evidence: []
       list_limit:
         result: "not_assessed"
@@ -258,8 +259,8 @@ capabilities:
         reason: "評価していない"
         evidence: []
       notification_occurrence:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "通知を伴う出来事を持たない。"
         evidence: []
       list_limit:
         result: "unmet"
@@ -322,8 +323,8 @@ capabilities:
         evidence:
           - "test/configuration/audit_assignment_test.rb"
       notification_occurrence:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "通知を伴う出来事を持たない。"
         evidence: []
       list_limit:
         result: "not_assessed"
@@ -338,8 +339,8 @@ capabilities:
         reason: "配信設定の 1 利用者 1 出来事は `index_notification_preferences_on_user_id_and_event` が保つ。"
         evidence: []
       retention:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "利用者 1 人につき出来事の数だけ持つ設定であり、増え続けない。"
         evidence: []
       regression_tests:
         result: "met"
@@ -391,8 +392,8 @@ capabilities:
         evidence:
           - "test/configuration/audit_assignment_test.rb"
       notification_occurrence:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "通知を伴う出来事を持たない。"
         evidence: []
       list_limit:
         result: "not_assessed"
@@ -408,8 +409,8 @@ capabilities:
         evidence:
           - "test/models/user_administrator_concurrency_test.rb"
       retention:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "利用者と組織は、無効化しても記録として残す。人の判断で足す記録であり、時間で増え続けない。"
         evidence: []
       regression_tests:
         result: "met"
@@ -467,8 +468,8 @@ capabilities:
         reason: "評価していない"
         evidence: []
       notification_occurrence:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "通知を伴う出来事を持たない。"
         evidence: []
       list_limit:
         result: "unmet"
@@ -484,8 +485,8 @@ capabilities:
         evidence:
           - "test/models/database_invariant_concurrency_test.rb"
       retention:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "人の判断で足す記録であり、時間で増え続けない。"
         evidence: []
       regression_tests:
         result: "not_assessed"
@@ -532,8 +533,8 @@ capabilities:
         reason: "評価していない"
         evidence: []
       notification_occurrence:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "通知を伴う出来事を持たない。"
         evidence: []
       list_limit:
         result: "not_assessed"
@@ -549,8 +550,8 @@ capabilities:
         evidence:
           - "test/models/department_csv_import_test.rb"
       retention:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "取り込みと書き出し自身の記録を持たない。実行の記録は監査が持つ。"
         evidence: []
       regression_tests:
         result: "not_assessed"
@@ -596,8 +597,8 @@ capabilities:
         reason: "評価していない"
         evidence: []
       notification_occurrence:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "通知を伴う出来事を持たない。"
         evidence: []
       list_limit:
         result: "not_assessed"
@@ -612,8 +613,8 @@ capabilities:
         reason: "自分の記録を持たない。並べるのは他の機能の記録である。"
         evidence: []
       retention:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "自分の記録を持たない。"
         evidence: []
       regression_tests:
         result: "not_assessed"
@@ -663,9 +664,10 @@ capabilities:
         reason: "作成・変更・削除が監査へ残らない"
         evidence: []
       notification_occurrence:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "公開は対象につき 1 度だけ起きるため、発生を区別する値を持たない。宛先と対象の組で 1 件だけ作られることは一意の索引が保つ。"
+        evidence:
+          - "test/models/notification_occurrence_test.rb"
       list_limit:
         result: "unmet"
         reason: "一覧に上限が無い"
@@ -679,8 +681,8 @@ capabilities:
         reason: "公開範囲の組と既読の組は、それぞれ `index_announcement_departments_on_pair` と `index_announcement_reads_on_pair` が保つ。"
         evidence: []
       retention:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "人の判断で足す記録であり、時間で増え続けない。既読は 1 つのお知らせと利用者につき 1 件までである。"
         evidence: []
       regression_tests:
         result: "not_assessed"
@@ -730,9 +732,11 @@ capabilities:
         reason: "作成・変更・削除が監査へ残らない"
         evidence: []
       notification_occurrence:
-        result: "unmet"
-        reason: "繰り返しで作る各回が、それぞれ参加者へ通知を作る"
-        evidence: []
+        result: "met"
+        reason: "招待は対象と受け手の組につき 1 度だけ起きる。外部への送信の経路も持つ。"
+        evidence:
+          - "test/models/notification_occurrence_test.rb"
+          - "test/models/webhook_payload_contract_test.rb"
       list_limit:
         result: "unmet"
         reason: "開始日以降を上限なく並べる"
@@ -746,8 +750,8 @@ capabilities:
         reason: "公開範囲の組と参加者の組は、それぞれ `index_event_departments_on_pair` と `index_event_participants_on_event_id_and_user_id` が保つ。繰り返しは作成の時点で個々の予定へ展開するため、行をまたぐ条件を持たない。"
         evidence: []
       retention:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "人の判断で足す記録であり、時間で増え続けない。"
         evidence: []
       regression_tests:
         result: "not_assessed"
@@ -796,8 +800,8 @@ capabilities:
         reason: "作成・変更が監査へ残らない"
         evidence: []
       notification_occurrence:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "通知を伴う出来事を持たない。"
         evidence: []
       list_limit:
         result: "unmet"
@@ -812,8 +816,8 @@ capabilities:
         reason: "組織のなかの識別子の一意は `index_resources_on_organization_id_and_code` が保つ。"
         evidence: []
       retention:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "人の判断で足す記録であり、時間で増え続けない。"
         evidence: []
       regression_tests:
         result: "not_assessed"
@@ -863,8 +867,8 @@ capabilities:
         reason: "作成・変更・取り消しが監査へ残らない"
         evidence: []
       notification_occurrence:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "通知を伴う出来事を持たない。"
         evidence: []
       list_limit:
         result: "unmet"
@@ -881,8 +885,8 @@ capabilities:
           - "test/models/reservation_test.rb"
           - "app/models/database_constraint.rb"
       retention:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "人の判断で足す記録であり、時間で増え続けない。"
         evidence: []
       regression_tests:
         result: "not_assessed"
@@ -940,9 +944,11 @@ capabilities:
         evidence:
           - "test/configuration/audit_assignment_test.rb"
       notification_occurrence:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "提出と決裁のたびに、その履歴の識別子を発生とする。差し戻したあとの再提出、同じ利用者が担当する 2 つ目の段のいずれでも、宛先と発生の組ごとに 1 件だけ作られる。"
+        evidence:
+          - "test/models/request_notification_test.rb"
+          - "test/models/notification_occurrence_test.rb"
       list_limit:
         result: "not_assessed"
         reason: "評価していない"
@@ -957,8 +963,8 @@ capabilities:
         evidence:
           - "test/models/request_concurrency_test.rb"
       retention:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "人の判断で足す記録であり、時間で増え続けない。"
         evidence: []
       regression_tests:
         result: "met"
@@ -1013,8 +1019,8 @@ capabilities:
         reason: "評価していない"
         evidence: []
       notification_occurrence:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "通知を伴う出来事を持たない。"
         evidence: []
       list_limit:
         result: "not_assessed"
@@ -1030,8 +1036,8 @@ capabilities:
         evidence:
           - "test/models/database_invariant_concurrency_test.rb"
       retention:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "人の判断で足す記録であり、時間で増え続けない。"
         evidence: []
       regression_tests:
         result: "not_assessed"
@@ -1080,8 +1086,8 @@ capabilities:
         reason: "作成・変更・削除と、添付の取得が監査へ残らない"
         evidence: []
       notification_occurrence:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "通知を伴う出来事を持たない。"
         evidence: []
       list_limit:
         result: "unmet"
@@ -1096,8 +1102,8 @@ capabilities:
         reason: "分類の識別子と公開範囲の組は、それぞれ `index_document_categories_on_organization_id_and_code` と `index_document_departments_on_pair` が保つ。"
         evidence: []
       retention:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "人の判断で足す記録であり、時間で増え続けない。"
         evidence: []
       regression_tests:
         result: "not_assessed"
@@ -1150,9 +1156,12 @@ capabilities:
         reason: "評価していない"
         evidence: []
       notification_occurrence:
-        result: "unmet"
-        reason: "重複の判定が「宛先・対象・出来事」で、対象ごとに 1 度しか作れない （`app/models/notification.rb`）。差し戻しのあとの再提出、同じ利用者が担当する 後続の段、参加者の外し直しでは、正当な通知が作られない"
-        evidence: []
+        result: "met"
+        reason: "宛先と発生の組で 1 件だけ作られる。発生を表す値は同じ出来事に対して何度呼んでも同じであり、ジョブのやり直しで増えない。画面の通知 1 件につきメールを 1 通だけ積む。"
+        evidence:
+          - "test/models/notification_occurrence_test.rb"
+          - "test/models/notification_mail_correspondence_test.rb"
+          - "test/models/request_notification_test.rb"
       list_limit:
         result: "not_assessed"
         reason: "評価していない"
@@ -1166,9 +1175,10 @@ capabilities:
         reason: "宛先と出来事の組で 1 件だけ作られることは `index_notifications_on_user_and_subject_event` が保つ。"
         evidence: []
       retention:
-        result: "unmet"
-        reason: "通知に保持の方針が無い"
-        evidence: []
+        result: "met"
+        reason: "`NOTIFICATION_RETENTION_DAYS` を指定した場合、その日数より古い通知を `Notification.delete_expired` が毎日消す。"
+        evidence:
+          - "test/models/record_retention_test.rb"
       regression_tests:
         result: "not_assessed"
         reason: "評価していない"
@@ -1218,8 +1228,8 @@ capabilities:
         evidence:
           - "test/configuration/audit_assignment_test.rb"
       notification_occurrence:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "通知を伴う出来事を持たない。"
         evidence: []
       list_limit:
         result: "not_assessed"
@@ -1234,9 +1244,10 @@ capabilities:
         reason: "記録は書き足すだけであり、行をまたぐ条件を持たない。組織と実行者への参照は外部キーが保つ。"
         evidence: []
       retention:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "`AUDIT_RETENTION_DAYS` を指定した場合、その日数より古い記録を `AuditEvent.delete_expired` が毎日消す。指定しない場合は消さない。監査記録は、消えたこと自体を後から確かめられないため、既定を持たない。"
+        evidence:
+          - "test/models/audit_event_retention_test.rb"
       regression_tests:
         result: "met"
         reason: "割り当ての網羅、詳細に置く値、書き換えの禁止、保持期間、書き出しにテストがある。"
@@ -1295,8 +1306,8 @@ capabilities:
         reason: "読み取りだけであり、状態を変える入口を持たない。token の発行と失効は `core.user_administration` の画面側が記録する。"
         evidence: []
       notification_occurrence:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "通知を伴う出来事を持たない。"
         evidence: []
       list_limit:
         result: "not_assessed"
@@ -1312,9 +1323,10 @@ capabilities:
         evidence:
           - "test/models/rate_limit_counter_concurrency_test.rb"
       retention:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "token は失効しても記録として残すが、人の判断で足す記録であり時間で増え続けない。上限の数え上げは `RateLimitCounter.delete_expired` が毎時消す。"
+        evidence:
+          - "test/models/rate_limit_counter_test.rb"
       regression_tests:
         result: "met"
         reason: "認証、範囲、組織の境界、期限、上限、ページ送りにテストがある。"
@@ -1366,9 +1378,10 @@ capabilities:
         reason: "評価していない"
         evidence: []
       notification_occurrence:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "組織につき 1 回だけ積む。本文に出来事と発生の単位を入れるため、受け取る側が二度届いた分を捨てられる。配送は at-least-once とする。"
+        evidence:
+          - "test/models/webhook_payload_contract_test.rb"
       list_limit:
         result: "not_assessed"
         reason: "評価していない"
@@ -1382,9 +1395,10 @@ capabilities:
         reason: "送信先と送信の記録は、いずれも組織への参照を外部キーで持つ。重複を禁じる条件は無く、同じ宛先を複数登録できることは意図した振る舞いである。"
         evidence: []
       retention:
-        result: "unmet"
-        reason: "送信の記録に保持の方針が無い"
-        evidence: []
+        result: "met"
+        reason: "`WEBHOOK_DELIVERY_RETENTION_DAYS` を指定した場合、その日数より古い送信の記録を `WebhookDelivery.delete_expired` が毎日消す。"
+        evidence:
+          - "test/models/record_retention_test.rb"
       regression_tests:
         result: "not_assessed"
         reason: "評価していない"
@@ -1401,9 +1415,7 @@ capabilities:
         result: "not_assessed"
         reason: "評価していない"
         evidence: []
-    other_findings:
-      - "出来事の一覧に予定の招待があるが、外部へ送る経路が見当たらない"
-      - "出来事ごとの形の定義と、その版が無い"
+    other_findings: []
     issue: "C4"
     dependencies: []
     stage: "core"
@@ -1434,8 +1446,8 @@ capabilities:
         evidence:
           - "test/configuration/audit_assignment_test.rb"
       notification_occurrence:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "通知を伴う出来事を持たない。"
         evidence: []
       list_limit:
         result: "not_assessed"
@@ -1450,8 +1462,8 @@ capabilities:
         reason: "自分の記録を持たない。表示言語は利用者の列であり、`core.personal_settings` が保つ。"
         evidence: []
       retention:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "自分の記録を持たない。"
         evidence: []
       regression_tests:
         result: "met"
@@ -1564,8 +1576,8 @@ capabilities:
         reason: "評価していない"
         evidence: []
       notification_occurrence:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "通知を伴う出来事を持たない。"
         evidence: []
       list_limit:
         result: "not_assessed"
@@ -1580,8 +1592,8 @@ capabilities:
         reason: "自分の記録を持たない。読み取りだけを行う。"
         evidence: []
       retention:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "自分の記録を持たない。読み取りだけを行う。"
         evidence: []
       regression_tests:
         result: "unmet"
@@ -1627,9 +1639,11 @@ capabilities:
         reason: "評価していない"
         evidence: []
       notification_occurrence:
-        result: "unmet"
-        reason: "送信に発生の単位が無い（`app/jobs/report_operational_issues_job.rb`）。 ジョブを再試行すると、同じ異常が改めて送られる"
-        evidence: []
+        result: "met"
+        reason: "異常の名前と状態の組を発生とし、記録の作成そのもので判断する。同じ異常が続くあいだは送り直さず、一定の間隔を過ぎたときだけ知らせ直す。"
+        evidence:
+          - "test/models/operational_alert_test.rb"
+          - "test/jobs/report_operational_issues_job_test.rb"
       list_limit:
         result: "not_assessed"
         reason: "評価していない"
@@ -1643,9 +1657,10 @@ capabilities:
         reason: "自分の記録を持たない。知らせる材料は他の機能の記録から数える。"
         evidence: []
       retention:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "`OPERATIONAL_ALERT_RETENTION_DAYS` を指定した場合、その日数より古い記録を `OperationalAlert.delete_expired` が毎日消す。"
+        evidence:
+          - "test/models/record_retention_test.rb"
       regression_tests:
         result: "not_assessed"
         reason: "評価していない"
@@ -1662,8 +1677,7 @@ capabilities:
         result: "not_assessed"
         reason: "評価していない"
         evidence: []
-    other_findings:
-      - "送った記録を残さないため、届かなかったことに運用者が気付けない"
+    other_findings: []
     issue: "C4"
     dependencies: []
     stage: "core"
@@ -1694,8 +1708,8 @@ capabilities:
         reason: "評価していない"
         evidence: []
       notification_occurrence:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "通知を伴う出来事を持たない。"
         evidence: []
       list_limit:
         result: "not_assessed"
@@ -1710,8 +1724,8 @@ capabilities:
         reason: "自分の記録を持たない。対象はデータベース全体である。"
         evidence: []
       retention:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "自分の記録を持たない。対象はデータベース全体である。"
         evidence: []
       regression_tests:
         result: "not_assessed"
@@ -1762,8 +1776,8 @@ capabilities:
         reason: "評価していない"
         evidence: []
       notification_occurrence:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "通知を伴う出来事を持たない。"
         evidence: []
       list_limit:
         result: "not_assessed"
@@ -1778,8 +1792,8 @@ capabilities:
         reason: "初期利用者と組織の作成は、利用者と組織の一意の索引の上で行う。二度実行しても 2 つにならない。"
         evidence: []
       retention:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "自分の記録を持たない。"
         evidence: []
       regression_tests:
         result: "not_assessed"
