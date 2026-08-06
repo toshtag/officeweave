@@ -60,6 +60,10 @@ class Event < ApplicationRecord
 
     Notification.deliver_to_all(users: added.reject { |user| user.id == actor.id },
                                 subject: self, event: "event_invited")
+    # 外部の宛先へも送る。一覧に挙げた出来事のうち、これだけが送る経路を
+    # 持っていなかった。挙げただけで送られない出来事は、宛先を登録した側から
+    # 見て、届かない理由が分からない。
+    Notification.publish(organization: organization, subject: self, event: "event_invited")
     added
   end
   scope :chronological, -> { order(:starts_at, :id) }
