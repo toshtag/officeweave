@@ -1,3 +1,16 @@
+<% departments = Candidates.new(current_organization.departments.ordered,
+                                     query: params[:department_query],
+                                     selected_ids: event.department_ids) %>
+<%= render "shared/candidate_search", candidates: departments, name: :department_query,
+                                     action: request.path, label: t("shared.candidates.departments"),
+                                     parameters: {} %>
+<% participants = Candidates.new(
+         current_organization.users.active.where.not(id: event.owner_id || Current.user.id).ordered,
+         query: params[:participant_query], selected_ids: event.participant_ids) %>
+<%= render "shared/candidate_search", candidates: participants, name: :participant_query,
+                                     action: request.path, label: t("shared.candidates.users"),
+                                     parameters: {} %>
+
 <%= form_with model: event, class: "form stack" do |form| %>
   <%= render "shared/error_messages", record: event %>
 
@@ -27,12 +40,6 @@
     <legend class="form__label"><%= Event.human_attribute_name(:department_ids) %></legend>
     <%= form_hints t("events.form.departments_hint") %>
 
-    <% departments = Candidates.new(current_organization.departments.ordered,
-                                    query: params[:department_query],
-                                    selected_ids: event.department_ids) %>
-    <%= render "shared/candidate_search", candidates: departments, name: :department_query,
-                                         action: request.path, label: t("shared.candidates.departments"),
-                                         parameters: {} %>
 
     <% Department.with_ancestors(departments.records).each do |department| %>
       <%= inline_field do %>
@@ -50,12 +57,6 @@
     <%= form_hints t("events.form.participants_hint") %>
 
     <%# 自分自身は並べない。所有者は指名しなくても見られる。 %>
-    <% participants = Candidates.new(
-         current_organization.users.active.where.not(id: event.owner_id || Current.user.id).ordered,
-         query: params[:participant_query], selected_ids: event.participant_ids) %>
-    <%= render "shared/candidate_search", candidates: participants, name: :participant_query,
-                                         action: request.path, label: t("shared.candidates.users"),
-                                         parameters: {} %>
 
     <% participants.records.each do |user| %>
       <%= inline_field do %>

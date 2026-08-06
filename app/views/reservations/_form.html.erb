@@ -1,8 +1,9 @@
+
 <% resources = Candidates.new(current_organization.resources.reservable.ordered,
-                              query: params[:resource_query],
-                              selected_ids: [ reservation.resource_id ]) %>
+                                     query: params[:resource_query],
+                                     selected_ids: [ reservation.resource_id ]) %>
 <% events = Candidates.new(Event.visible_to(Current.user).starting_from(Time.current).chronological,
-                           selected_ids: [ reservation.event_id ]) %>
+                                     selected_ids: [ reservation.event_id ]) %>
 <%= render "shared/candidate_search", candidates: resources, name: :resource_query,
                                      action: request.path, label: t("shared.candidates.resources"),
                                      parameters: {} %>

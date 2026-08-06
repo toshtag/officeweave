@@ -1,9 +1,8 @@
 <%# 段の階層は 1 度だけ読む。段ごとに読むと、段の数だけ問い合わせが増える。 %>
 <% candidates = Candidates.new(current_organization.departments.ordered,
-                               query: params[:department_query],
-                               selected_ids: request_type.approval_steps.map(&:approver_department_id)) %>
+                                     query: params[:department_query],
+                                     selected_ids: request_type.approval_steps.map(&:approver_department_id)) %>
 <% departments = Department.with_ancestors(candidates.records) %>
-
 <%= render "shared/candidate_search", candidates: candidates, name: :department_query,
                                      action: request.path, label: t("shared.candidates.departments"),
                                      parameters: {} %>
