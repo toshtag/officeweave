@@ -66,4 +66,6 @@
       </ul>
     </section>
   <% end %>
+
+  <%= render "shared/pagination", page: @page, parameters: { query: @query } %>
 </div>

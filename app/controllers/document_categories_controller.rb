@@ -7,7 +7,8 @@ class DocumentCategoriesController < ApplicationController
   before_action :set_document_category, only: %i[edit update]
 
   def index
-    @document_categories = current_organization.document_categories.ordered
+    @page = Pagination.new(current_organization.document_categories.ordered, page: params[:page])
+    @document_categories = @page.records
   end
 
   def new

@@ -290,6 +290,7 @@ en:
     destroyed: The member has been removed.
     remove: Remove
     new:
+      search: Filter people
       heading: Add a member
       submit: Add
       no_candidates: Everyone in this organization already belongs to this department.
@@ -417,6 +418,10 @@ en:
       empty: There are no events to show.
       from: Showing from
       filter: Apply
+      to: To
+      period: "%{from} to %{to}"
+      to: To
+      period: "%{from} to %{to}"
     new:
       title: Add event
       heading: Add event
@@ -882,3 +887,12 @@ en:
       departments_imported: Departments imported
       departments_exported: Departments exported
       audit_events_exported: Audit log exported
+  shared:
+    candidates:
+      departments: Filter departments
+      users: Filter people
+      resources: Filter resources
+      filter: Filter
+      truncated: "Showing up to %{shown}. Narrow the search to reach the remaining %{remaining}."
+    window:
+      truncated: "The period is limited to %{days} days. Showing a shortened range."

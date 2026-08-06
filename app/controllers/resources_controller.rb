@@ -8,7 +8,8 @@ class ResourcesController < ApplicationController
   before_action :set_resource, only: %i[show edit update]
 
   def index
-    @resources = current_organization.resources.ordered
+    @page = Pagination.new(current_organization.resources.ordered, page: params[:page])
+    @resources = @page.records
   end
 
   def show

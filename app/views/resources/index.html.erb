@@ -40,4 +40,6 @@
   <% else %>
     <p><%= t("resources.index.empty") %></p>
   <% end %>
+
+  <%= render "shared/pagination", page: @page, parameters: {} %>
 </div>

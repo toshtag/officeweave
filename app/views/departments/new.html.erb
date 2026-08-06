@@ -2,6 +2,6 @@
 
 <div class="panel panel--narrow stack">
   <h1><%= t("departments.new.heading") %></h1>
-  <%= render "form", department: @department, parent_candidates: Department.with_ancestors(current_organization.departments.ordered) %>
+  <%= render "form", department: @department, parent_candidates: Department.with_ancestors(@parent_candidates.records) %>
   <%= link_to t("common.back"), departments_path %>
 </div>

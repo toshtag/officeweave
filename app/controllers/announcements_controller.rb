@@ -1,6 +1,12 @@
 # お知らせの参照と管理。
 # 参照は公開範囲に従い、作成と変更は管理者へ限定する。
 class AnnouncementsController < ApplicationController
+  # 下書きと公開待ちに並べる件数。
+  #
+  # 本体の一覧と違い、作った本人が確認するための区分である。溜まる性質の
+  # ものではないが、上限を置かないと、放置した組織でだけ重くなる。
+  SIDE_LIST_COUNT = 25
+
   records_no_audit :create, :update, :destroy,
                    reason: "業務の内容そのものであり、作成者と更新時刻を記録自身が持つ。監査へ写すと、題名と本文が監査の詳細へ流れる"
 
@@ -11,12 +17,17 @@ class AnnouncementsController < ApplicationController
     @query = params[:query]
     visible = Announcement.visible_to(Current.user).search(@query)
 
-    @announcements = listed(visible.recent_first)
-    @unread_ids = visible.unread_for(Current.user).pluck(:id).to_set
-    @drafts = listed(manageable.where(published_at: nil).recent_first)
+    @page = Pagination.new(listed(visible.recent_first), page: params[:page])
+    @announcements = @page.records
+    # 未読の判定は、画面へ並べる分だけで足りる。参照できる未読を全件取り出すと、
+    # 1 ページの表示のために蓄積した全件を読むことになる。
+    @unread_ids = visible.unread_for(Current.user)
+                         .where(id: @announcements.map(&:id)).pluck(:id).to_set
+    @drafts = listed(manageable.where(published_at: nil).recent_first).limit(SIDE_LIST_COUNT).to_a
     # 公開待ちは公開済みにも下書きにも入らない。区分を分けないと、
     # 作成した管理者自身が確認も訂正も取り消しもできない。
     @scheduled = listed(manageable.scheduled.reorder(published_at: :asc, id: :asc))
+                   .limit(SIDE_LIST_COUNT).to_a
   end
 
   def show

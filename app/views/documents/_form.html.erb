@@ -1,6 +1,13 @@
 <%# 更新に失敗した画面では、保存済みの値ではなく送信された部門の選択を表示する。 %>
 <% selected_department_ids = local_assigns[:selected_department_ids] || document.department_ids %>
 
+<% departments = Candidates.new(current_organization.departments.ordered,
+                                     query: params[:department_query],
+                                     selected_ids: document.department_ids) %>
+<%= render "shared/candidate_search", candidates: departments, name: :department_query,
+                                     action: request.path, label: t("shared.candidates.departments"),
+                                     parameters: {} %>
+
 <%= form_with model: document, class: "form stack" do |form| %>
   <%= render "shared/error_messages", record: document %>
 
@@ -25,7 +32,8 @@
     <legend class="form__label"><%= Document.human_attribute_name(:department_ids) %></legend>
     <%= form_hints t("documents.form.departments_hint") %>
 
-    <% Department.with_ancestors(current_organization.departments.ordered).each do |department| %>
+
+    <% Department.with_ancestors(departments.records).each do |department| %>
       <%= inline_field do %>
         <%= check_box_tag "document[department_ids][]", department.id,
                           selected_department_ids.include?(department.id),

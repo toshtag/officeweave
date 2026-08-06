@@ -1,0 +1,30 @@
+<%# 選択欄の絞り込み。
+  candidates  Candidates
+  name        絞り込みの値を渡す要求の名前
+  action      絞り込みの送り先
+  label       入力欄の見出し
+  parameters  絞り込み以外に引き継ぐ要求の値
+%>
+<% parameters ||= {} %>
+<div class="stack">
+  <%# 画面の中の form の入れ子は作れない。絞り込みは別の form として、
+      選択の form より前に置く。JavaScript を使わずに完結させる。 %>
+  <div class="form form--inline">
+    <%= form_with url: action, method: :get, class: "form form--inline" do |form| %>
+      <% parameters.each do |key, value| %>
+        <%= hidden_field_tag key, value, id: nil %>
+      <% end %>
+      <%= form_field do %>
+        <%= label_tag name, label, class: "form__label" %>
+        <%= text_field_tag name, candidates.query, class: "form__input" %>
+      <% end %>
+      <%= submit_tag t("shared.candidates.filter"), class: "button", name: nil %>
+    <% end %>
+  </div>
+
+  <% if candidates.truncated? %>
+    <p role="status">
+      <%= t("shared.candidates.truncated", shown: Candidates::LIMIT, remaining: candidates.remaining) %>
+    </p>
+  <% end %>
+</div>
