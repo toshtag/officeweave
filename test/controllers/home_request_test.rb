@@ -143,6 +143,8 @@ class HomeRequestTest < ActionDispatch::IntegrationTest
             request_type_id: request_types(:expense).id,
             title: "#{title} #{offset + index}", body: "本文" * 100,
             status: status, submitted_at: submitted ? now : nil,
+            # 模型を通さないため、決裁の状態の値もここで入れる。
+            decision_state_nonce: SecureRandom.hex(16),
             created_at: now, updated_at: now }
         end
       )

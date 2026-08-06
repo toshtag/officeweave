@@ -28,8 +28,19 @@ class ApprovalDelegation < ApplicationRecord
   end
 
   # その利用者が代わりに決裁できる相手。
+  #
+  # 委任した側も受けた側も、いま利用できることを条件にする。期間だけを見ると、
+  # 委任元を無効にしたあとも、その立場が委任先へ残る。止めたはずの権限が、
+  # 委任を通り道にして生き続ける。
+  #
+  # 条件はここへ 1 つだけ置く。決裁の立場、承認待ちの一覧、通知の対象は、
+  # いずれもこれを通す。別々に書くと、片方だけが変わったときに食い違う。
   def self.delegators_for(user, on: Date.current)
-    active(on: on).where(delegate_id: user.id).select(:delegator_id)
+    active(on: on)
+      .where(delegate_id: user.id)
+      .where(delegate_id: User.active.select(:id))
+      .where(delegator_id: User.active.select(:id))
+      .select(:delegator_id)
   end
 
   private

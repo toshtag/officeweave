@@ -23,7 +23,17 @@ class Request < ApplicationRecord
   has_many :request_approval_steps, -> { ordered }, dependent: :destroy, inverse_of: :request
   has_many :notifications, as: :subject, dependent: :destroy
 
+  # 決裁の要求が、どの時点の申請に対して作られたのかを見分ける値。
+  #
+  # 状態、待っている段、提出、内容のいずれかが変わるたびに作り直す。
+  # 順序は持たせない。持たせると、占有していない経路（内容の編集）から
+  # 同じ値を 2 つ作り得る。
+  DECISION_STATE_ATTRIBUTES = %w[status current_step_position submitted_at title body].freeze
+
+  before_validation :renew_decision_state_nonce, if: :decision_state_changing?
+
   validates :title, presence: true, length: { maximum: 200 }
+  validates :decision_state_nonce, presence: true
   validates :body, length: { maximum: 10_000 }
   validates :status, inclusion: { in: STATUSES }
   belongs_to_same_organization :applicant, :request_type
@@ -53,6 +63,7 @@ class Request < ApplicationRecord
     # 管理者はすべての段を担当する。段を持つ前からの範囲を狭めない。
     user.administrator? ? scope : scope.where(current_step_approvable_by(user))
   }
+
   # 題名と本文の部分一致で引く。文書とお知らせと同じ書き方でそろえる。
   scope :search, ->(query) {
     term = query.to_s.strip
@@ -103,11 +114,11 @@ class Request < ApplicationRecord
   # 実際に決裁できるかどうかは、現在の段が決める。
   # 管理者はすべての種別を担当する。
   def self.approvable_request_types(user)
-    return RequestType.where(organization_id: user.organization_id).select(:id) if user.administrator?
+    if user.administrator? || DelegatedApproval.administrator?(user)
+      return RequestType.where(organization_id: user.organization_id).select(:id)
+    end
 
-    ApprovalStep
-      .where(approver_department_id: Membership.where(user_id: user.id).select(:department_id))
-      .select(:request_type_id)
+    ApprovalStep.where(approver_department_id: approvable_department_ids(user)).select(:request_type_id)
   end
 
   # 現在の段が、その利用者の担当である申請。
@@ -120,12 +131,12 @@ class Request < ApplicationRecord
     snapshot = RequestApprovalStep
                  .where(RequestApprovalStep.arel_table[:request_id].eq(arel_table[:id]))
                  .where(RequestApprovalStep.arel_table[:position].eq(arel_table[:current_step_position]))
-                 .where(approver_department_id: approvable_department_ids(user))
+                 .where(step_charge_of(user, RequestApprovalStep))
 
     template = ApprovalStep
                  .where(ApprovalStep.arel_table[:request_type_id].eq(arel_table[:request_type_id]))
                  .where(ApprovalStep.arel_table[:position].eq(arel_table[:current_step_position]))
-                 .where(approver_department_id: approvable_department_ids(user))
+                 .where(step_charge_of(user, ApprovalStep))
 
     snapshot.arel.exists.or(
       template.arel.exists.and(
@@ -135,6 +146,20 @@ class Request < ApplicationRecord
     )
   end
 
+  # その段を担当できる条件。
+  #
+  # 部門を指定しない段は管理者が担当する。管理者から委任を受けている利用者も、
+  # その段を担当できる。部門で照らすだけだと、この段が一覧から落ちる。
+  def self.step_charge_of(user, step_class)
+    in_department = step_class.arel_table[:approver_department_id].in(
+      approvable_department_ids(user).arel
+    )
+
+    return in_department unless DelegatedApproval.administrator?(user)
+
+    in_department.or(step_class.arel_table[:approver_department_id].eq(nil))
+  end
+
   # その利用者が担当として扱われる部門。
   #
   # 自分の所属に加えて、委任を受けている相手の所属を含める。
@@ -142,9 +167,9 @@ class Request < ApplicationRecord
   def self.approvable_department_ids(user)
     # 委任元は副問い合わせのまま渡す。配列へ展開すると、委任の件数だけ
     # 問い合わせが増える。
-    Membership.where(user_id: user.id).or(
-      Membership.where(user_id: ApprovalDelegation.delegators_for(user))
-    ).select(:department_id)
+    Membership.where(user_id: user.id).select(:department_id).or(
+      DelegatedApproval.department_ids(user)
+    )
   end
 
   def can_transition_to?(next_status)
@@ -181,14 +206,22 @@ class Request < ApplicationRecord
   # 現在の段を承認する。
   #
   # 次の段があれば、その段を待つ状態のまま進める。最後の段であれば承認済みとする。
-  def approve(actor:, comment: nil)
-    return advance_step(actor: actor, comment: comment) if next_step.present?
-
-    decide(to: "approved", action: "approved", actor: actor, comment: comment, event: "request_approved")
+  #
+  # 判定と記録は RequestDecision が持つ。ここへ置くと、立場の判定だけが
+  # 呼び出し側へ散り、占有の外で判定する形へ戻る。
+  def approve(actor:, comment: nil, expected_step_position: nil, state_token: nil)
+    commit_decision(:approve, actor: actor, comment: comment,
+                    expected_step_position: expected_step_position, state_token: state_token)
   end
 
-  def return_to_applicant(actor:, comment: nil)
-    decide(to: "returned", action: "returned", actor: actor, comment: comment, event: "request_returned")
+  def return_to_applicant(actor:, comment: nil, expected_step_position: nil, state_token: nil)
+    commit_decision(:return, actor: actor, comment: comment,
+                    expected_step_position: expected_step_position, state_token: state_token)
+  end
+
+  # 決裁の画面が、いま見えている状態を持ち帰るための値。
+  def decision_state_token_for(user)
+    RequestDecisionToken.issue(request: self, actor: user)
   end
 
   # この申請が通る経路。
@@ -215,9 +248,7 @@ class Request < ApplicationRecord
     return organization.users.none if step.nil?
 
     responsible = step.approvers(organization)
-    delegates = organization.users.active.where(
-      id: ApprovalDelegation.active.where(delegator_id: responsible.select(:id)).select(:delegate_id)
-    )
+    delegates = DelegatedApproval.delegates_of(responsible)
 
     organization.users.active.where(id: responsible.select(:id)).or(
       organization.users.active.where(id: delegates.select(:id))
@@ -228,32 +259,42 @@ class Request < ApplicationRecord
     request_activities.create!(actor: actor, action: "created")
   end
 
-  # 承認と差し戻しを任されている利用者かどうか。
-  # 自分の申請は自分で承認できない。
+  # 決裁の立場と、その根拠。
   #
-  # 現在の状態は見ない。状態は競合で変わり得るため、
-  # 実際に処理できるかどうかは行を占有した change_status だけが決める。
-  def decision_authorized_for?(user)
-    return false if applicant_id == user.id
+  # 立場の判定と代理元の解決を別々に行わない。分けると、そのあいだに委任が
+  # 変わった場合に、委任で通したのに代理元が残らない、という食い違いが起きる。
+  DecisionAuthorization = Data.define(:actor, :on_behalf_of, :source)
+
+  # 承認と差し戻しを任されているかどうかを解き、根拠ごと返す。
+  # 任されていない場合は nil を返す。
+  #
+  # 現在の状態は見ない。状態は競合で変わり得るため、実際に処理できるかどうかは
+  # 行を占有した決裁だけが決める。
+  #
+  # 立場の判定は、この 1 か所で完結させる。制御部の参照範囲に頼ると、
+  # 画面を通らない経路から呼んだときに、その分の判定が抜ける。
+  def decision_authorization_for(user, lock: false)
+    return nil if user.nil?
+    return nil unless user.active?
+    return nil unless user.organization_id == organization_id
+    return nil if applicant_id == user.id
 
     step = current_step
 
     # 段が無い場合は、種別の担当（管理者）へ委ねる。
-    return user.administrator? if step.nil?
-    return true if step.approvable_by?(user)
+    return authorization(user, source: :administrator) if step.nil? && user.administrator?
+    return nil if step.nil?
+    return authorization(user, source: :responsible) if step.approvable_by?(user)
 
     # 委任を受けている相手が担当なら、代わりに決裁できる。
-    delegators_of(user).any? { |delegator| step.approvable_by?(delegator) }
+    delegator = delegators_of(user, lock: lock).detect { |candidate| step.approvable_by?(candidate) }
+    return nil if delegator.nil?
+
+    authorization(user, on_behalf_of: delegator, source: :delegated)
   end
 
-  # その決裁が誰の代わりであるか。自分が担当であれば nil。
-  #
-  # 記録へ残すためだけに使う。担当そのものは移らない。
-  def delegated_approver_for(user)
-    step = current_step
-    return nil if step.nil? || step.approvable_by?(user)
-
-    delegators_of(user).detect { |delegator| step.approvable_by?(delegator) }
+  def decision_authorized_for?(user)
+    decision_authorization_for(user).present?
   end
 
   # 決裁の操作を画面へ出してよいかどうか。
@@ -262,9 +303,29 @@ class Request < ApplicationRecord
   end
 
   private
+    def authorization(user, on_behalf_of: nil, source:)
+      DecisionAuthorization.new(actor: user, on_behalf_of: on_behalf_of, source: source)
+    end
+
+    def decision_state_changing?
+      new_record? || DECISION_STATE_ATTRIBUTES.any? { |name| will_save_change_to_attribute?(name) }
+    end
+
+    def renew_decision_state_nonce
+      self.decision_state_nonce = SecureRandom.hex(16)
+    end
+
     # その利用者が代わりに決裁できる相手。
-    def delegators_of(user)
-      organization.users.where(id: ApprovalDelegation.delegators_for(user)).to_a
+    #
+    # 決裁のときは占有して読む。読んだあとに委任を取り消されると、取り消し後の
+    # 決裁が通り得る。占有する順は、申請、決裁する利用者、委任元の識別子順と
+    # 決めてある。画面の表示では占有しない。表示のたびに他の利用者の行を
+    # 押さえることになる。
+    def delegators_of(user, lock: false)
+      scope = organization.users.where(id: ApprovalDelegation.delegators_for(user))
+      scope = scope.order(:id).lock if lock
+
+      scope.to_a
     end
 
     # 提出の時点の段を写す。前の提出の分は残さない。
@@ -276,61 +337,17 @@ class Request < ApplicationRecord
       end
     end
 
-    # 写した経路の段へ、承認したことを残す。
-    # 写した経路が無い申請では、残す先が無い。何もしない。
-    def record_route_approval(position:, actor:)
-      request_approval_steps.detect { |step| step.position == position }&.record_approval!(actor: actor)
-    end
-
-    # 次の段へ進める。状態は pending のままとする。
+    # 指定が無い呼び出しは、いま見えている状態を期待したものとして扱う。
+    # 画面からの決裁では、制御部が要求の値を渡す。
     #
-    # 段の記録は決裁と同じ形で残す。承認済みへ至らない承認も、誰がいつ
-    # 決裁したかを追える必要がある。
-    def advance_step(actor:, comment:)
-      advanced = false
-      following = nil
-      on_behalf_of = delegated_approver_for(actor)
-
-      with_lock do
-        next unless status == "pending"
-
-        following = next_step
-        next if following.nil?
-
-        decided = current_step_position
-        self.current_step_position = following.position
-        save!
-        record_route_approval(position: decided, actor: actor)
-        request_activities.create!(actor: actor, action: "approved", comment: comment,
-                                  step_position: decided, on_behalf_of: on_behalf_of)
-        advanced = true
-      end
-
-      # 次の段の担当へ知らせる。占有したまま送らない。
-      if advanced
-        Notification.deliver_to_all(users: approvers(following), subject: self, event: "request_submitted")
-      end
-
-      advanced
-    end
-
-    def decide(to:, action:, actor:, comment:, event:)
-      decided_position = current_step_position
-      on_behalf_of = delegated_approver_for(actor)
-
-      changed = change_status(to: to, actor: actor, action: action, comment: comment,
-                              step_position: decided_position, on_behalf_of: on_behalf_of) do
-        self.decided_at = Time.current
-        # 承認した段だけへ印を残す。差し戻しは、その段を通していない。
-        record_route_approval(position: decided_position, actor: actor) if to == "approved"
-      end
-
-      if changed
-        Notification.deliver(user: applicant, subject: self, event: event)
-        Notification.publish(organization: organization, subject: self, event: event)
-      end
-
-      changed
+    # 値は占有する前に作る。占有したあとに作ると、そのあいだに起きた変更を
+    # 自分で打ち消すことになり、競合を見つけられなくなる。
+    def commit_decision(decision, actor:, comment:, expected_step_position:, state_token:)
+      RequestDecision.call(
+        request: self, actor: actor, decision: decision, comment: comment,
+        expected_step_position: expected_step_position || current_step&.position,
+        state_token: state_token || decision_state_token_for(actor)
+      ).success?
     end
 
     def notify_approvers

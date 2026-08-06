@@ -6,22 +6,23 @@ class RequestDecisionsController < ApplicationController
   # 翻訳キーになり、翻訳の欠落がそのまま画面へ出る。綴りの誤りにも
   # 気付けない。実際、"return" へ "d" を足す形で誤った綴りが固定されていた。
   DECISIONS = {
-    "approve" => { action: :approve, notice: "approved" },
-    "return" => { action: :return_to_applicant, notice: "returned" }
+    "approve" => { decision: :approve, notice: "approved" },
+    "return" => { decision: :return, notice: "returned" }
   }.freeze
 
   before_action :set_request
-  before_action :require_decision_authorized
 
   def create
     decision = DECISIONS[params[:decision]]
+    return redirect_to @request, alert: t("request_decisions.failed") if decision.nil?
 
-    if decision && @request.public_send(decision[:action], actor: Current.user, comment: decision_comment)
-      record_audit_event("request_#{@request.status}", target: @request, details: { title: @request.title })
-      redirect_to @request, notice: t("request_decisions.#{decision[:notice]}")
-    else
-      redirect_to @request, alert: t("request_decisions.failed")
-    end
+    result = RequestDecision.call(
+      request: @request, actor: Current.user, decision: decision[:decision],
+      expected_step_position: expected_step_position, state_token: params[:state_token],
+      comment: decision_comment, ip_address: request.remote_ip
+    )
+
+    respond_to_outcome(result.outcome, decision[:notice])
   end
 
   private
@@ -29,15 +30,31 @@ class RequestDecisionsController < ApplicationController
       @request = Request.visible_to(Current.user).find(params[:request_id])
     end
 
-    # ここで確かめるのは立場だけにする。立場は種別に指定した部門と権限で決まり、
-    # 自分の申請を自分で承認することは認めない。
-    #
-    # 現在の状態は確かめない。ここで確かめても、実際に処理するまでの間に
-    # 他の決裁が成立し得る。状態は行を占有した Request モデルだけが判断する。
-    def require_decision_authorized
-      return if @request.decision_authorized_for?(Current.user)
+    # 結果を応答の形へ写すだけにする。ここで判断をやり直すと、占有のなかで
+    # 決めた結果と、画面へ返す結果が食い違い得る。
+    def respond_to_outcome(outcome, notice)
+      case outcome
+      when :success
+        redirect_to @request, notice: t("request_decisions.#{notice}")
+      when :stale
+        # 見ていた状態と、いま保存されている状態が違う。やり直せば通る種類の
+        # 失敗であるため、立場の拒否とは分ける。
+        render "requests/conflict", status: :conflict, formats: :html
+      when :unauthorized
+        render "shared/forbidden", status: :forbidden, formats: :html
+      else
+        redirect_to @request, alert: t("request_decisions.failed")
+      end
+    end
 
-      render "shared/forbidden", status: :forbidden, formats: :html
+    # 画面が見ていた段。送られない場合は、期待が無いものとして競合に倒す。
+    #
+    # 無指定を「いま待っている段」として扱わない。扱うと、すべての段を担当
+    # する利用者の二重送信で、段を 2 つ進められる。
+    #
+    # 位置そのものは利用者が書き換えられる。実際の照合は state_token が行う。
+    def expected_step_position
+      Integer(params[:expected_step_position], exception: false)
     end
 
     def decision_comment
