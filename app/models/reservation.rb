@@ -3,6 +3,9 @@
 # 同じ設備・備品の時間帯が重ならないことは、データベース側の制約で保証する。
 # 模型側の確認だけでは、同時に申し込まれた場合に両方が通ってしまう。
 class Reservation < ApplicationRecord
+  # 重なりを禁じる制約の名前。判定はこの名前と状態コードで行う。
+  OVERLAP_CONSTRAINT = "reservations_must_not_overlap".freeze
+
   belongs_to :organization
   belongs_to :resource
   belongs_to :reserver, class_name: "User"
@@ -34,10 +37,13 @@ class Reservation < ApplicationRecord
   end
 
   # データベースの制約に触れた場合も、画面へ理由を返せるようにする。
+  #
+  # 例外の文面から制約の名前を探さない。文面はデータベースの版と表示言語で
+  # 変わる。変わった日に、拒まれたことは同じでも理由を返せなくなる。
   def save_with_overlap_check
     save
   rescue ActiveRecord::StatementInvalid => error
-    raise unless error.message.include?("reservations_must_not_overlap")
+    raise unless DatabaseConstraint.exclusion_violation?(error, constraint: OVERLAP_CONSTRAINT)
 
     errors.add(:base, :overlapping)
     false
