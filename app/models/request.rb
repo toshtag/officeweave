@@ -63,6 +63,7 @@ class Request < ApplicationRecord
     # 管理者はすべての段を担当する。段を持つ前からの範囲を狭めない。
     user.administrator? ? scope : scope.where(current_step_approvable_by(user))
   }
+
   # 題名と本文の部分一致で引く。文書とお知らせと同じ書き方でそろえる。
   scope :search, ->(query) {
     term = query.to_s.strip
@@ -113,11 +114,11 @@ class Request < ApplicationRecord
   # 実際に決裁できるかどうかは、現在の段が決める。
   # 管理者はすべての種別を担当する。
   def self.approvable_request_types(user)
-    return RequestType.where(organization_id: user.organization_id).select(:id) if user.administrator?
+    if user.administrator? || DelegatedApproval.administrator?(user)
+      return RequestType.where(organization_id: user.organization_id).select(:id)
+    end
 
-    ApprovalStep
-      .where(approver_department_id: Membership.where(user_id: user.id).select(:department_id))
-      .select(:request_type_id)
+    ApprovalStep.where(approver_department_id: approvable_department_ids(user)).select(:request_type_id)
   end
 
   # 現在の段が、その利用者の担当である申請。
@@ -130,12 +131,12 @@ class Request < ApplicationRecord
     snapshot = RequestApprovalStep
                  .where(RequestApprovalStep.arel_table[:request_id].eq(arel_table[:id]))
                  .where(RequestApprovalStep.arel_table[:position].eq(arel_table[:current_step_position]))
-                 .where(approver_department_id: approvable_department_ids(user))
+                 .where(step_charge_of(user, RequestApprovalStep))
 
     template = ApprovalStep
                  .where(ApprovalStep.arel_table[:request_type_id].eq(arel_table[:request_type_id]))
                  .where(ApprovalStep.arel_table[:position].eq(arel_table[:current_step_position]))
-                 .where(approver_department_id: approvable_department_ids(user))
+                 .where(step_charge_of(user, ApprovalStep))
 
     snapshot.arel.exists.or(
       template.arel.exists.and(
@@ -145,6 +146,20 @@ class Request < ApplicationRecord
     )
   end
 
+  # その段を担当できる条件。
+  #
+  # 部門を指定しない段は管理者が担当する。管理者から委任を受けている利用者も、
+  # その段を担当できる。部門で照らすだけだと、この段が一覧から落ちる。
+  def self.step_charge_of(user, step_class)
+    in_department = step_class.arel_table[:approver_department_id].in(
+      approvable_department_ids(user).arel
+    )
+
+    return in_department unless DelegatedApproval.administrator?(user)
+
+    in_department.or(step_class.arel_table[:approver_department_id].eq(nil))
+  end
+
   # その利用者が担当として扱われる部門。
   #
   # 自分の所属に加えて、委任を受けている相手の所属を含める。
@@ -152,9 +167,9 @@ class Request < ApplicationRecord
   def self.approvable_department_ids(user)
     # 委任元は副問い合わせのまま渡す。配列へ展開すると、委任の件数だけ
     # 問い合わせが増える。
-    Membership.where(user_id: user.id).or(
-      Membership.where(user_id: ApprovalDelegation.delegators_for(user))
-    ).select(:department_id)
+    Membership.where(user_id: user.id).select(:department_id).or(
+      DelegatedApproval.department_ids(user)
+    )
   end
 
   def can_transition_to?(next_status)
@@ -233,9 +248,7 @@ class Request < ApplicationRecord
     return organization.users.none if step.nil?
 
     responsible = step.approvers(organization)
-    delegates = organization.users.active.where(
-      id: ApprovalDelegation.active.where(delegator_id: responsible.select(:id)).select(:delegate_id)
-    )
+    delegates = DelegatedApproval.delegates_of(responsible)
 
     organization.users.active.where(id: responsible.select(:id)).or(
       organization.users.active.where(id: delegates.select(:id))
