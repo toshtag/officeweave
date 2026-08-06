@@ -83,7 +83,7 @@ class ContentSecurityPolicyTest < ActionDispatch::IntegrationTest
 
   test "API の応答では方針を付けない" do
     # 方針はブラウザーの読み込みに効く。API の応答には意味を持たない。
-    token = users(:taro).api_tokens.create!(organization: organizations(:main), name: "検証", scopes: nil)
+    token = users(:taro).api_tokens.create!(organization: organizations(:main), name: "検証", scopes: ApiToken::SCOPES)
 
     get api_v1_announcements_url, headers: { "Authorization" => "Bearer #{token.token}" }
 

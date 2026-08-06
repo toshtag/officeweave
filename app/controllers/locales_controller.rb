@@ -3,6 +3,9 @@
 # 選択は session に保持する。
 # 利用者ごとの設定として保存する方法は、利用者情報を扱う P4 で判断する。
 class LocalesController < ApplicationController
+  records_no_audit :update,
+                   reason: "表示言語の切り替えであり、権限にも組織の資料にも影響しない"
+
   # ログイン画面でも言語を切り替えられるようにする。
   allow_unauthenticated_access
 

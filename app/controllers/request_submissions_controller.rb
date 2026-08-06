@@ -3,6 +3,9 @@
 # 状態を変える操作を、申請そのものの更新と分けている。
 # 同じ更新経路に混ぜると、本文の修正と状態の変更を区別できなくなる。
 class RequestSubmissionsController < ApplicationController
+  records_no_audit :create, :destroy,
+                   reason: "提出と取り下げの経過は RequestActivity が持つ"
+
   before_action :set_request
 
   # 提出する。

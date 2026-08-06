@@ -1,5 +1,8 @@
 # 申請の承認と差し戻し。
 class RequestDecisionsController < ApplicationController
+  # 記録は RequestDecision が占有のなかで残す。状態の変更と同じ確定に含める。
+  records_audit :create
+
   # 決裁の種類と、行う処理・知らせる文の対応。
   #
   # キーを要求の値から組み立てない。組み立てると、想定外の値がそのまま

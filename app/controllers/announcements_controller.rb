@@ -1,6 +1,9 @@
 # お知らせの参照と管理。
 # 参照は公開範囲に従い、作成と変更は管理者へ限定する。
 class AnnouncementsController < ApplicationController
+  records_no_audit :create, :update, :destroy,
+                   reason: "業務の内容そのものであり、作成者と更新時刻を記録自身が持つ。監査へ写すと、題名と本文が監査の詳細へ流れる"
+
   before_action :require_administrator, only: %i[new create edit update destroy]
   before_action :set_announcement, only: %i[show edit update destroy]
 

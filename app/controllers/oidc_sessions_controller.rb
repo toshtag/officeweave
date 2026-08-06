@@ -6,6 +6,8 @@
 # 利用者は自動で作らない。作ると、認可サーバーへ登録された相手が、
 # この製品の組織へそのまま入れる。
 class OidcSessionsController < ApplicationController
+  records_audit :create
+
   allow_unauthenticated_access
   before_action :require_oidc
 

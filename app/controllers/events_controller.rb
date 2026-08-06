@@ -1,6 +1,9 @@
 # 予定の参照と管理。
 # 変更できるのは持ち主と管理者に限る。
 class EventsController < ApplicationController
+  records_no_audit :create, :update, :destroy,
+                   reason: "業務の内容そのものであり、作成者と更新時刻を記録自身が持つ"
+
   before_action :set_event, only: %i[show edit update destroy]
   before_action :require_editable, only: %i[edit update destroy]
 

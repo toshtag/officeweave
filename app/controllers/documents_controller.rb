@@ -1,6 +1,9 @@
 # 文書の参照と管理。
 # アクセス制御は P8-T3 で扱う。現時点では組織の全員が参照できる。
 class DocumentsController < ApplicationController
+  records_no_audit :create, :update, :destroy,
+                   reason: "業務の内容そのものであり、作成者と更新時刻を記録自身が持つ。監査へ写すと、題名と本文が監査の詳細へ流れる"
+
   before_action :set_document, only: %i[show edit update destroy]
   before_action :require_editable, only: %i[edit update destroy]
 

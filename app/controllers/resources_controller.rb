@@ -1,6 +1,9 @@
 # 設備・備品の参照と管理。
 # 参照は全員に開き、変更は管理者へ限定する。
 class ResourcesController < ApplicationController
+  records_no_audit :create, :update,
+                   reason: "設備の一覧であり、読める範囲も権限も決めない"
+
   before_action :require_administrator, only: %i[new create edit update]
   before_action :set_resource, only: %i[show edit update]
 

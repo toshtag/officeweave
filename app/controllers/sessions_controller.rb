@@ -1,4 +1,6 @@
 class SessionsController < ApplicationController
+  records_audit :create, :destroy
+
   allow_unauthenticated_access only: %i[new create]
 
   # 総当たりによる推測を抑える。

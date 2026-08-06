@@ -6,6 +6,8 @@
 # 応答は、利用者がいてもいなくても同じにする。違えると、組織に属する
 # メールアドレスの一覧をこの経路から作れる。
 class PasswordResetsController < ApplicationController
+  records_audit :create, :update
+
   allow_unauthenticated_access
   before_action :require_internal_credentials
 

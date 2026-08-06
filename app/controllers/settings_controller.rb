@@ -3,6 +3,9 @@
 # 管理者による利用者の管理とは別の画面にする。
 # 同じ画面にすると、自分の設定と他人の設定の区別が付きにくい。
 class SettingsController < ApplicationController
+  records_no_audit :update,
+                   reason: "自分の表示言語と通知の受け取り方であり、他の利用者から見える情報は変わらない"
+
   def show
     @user = Current.user
   end

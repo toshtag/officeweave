@@ -5,6 +5,8 @@
 #
 # 管理者にも他人の委任は扱わせない。不在の申し出は本人から出る。
 class ApprovalDelegationsController < ApplicationController
+  records_audit :create, :destroy
+
   def index
     @delegations = Current.user.approval_delegations_as_delegator.recent_first.includes(:delegate)
     @delegation = Current.user.approval_delegations_as_delegator.new(starts_on: Date.current)

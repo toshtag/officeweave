@@ -1,5 +1,8 @@
 # 設備・備品の予約。
 class ReservationsController < ApplicationController
+  records_no_audit :create, :update, :destroy,
+                   reason: "業務の内容そのものであり、予約自身が誰のものかを持つ"
+
   before_action :set_reservation, only: %i[edit update destroy]
   # 変更と取り消しは、同じ範囲の利用者へ認める。
   before_action :require_modifiable, only: %i[edit update destroy]

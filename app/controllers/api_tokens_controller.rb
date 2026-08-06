@@ -3,6 +3,8 @@
 # 発行できるのは自分の token だけとする。
 # 他人の名前で発行できると、権限の出所が分からなくなる。
 class ApiTokensController < ApplicationController
+  records_audit :create, :destroy
+
   before_action :set_api_token, only: %i[destroy]
 
   def index

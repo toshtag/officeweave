@@ -1,5 +1,7 @@
 # 部門への所属の追加と解除。
 class MembershipsController < ApplicationController
+  records_audit :create, :destroy
+
   before_action :require_administrator
   before_action :set_department
 
