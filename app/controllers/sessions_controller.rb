@@ -2,9 +2,11 @@ class SessionsController < ApplicationController
   allow_unauthenticated_access only: %i[new create]
 
   # 総当たりによる推測を抑える。
-  # 数え上げはキャッシュ領域に保持するため、複数の処理系で運用する場合は共有設定が必要になる。
+  # 数え上げは web の外（RateLimitStore）で共有する。web ごとに数えると、
+  # 台数を増やしただけで、利用者から見た上限がその数だけ増える。
   rate_limit to: 10, within: 3.minutes, only: :create,
-             with: -> { redirect_to new_session_path, alert: t("sessions.rate_limited") }
+             with: -> { redirect_to new_session_path, alert: t("sessions.rate_limited") },
+             store: RateLimitStore
 
   def new
     @password_required = authentication_provider.password_required?

@@ -2,17 +2,12 @@ require "test_helper"
 
 # API のレート制限。
 #
-# 数え上げはキャッシュ領域に保持する。試験環境の既定は数えない置き場所で
-# あるため、この試験のあいだだけ数える置き場所へ差し替える。
+# 数え上げはデータベースで共有する。試験の中で作った行は、この試験の
+# トランザクションと一緒に巻き戻る。
 class Api::V1::ApiRateLimitTest < ActionDispatch::IntegrationTest
   setup do
-    @original_cache = Rails.cache
-    Rails.cache = ActiveSupport::Cache::MemoryStore.new
-    @token = users(:taro).api_tokens.create!(organization: organizations(:main), name: "検証", scopes: nil)
-  end
-
-  teardown do
-    Rails.cache = @original_cache
+    @token = users(:taro).api_tokens.create!(organization: organizations(:main), name: "検証",
+                                             scopes: ApiToken::SCOPES)
   end
 
   test "上限を超えると受け付けない" do
@@ -29,7 +24,7 @@ class Api::V1::ApiRateLimitTest < ActionDispatch::IntegrationTest
 
   test "数えるのは token ごととする" do
     other = users(:taro).api_tokens.create!(organization: organizations(:main), name: "別の token",
-                                            scopes: nil)
+                                            scopes: ApiToken::SCOPES)
     Api::BaseController::REQUESTS_PER_MINUTE.times { get api_v1_announcements_url, headers: authorization(@token) }
 
     get api_v1_announcements_url, headers: authorization(other)

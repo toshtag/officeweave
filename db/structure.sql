@@ -772,6 +772,39 @@ ALTER SEQUENCE public.organizations_id_seq OWNED BY public.organizations.id;
 
 
 --
+-- Name: rate_limit_counters; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.rate_limit_counters (
+    id bigint NOT NULL,
+    key character varying NOT NULL,
+    count integer DEFAULT 0 NOT NULL,
+    expires_at timestamp(6) without time zone NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: rate_limit_counters_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.rate_limit_counters_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: rate_limit_counters_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.rate_limit_counters_id_seq OWNED BY public.rate_limit_counters.id;
+
+
+--
 -- Name: request_activities; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1292,6 +1325,13 @@ ALTER TABLE ONLY public.organizations ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
+-- Name: rate_limit_counters id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.rate_limit_counters ALTER COLUMN id SET DEFAULT nextval('public.rate_limit_counters_id_seq'::regclass);
+
+
+--
 -- Name: request_activities id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1535,6 +1575,14 @@ ALTER TABLE ONLY public.notifications
 
 ALTER TABLE ONLY public.organizations
     ADD CONSTRAINT organizations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: rate_limit_counters rate_limit_counters_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.rate_limit_counters
+    ADD CONSTRAINT rate_limit_counters_pkey PRIMARY KEY (id);
 
 
 --
@@ -2121,6 +2169,20 @@ CREATE INDEX index_notifications_on_user_id_and_created_at ON public.notificatio
 --
 
 CREATE UNIQUE INDEX index_organizations_on_code ON public.organizations USING btree (code);
+
+
+--
+-- Name: index_rate_limit_counters_on_expires_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_rate_limit_counters_on_expires_at ON public.rate_limit_counters USING btree (expires_at);
+
+
+--
+-- Name: index_rate_limit_counters_on_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_rate_limit_counters_on_key ON public.rate_limit_counters USING btree (key);
 
 
 --
@@ -2815,6 +2877,7 @@ ALTER TABLE ONLY public.announcement_departments
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260806020000'),
 ('20260806010000'),
 ('20260803070000'),
 ('20260803060000'),
