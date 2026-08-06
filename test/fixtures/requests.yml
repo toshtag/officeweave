@@ -1,5 +1,6 @@
 hanako_leave_draft:
   organization: main
+  decision_state_nonce: <%= SecureRandom.hex(16) %>
   request_type: leave
   applicant: hanako
   title: 夏季休暇の申請
@@ -8,6 +9,7 @@ hanako_leave_draft:
 
 hanako_expense_pending:
   organization: main
+  decision_state_nonce: <%= SecureRandom.hex(16) %>
   request_type: expense
   applicant: hanako
   title: 交通費の精算
@@ -16,6 +18,7 @@ hanako_expense_pending:
 
 taro_leave_pending:
   organization: main
+  decision_state_nonce: <%= SecureRandom.hex(16) %>
   request_type: leave
   applicant: taro
   title: 私用のための休暇
@@ -25,6 +28,7 @@ taro_leave_pending:
 # 一度提出したあとの状態。承認担当者は既に内容を見ている。
 hanako_leave_returned:
   organization: main
+  decision_state_nonce: <%= SecureRandom.hex(16) %>
   request_type: leave
   applicant: hanako
   title: 差し戻された休暇の申請
@@ -34,6 +38,7 @@ hanako_leave_returned:
 
 hanako_leave_withdrawn_after_submit:
   organization: main
+  decision_state_nonce: <%= SecureRandom.hex(16) %>
   request_type: leave
   applicant: hanako
   title: 提出後に取り下げた休暇の申請
@@ -44,6 +49,7 @@ hanako_leave_withdrawn_after_submit:
 # 提出しないまま取り下げた状態。承認担当者へは一度も渡っていない。
 hanako_leave_withdrawn_before_submit:
   organization: main
+  decision_state_nonce: <%= SecureRandom.hex(16) %>
   request_type: leave
   applicant: hanako
   title: 提出せずに取り下げた休暇の申請

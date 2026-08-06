@@ -894,7 +894,8 @@ CREATE TABLE public.requests (
     decided_at timestamp(6) without time zone,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    current_step_position integer DEFAULT 10 NOT NULL
+    current_step_position integer DEFAULT 10 NOT NULL,
+    decision_state_nonce character varying NOT NULL
 );
 
 
@@ -2814,6 +2815,7 @@ ALTER TABLE ONLY public.announcement_departments
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260806010000'),
 ('20260803070000'),
 ('20260803060000'),
 ('20260803050000'),
