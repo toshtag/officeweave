@@ -66,7 +66,18 @@ class CriteriaConsistencyTest < ActiveSupport::TestCase
     # 見出しの書き方が変われば 1 件も読めなくなり、そのまま通る。
     assert_operator sections.size, :>=, 20
     assert_operator sections.sum { |_, body| satisfied(body).size }, :>=, 20
-    assert_operator sections.sum { |_, body| unmet(body).size }, :>=, 1
+  end
+
+  # 未達の読み取りは、文章の側に 1 件も無い時期がある。live の記録で件数を
+  # 見ると、その時期に「読めている」ことを確かめられない。決めた文で見る。
+  test "未達の書き方を読み取れる" do
+    assert_equal [ 4, 9 ], unmet("未達:\n\n- 4: 一覧に上限が無い\n- 9: 文書が無い\n")
+    assert_empty unmet("未達: なし。\n")
+  end
+
+  test "満たすの書き方を読み取れる" do
+    assert_equal [ 1, 2, 8 ], satisfied("条件 1・2・8 は満たす。理由。\n")
+    assert_equal [ 2 ], satisfied("- 2 は満たす。理由。\n")
   end
 
   private

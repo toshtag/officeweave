@@ -1656,9 +1656,11 @@ capabilities:
         reason: "自分の記録を持たない。読み取りだけを行う。"
         evidence: []
       regression_tests:
-        result: "unmet"
-        reason: "コマンドとしての契約にテストが無い。判定そのものは `Diagnostics` の テストが固定しているが、`lib/tasks/diagnose.rake` の出力と、失敗があるときに 0 以外で終わる契約は確かめていない。`bin/jobs_status` は `test/configuration/persistent_queue_test.rb` が実行できることだけを見ており、 通常の表示、`--failed`、上限、誤った引数、終了状態、 ジョブの引数や送信内容を表示しないことは固定していない"
-        evidence: []
+        result: "met"
+        reason: "判定そのものは Diagnostics のテストが固定し、コマンドとしての出力の形、失敗があるときだけ 0 以外で終わること、秘密情報の値を出さないことは診断のコマンドのテストが固定する。"
+        evidence:
+          - "test/models/diagnostics_test.rb"
+          - "test/scripts/diagnose_command_test.rb"
       documentation:
         result: "met"
         reason: "診断のコマンドの使い方と読み方が運用の文書にある。"

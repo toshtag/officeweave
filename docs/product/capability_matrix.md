@@ -571,12 +571,11 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 
 未達:
 
-- 8: コマンドとしての契約にテストが無い。判定そのものは `Diagnostics` の
-  テストが固定しているが、`lib/tasks/diagnose.rake` の出力と、失敗があるときに
-  0 以外で終わる契約は確かめていない。`bin/jobs_status` は
-  `test/configuration/persistent_queue_test.rb` が実行できることだけを見ており、
-  通常の表示、`--failed`、上限、誤った引数、終了状態、
-  ジョブの引数や送信内容を表示しないことは固定していない
+- `bin/jobs_status` の表示、`--failed`、上限、誤った引数、終了状態は固定していない
+
+条件 8 は満たす。診断のコマンドは、出力の形、失敗があるときだけ 0 以外で
+終わること、注意では止めないこと、秘密情報の値を出さないことを固定してある
+（`test/scripts/diagnose_command_test.rb`）。
 
 ### 運用異常の通知
 
