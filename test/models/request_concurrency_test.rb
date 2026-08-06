@@ -199,9 +199,8 @@ class RequestConcurrencyTest < ActiveSupport::TestCase
   # 段 1 を待っているあいだ、画面が段 2 の担当へ出すのは段 1 である。
   # 両者が同じ段を指して同時に決裁しても、成立するのは担当している側だけとする。
   #
-  # 段 2 の担当が段 2 を指した要求は、ここでは扱わない。占有した時点で段 2 に
-  # なっていれば成立し、なっていなければ競合になる。どちらの結果でも、段は
-  # その段の担当だけが通す。段を飛ばす形にはならない。
+  # 段 2 の担当が段 2 を指した要求は、署名した値が段 1 の状態を指すため通らない。
+  # 別に「先の段を指して先に用意した要求」で確かめている。
   test "段 1 と段 2 の担当が同じ段へ同時に決裁しても成立するのは担当だけ" do
     request = multi_step_request
 
@@ -538,9 +537,13 @@ class RequestConcurrencyTest < ActiveSupport::TestCase
     request = multi_step_request
 
     travel_to Time.current do
-      stale = state_token(request, @first_approver)
+      # 値を作る前に、止めた時刻で一度書き換えておく。そうしないと、更新の時刻は
+      # 止める前のままになり、時計に頼った実装でも差が出てしまう。
+      request.reload.update!(title: "止めた時刻での申請")
 
-      assert request.return_to_applicant(actor: @first_approver)
+      stale = state_token(request.reload, @first_approver)
+
+      assert request.reload.return_to_applicant(actor: @first_approver)
       assert request.reload.update!(title: "直した申請")
       assert request.reload.submit(actor: @applicant)
       assert_equal MULTI_FIRST, request.reload.current_step_position
@@ -611,13 +614,14 @@ class RequestConcurrencyTest < ActiveSupport::TestCase
   test "確定のあとの通知の記録に失敗しても、決裁は成立したままになる" do
     request = multi_step_request
 
-    failing(Notification, :deliver_to_all) do
+    reported = reporting_while(Notification, :deliver_to_all) do
       assert approve_by(@first_approver, MULTI_FIRST).call(request)
     end
 
     assert_equal MULTI_SECOND, request.reload.current_step_position
     assert_equal 1, request.request_activities.where(action: "approved").count
     assert_equal 1, AuditEvent.where(organization: @organization, action: "request_approved").count
+    assert_reported reported, request
   end
 
   test "確定のあとのメールの投入に失敗しても、決裁は成立したままになる" do
@@ -625,24 +629,117 @@ class RequestConcurrencyTest < ActiveSupport::TestCase
     approve_by(@first_approver, MULTI_FIRST).call(request)
     approve_by(@second_approver, MULTI_SECOND).call(request.reload)
 
-    failing(Notification, :deliver) do
+    reported = reporting_while(Notification, :deliver) do
       assert approve_by(@approver, MULTI_LAST).call(request.reload)
     end
 
     assert_equal "approved", request.reload.status
     assert_not_nil request.decided_at
+    assert_reported reported, request
   end
 
   test "確定のあとの外部への送信に失敗しても、決裁は成立したままになる" do
     request = multi_step_request
 
-    failing(Notification, :publish) do
+    reported = reporting_while(Notification, :publish) do
       assert request.reload.return_to_applicant(actor: @first_approver,
                                                 expected_step_position: MULTI_FIRST)
     end
 
     assert_equal "returned", request.reload.status
     assert_equal 1, request.request_activities.where(action: "returned").count
+    assert_reported reported, request
+  end
+
+  # 委任は担当を移さない。委任元の立場が消えたら、代理の権限も消える。
+  test "委任元を無効にすると、代理での決裁も承認待ちの一覧も消える" do
+    request = multi_step_request
+    delegate = delegate_of(@first_approver)
+
+    @first_approver.update!(deactivated_at: Time.current)
+
+    result = RequestDecision.call(request: request.reload, actor: delegate, decision: :approve,
+                                  expected_step_position: MULTI_FIRST,
+                                  state_token: state_token(request, delegate))
+
+    assert_equal :unauthorized, result.outcome
+    assert_not Request.awaiting_decision_by(delegate).exists?(id: request.id)
+    assert_equal MULTI_FIRST, request.reload.current_step_position
+    assert_equal 0, request.request_activities.where(action: "approved").count
+  end
+
+  test "委任元の所属が外れると、代理での決裁も承認待ちの一覧も消える" do
+    request = multi_step_request
+    delegate = delegate_of(@first_approver)
+
+    @first_approver.memberships.destroy_all
+
+    result = RequestDecision.call(request: request.reload, actor: delegate, decision: :approve,
+                                  expected_step_position: MULTI_FIRST,
+                                  state_token: state_token(request, delegate))
+
+    assert_equal :unauthorized, result.outcome
+    assert_not Request.awaiting_decision_by(delegate).exists?(id: request.id)
+  end
+
+  test "委任元が管理者でなくなると、管理者の段を代理で通せない" do
+    create_user("keeper2@example.com", role: "administrator")
+    request = multi_step_request
+    approve_by(@first_approver, MULTI_FIRST).call(request)
+    approve_by(@second_approver, MULTI_SECOND).call(request.reload)
+    delegate = delegate_of(@approver)
+
+    @approver.update!(role: "member")
+
+    result = RequestDecision.call(request: request.reload, actor: delegate, decision: :approve,
+                                  expected_step_position: MULTI_LAST,
+                                  state_token: state_token(request, delegate))
+
+    assert_equal :unauthorized, result.outcome
+    assert_equal "pending", request.reload.status
+  end
+
+  test "有効な委任では、決裁も承認待ちの一覧も通知の対象も一致する" do
+    request = multi_step_request
+    delegate = delegate_of(@first_approver)
+
+    assert Request.awaiting_decision_by(delegate).exists?(id: request.id)
+    assert request.reload.approvers.exists?(id: delegate.id)
+    assert request.reload.approve(actor: delegate, expected_step_position: MULTI_FIRST,
+                                  state_token: state_token(request, delegate))
+
+    activity = request.request_activities.where(action: "approved").sole
+
+    assert_equal delegate, activity.actor
+    assert_equal @first_approver, activity.on_behalf_of
+  end
+
+  test "委任の取り消しと代理での決裁が競合しても、片方だけが成立する" do
+    request = multi_step_request
+    delegate = delegate_of(@first_approver)
+    token = state_token(request, delegate)
+
+    outcomes = concurrently(
+      ->(target) { target.approve(actor: delegate, expected_step_position: MULTI_FIRST, state_token: token) },
+      ->(_target) { ApprovalDelegation.where(delegate_id: delegate.id).destroy_all.any? },
+      request: request
+    )
+
+    decided = outcomes.first
+
+    assert_equal decided, request.reload.current_step_position == MULTI_SECOND
+    assert_equal(decided ? 1 : 0, request.request_activities.where(action: "approved").count)
+  end
+
+  test "無効にした委任元を戻すと、期間内の委任は再び使える" do
+    request = multi_step_request
+    delegate = delegate_of(@first_approver)
+
+    @first_approver.update!(deactivated_at: Time.current)
+    @first_approver.update!(deactivated_at: nil)
+
+    assert request.reload.approve(actor: delegate, expected_step_position: MULTI_FIRST,
+                                  state_token: state_token(request, delegate))
   end
 
   test "許可されていない決裁の種類では何も変わらない" do
@@ -742,6 +839,48 @@ class RequestConcurrencyTest < ActiveSupport::TestCase
       yield
     ensure
       target.define_singleton_method(name, original)
+    end
+
+    # 失敗させたあいだに、この決裁として報告された内容を集める。
+    #
+    # 他の層も報告し得るため、件数は決裁の文脈に一致するものだけを数える。
+    def reporting_while(target, name, &block)
+      collected = []
+      subscriber = ErrorCollector.new(collected)
+      Rails.error.subscribe(subscriber)
+
+      failing(target, name, &block)
+
+      collected
+    ensure
+      Rails.error.unsubscribe(subscriber)
+    end
+
+    def assert_reported(collected, request)
+      decision = collected.select { |entry| entry[:context][:announce] == "request_decision" }
+
+      assert_equal 1, decision.size, "決裁としての報告が 1 件ではありません"
+      assert decision.sole[:handled], "処理済みとして報告されていません"
+      assert_equal request.id, decision.sole[:context][:request_id]
+      assert_equal %i[announce request_id].sort, decision.sole[:context].keys.sort,
+                   "決裁の内容が文脈へ入っています"
+    end
+
+    # 委任を受けた利用者を作る。
+    def delegate_of(delegator)
+      delegate = create_user("delegate-#{delegator.id}@example.com", role: "member")
+      @organization.approval_delegations.create!(delegator: delegator, delegate: delegate,
+                                                 starts_on: Date.current)
+      delegate
+    end
+
+    # 報告を集める受け手。差し替えではなく、用意されている仕組みを使う。
+    class ErrorCollector
+      def initialize(collected) = @collected = collected
+
+      def report(error, handled:, severity:, context:, source: nil)
+        @collected << { error: error, handled: handled, severity: severity, context: context }
+      end
     end
 
     # 監査の記録だけを失敗させる。実際の構成は壊さずに戻す。
