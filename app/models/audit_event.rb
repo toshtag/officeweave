@@ -28,6 +28,8 @@ class AuditEvent < ApplicationRecord
     approval_delegation_deleted
     request_approved
     request_returned
+    request_type_created
+    request_type_updated
     api_token_issued
     api_token_revoked
     webhook_endpoint_created

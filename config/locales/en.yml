@@ -871,6 +871,8 @@ en:
       approval_delegation_deleted: Approval delegation ended
       request_approved: Request approved
       request_returned: Request returned
+      request_type_created: Request type created
+      request_type_updated: Request type changed
       api_token_issued: Token issued
       api_token_revoked: Token revoked
       webhook_endpoint_created: Endpoint added
