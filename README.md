@@ -183,6 +183,7 @@ docker compose up -d --build
 
 - [導入手順](docs/operations/installation.md) — 自組織の環境への導入
 - [設定](docs/operations/configuration.md) — 環境変数と稼働確認
+- [操作の手引き](docs/usage/index.md) — 画面から行う操作の手順
 - [運用管理](docs/operations/administration.md) — 利用者と組織の管理、監視、監査
 - [バックアップと復元](docs/operations/backup.md) — 取得と復元の手順
 - [アップグレード](docs/operations/upgrade.md) — 入れ替えの手順と診断
