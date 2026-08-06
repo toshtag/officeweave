@@ -9,11 +9,17 @@ class EventsController < ApplicationController
 
   def index
     @window = DateWindow.new(from: date_param(:from), to: date_param(:to))
-    @events = Event.visible_to(Current.user)
-                   .starting_from(@window.from.beginning_of_day)
-                   .starting_before(@window.to.end_of_day)
-                   .chronological
-                   .includes(:owner)
+    # 期間だけでは件数が決まらない。1 日に何件も積む組織では、1 か月ぶんが
+    # そのまま読み込む量になる。期間の内側でも 1 ページずつ読む。
+    @page = Pagination.new(
+      Event.visible_to(Current.user)
+        .starting_from(@window.from.beginning_of_day)
+        .starting_before(@window.to.end_of_day)
+        .chronological
+        .includes(:owner),
+      page: params[:page]
+    )
+    @events = @page.records
   rescue TimeParameters::InvalidParameter
     redirect_to events_path
   end

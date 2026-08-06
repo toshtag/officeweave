@@ -64,4 +64,7 @@
   <% else %>
     <p><%= t("reservations.index.empty") %></p>
   <% end %>
+
+  <%= render "shared/pagination", page: @page,
+             parameters: { from: @window.from, to: @window.to } %>
 </div>
