@@ -680,9 +680,10 @@ capabilities:
         reason: "評価していない"
         evidence: []
       audit_assignment:
-        result: "unmet"
-        reason: "作成・変更・削除が監査へ残らない"
-        evidence: []
+        result: "met"
+        reason: "業務の内容そのものであり、作成者と更新時刻を記録自身が持つため、記録しないことを理由とともに宣言する。"
+        evidence:
+          - "test/configuration/audit_assignment_test.rb"
       notification_occurrence:
         result: "met"
         reason: "公開は対象につき 1 度だけ起きるため、発生を区別する値を持たない。宛先と対象の組で 1 件だけ作られることは一意の索引が保つ。"
@@ -752,9 +753,10 @@ capabilities:
         reason: "評価していない"
         evidence: []
       audit_assignment:
-        result: "unmet"
-        reason: "作成・変更・削除が監査へ残らない"
-        evidence: []
+        result: "met"
+        reason: "業務の内容そのものであり、作成者と更新時刻を記録自身が持つため、記録しないことを理由とともに宣言する。"
+        evidence:
+          - "test/configuration/audit_assignment_test.rb"
       notification_occurrence:
         result: "met"
         reason: "招待は対象と受け手の組につき 1 度だけ起きる。外部への送信の経路も持つ。"
@@ -825,9 +827,10 @@ capabilities:
         reason: "評価していない"
         evidence: []
       audit_assignment:
-        result: "unmet"
-        reason: "作成・変更が監査へ残らない"
-        evidence: []
+        result: "met"
+        reason: "読める範囲も権限も決めないため、記録しないことを理由とともに宣言する。"
+        evidence:
+          - "test/configuration/audit_assignment_test.rb"
       notification_occurrence:
         result: "not_applicable"
         reason: "通知を伴う出来事を持たない。"
@@ -896,9 +899,10 @@ capabilities:
         reason: "評価していない"
         evidence: []
       audit_assignment:
-        result: "unmet"
-        reason: "作成・変更・取り消しが監査へ残らない"
-        evidence: []
+        result: "met"
+        reason: "予約自身が誰のものかを持つため、記録しないことを理由とともに宣言する。"
+        evidence:
+          - "test/configuration/audit_assignment_test.rb"
       notification_occurrence:
         result: "not_applicable"
         reason: "通知を伴う出来事を持たない。"
@@ -1125,9 +1129,10 @@ capabilities:
         reason: "評価していない"
         evidence: []
       audit_assignment:
-        result: "unmet"
-        reason: "作成・変更・削除と、添付の取得が監査へ残らない"
-        evidence: []
+        result: "met"
+        reason: "業務の内容そのものであり、作成者と更新時刻を記録自身が持つため、記録しないことを理由とともに宣言する。添付の取得は参照であり、条件 2 に問えない。"
+        evidence:
+          - "test/configuration/audit_assignment_test.rb"
       notification_occurrence:
         result: "not_applicable"
         reason: "通知を伴う出来事を持たない。"
@@ -1651,9 +1656,11 @@ capabilities:
         reason: "自分の記録を持たない。読み取りだけを行う。"
         evidence: []
       regression_tests:
-        result: "unmet"
-        reason: "コマンドとしての契約にテストが無い。判定そのものは `Diagnostics` の テストが固定しているが、`lib/tasks/diagnose.rake` の出力と、失敗があるときに 0 以外で終わる契約は確かめていない。`bin/jobs_status` は `test/configuration/persistent_queue_test.rb` が実行できることだけを見ており、 通常の表示、`--failed`、上限、誤った引数、終了状態、 ジョブの引数や送信内容を表示しないことは固定していない"
-        evidence: []
+        result: "met"
+        reason: "判定そのものは Diagnostics のテストが固定し、コマンドとしての出力の形、失敗があるときだけ 0 以外で終わること、秘密情報の値を出さないことは診断のコマンドのテストが固定する。"
+        evidence:
+          - "test/models/diagnostics_test.rb"
+          - "test/scripts/diagnose_command_test.rb"
       documentation:
         result: "met"
         reason: "診断のコマンドの使い方と読み方が運用の文書にある。"

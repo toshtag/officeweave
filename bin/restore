@@ -113,6 +113,34 @@ if [ ! -f "${contents}/metadata.txt" ]; then
   reject "取得時の情報が含まれていません"
 fi
 
+# 中身が取得したときのままであることを確かめる。
+#
+# 復元は既存のデータを置き換える。壊れた書庫や、別の環境の書庫をそのまま
+# 流し込むと、気付くのは復元し終えたあとになる。そこから戻す手段は無い。
+#
+# 見つけられるのは、壊れと取り違えだけである。書庫ごと作り直されれば要約も
+# 作り直せるため、意図して書き換えた相手は見つけられない。
+#
+# 要約を持たない書庫（形式 2 以前）は、その旨を伝えたうえで受け付ける。一律に
+# 拒むと、この版へ入れ替える前に取った書庫から復元できなくなる。
+if [ -f "${contents}/checksums.txt" ]; then
+  echo "中身の要約を確かめています" >&2
+  (cd "${contents}" && sha256sum --check --status checksums.txt) ||
+    reject "書庫の中身が取得したときと違います"
+
+  # 要約に載っていないファイルを足されていないかを見る。載っている分だけを
+  # 照合しても、足されたファイルはそのまま復元へ渡る。
+  listed="$(mktemp)"
+  present="$(mktemp)"
+  trap 'rm -f "${listed}" "${present}"' EXIT
+  awk '{ print $2 }' "${contents}/checksums.txt" | sort > "${listed}"
+  (cd "${contents}" && find . -type f ! -name checksums.txt ! -name metadata.txt | sort) > "${present}"
+  cmp -s "${listed}" "${present}" ||
+    reject "書庫に、要約へ載っていないファイルがあります"
+else
+  echo "この書庫は中身の要約を持ちません。取得したときのままかを確かめられません" >&2
+fi
+
 # 未処理のジョブ。
 # 形式 2 より前の書庫には含まれない。一律に拒否せず、空のキューとして復元する。
 has_queue_dump=0

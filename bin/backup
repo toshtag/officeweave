@@ -99,12 +99,31 @@ if [ -r VERSION ]; then
   application_version="$(tr -d '[:space:]' < VERSION)"
 fi
 
+# 中身の要約を残す。
+#
+# 復元は、書庫を信用して既存のデータを置き換える操作である。途中で壊れた
+# 書庫や、書き換えられた書庫をそのまま流し込むと、壊れたことに気付くのは
+# 復元し終えたあとになる。そこから戻す手段は無い。
+#
+# 要約は書庫の中に置く。外に置くと、書庫だけを渡されたときに確かめられない。
+#
+# 見つけられるのは、壊れと取り違えだけである。書庫ごと作り直されれば要約も
+# 作り直せるため、意図して書き換えた相手は見つけられない。それを見分けるには
+# 署名が要り、署名は鍵の配布を伴う。この製品の範囲を越える。
+log "中身の要約を作っています"
+(
+  cd "${work_directory}"
+  find . -type f ! -name checksums.txt ! -name metadata.txt -print0 |
+    sort -z |
+    xargs -0 sha256sum > checksums.txt
+)
+
 # 復元する側が、どの版で取得したものかを判断できるようにする。
 # 接続情報や鍵は書かない。書庫は組織の外へ持ち出されることがある。
 # format_version は書庫の形を表す。
-# 2 から queue_database.sql を含む。
+# 2 から queue_database.sql を含む。3 から checksums.txt を含む。
 cat > "${work_directory}/metadata.txt" <<METADATA
-format_version=2
+format_version=3
 created_at=${timestamp}
 database_name=${database_name}
 queue_database_name=${queue_database_name}

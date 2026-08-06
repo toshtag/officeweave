@@ -160,6 +160,60 @@ class RestoreScriptTest < ActiveSupport::TestCase
     end
   end
 
+
+  test "中身が取得したときと違う書庫を拒否する" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+      archive = build_archive(sandbox, storage: { "note.txt" => "元の中身" }, checksums: true)
+      rewrite(sandbox, archive) { |contents| File.write(File.join(contents, "storage", "note.txt"), "違う中身") }
+
+      _stdout, stderr, status = sandbox.run("bin/restore", archive, env: { "FORCE" => "1" })
+
+      assert_not status.success?
+      assert_includes stderr, "取得したときと違います"
+      # 拒んだ時点で、既存のデータへは触れていない。
+      assert_not_includes calls(sandbox), "DROP SCHEMA public CASCADE"
+    end
+  end
+
+  test "要約へ載っていないファイルを足された書庫を拒否する" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+      archive = build_archive(sandbox, storage: { "note.txt" => "元の中身" }, checksums: true)
+      rewrite(sandbox, archive) { |contents| File.write(File.join(contents, "storage", "足した.txt"), "余分") }
+
+      _stdout, stderr, status = sandbox.run("bin/restore", archive, env: { "FORCE" => "1" })
+
+      assert_not status.success?
+      assert_includes stderr, "要約へ載っていないファイル"
+    end
+  end
+
+  test "中身が取得したときのままなら受け付ける" do
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+      archive = build_archive(sandbox, storage: { "note.txt" => "元の中身" }, checksums: true)
+
+      _stdout, stderr, status = sandbox.run("bin/restore", archive, env: { "FORCE" => "1" })
+
+      assert status.success?, stderr
+      assert_equal "元の中身", sandbox.read("storage", "note.txt")
+    end
+  end
+
+  test "要約を持たない書庫は、その旨を伝えて受け付ける" do
+    # 一律に拒むと、この版へ入れ替える前に取った書庫から復元できなくなる。
+    with_shell_sandbox do |sandbox|
+      prepare(sandbox)
+      archive = build_archive(sandbox, storage: { "note.txt" => "元の中身" })
+
+      _stdout, stderr, status = sandbox.run("bin/restore", archive, env: { "FORCE" => "1" })
+
+      assert status.success?, stderr
+      assert_includes stderr, "要約を持ちません"
+    end
+  end
+
   private
     def prepare(sandbox)
       sandbox.install_command("psql", ShellScriptTestHelper::PSQL)
@@ -176,7 +230,8 @@ class RestoreScriptTest < ActiveSupport::TestCase
     end
 
     # 正しい形の書庫を組み立てる。
-    def build_archive(sandbox, storage: {}, database: "-- 取得したデータベースの内容\n", omit: nil, queue: true)
+    def build_archive(sandbox, storage: {}, database: "-- 取得したデータベースの内容\n", omit: nil,
+                      queue: true, checksums: false)
       source = File.join(sandbox.root, "archive-source-#{SecureRandom.hex(4)}")
       FileUtils.mkdir_p(File.join(source, "storage"))
 
@@ -191,9 +246,33 @@ class RestoreScriptTest < ActiveSupport::TestCase
         File.write(File.join(source, "storage", name), body)
       end
 
+      write_checksums(source) if checksums
+
       archive = File.join(sandbox.root, "archive-#{SecureRandom.hex(4)}.tar.gz")
       system("tar", "--create", "--gzip", "--file=#{archive}", "--directory=#{source}", ".", exception: true)
       archive
+    end
+
+    # bin/backup と同じ形の要約を作る。
+    def write_checksums(source)
+      lines = Dir.glob("**/*", base: source).sort.filter_map do |path|
+        next if path.in?(%w[checksums.txt metadata.txt])
+        next unless File.file?(File.join(source, path))
+
+        "#{Digest::SHA256.file(File.join(source, path)).hexdigest}  ./#{path}"
+      end
+
+      File.write(File.join(source, "checksums.txt"), lines.join("\n") + "\n")
+    end
+
+    # 取得したあとの書庫の中身を差し替える。壊れと取り違えを表す。
+    def rewrite(sandbox, archive)
+      contents = File.join(sandbox.root, "rewrite-#{SecureRandom.hex(4)}")
+      FileUtils.mkdir_p(contents)
+      system("tar", "--extract", "--gzip", "--file=#{archive}", "--directory=#{contents}", exception: true)
+      yield contents
+      FileUtils.rm_f(archive)
+      system("tar", "--create", "--gzip", "--file=#{archive}", "--directory=#{contents}", ".", exception: true)
     end
 
     def build_traversal_archive(sandbox)
