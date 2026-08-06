@@ -532,6 +532,119 @@ class RequestConcurrencyTest < ActiveSupport::TestCase
     assert_nil request.decided_at
   end
 
+  # 時計の分解能に頼らない。時刻を止めたまま差し戻し、修正、再提出まで進めても、
+  # 前の提出のときの要求は通ってはならない。
+  test "時刻が同じでも、差し戻して再提出したあとの古い要求は成立しない" do
+    request = multi_step_request
+
+    travel_to Time.current do
+      stale = state_token(request, @first_approver)
+
+      assert request.return_to_applicant(actor: @first_approver)
+      assert request.reload.update!(title: "直した申請")
+      assert request.reload.submit(actor: @applicant)
+      assert_equal MULTI_FIRST, request.reload.current_step_position
+
+      result = RequestDecision.call(request: request.reload, actor: @first_approver, decision: :approve,
+                                    expected_step_position: MULTI_FIRST, state_token: stale)
+
+      assert_equal :stale, result.outcome
+      assert request.reload.approve(actor: @first_approver, expected_step_position: MULTI_FIRST,
+                                    state_token: state_token(request, @first_approver))
+    end
+  end
+
+  # 呼び出しのときに読んだ利用者の写しは、そのあいだに古くなる。
+  test "読み込んだあとに無効にされた利用者は、手元の写しでも決裁できない" do
+    request = multi_step_request
+    stale_actor = User.find(@first_approver.id)
+    token = state_token(request, stale_actor)
+
+    User.find(@first_approver.id).update!(deactivated_at: Time.current)
+
+    result = RequestDecision.call(request: request.reload, actor: stale_actor, decision: :approve,
+                                  expected_step_position: MULTI_FIRST, state_token: token)
+
+    assert_equal :unauthorized, result.outcome
+    assert_equal MULTI_FIRST, request.reload.current_step_position
+  end
+
+  test "読み込んだあとに立場を落とされた管理者は、手元の写しでも決裁できない" do
+    request = multi_step_request
+    approve_by(@first_approver, MULTI_FIRST).call(request)
+    approve_by(@second_approver, MULTI_SECOND).call(request.reload)
+
+    # 組織には利用中の管理者が 1 人は要る。落とす相手とは別に立てておく。
+    create_user("keeper@example.com", role: "administrator")
+
+    stale_actor = User.find(@approver.id)
+    token = state_token(request, stale_actor)
+    User.find(@approver.id).update!(role: "member")
+
+    result = RequestDecision.call(request: request.reload, actor: stale_actor, decision: :approve,
+                                  expected_step_position: MULTI_LAST, state_token: token)
+
+    assert_equal :unauthorized, result.outcome
+    assert_equal "pending", request.reload.status
+  end
+
+  # 立場と代理元を別々に解くと、そのあいだに委任が変わったときに食い違う。
+  test "委任が取り消されたあとは、代理での決裁も成立しない" do
+    request = multi_step_request
+    delegate = create_user("revoked@example.com", role: "member")
+    delegation = @organization.approval_delegations.create!(delegator: @first_approver, delegate: delegate,
+                                                           starts_on: Date.current)
+    token = state_token(request, delegate)
+
+    delegation.destroy!
+
+    result = RequestDecision.call(request: request.reload, actor: delegate, decision: :approve,
+                                  expected_step_position: MULTI_FIRST, state_token: token)
+
+    assert_equal :unauthorized, result.outcome
+    assert_equal MULTI_FIRST, request.reload.current_step_position
+  end
+
+  # 確定したあとの知らせに失敗しても、決裁の結果は変えない。
+  # 変えると、画面には失敗が出るのに保存されているのは決裁済み、という
+  # 今回直している食い違いが、通知の側から戻る。
+  test "確定のあとの通知の記録に失敗しても、決裁は成立したままになる" do
+    request = multi_step_request
+
+    failing(Notification, :deliver_to_all) do
+      assert approve_by(@first_approver, MULTI_FIRST).call(request)
+    end
+
+    assert_equal MULTI_SECOND, request.reload.current_step_position
+    assert_equal 1, request.request_activities.where(action: "approved").count
+    assert_equal 1, AuditEvent.where(organization: @organization, action: "request_approved").count
+  end
+
+  test "確定のあとのメールの投入に失敗しても、決裁は成立したままになる" do
+    request = multi_step_request
+    approve_by(@first_approver, MULTI_FIRST).call(request)
+    approve_by(@second_approver, MULTI_SECOND).call(request.reload)
+
+    failing(Notification, :deliver) do
+      assert approve_by(@approver, MULTI_LAST).call(request.reload)
+    end
+
+    assert_equal "approved", request.reload.status
+    assert_not_nil request.decided_at
+  end
+
+  test "確定のあとの外部への送信に失敗しても、決裁は成立したままになる" do
+    request = multi_step_request
+
+    failing(Notification, :publish) do
+      assert request.reload.return_to_applicant(actor: @first_approver,
+                                                expected_step_position: MULTI_FIRST)
+    end
+
+    assert_equal "returned", request.reload.status
+    assert_equal 1, request.request_activities.where(action: "returned").count
+  end
+
   test "許可されていない決裁の種類では何も変わらない" do
     request = multi_step_request
 
@@ -620,6 +733,15 @@ class RequestConcurrencyTest < ActiveSupport::TestCase
       approve_by(@first_approver, MULTI_FIRST).call(request)
       approve_by(@second_approver, MULTI_SECOND).call(request.reload)
       approve_by(@approver, MULTI_LAST).call(request.reload)
+    end
+
+    # 指定した処理だけを失敗させる。実際の構成は壊さずに戻す。
+    def failing(target, name)
+      original = target.method(name)
+      target.define_singleton_method(name) { |**| raise "知らせに失敗しました" }
+      yield
+    ensure
+      target.define_singleton_method(name, original)
     end
 
     # 監査の記録だけを失敗させる。実際の構成は壊さずに戻す。
