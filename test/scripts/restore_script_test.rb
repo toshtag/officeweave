@@ -161,11 +161,11 @@ class RestoreScriptTest < ActiveSupport::TestCase
   end
 
 
-  test "中身が書き換えられた書庫を拒否する" do
+  test "中身が取得したときと違う書庫を拒否する" do
     with_shell_sandbox do |sandbox|
       prepare(sandbox)
       archive = build_archive(sandbox, storage: { "note.txt" => "元の中身" }, checksums: true)
-      rewrite(sandbox, archive) { |contents| File.write(File.join(contents, "storage", "note.txt"), "書き換えた") }
+      rewrite(sandbox, archive) { |contents| File.write(File.join(contents, "storage", "note.txt"), "違う中身") }
 
       _stdout, stderr, status = sandbox.run("bin/restore", archive, env: { "FORCE" => "1" })
 
@@ -265,7 +265,7 @@ class RestoreScriptTest < ActiveSupport::TestCase
       File.write(File.join(source, "checksums.txt"), lines.join("\n") + "\n")
     end
 
-    # 取得したあとに書庫の中身を差し替える。
+    # 取得したあとの書庫の中身を差し替える。壊れと取り違えを表す。
     def rewrite(sandbox, archive)
       contents = File.join(sandbox.root, "rewrite-#{SecureRandom.hex(4)}")
       FileUtils.mkdir_p(contents)
