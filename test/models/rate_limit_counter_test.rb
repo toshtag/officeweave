@@ -13,6 +13,19 @@ class RateLimitCounterTest < ActiveSupport::TestCase
     assert_equal 3, RateLimitCounter.increment(KEY, 1, expires_in: 1.minute)
   end
 
+  # 問い合わせの控えは、文面が同じ問い合わせの実行を省く。数え上げの文面は
+  # key と時刻から決まるため、同じ時刻に同じ key を数えると文面が一致する。
+  # 省かれると、2 度目が実行されないまま前の値が返り、上限を超えて通る。
+  test "同じ時刻に同じ key を数えても、実行を省かない" do
+    ActiveRecord::Base.cache do
+      freeze_time do
+        assert_equal 1, RateLimitCounter.increment(KEY, 1, expires_in: 1.minute)
+        assert_equal 2, RateLimitCounter.increment(KEY, 1, expires_in: 1.minute)
+        assert_equal 3, RateLimitCounter.increment(KEY, 1, expires_in: 1.minute)
+      end
+    end
+  end
+
   test "key が違えば互いに影響しない" do
     RateLimitCounter.increment(KEY, 1, expires_in: 1.minute)
 

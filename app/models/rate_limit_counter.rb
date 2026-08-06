@@ -36,7 +36,10 @@ class RateLimitCounter < ApplicationRecord
       RETURNING count
     SQL
 
-    connection.select_value(sql)
+    # 問い合わせの控えを通さない。控えは文面が同じなら実行を省くため、
+    # 同じ時刻に同じ key を 2 度数えると、2 度目が実行されず、前の値が返る。
+    # 数え上げは、文面が同じでも毎回実行しなければならない。
+    connection.uncached { connection.select_value(sql) }
   end
 
   # 定期実行から呼ぶ。
