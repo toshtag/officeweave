@@ -742,7 +742,6 @@ en:
     revoke: Revoke
     never_used: Never used
     no_expiry: No expiry
-    all_scopes: All
     index:
       title: API tokens
       heading: API tokens

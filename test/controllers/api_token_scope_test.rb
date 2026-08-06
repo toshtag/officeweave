@@ -42,8 +42,8 @@ class ApiTokenScopeRequestTest < ActionDispatch::IntegrationTest
     assert_equal "announcements", response.parsed_body["scope"]
   end
 
-  test "範囲を持たない token はすべて読める" do
-    token = issue(scopes: nil)
+  test "すべての範囲を持つ token は、すべての資源を読める" do
+    token = issue(scopes: ApiToken::SCOPES)
 
     ApiToken::SCOPES.each do |scope|
       get url_for_scope(scope), headers: authorization(token)
@@ -81,13 +81,18 @@ class ApiTokenScopeRequestTest < ActionDispatch::IntegrationTest
                   text: /#{I18n.t('api_tokens.scopes.announcements')}/
   end
 
-  test "範囲を持たない token は、すべてと示す" do
-    token = issue(scopes: nil)
+  test "一覧には、持っている範囲だけを並べる" do
+    # 「すべて」という表示は持たない。持たせると、その表示のときに何が
+    # 読めるのかが、見ている時点の資源の一覧に依存する。
+    token = issue(scopes: %w[announcements])
     sign_in_as users(:taro)
 
     get api_tokens_url
 
-    assert_select "[data-api-token-id='#{token.id}']", text: /#{I18n.t('api_tokens.all_scopes')}/
+    assert_select "[data-api-token-id='#{token.id}']",
+                  text: /#{I18n.t('api_tokens.scopes.announcements')}/
+    assert_select "[data-api-token-id='#{token.id}']",
+                  text: /#{I18n.t('api_tokens.scopes.users')}/, count: 0
   end
 
   test "発行の記録に範囲を残す" do

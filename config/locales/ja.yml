@@ -766,7 +766,6 @@ ja:
     revoke: 無効にする
     never_used: 未使用
     no_expiry: 期限なし
-    all_scopes: すべて
     index:
       title: 外部接続用の token
       heading: 外部接続用の token
