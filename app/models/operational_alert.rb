@@ -16,6 +16,15 @@ class OperationalAlert < ApplicationRecord
 
   scope :recent_first, -> { order(sent_at: :desc, id: :desc) }
 
+  # 保持期間を過ぎた記録。指定していない場合は 1 件も含まない。
+  # 知らせ直す判断に使うのは直近の 1 件だけであり、それより古いものは
+  # 運用の履歴としてだけ残る。
+  scope :expired, ->(at: Time.current) do
+    days = Officeweave::Configuration::OperationalAlertRetention.days
+
+    days ? where(sent_at: ...(at - days.days)) : none
+  end
+
   def self.delete_expired(at: Time.current)
     expired(at: at).delete_all
   end
