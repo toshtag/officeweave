@@ -42,6 +42,26 @@ class AuditEvent < ApplicationRecord
     audit_events_exported
   ].freeze
 
+  # 詳細へ置いてよいのは、記録を識別できる短い値だけとする。
+  #
+  # 監査は、誰が何をしたかを追うためのものであり、業務の内容の写しではない。
+  # 本文やコメントを写すと、記録の側に別の保持期間と別の読み手を持つ複製が
+  # できる。秘密や token を写せば、監査を読める相手がそのまま使える。
+  #
+  # 判断は書く側に任せず、保存の直前で必ず取り除く。書く場所は増えていく。
+  FORBIDDEN_DETAIL_KEYS = /password|secret|token|credential|body|comment|content|description/i
+
+  # 1 つの値の長さの上限。
+  #
+  # 鍵の名前だけでは、自由に書ける文章が別の名前で入ってくるのを止められない。
+  # 識別に使う値は短い。長い値は、内容そのものだと見なして切り詰める。
+  MAXIMUM_DETAIL_LENGTH = 200
+
+  # 取り除いたことを残す。黙って消すと、書いたつもりの値が無いのか、
+  # そもそも書かれなかったのかを、後から区別できない。
+  REDACTED = "[取り除いた]".freeze
+  TRUNCATED = "…[切り詰めた]".freeze
+
   belongs_to :organization
   belongs_to :actor, class_name: "User", optional: true
   belongs_to :target, polymorphic: true, optional: true
@@ -62,6 +82,8 @@ class AuditEvent < ApplicationRecord
   end
   scope :with_action, ->(action) { where(action: action) if action.in?(ACTIONS) }
   scope :by_actor, ->(actor_id) { where(actor_id: actor_id) if actor_id.present? }
+
+  before_validation :sanitize_details
 
   # 記録を書き換えさせない。
   before_update { raise ActiveRecord::ReadOnlyRecord }
@@ -88,4 +110,37 @@ class AuditEvent < ApplicationRecord
       ip_address: ip_address
     )
   end
+
+  private
+    def sanitize_details
+      self.details = self.class.sanitized_details(details)
+    end
+
+    class << self
+      # 入れ子も同じ規則で見る。1 段目だけを見ると、まとめた鍵の下へ
+      # 置くだけで通り抜ける。
+      def sanitized_details(value)
+        case value
+        when Hash
+          value.to_h { |key, nested| [ key, forbidden_key?(key) ? REDACTED : sanitized_details(nested) ] }
+        when Array
+          value.map { |nested| sanitized_details(nested) }
+        when String
+          truncated(value)
+        else
+          value
+        end
+      end
+
+      private
+        def forbidden_key?(key)
+          key.to_s.match?(FORBIDDEN_DETAIL_KEYS)
+        end
+
+        def truncated(value)
+          return value if value.length <= MAXIMUM_DETAIL_LENGTH
+
+          value[0, MAXIMUM_DETAIL_LENGTH] + TRUNCATED
+        end
+    end
 end
