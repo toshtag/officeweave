@@ -339,7 +339,8 @@ CREATE TABLE public.approval_delegations (
     starts_on date NOT NULL,
     ends_on date,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT approval_delegations_period_must_not_be_reversed CHECK (((ends_on IS NULL) OR (ends_on >= starts_on)))
 );
 
 
@@ -2938,6 +2939,7 @@ ALTER TABLE ONLY public.announcement_departments
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260806060000'),
 ('20260806050000'),
 ('20260806040000'),
 ('20260806030000'),

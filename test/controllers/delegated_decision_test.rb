@@ -57,7 +57,10 @@ class DelegatedDecisionTest < ActionDispatch::IntegrationTest
     request = requests(:taro_leave_pending)
     delegate = delegate_of(users(:approver))
 
-    ApprovalDelegation.where(delegate_id: delegate.id).update_all(ends_on: Date.yesterday)
+    # 始まりも過去へ動かす。終わりだけを過去にすると前後が逆になり、
+    # 期間として成り立たない値になる。
+    ApprovalDelegation.where(delegate_id: delegate.id)
+                      .update_all(starts_on: 2.days.ago.to_date, ends_on: Date.yesterday)
 
     assert_delegated_paths_deny(request, delegate)
   end
