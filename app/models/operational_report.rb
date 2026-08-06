@@ -16,4 +16,19 @@ class OperationalReport
   end
 
   def any? = issues.any?
+
+  # 何が起きているかを表す値。
+  #
+  # 異常の名前と状態の組から作る。同じ異常が続いているあいだは同じ値になり、
+  # 直った・別の異常が増えたときだけ変わる。詳細の文面は入れない。文面には
+  # 件数や時刻が入り、内容が変わっていなくても毎回違う値になる。
+  #
+  # 長さに上限を置く。異常が同時に多数出た場合でも、値として保存できる
+  # 大きさに収める。切り詰めた場合も、切り詰める前の要約から作った値が
+  # 先頭に残るため、別の組み合わせと同じにはならない。
+  def occurrence
+    names = issues.map { |issue| "#{issue[:name]}:#{issue[:status]}" }.sort.join(",")
+
+    Digest::SHA256.hexdigest(names)
+  end
 end
