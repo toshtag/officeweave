@@ -18,6 +18,13 @@ class LoadSample
   EMAIL_ADDRESS = "measure@load-sample.invalid".freeze
   NAME = "測定 利用者".freeze
 
+  # 1 度に書き込む行の数。
+  #
+  # 1 件ずつ作ると、記録の数だけ往復が出る。1 万件規模では、その往復が
+  # 投入そのものの時間になる。既にある分は識別できる値で除いてから、
+  # 足りない分だけをまとめて書き込む。
+  INSERT_BATCH = 1_000
+
   # 1 人あたりに積む記録の数。
   #
   # 一覧の 1 ページは 25 件である。1 ページに収まる量では、読み込む量の違いが
@@ -113,65 +120,74 @@ class LoadSample
     end
 
     def create_announcements(organization, users)
-      each_record(users) do |author, index|
-        organization.announcements.find_or_create_by!(title: "測定用のお知らせ #{index}") do |record|
-          record.author = author
-          record.body = body_for(index)
-          record.visibility = "organization"
-          record.published_at = Time.current
-        end
+      insert_missing(organization.announcements, "測定用のお知らせ", users) do |author, index, now|
+        { organization_id: organization.id, author_id: author.id,
+          title: "測定用のお知らせ #{index}", body: body_for(index),
+          visibility: "organization", published_at: now, created_at: now, updated_at: now }
       end
     end
 
     def create_events(organization, users)
-      each_record(users) do |owner, index|
-        start = Time.current.beginning_of_hour + index.hours
+      base = Time.current.beginning_of_hour
 
-        organization.events.find_or_create_by!(title: "測定用の予定 #{index}") do |record|
-          record.owner = owner
-          record.starts_at = start
-          record.ends_at = start + 30.minutes
-          record.visibility = "organization"
-        end
+      insert_missing(organization.events, "測定用の予定", users) do |owner, index, now|
+        start = base + index.hours
+
+        { organization_id: organization.id, owner_id: owner.id,
+          title: "測定用の予定 #{index}", starts_at: start, ends_at: start + 30.minutes,
+          visibility: "organization", created_at: now, updated_at: now }
       end
     end
 
     def create_reservations(organization, users, resources)
-      each_record(users) do |reserver, index|
+      base = Time.current.beginning_of_hour
+
+      insert_missing(organization.reservations, "測定用の用途", users, column: :purpose) do |reserver, index, now|
         # 時間帯を 1 件ずつ分ける。同じ設備の同じ時間帯は重ねられない。
         # 設備の数で割って詰めると、規模を変えたときに既にある予約とぶつかる。
-        start = Time.current.beginning_of_hour + index.hours
+        start = base + index.hours
 
-        organization.reservations.find_or_create_by!(purpose: "測定用の用途 #{index}") do |record|
-          record.resource = resources[index % resources.size]
-          record.reserver = reserver
-          record.starts_at = start
-          record.ends_at = start + 30.minutes
-        end
+        { organization_id: organization.id, resource_id: resources[index % resources.size].id,
+          reserver_id: reserver.id, purpose: "測定用の用途 #{index}",
+          starts_at: start, ends_at: start + 30.minutes, created_at: now, updated_at: now }
       end
     end
 
     def create_requests(organization, users, request_type)
-      each_record(users) do |applicant, index|
-        organization.requests.find_or_create_by!(title: "測定用の申請 #{index}") do |record|
-          record.request_type = request_type
-          record.applicant = applicant
-          record.body = body_for(index)
-          record.status = "pending"
-          record.submitted_at = Time.current
-        end
+      insert_missing(organization.requests, "測定用の申請", users) do |applicant, index, now|
+        { organization_id: organization.id, request_type_id: request_type.id,
+          applicant_id: applicant.id, title: "測定用の申請 #{index}", body: body_for(index),
+          status: "pending", submitted_at: now, created_at: now, updated_at: now,
+          decision_state_nonce: SecureRandom.uuid }
       end
     end
 
     def create_documents(organization, users, category)
-      each_record(users) do |author, index|
-        organization.documents.find_or_create_by!(title: "測定用の文書 #{index}") do |record|
-          record.author = author
-          record.document_category = category
-          record.body = body_for(index)
-          record.visibility = "organization"
-        end
+      insert_missing(organization.documents, "測定用の文書", users) do |author, index, now|
+        { organization_id: organization.id, author_id: author.id,
+          document_category_id: category.id, title: "測定用の文書 #{index}",
+          body: body_for(index), visibility: "organization", created_at: now, updated_at: now }
       end
+    end
+
+    # 足りない分だけをまとめて書き込む。
+    #
+    # 既にある分は、識別できる値から番号を読み取って除く。1 件ずつ存在を
+    # 確かめると、記録の数だけ往復が出る。
+    def insert_missing(association, prefix, users, column: :title)
+      wanted = users.size * PER_USER
+      existing = association.where(association.arel_table[column].matches("#{prefix} %"))
+                            .pluck(column)
+                            .filter_map { |value| value[/\d+\z/]&.to_i }
+                            .to_set
+      now = Time.current
+
+      rows = (0...wanted).reject { |index| existing.include?(index) }
+                         .map { |index| yield(users[index % users.size], index, now) }
+
+      rows.each_slice(INSERT_BATCH) { |slice| association.klass.insert_all(slice) }
+
+      Array.new(wanted)
     end
 
     # 監査記録と通知は、同じ内容を区別する識別子を持たない。
