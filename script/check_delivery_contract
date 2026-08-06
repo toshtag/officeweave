@@ -1,0 +1,105 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# 配送の規約を機械で確かめる。
+#
+# 規約を文章だけで持つと、急いでいるときに外れる。外れたことにも気付かない。
+# commit の題名と、渡された PR の本文を、そのつど照合する。
+#
+# 比較のために持ち込んだ外部の固有名は、語そのものをこのリポジトリへ書かずに
+# 照合する。書けば、それ自体が持ち込んだことになる。手元では
+# .officeweave-policy/restricted-patterns、継続的インテグレーションでは秘密の
+# 値から読む。どちらも無い場合は、その照合だけを飛ばし、飛ばしたことを出力へ残す。
+#
+# 使い方:
+#   script/check_delivery_contract [<git の範囲>] [--body <file>]
+require "open3"
+
+class DeliveryContract
+  # 生成した道具の付記。ここは語そのものを持ってよい。外部の比較対象ではない。
+  BANNED = [
+    /Co-authored-by:\s*Claude/i,
+    /Generated with \[Claude Code\]/i,
+    /🤖\s*Generated with/,
+    /Co-authored-by:\s*.*\b(AI|Copilot|Cursor|Codex)\b/i
+  ].freeze
+
+  RESTRICTED_FILE = ".officeweave-policy/restricted-patterns"
+
+  Violation = Struct.new(:where, :reason, keyword_init: true) do
+    def to_s = "#{where}: #{reason}"
+  end
+
+  def initialize(messages:, body: nil, restricted: [])
+    @messages = messages
+    @body = body
+    @restricted = restricted
+  end
+
+  def violations
+    (@messages.flat_map { |subject, text| inspect_text("commit #{subject}", text) } +
+      inspect_text("PR 本文", @body.to_s)).compact
+  end
+
+  private
+    def inspect_text(where, text)
+      return [] if text.strip.empty?
+
+      # 同じ文へいくつ当たっても、直す作業は 1 つである。まとめて 1 件とする。
+      found = []
+      found << Violation.new(where: where, reason: "付記または宣伝が入っています") if
+        BANNED.any? { |pattern| text.match?(pattern) }
+
+      found + @restricted.filter_map do |pattern|
+        Violation.new(where: where, reason: "持ち込んではいけない固有名が入っています") if text.match?(pattern)
+      end
+    end
+end
+
+# commit の題名は日本語で書く。英語だけの題名は、履歴のなかで浮く。
+def japanese?(subject) = subject.match?(/[ぁ-んァ-ヶ一-龠]/)
+
+if $PROGRAM_NAME == __FILE__
+  range = ARGV.first&.start_with?("--") ? nil : ARGV.first
+  range ||= "origin/main..HEAD"
+  body_index = ARGV.index("--body")
+  body = body_index ? File.read(ARGV.fetch(body_index + 1)) : nil
+
+  log, status = Open3.capture2("git", "log", "--format=%H%x00%s%x00%B%x1e", range)
+  abort "commit を読めませんでした: #{range}" unless status.success?
+
+  messages = log.split("\x1e").reject { |entry| entry.strip.empty? }.map do |entry|
+    sha, subject, full = entry.strip.split("\x00", 3)
+    [ "#{sha[0, 7]} #{subject}", full.to_s ]
+  end
+
+  restricted = []
+  if File.exist?(DeliveryContract::RESTRICTED_FILE)
+    restricted = File.readlines(DeliveryContract::RESTRICTED_FILE, chomp: true)
+                     .reject { |line| line.strip.empty? || line.start_with?("#") }
+                     .map { |line| Regexp.new(line, Regexp::IGNORECASE) }
+  elsif ENV["RESTRICTED_REFERENCE_PATTERNS"].to_s.strip != ""
+    restricted = ENV.fetch("RESTRICTED_REFERENCE_PATTERNS").lines(chomp: true)
+                    .reject { |line| line.strip.empty? }
+                    .map { |line| Regexp.new(line, Regexp::IGNORECASE) }
+  else
+    puts "固有名の照合は飛ばしました（照合する語の指定がありません）"
+  end
+
+  failures = DeliveryContract.new(messages: messages, body: body, restricted: restricted).violations
+  messages.each do |subject, _|
+    next if japanese?(subject.split(" ", 2).last.to_s)
+
+    failures << DeliveryContract::Violation.new(where: "commit #{subject}",
+                                                reason: "題名が日本語ではありません")
+  end
+
+  failures.each { |failure| warn failure }
+
+  if failures.empty?
+    puts "配送の規約を満たしています（commit #{messages.size} 件）"
+    exit 0
+  end
+
+  exit 1
+end
