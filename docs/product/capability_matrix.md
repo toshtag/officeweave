@@ -92,15 +92,18 @@ release_gate         1  release.production_readiness（定義）
 
 次の 2 つは、複数の Core 機能にまたがる横断の課題である。
 
-- 条件 2: 更新の経路に、監査へ記録するかしないかの割り当てが網羅されていない
 - 条件 7: 増え続ける記録のうち、後始末があるのは期限切れのログイン、
-  終わったジョブ、監査記録である（`config/recurring.yml`）。
+  終わったジョブ、監査記録、試行の数え上げである（`config/recurring.yml`）。
   通知、送信の記録、その他の種類には割り当てが無い
 
-どちらも、横断の仕組みを 1 つ作れば終わるものではない。最後は機能ごと、
-記録の種類ごとに割り当てる必要がある。
+これは、横断の仕組みを 1 つ作れば終わるものではない。最後は記録の種類ごとに
+割り当てる必要がある。
 
-そして、この 2 つを解消しても `complete` にはならない。機能ごとに、権限の
+条件 2 は解消した。状態を変える入口はすべて、記録する・しないのどちらかを
+宣言する（`app/controllers/concerns/auditable.rb`）。宣言の無い入口は
+`test/configuration/audit_assignment_test.rb` が落とす。
+
+そして、これを解消しても `complete` にはならない。機能ごとに、権限の
 粒度、一覧の上限、選択欄の描画量、データベースの不変条件、想定規模での実測、
 操作の文書といった別の未達が残る。機能ごとの未達は、それぞれの節に書いた。
 
@@ -114,7 +117,8 @@ release_gate         1  release.production_readiness（定義）
 ```text
 状態  partial
 経路  /session
-実装  Session, User, Authentication::*, config/recurring.yml（毎時 Session.delete_expired）
+実装  Session, User, Authentication::*, RateLimitCounter,
+      config/recurring.yml（毎時 Session.delete_expired）
 検証  test/models/session_test.rb, test/controllers/sessions_controller_test.rb,
       test/controllers/session_activity_test.rb, test/system/authentication_test.rb,
       test/configuration/persistent_queue_test.rb
@@ -123,10 +127,10 @@ release_gate         1  release.production_readiness（定義）
 
 未達:
 
-- 試行の上限が、動かしている web の数に依存する。
-  `app/controllers/sessions_controller.rb:6` の上限はキャッシュ領域で数えるが、
-  配布用の設定は共有の置き場を持たない（`config/environments/production.rb:57`）。
-  web を増やすと、その数だけ上限が実質的に増える
+- 9: 利用者がログインし、端末を確認して終わらせる手順の文書が無い
+
+条件 1・2・8 は満たす。試行の上限はデータベースで数えるため、動かしている
+web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 
 条件 7 は満たす。期限を過ぎた記録は `Session.delete_expired`
 （`app/models/session.rb:35`）が毎時消す。
@@ -144,8 +148,11 @@ release_gate         1  release.production_readiness（定義）
 
 未達:
 
-- 9: 受け取った属性を利用者のどの項目へ結び付けるかが文書に無い
 - 実際の認証基盤へ接続した状態での確認が無い
+
+条件 1・2・8・9 は満たす。受け取る属性の対応は
+`docs/development/authentication.md` 5.6 にあり、
+`test/models/authentication/oidc_claim_contract_test.rb` が固定する。
 
 ### パスワードの変更と再設定
 
@@ -160,9 +167,10 @@ release_gate         1  release.production_readiness（定義）
 
 未達:
 
-- 試行の上限が、動かしている web の数に依存する。
-  `app/controllers/password_resets_controller.rb:14` の上限も、
-  ログインと同じくキャッシュ領域で数える
+- 9: 利用者がパスワードを忘れたときの手順の文書が無い
+
+条件 1・2・8 は満たす。試行の上限はログインと同じ置き場で数えるため、
+動かしている web の数に依存しない。
 
 条件 7 は非該当。再設定の案内は署名した値であり、記録として持たない
 （`app/models/user.rb:19`）。期限は 15 分で、一度使うと再び使えない。
@@ -198,7 +206,8 @@ release_gate         1  release.production_readiness（定義）
 
 未達:
 
-- 2: 表示言語と配信設定の変更が監査へ残らない
+- 2 は満たす。自分の表示言語と通知の受け取り方であり、他の利用者から見える
+  情報は変わらないため、記録しないことを理由とともに宣言する
 - 9: 利用者がこの画面で何を変えられるかを読める文書が無い
 
 ### 利用者の管理
@@ -281,7 +290,8 @@ release_gate         1  release.production_readiness（定義）
 
 未達:
 
-- 2: 作成・変更・削除が監査へ残らない
+- 2 は満たす。業務の内容そのものであり、作成者と更新時刻を記録自身が持つため、
+  記録しないことを理由とともに宣言する
 - 4: 一覧に上限が無い
 - 9: 操作を読める文書が無い
 
@@ -298,7 +308,8 @@ release_gate         1  release.production_readiness（定義）
 
 未達:
 
-- 2: 作成・変更・削除が監査へ残らない
+- 2 は満たす。業務の内容そのものであり、作成者と更新時刻を記録自身が持つため、
+  記録しないことを理由とともに宣言する
 - 3: 繰り返しで作る各回が、それぞれ参加者へ通知を作る
 - 4: 開始日以降を上限なく並べる
 - 5: 参加者と公開範囲の欄が、利用者と部門を全件描く
@@ -317,7 +328,7 @@ release_gate         1  release.production_readiness（定義）
 
 未達:
 
-- 2: 作成・変更が監査へ残らない
+- 2 は満たす。読める範囲も権限も決めないため、記録しないことを理由とともに宣言する
 - 4: 一覧に上限が無い
 - 9: 操作を読める文書が無い
 
@@ -334,7 +345,7 @@ release_gate         1  release.production_readiness（定義）
 
 未達:
 
-- 2: 作成・変更・取り消しが監査へ残らない
+- 2 は満たす。予約自身が誰のものかを持つため、記録しないことを理由とともに宣言する
 - 4: 開始日以降を上限なく並べる
 - 9: 操作を読める文書が無い
 - 重なりの判定が、データベースが返す文面に制約名が含まれるかどうかに依存する
@@ -352,7 +363,8 @@ release_gate         1  release.production_readiness（定義）
 
 未達:
 
-- 2: 作成・変更・提出・取り下げが監査へ残らない
+- 2 は満たす。経過は RequestActivity が持つため、作成・変更・提出・取り下げは
+  記録しないことを理由とともに宣言する。決裁は監査へ残す
 - 9: 操作を読める文書が無い
 - 申請の項目が題名と本文だけで、種別ごとの入力欄を持たない
 - 経路の種別が直列の承認だけで、全員承認、いずれか 1 人、最終決定、確認を持たない
@@ -415,7 +427,8 @@ release_gate         1  release.production_readiness（定義）
 
 未達:
 
-- 2: 作成・変更・削除と、添付の取得が監査へ残らない
+- 2 は満たす。業務の内容そのものであり、作成者と更新時刻を記録自身が持つため、
+  記録しないことを理由とともに宣言する。添付の取得は参照であり、条件 2 に問えない
 - 4: 分類の一覧に上限が無い
 - 9: 操作を読める文書が無い
 - 階層、版、編集の占有、ごみ箱、容量の把握を持たない
@@ -452,10 +465,11 @@ release_gate         1  release.production_readiness（定義）
 
 未達:
 
-- 2: 更新の経路に対して、監査へ記録するかしないかの割り当てが網羅されていない。
-  お知らせ、予定、文書、文書の分類、設備、予約、申請の作成と変更と提出と
-  取り下げ、申請の種別、自分の設定には割り当てが無い。
-  運用管理は「重要な操作は監査記録として残る」と書いており、実装と一致しない
+- 9: 管理者が記録を読み、絞り込み、書き出す手順の文書が無い
+
+条件 1・2・8 は満たす。状態を変える入口はすべて、記録する・しないのどちらかを
+宣言する（`app/controllers/concerns/auditable.rb`）。宣言の無い入口は
+`test/configuration/audit_assignment_test.rb` が落とす。
 
 件数はここへ書かない。実装から数え直せる値を文書へ写すと、写した時点で
 古くなる。数え方も一意でなく、記録を残す箇所と、許可された種類と、
@@ -466,20 +480,22 @@ release_gate         1  release.production_readiness（定義）
 ```text
 状態  partial
 経路  /api/v1/announcements, /api/v1/events, /api/v1/departments, /api/v1/users, /api_tokens
-実装  ApiToken, RateLimitStore, Pagination
+実装  ApiToken, RateLimitCounter, RateLimitStore, Pagination
 検証  test/controllers/api/v1/api_access_test.rb, test/controllers/api/v1/api_paging_test.rb,
-      test/controllers/api/v1/api_rate_limit_test.rb, test/models/api_token_scope_test.rb
+      test/controllers/api/v1/api_rate_limit_test.rb, test/models/api_token_scope_test.rb,
+      test/configuration/api_scope_coverage_test.rb
 文書  docs/operations/administration.md
 ```
 
 未達:
 
-- 範囲が未設定の token を全範囲の許可として扱う（`app/models/api_token.rb`）。
-  資源を足すと、過去に発行した token へ自動で開く
-- 上限の計数を web の内側に持つ（`app/models/rate_limit_store.rb`）。
-  配布用の構成は共有の置き場を持たず、web の数だけ上限が増える
+- 9: 呼び出す側が読める文書が無い
 - 応答の形を版として固定した定義が無い
 - 読み取りだけで、書き込みの経路が無い
+
+条件 1 は満たす。範囲は token が持つ値だけを許すため、資源を足しても
+既に発行した token へ開かない。条件 2 は非該当。読み取りだけであり、
+状態を変える入口を持たない。上限の計数はデータベースで共有する。
 
 ### 出来事の送信
 
@@ -511,7 +527,8 @@ release_gate         1  release.production_readiness（定義）
 
 未達:
 
-- 2: 表示言語の変更が監査へ残らない
+- 2 は満たす。権限にも組織の資料にも影響しないため、記録しないことを理由と
+  ともに宣言する
 - 9: 利用者向けの切り替え手順が文書に無い
 
 ### 稼働確認
