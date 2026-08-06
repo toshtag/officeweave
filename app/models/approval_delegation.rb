@@ -35,7 +35,7 @@ class ApprovalDelegation < ApplicationRecord
   # 制約に触れるのは、模型の確認を抜けた同時の書き込みだけである。
   # 画面から見える結果は、確認で弾かれた場合と同じにする。
   def save_with_overlap_check
-    save
+    DatabaseConstraint.retrying_deadlock { save }
   rescue ActiveRecord::StatementInvalid => error
     raise unless DatabaseConstraint.exclusion_violation?(error, constraint: OVERLAP_CONSTRAINT)
 

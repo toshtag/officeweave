@@ -38,6 +38,9 @@ class DatabaseInvariantConcurrencyTest < ActiveSupport::TestCase
     assert_equal 1, ApprovalDelegation.where(delegator_id: @delegator.id, delegate_id: @delegate.id).count
   end
 
+  # 同時に届いた 2 つの書き込みは、待ち合いになり得る。中断された側は、
+  # 相手が確定した状態でもう一度試して、制約に触れたという答えを受け取る。
+  # 例外がそのまま画面へ届いてはならない。
   test "重なりで失われるのは記録だけで、例外は画面へ届かない" do
     rejected = nil
 
@@ -62,13 +65,8 @@ class DatabaseInvariantConcurrencyTest < ActiveSupport::TestCase
       record.parent_id = parent.id
       valid = record.valid?
       wait_for_others
-      begin
-        valid && record.save_with_cycle_check
-      rescue ActiveRecord::Deadlocked, ActiveRecord::StatementInvalid
-        # 待ち合いになった場合、データベースが片方を中断する。
-        # 循環が残るより、片方が失敗するほうがよい。
-        false
-      end
+      # 待ち合いになった場合の再試行は模型が持つ。ここでは受け取らない。
+      valid && record.save_with_cycle_check
     end
 
     assert_no_cycles

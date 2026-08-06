@@ -11,7 +11,31 @@ module DatabaseConstraint
   # 検査の制約に触れた（SQL 標準 23514）。引き金からの拒否もこの値で返す。
   CHECK_VIOLATION = "23514".freeze
 
+  # 待ち合いになった場合に、もう一度だけ試す回数。
+  #
+  # 重なりを禁じる制約は、同時に届いた 2 つの書き込みで待ち合いになり得る。
+  # 互いに相手の確定を待つためであり、データベースは片方を中断する。
+  # 中断された側は、相手が確定した状態でもう一度試せば、待ちではなく
+  # 制約に触れたという答えを受け取れる。それが利用者へ返すべき理由である。
+  #
+  # 2 回で足りる。1 回目で待ち合いになるのは相手がまだ確定していないから
+  # であり、中断された時点で相手は確定している。
+  ATTEMPTS = 2
+
   class << self
+    def retrying_deadlock(attempts: ATTEMPTS)
+      tries = 0
+
+      begin
+        tries += 1
+        yield
+      rescue ActiveRecord::Deadlocked
+        raise if tries >= attempts
+
+        retry
+      end
+    end
+
     def exclusion_violation?(error, constraint:)
       violated?(error, state: EXCLUSION_VIOLATION, constraint: constraint)
     end

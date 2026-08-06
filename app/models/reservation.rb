@@ -41,7 +41,7 @@ class Reservation < ApplicationRecord
   # 例外の文面から制約の名前を探さない。文面はデータベースの版と表示言語で
   # 変わる。変わった日に、拒まれたことは同じでも理由を返せなくなる。
   def save_with_overlap_check
-    save
+    DatabaseConstraint.retrying_deadlock { save }
   rescue ActiveRecord::StatementInvalid => error
     raise unless DatabaseConstraint.exclusion_violation?(error, constraint: OVERLAP_CONSTRAINT)
 

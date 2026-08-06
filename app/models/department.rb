@@ -81,7 +81,7 @@ class Department < ApplicationRecord
   # 触れるのは、模型の確認を抜けた同時の書き込みだけである。
   # 画面から見える結果は、確認で弾かれた場合と同じにする。
   def save_with_cycle_check
-    save
+    DatabaseConstraint.retrying_deadlock { save }
   rescue ActiveRecord::StatementInvalid => error
     raise unless DatabaseConstraint.check_violation?(error, constraint: CYCLE_CONSTRAINT)
 
