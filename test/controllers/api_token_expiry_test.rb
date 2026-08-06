@@ -43,7 +43,7 @@ class ApiTokenExpiryRequestTest < ActionDispatch::IntegrationTest
   test "一覧に期限と状態が出る" do
     sign_in_as users(:taro)
     token = users(:taro).api_tokens.create!(organization: organizations(:main), name: "期限つき",
-                                            expires_at: 3.days.from_now)
+                                            expires_at: 3.days.from_now, scopes: ApiToken::SCOPES)
 
     get api_tokens_url
 
@@ -53,7 +53,7 @@ class ApiTokenExpiryRequestTest < ActionDispatch::IntegrationTest
 
   test "期限を過ぎた token は、期限切れとして示す" do
     token = users(:taro).api_tokens.create!(organization: organizations(:main), name: "切れた",
-                                            expires_at: 1.day.from_now)
+                                            expires_at: 1.day.from_now, scopes: ApiToken::SCOPES)
 
     travel 2.days do
       # ログインは進めた時刻で行う。セッションの絶対期限は 8 時間であり、
@@ -67,7 +67,7 @@ class ApiTokenExpiryRequestTest < ActionDispatch::IntegrationTest
 
   test "期限を過ぎた token では API を使えない" do
     token = users(:taro).api_tokens.create!(organization: organizations(:main), name: "切れた",
-                                            expires_at: 1.day.from_now)
+                                            expires_at: 1.day.from_now, scopes: ApiToken::SCOPES)
     value = token.token
 
     travel 2.days do
@@ -80,7 +80,7 @@ class ApiTokenExpiryRequestTest < ActionDispatch::IntegrationTest
 
   test "期限の内側なら API を使える" do
     token = users(:taro).api_tokens.create!(organization: organizations(:main), name: "有効",
-                                            expires_at: 2.days.from_now)
+                                            expires_at: 2.days.from_now, scopes: ApiToken::SCOPES)
 
     get api_v1_announcements_url, headers: { "Authorization" => "Bearer #{token.token}" }
 

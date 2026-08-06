@@ -44,7 +44,7 @@ class OrganizationBoundaryTest < ActiveSupport::TestCase
   end
 
   test "別組織の利用者へ token を発行できない" do
-    token = @main.api_tokens.new(name: "連携", user: @outsider)
+    token = @main.api_tokens.new(name: "連携", user: @outsider, scopes: ApiToken::SCOPES)
 
     assert_not token.valid?
     assert_includes token.errors.details[:user], { error: :different_organization }
@@ -118,7 +118,7 @@ class OrganizationBoundaryTest < ActiveSupport::TestCase
                                          author: @insider), :valid?
     assert_predicate @main.requests.new(title: "件名", status: "draft",
                                         request_type: request_types(:leave), applicant: @insider), :valid?
-    assert_predicate @main.api_tokens.new(name: "連携", user: @insider), :valid?
+    assert_predicate @main.api_tokens.new(name: "連携", user: @insider, scopes: ApiToken::SCOPES), :valid?
     assert_predicate AuditEvent.new(organization: @main, action: "user_created", actor: @insider), :valid?
     assert_predicate AnnouncementRead.new(announcement: announcements(:company_wide),
                                           user: @insider, read_at: Time.current), :valid?

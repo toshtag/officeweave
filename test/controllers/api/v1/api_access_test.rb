@@ -6,8 +6,8 @@ module Api
       include QueryCountTestHelper
 
       setup do
-        @token = organizations(:main).api_tokens.create!(user: users(:taro), name: "連携用")
-        @member_token = organizations(:main).api_tokens.create!(user: users(:hanako), name: "一般利用者用")
+        @token = organizations(:main).api_tokens.create!(user: users(:taro), name: "連携用", scopes: ApiToken::SCOPES)
+        @member_token = organizations(:main).api_tokens.create!(user: users(:hanako), name: "一般利用者用", scopes: ApiToken::SCOPES)
       end
 
       test "token がないと拒否される" do
@@ -163,7 +163,7 @@ module Api
 
         assert_response :unauthorized
 
-        reissued = organizations(:main).api_tokens.create!(user: users(:hanako), name: "再発行")
+        reissued = organizations(:main).api_tokens.create!(user: users(:hanako), name: "再発行", scopes: ApiToken::SCOPES)
 
         get api_v1_announcements_url, headers: auth_headers(reissued)
 

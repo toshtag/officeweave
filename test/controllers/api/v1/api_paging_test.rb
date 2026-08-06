@@ -7,7 +7,7 @@ require "test_helper"
 class Api::V1::ApiPagingTest < ActionDispatch::IntegrationTest
   setup do
     @organization = organizations(:main)
-    @token = users(:taro).api_tokens.create!(organization: @organization, name: "検証", scopes: nil)
+    @token = users(:taro).api_tokens.create!(organization: @organization, name: "検証", scopes: ApiToken::SCOPES)
   end
 
   test "既定の件数で 1 ページ分を返す" do

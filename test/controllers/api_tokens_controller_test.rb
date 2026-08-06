@@ -23,7 +23,7 @@ class ApiTokensControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "自分の token だけが並ぶ" do
-    other = organizations(:main).api_tokens.create!(user: users(:taro), name: "他人の token")
+    other = organizations(:main).api_tokens.create!(user: users(:taro), name: "他人の token", scopes: ApiToken::SCOPES)
 
     get api_tokens_url
 
@@ -32,7 +32,7 @@ class ApiTokensControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "他人の token は無効にできない" do
-    other = organizations(:main).api_tokens.create!(user: users(:taro), name: "他人の token")
+    other = organizations(:main).api_tokens.create!(user: users(:taro), name: "他人の token", scopes: ApiToken::SCOPES)
 
     delete api_token_url(other)
 
@@ -41,7 +41,7 @@ class ApiTokensControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "自分の token は無効にできる" do
-    token = organizations(:main).api_tokens.create!(user: users(:hanako), name: "連携用")
+    token = organizations(:main).api_tokens.create!(user: users(:hanako), name: "連携用", scopes: ApiToken::SCOPES)
 
     delete api_token_url(token)
 

@@ -351,7 +351,7 @@ class UserTest < ActiveSupport::TestCase
     end
 
     def issue_api_token(user)
-      @organization.api_tokens.create!(user: user, name: "連携用")
+      @organization.api_tokens.create!(user: user, name: "連携用", scopes: ApiToken::SCOPES)
     end
 
     def build_user(**attributes)

@@ -5,8 +5,8 @@ require "test_helper"
 # token の権限は、発行した利用者から引き継ぐ。範囲はそれを狭めるだけで、
 # 広げない。広げられると、利用者の権限を変えても接続だけが残る。
 #
-# 既に発行した token の使える範囲は狭めない。範囲を持たない token は、
-# これまでどおりすべての資源を読める。
+# 範囲は必ず持つ。「指定が無い＝すべて」を許すと、資源を足した日に、
+# 過去に発行した token がその資源へ自動で開く。
 class ApiTokenScopeTest < ActiveSupport::TestCase
   setup do
     @user = users(:taro)
@@ -16,11 +16,18 @@ class ApiTokenScopeTest < ActiveSupport::TestCase
     assert_equal %w[announcements events departments users], ApiToken::SCOPES
   end
 
-  test "範囲を指定しなければ、すべての資源を許す" do
-    token = issue(scopes: nil)
+  test "範囲を持たない token は発行できない" do
+    token = @user.api_tokens.new(organization: @user.organization, name: "範囲なし", scopes: nil)
 
-    assert_nil token.scopes
-    ApiToken::SCOPES.each { |scope| assert token.permits?(scope), scope }
+    assert_not token.valid?
+    assert_includes token.errors.attribute_names, :scopes
+  end
+
+  test "資源を足しても、既に発行した token は開かない" do
+    # 発行の時点の一覧をすべて選んだ token でも、後から足した資源は読めない。
+    token = issue(scopes: ApiToken::SCOPES)
+
+    refute token.permits?("後から足した資源")
   end
 
   test "指定した範囲だけを許す" do

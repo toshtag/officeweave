@@ -14,8 +14,8 @@ class ApiTokensController < ApplicationController
     @api_token = Current.user.api_tokens.new(name: api_token_params[:name])
     @api_token.organization = current_organization
     @api_token.expires_at = requested_expiry
-    # 画面では必ず選ぶ。指定が無いことを「すべて」として扱うのは、
-    # この版より前に発行した token のためである。
+    # 画面では必ず選ぶ。1 つも選ばなければ、その誤りとして差し戻す。
+    # 「選ばなかった＝すべて」にすると、選ばせる意味が無くなる。
     @api_token.scopes = Array(api_token_params[:scopes])
 
     if @expiry_days_invalid

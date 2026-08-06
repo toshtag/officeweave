@@ -8,6 +8,10 @@
 #
 # 範囲（scopes）は、引き継いだ権限を狭めるだけとする。広げない。
 # 利用者の一覧のように、管理者だけが読めるものは、範囲を許しても読めない。
+#
+# 範囲は必ず持つ。「指定が無い＝すべて」を許すと、その「すべて」は判定の
+# 時点で決まる。資源を足した日に、過去に発行した token がその資源へ
+# 自動で開く。発行のときに選んだ範囲を、値としてそのまま残す。
 class ApiToken < ApplicationRecord
   include ActivityRecording
 
@@ -41,13 +45,12 @@ class ApiToken < ApplicationRecord
   attr_reader :token
 
   # 選んだ順や重複で、同じ範囲の token が別の値として残らないようにする。
-  # 指定が無い（nil）ことは「すべて」を表す。空の配列とは区別する。
   normalizes :scopes, with: lambda { |value|
     value.compact_blank.uniq.sort_by { |scope| SCOPES.index(scope) || SCOPES.size }
   }
 
   validates :name, presence: true, length: { maximum: 100 }
-  validates :scopes, presence: true, allow_nil: true
+  validates :scopes, presence: true
   validate :scopes_are_known, if: -> { scopes.present? }
   # 過去の期限で発行させない。発行した時点で使えない token ができる。
   validate :expires_in_future, if: -> { expires_at.present? && will_save_change_to_expires_at? }
@@ -114,10 +117,10 @@ class ApiToken < ApplicationRecord
 
   # その範囲を読めるか。
   #
-  # 指定が無い token はすべてを許す。範囲の一覧を後から増やしたときも、
-  # 既に発行した token の使える範囲を狭めない。
+  # 持っている範囲だけを許す。範囲の一覧を後から増やしても、その資源は
+  # 既に発行した token へ開かない。開く必要があれば、発行し直す。
   def permits?(scope)
-    scopes.nil? || scopes.include?(scope.to_s)
+    scopes.include?(scope.to_s)
   end
 
   private
