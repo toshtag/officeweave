@@ -1,0 +1,103 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# 配布用のイメージの検査結果を、記録した非該当と突き合わせて合否を決める。
+#
+# 修正版のある指摘があれば失敗する、という条件は変えない。変えるのは、
+# 確認したうえで非該当と判断したものを、根拠つきで通せるようにする点だけである。
+#
+# 通すことと、見せないことは分ける。記録して通した指摘も、この出力へ並べる。
+# 並べないと、記録があること自体を誰も見なくなる。
+#
+# 記録は版と期限に結び付ける。版が上がれば当たらず、期限を過ぎても当たらない。
+# 当たらない記録は無いのと同じに扱い、検査は失敗する。判断は、そのときの
+# 状況に対して行ったものであり、いつまでも効き続けてよいものではない。
+require "json"
+require "yaml"
+require "date"
+
+class ContainerScanEvaluation
+  # 記録が持つべき項目。1 つでも欠けたら、記録として扱わない。
+  # 根拠と期限の無い記録は、次に読む人が判断をやり直せない。
+  REQUIRED_KEYS = %w[id package installed_version reason review_by].freeze
+
+  Finding = Struct.new(:id, :package, :installed_version, :severity, keyword_init: true) do
+    def to_s = "#{id} #{package} #{installed_version} (#{severity})"
+  end
+
+  def initialize(report:, exceptions:, today: Date.today)
+    @report = report
+    @exceptions = exceptions
+    @today = today
+  end
+
+  # 記録が当たらなかった指摘。1 件でもあれば失敗させる。
+  def unaccepted = fixable_findings.reject { |finding| accepted_for(finding) }
+
+  # 記録として通した指摘。報告へ残すために返す。
+  def accepted = fixable_findings.filter_map { |finding| accepted_for(finding)&.then { finding } }
+
+  # 書き方が整っていない記録。合否とは別に、そのつど直させる。
+  def malformed
+    records.reject { |record| REQUIRED_KEYS.all? { |key| record[key].to_s.strip != "" } }
+  end
+
+  # 期限を過ぎた記録。当たらないため、対象の指摘が残っていれば失敗する。
+  def expired = valid_records.reject { |record| current?(record) }
+
+  def passed? = unaccepted.empty? && malformed.empty?
+
+  private
+    def records = Array(@exceptions["accepted"])
+
+    def valid_records = records - malformed
+
+    def fixable_findings
+      @report.fetch("Results", []).flat_map { |result| Array(result["Vulnerabilities"]) }
+             .select { |vulnerability| vulnerability["FixedVersion"].to_s.strip != "" }
+             .map do |vulnerability|
+               Finding.new(id: vulnerability["VulnerabilityID"], package: vulnerability["PkgName"],
+                           installed_version: vulnerability["InstalledVersion"],
+                           severity: vulnerability["Severity"])
+             end
+    end
+
+    def accepted_for(finding)
+      valid_records.find do |record|
+        record["id"] == finding.id &&
+          record["package"] == finding.package &&
+          record["installed_version"].to_s == finding.installed_version.to_s &&
+          current?(record)
+      end
+    end
+
+    def current?(record)
+      Date.parse(record["review_by"].to_s) >= @today
+    rescue Date::Error
+      false
+    end
+end
+
+if $PROGRAM_NAME == __FILE__
+  report = JSON.parse(File.read(ARGV.fetch(0), encoding: "UTF-8"))
+  exceptions = YAML.safe_load_file(ARGV.fetch(1), permitted_classes: [ Date ]) || {}
+  evaluation = ContainerScanEvaluation.new(report: report, exceptions: exceptions)
+
+  evaluation.malformed.each do |record|
+    warn "記録の書き方が足りません（#{ContainerScanEvaluation::REQUIRED_KEYS.join(", ")} が要ります）: #{record.inspect}"
+  end
+
+  evaluation.expired.each do |record|
+    warn "記録の期限が過ぎています: #{record["id"]} #{record["package"]}（#{record["review_by"]} まで）"
+  end
+
+  evaluation.accepted.each do |finding|
+    puts "-- 記録として通した指摘: #{finding}"
+  end
+
+  evaluation.unaccepted.each do |finding|
+    warn "記録の無い指摘: #{finding}"
+  end
+
+  exit(evaluation.passed? ? 0 : 1)
+end

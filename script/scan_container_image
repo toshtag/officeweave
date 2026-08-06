@@ -25,6 +25,12 @@
 # 失敗させない。自分たちで解消できない状態で検証が止まり続ける。
 # 失敗させないことと、見せないことは別である。
 #
+# 修正版があっても、確認したうえで非該当と判断したものは
+# config/container_scan_exceptions.yml へ記録して通せる。言語処理系が同梱する
+# ものなど、版を選べない指摘がある。逃げ道が無いと、検査そのものを外す方へ
+# 倒れる。記録は版と期限に結び付き、どちらかが外れれば当たらない。
+# 記録して通した指摘も、この出力と報告へ残す。
+#
 # 使い方:
 #   script/scan_container_image
 #
@@ -43,6 +49,8 @@ SCANNER="aquasec/trivy:0.72.0@sha256:cffe3f5161a47a6823fbd23d985795b3ed72a4c806d
 SEVERITY="HIGH,CRITICAL"
 
 APP_IMAGE="officeweave-scan-target:latest"
+
+EXCEPTIONS="config/container_scan_exceptions.yml"
 
 REPORT_DIR="scan_report"
 
@@ -122,12 +130,31 @@ report() {
   rm -f "$WORK/${name}.tar"
 }
 
+# 記録した非該当と突き合わせて合否を決める。
+#
+# 判定はコンテナの中で行う。件数を数えるのと同じ理由で、ホストへ ruby を
+# 要求すると、この検査を実行できる環境が狭まる。
+evaluate() {
+  docker run --rm --entrypoint ruby \
+    --user "$(id -u):$(id -g)" \
+    -v "$PWD/$REPORT_DIR:/report" \
+    -v "$PWD/script/evaluate_container_scan:/evaluate:ro" \
+    -v "$PWD/$EXCEPTIONS:/exceptions.yml:ro" \
+    "$APP_IMAGE" /evaluate "/report/$1.json" /exceptions.yml
+}
+
 # 自分たちが組み立てるイメージ。修正版のある指摘があれば失敗する。
+#
+# 一覧は表として出し、合否は書き出した報告に対して決める。表を読んで数える
+# 形にすると、表の書式が変わっただけで合否が変わる。
 scan_and_gate() {
   prepare "$1" "$2" "$3"
 
   echo "-- 修正版のある指摘"
-  if ! scanner "$3.tar" --ignore-unfixed --exit-code 1 --table-mode detailed; then
+  scanner "$3.tar" --ignore-unfixed --exit-code 0 --table-mode detailed
+  scanner "$3.tar" --ignore-unfixed --exit-code 0 --format json --output "/report/$3-fixable.json"
+
+  if ! evaluate "$3-fixable"; then
     failed=1
   fi
 
@@ -163,7 +190,7 @@ docker pull --quiet "$db_image" > /dev/null
 scan_and_report "データベースのイメージ" "$db_image" database
 
 echo
-for name in application database; do
+for name in application application-fixable database; do
   if [ ! -s "${REPORT_DIR}/${name}.json" ]; then
     echo "報告が書き出されていません: ${REPORT_DIR}/${name}.json" >&2
     exit 1
@@ -171,7 +198,8 @@ for name in application database; do
 done
 
 if [ "$failed" -ne 0 ]; then
-  echo "修正版のある脆弱性が見つかりました。更新して解消してください。" >&2
+  echo "記録の無い、修正版のある脆弱性が見つかりました。" >&2
+  echo "更新して解消するか、非該当の根拠を ${EXCEPTIONS} へ記録してください。" >&2
   exit 1
 fi
 
