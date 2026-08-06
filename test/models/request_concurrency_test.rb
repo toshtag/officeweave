@@ -719,16 +719,21 @@ class RequestConcurrencyTest < ActiveSupport::TestCase
     delegate = delegate_of(@first_approver)
     token = state_token(request, delegate)
 
-    outcomes = concurrently(
+    concurrently(
       ->(target) { target.approve(actor: delegate, expected_step_position: MULTI_FIRST, state_token: token) },
       ->(_target) { ApprovalDelegation.where(delegate_id: delegate.id).destroy_all.any? },
       request: request
     )
 
-    decided = outcomes.first
+    # どちらが先でもよい。見るのは、成立した場合とそうでない場合のそれぞれで
+    # 記録がそろっていることである。結果の並びは終わった順であり、渡した順とは
+    # 限らないため、そこには頼らない。
+    request.reload
+    decided = request.current_step_position == MULTI_SECOND
 
-    assert_equal decided, request.reload.current_step_position == MULTI_SECOND
     assert_equal(decided ? 1 : 0, request.request_activities.where(action: "approved").count)
+    assert_equal(decided ? 1 : 0, request.request_approval_steps.approved.count)
+    assert_equal @first_approver, request.request_activities.where(action: "approved").sole.on_behalf_of if decided
   end
 
   test "無効にした委任元を戻すと、期間内の委任は再び使える" do
