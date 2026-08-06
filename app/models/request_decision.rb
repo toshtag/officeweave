@@ -49,7 +49,7 @@ class RequestDecision
     # 戻された処理の通知だけが残る。
     #
     # 成立しなかった決裁では組み立てていないため、何も登録しない。
-    ActiveRecord.after_all_transactions_commit(&@announce) if @announce
+    ActiveRecord.after_all_transactions_commit { announce_safely } if @announce
 
     self
   end
@@ -157,6 +157,21 @@ class RequestDecision
         organization: @request.organization, actor: actor, action: audit,
         target: @request, details: { title: @request.title }, ip_address: @ip_address
       )
+    end
+
+    # 確定した決裁を、知らせに失敗しただけで失敗として返さない。
+    #
+    # ここへ来た時点で、申請、段の印、履歴、監査は確定している。送出すると、
+    # 画面には失敗が出るのに保存されているのは決裁済み、という食い違いが
+    # 通知の側から生まれる。それは今回直している状態そのものである。
+    #
+    # 記録へは残す。黙って落とすと、届いていないことに気付く手がかりがない。
+    # 決裁の内容は文脈へ入れない。申請の識別子だけで、どの決裁かは辿れる。
+    def announce_safely
+      @announce.call
+    rescue StandardError => error
+      Rails.error.report(error, handled: true,
+                         context: { announce: "request_decision", request_id: @request.id })
     end
 
     def announce_to_applicant(event)
