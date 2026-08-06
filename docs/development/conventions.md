@@ -177,6 +177,7 @@ OfficeWeave 固有の判断や制約を記録する必要がある場合に限�
 完了時点で確かめたことの記録    PR の本文と、その実行結果
 実装上の判断とその根拠          実装またはテストのコメント
 機能の段階と到達度              docs/product/
+画面から行う操作の手順          docs/usage/
 自分の差分を見る観点            docs/development/self_review.md
 想定規模での測定                docs/development/scale.md
 製品の方向を決めた判断          docs/decisions/

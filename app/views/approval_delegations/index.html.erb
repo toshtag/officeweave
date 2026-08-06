@@ -24,37 +24,40 @@
 
   <% if @delegations.any? %>
     <div class="panel">
-      <table>
-        <thead>
-          <tr>
-            <th scope="col"><%= ApprovalDelegation.human_attribute_name(:delegate) %></th>
-            <th scope="col"><%= ApprovalDelegation.human_attribute_name(:starts_on) %></th>
-            <th scope="col"><%= ApprovalDelegation.human_attribute_name(:ends_on) %></th>
-            <th scope="col"><%= t("approval_delegations.index.status") %></th>
-            <th scope="col"><span class="visually-hidden"><%= t("common.actions") %></span></th>
-          </tr>
-        </thead>
-        <tbody>
-          <% @delegations.each do |delegation| %>
-            <tr data-delegation-id="<%= delegation.id %>">
-              <td><%= delegation.delegate.name %></td>
-              <td><%= l(delegation.starts_on, format: :long) %></td>
-              <td><%= delegation.ends_on ? l(delegation.ends_on, format: :long) : t("approval_delegations.no_end") %></td>
-              <td>
-                <% if delegation.active? %>
-                  <%= t("approval_delegations.status.active") %>
-                <% else %>
-                  <span class="status status--muted"><%= t("approval_delegations.status.inactive") %></span>
-                <% end %>
-              </td>
-              <td class="table__actions">
-                <%= button_to t("approval_delegations.delete"), approval_delegation_path(delegation),
-                              method: :delete, class: "button button--quiet" %>
-              </td>
+      <div class="table-scroll" tabindex="0" role="region"
+           aria-label="<%= t("shared.table.scrollable") %>">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col"><%= ApprovalDelegation.human_attribute_name(:delegate) %></th>
+              <th scope="col"><%= ApprovalDelegation.human_attribute_name(:starts_on) %></th>
+              <th scope="col"><%= ApprovalDelegation.human_attribute_name(:ends_on) %></th>
+              <th scope="col"><%= t("approval_delegations.index.status") %></th>
+              <th scope="col"><span class="visually-hidden"><%= t("common.actions") %></span></th>
             </tr>
-          <% end %>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <% @delegations.each do |delegation| %>
+              <tr data-delegation-id="<%= delegation.id %>">
+                <td><%= delegation.delegate.name %></td>
+                <td><%= l(delegation.starts_on, format: :long) %></td>
+                <td><%= delegation.ends_on ? l(delegation.ends_on, format: :long) : t("approval_delegations.no_end") %></td>
+                <td>
+                  <% if delegation.active? %>
+                    <%= t("approval_delegations.status.active") %>
+                  <% else %>
+                    <span class="status status--muted"><%= t("approval_delegations.status.inactive") %></span>
+                  <% end %>
+                </td>
+                <td class="table__actions">
+                  <%= button_to t("approval_delegations.delete"), approval_delegation_path(delegation),
+                                method: :delete, class: "button button--quiet" %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
     </div>
   <% end %>
 </div>

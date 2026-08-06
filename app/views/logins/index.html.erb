@@ -6,43 +6,46 @@
   <p class="form__hint"><%= t("logins.index.description") %></p>
 
   <div class="panel">
-    <table>
-      <thead>
-        <tr>
-          <th scope="col"><%= t("logins.index.device") %></th>
-          <th scope="col"><%= t("logins.index.ip_address") %></th>
-          <th scope="col"><%= t("logins.index.started_at") %></th>
-          <th scope="col"><%= t("logins.index.last_active_at") %></th>
-          <th scope="col"><%= t("logins.index.action") %></th>
-        </tr>
-      </thead>
-      <tbody>
-        <% @logins.each do |login| %>
-          <% current = login.id == Current.session.id %>
-          <tr data-login-id="<%= login.id %>" data-login-current="<%= current %>">
-            <td>
-              <%# 端末が名乗った値をそのまま出す。組み立て直すと、別の端末に見える。 %>
-              <%= login.user_agent.presence || t("logins.index.unknown_device") %>
-              <% if current %>
-                <span class="status status--muted"><%= t("logins.index.current") %></span>
-              <% end %>
-            </td>
-            <td><%= login.ip_address %></td>
-            <td><%= l(login.created_at, format: :short) %></td>
-            <td><%= l(login.last_active_at, format: :short) %></td>
-            <td class="table__actions">
-              <% if current %>
-                <%= button_to t("logins.index.sign_out"), session_path, method: :delete,
-                              class: "button button--quiet" %>
-              <% else %>
-                <%= button_to t("logins.index.revoke"), login_path(login), method: :delete,
-                              class: "button button--quiet" %>
-              <% end %>
-            </td>
+    <div class="table-scroll" tabindex="0" role="region"
+         aria-label="<%= t("shared.table.scrollable") %>">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col"><%= t("logins.index.device") %></th>
+            <th scope="col"><%= t("logins.index.ip_address") %></th>
+            <th scope="col"><%= t("logins.index.started_at") %></th>
+            <th scope="col"><%= t("logins.index.last_active_at") %></th>
+            <th scope="col"><%= t("logins.index.action") %></th>
           </tr>
-        <% end %>
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          <% @logins.each do |login| %>
+            <% current = login.id == Current.session.id %>
+            <tr data-login-id="<%= login.id %>" data-login-current="<%= current %>">
+              <td>
+                <%# 端末が名乗った値をそのまま出す。組み立て直すと、別の端末に見える。 %>
+                <%= login.user_agent.presence || t("logins.index.unknown_device") %>
+                <% if current %>
+                  <span class="status status--muted"><%= t("logins.index.current") %></span>
+                <% end %>
+              </td>
+              <td><%= login.ip_address %></td>
+              <td><%= l(login.created_at, format: :short) %></td>
+              <td><%= l(login.last_active_at, format: :short) %></td>
+              <td class="table__actions">
+                <% if current %>
+                  <%= button_to t("logins.index.sign_out"), session_path, method: :delete,
+                                class: "button button--quiet" %>
+                <% else %>
+                  <%= button_to t("logins.index.revoke"), login_path(login), method: :delete,
+                                class: "button button--quiet" %>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <%= button_to t("logins.index.revoke_others"), all_logins_path, method: :delete,

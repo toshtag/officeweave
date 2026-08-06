@@ -10,50 +10,53 @@
 
   <% if @request_types.any? %>
     <div class="panel">
-      <table>
-        <thead>
-          <tr>
-            <th scope="col"><%= RequestType.human_attribute_name(:name) %></th>
-            <th scope="col"><%= t("request_types.index.approval_steps") %></th>
-            <th scope="col"><%= t("request_types.index.status") %></th>
-            <th scope="col"><span class="visually-hidden"><%= t("common.actions") %></span></th>
-          </tr>
-        </thead>
-        <tbody>
-          <% @request_types.each do |request_type| %>
+      <div class="table-scroll" tabindex="0" role="region"
+           aria-label="<%= t("shared.table.scrollable") %>">
+        <table>
+          <thead>
             <tr>
-              <td><%= request_type.name %></td>
-              <td>
-                <%# 段を並びの順に出す。1 段だけの種別は 1 つだけ並ぶ。 %>
-                <ol class="list-plain">
-                  <% request_type.approval_steps.each do |step| %>
-                    <li>
-                      <%= step.approver_department&.display_path ||
-                            t("request_types.approver_administrators") %>
-                    </li>
-                  <% end %>
-                </ol>
-              </td>
-              <td>
-                <% if request_type.active? %>
-                  <%= t("request_types.status.active") %>
-                <% else %>
-                  <span class="status status--muted"><%= t("request_types.status.inactive") %></span>
-                <% end %>
-              </td>
-              <td class="table__actions">
-                <% if request_type.active? %>
-                  <%= link_to t("request_types.index.apply"),
-                              new_request_path(request_type_id: request_type.id), class: "button button--quiet" %>
-                <% end %>
-                <% if administrator? %>
-                  <%= link_to t("common.edit"), edit_request_type_path(request_type), class: "button button--quiet" %>
-                <% end %>
-              </td>
+              <th scope="col"><%= RequestType.human_attribute_name(:name) %></th>
+              <th scope="col"><%= t("request_types.index.approval_steps") %></th>
+              <th scope="col"><%= t("request_types.index.status") %></th>
+              <th scope="col"><span class="visually-hidden"><%= t("common.actions") %></span></th>
             </tr>
-          <% end %>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <% @request_types.each do |request_type| %>
+              <tr>
+                <td><%= request_type.name %></td>
+                <td>
+                  <%# 段を並びの順に出す。1 段だけの種別は 1 つだけ並ぶ。 %>
+                  <ol class="list-plain">
+                    <% request_type.approval_steps.each do |step| %>
+                      <li>
+                        <%= step.approver_department&.display_path ||
+                              t("request_types.approver_administrators") %>
+                      </li>
+                    <% end %>
+                  </ol>
+                </td>
+                <td>
+                  <% if request_type.active? %>
+                    <%= t("request_types.status.active") %>
+                  <% else %>
+                    <span class="status status--muted"><%= t("request_types.status.inactive") %></span>
+                  <% end %>
+                </td>
+                <td class="table__actions">
+                  <% if request_type.active? %>
+                    <%= link_to t("request_types.index.apply"),
+                                new_request_path(request_type_id: request_type.id), class: "button button--quiet" %>
+                  <% end %>
+                  <% if administrator? %>
+                    <%= link_to t("common.edit"), edit_request_type_path(request_type), class: "button button--quiet" %>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
     </div>
   <% else %>
     <p><%= t("request_types.index.empty") %></p>

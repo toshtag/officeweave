@@ -44,26 +44,29 @@
 
   <% if @requests.any? %>
     <div class="panel">
-      <table>
-        <thead>
-          <tr>
-            <th scope="col"><%= Request.human_attribute_name(:title) %></th>
-            <th scope="col"><%= Request.human_attribute_name(:request_type) %></th>
-            <th scope="col"><%= Request.human_attribute_name(:applicant) %></th>
-            <th scope="col"><%= Request.human_attribute_name(:status) %></th>
-          </tr>
-        </thead>
-        <tbody>
-          <% @requests.each do |request| %>
+      <div class="table-scroll" tabindex="0" role="region"
+           aria-label="<%= t("shared.table.scrollable") %>">
+        <table>
+          <thead>
             <tr>
-              <td><%= link_to request.title, request %></td>
-              <td><%= request.request_type.name %></td>
-              <td><%= request.applicant.name %></td>
-              <td><%= render "requests/status", request: request %></td>
+              <th scope="col"><%= Request.human_attribute_name(:title) %></th>
+              <th scope="col"><%= Request.human_attribute_name(:request_type) %></th>
+              <th scope="col"><%= Request.human_attribute_name(:applicant) %></th>
+              <th scope="col"><%= Request.human_attribute_name(:status) %></th>
             </tr>
-          <% end %>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <% @requests.each do |request| %>
+              <tr>
+                <td><%= link_to request.title, request %></td>
+                <td><%= request.request_type.name %></td>
+                <td><%= request.applicant.name %></td>
+                <td><%= render "requests/status", request: request %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <%= render "shared/pagination", page: @page,
