@@ -1,0 +1,1885 @@
+# OfficeWeave 機能到達度（機械が読む正本）
+#
+# 文章の正本は docs/product/capability_matrix.md である。この一覧は同じ内容を
+# 機械が読める形で持ち、件数・識別子・状態・入口・証拠・条件の判定を検査へかける。
+# 両方を人が別々に直すと必ず食い違うため、test/configuration/completion_registry_test.rb
+# が突き合わせる。
+#
+# 条件の判定は met / unmet / not_applicable / not_assessed の 4 つとする。
+# partial の機能では、確かめていない条件を not_assessed のまま残す。満たしている
+# ことにしない。complete にできるのは、unmet と not_assessed が 1 つも無い場合だけ。
+completion:
+  core_capabilities: 26
+  cross_cutting_gates: 2
+  release_gate: "release.production_readiness"
+  definition: "Core 26 件が complete、横断の品質 2 件が complete、版ごとの評価が passed であること"
+capabilities:
+  - id: "core.authentication"
+    name: "ログインとセッション"
+    kind: "capability"
+    state: "partial"
+    entries:
+      - "/session"
+    implementation:
+      - "config/recurring.yml"
+    implementation_note: "Session, User, Authentication::*, config/recurring.yml（毎時 Session.delete_expired）"
+    tests:
+      - "test/configuration/persistent_queue_test.rb"
+      - "test/controllers/session_activity_test.rb"
+      - "test/controllers/sessions_controller_test.rb"
+      - "test/models/session_test.rb"
+      - "test/system/authentication_test.rb"
+    docs:
+      - "docs/operations/administration.md"
+      - "docs/operations/configuration.md"
+    criteria:
+      authorization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      audit_assignment:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      notification_occurrence:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      list_limit:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      selection_rendering:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      database_invariants:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      retention:
+        result: "met"
+        reason: "期限を過ぎた記録は `Session.delete_expired` （`app/models/session.rb:35`）が毎時消す。"
+        evidence: []
+      regression_tests:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      documentation:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      localization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      keyboard:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+    other_findings:
+      - "試行の上限が、動かしている web の数に依存する。 `app/controllers/sessions_controller.rb:6` の上限はキャッシュ領域で数えるが、 配布用の設定は共有の置き場を持たない（`config/environments/production.rb:57`）。 web を増やすと、その数だけ上限が実質的に増える"
+    issue: "C1"
+    dependencies: []
+    stage: "core"
+  - id: "core.external_authentication"
+    name: "外部認証"
+    kind: "capability"
+    state: "partial"
+    entries:
+      - "/oidc/session"
+      - "/oidc/callback"
+    implementation: []
+    implementation_note: "Authentication::OidcClient, Authentication::OidcIdToken"
+    tests:
+      - "test/controllers/oidc_login_test.rb"
+      - "test/models/authentication/oidc_client_test.rb"
+      - "test/models/authentication/oidc_id_token_test.rb"
+    docs:
+      - "docs/development/authentication.md"
+      - "docs/operations/configuration.md"
+    criteria:
+      authorization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      audit_assignment:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      notification_occurrence:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      list_limit:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      selection_rendering:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      database_invariants:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      retention:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      regression_tests:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      documentation:
+        result: "unmet"
+        reason: "受け取った属性を利用者のどの項目へ結び付けるかが文書に無い"
+        evidence: []
+      localization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      keyboard:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+    other_findings:
+      - "実際の認証基盤へ接続した状態での確認が無い"
+    issue: "C1"
+    dependencies: []
+    stage: "core"
+  - id: "core.password_management"
+    name: "パスワードの変更と再設定"
+    kind: "capability"
+    state: "partial"
+    entries:
+      - "/password"
+      - "/password/edit"
+      - "/password_resets"
+    implementation: []
+    implementation_note: "User, Authentication::PasswordPolicy"
+    tests:
+      - "test/controllers/password_change_test.rb"
+      - "test/controllers/password_reset_test.rb"
+      - "test/models/authentication/password_policy_test.rb"
+    docs:
+      - "docs/operations/administration.md"
+      - "docs/operations/configuration.md"
+    criteria:
+      authorization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      audit_assignment:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      notification_occurrence:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      list_limit:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      selection_rendering:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      database_invariants:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      retention:
+        result: "not_applicable"
+        reason: "再設定の案内は署名した値であり、記録として持たない （`app/models/user.rb:19`）。期限は 15 分で、一度使うと再び使えない。 消す対象の行が無いため、保持の方針を問えない。"
+        evidence: []
+      regression_tests:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      documentation:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      localization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      keyboard:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+    other_findings:
+      - "試行の上限が、動かしている web の数に依存する。 `app/controllers/password_resets_controller.rb:14` の上限も、 ログインと同じくキャッシュ領域で数える"
+    issue: "C1"
+    dependencies: []
+    stage: "core"
+  - id: "core.session_listing"
+    name: "ログイン中の端末"
+    kind: "capability"
+    state: "partial"
+    entries:
+      - "/logins"
+    implementation: []
+    implementation_note: "Session"
+    tests:
+      - "test/controllers/logins_controller_test.rb"
+      - "test/system/authentication_test.rb"
+    docs:
+      - "docs/operations/administration.md"
+    criteria:
+      authorization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      audit_assignment:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      notification_occurrence:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      list_limit:
+        result: "unmet"
+        reason: "有効なログインを上限なく並べる（`app/controllers/logins_controller.rb:11`）。 ページ送りも表示の上限も、有効なログインの数そのものの上限も持たない"
+        evidence: []
+      selection_rendering:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      database_invariants:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      retention:
+        result: "met"
+        reason: "期限を過ぎた記録は毎時消える"
+        evidence: []
+      regression_tests:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      documentation:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      localization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      keyboard:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+    other_findings: []
+    issue: "C2"
+    dependencies: []
+    stage: "core"
+  - id: "core.personal_settings"
+    name: "自分の設定"
+    kind: "capability"
+    state: "partial"
+    entries:
+      - "/settings"
+    implementation: []
+    implementation_note: "User, NotificationPreference"
+    tests:
+      - "test/controllers/settings_controller_test.rb"
+      - "test/models/notification_preference_test.rb"
+      - "test/system/settings_test.rb"
+    docs: []
+    criteria:
+      authorization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      audit_assignment:
+        result: "unmet"
+        reason: "表示言語と配信設定の変更が監査へ残らない"
+        evidence: []
+      notification_occurrence:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      list_limit:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      selection_rendering:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      database_invariants:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      retention:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      regression_tests:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      documentation:
+        result: "unmet"
+        reason: "利用者がこの画面で何を変えられるかを読める文書が無い"
+        evidence: []
+      localization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      keyboard:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+    other_findings: []
+    issue: "C1"
+    dependencies: []
+    stage: "core"
+  - id: "core.user_administration"
+    name: "利用者の管理"
+    kind: "capability"
+    state: "partial"
+    entries:
+      - "/users"
+      - "/users/:user_id/activation"
+    implementation: []
+    implementation_note: "User, Organization"
+    tests:
+      - "test/controllers/user_activations_controller_test.rb"
+      - "test/controllers/users_controller_test.rb"
+      - "test/models/user_administrator_concurrency_test.rb"
+      - "test/system/users_test.rb"
+    docs:
+      - "docs/operations/administration.md"
+    criteria:
+      authorization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      audit_assignment:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      notification_occurrence:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      list_limit:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      selection_rendering:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      database_invariants:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      retention:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      regression_tests:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      documentation:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      localization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      keyboard:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+    other_findings:
+      - "権限が管理者と一般利用者の 2 段階しかなく、機能ごとの利用可否を持たない"
+      - "組織そのものの情報を画面から変更できない"
+    issue: "C1"
+    dependencies: []
+    stage: "core"
+    suite_overlap:
+      suite_id: "suite.application_roles"
+      owner: "suite"
+      note: "Core の完成条件には含めない。Suite の拡張として扱う"
+  - id: "core.departments"
+    name: "部門と所属"
+    kind: "capability"
+    state: "partial"
+    entries:
+      - "/departments"
+      - "/departments/:department_id/memberships"
+    implementation: []
+    implementation_note: "Department, Membership"
+    tests:
+      - "test/controllers/departments_controller_test.rb"
+      - "test/controllers/memberships_controller_test.rb"
+      - "test/models/department_hierarchy_test.rb"
+      - "test/system/departments_test.rb"
+    docs:
+      - "docs/operations/administration.md"
+    criteria:
+      authorization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      audit_assignment:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      notification_occurrence:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      list_limit:
+        result: "unmet"
+        reason: "一覧に上限が無い"
+        evidence: []
+      selection_rendering:
+        result: "unmet"
+        reason: "所属を足す欄が利用者を全件描く"
+        evidence: []
+      database_invariants:
+        result: "unmet"
+        reason: "階層の循環をデータベース側で拒否しない"
+        evidence: []
+      retention:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      regression_tests:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      documentation:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      localization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      keyboard:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+    other_findings: []
+    issue: "C2"
+    dependencies: []
+    stage: "core"
+  - id: "core.data_transfer"
+    name: "利用者と部門の入出力"
+    kind: "capability"
+    state: "partial"
+    entries:
+      - "/data_transfers"
+    implementation: []
+    implementation_note: "CsvTransfer, UserCsv, DepartmentCsv"
+    tests:
+      - "test/controllers/data_transfers_controller_test.rb"
+      - "test/models/department_csv_import_test.rb"
+      - "test/models/user_csv_test.rb"
+      - "test/system/data_transfers_test.rb"
+    docs:
+      - "docs/operations/administration.md"
+    criteria:
+      authorization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      audit_assignment:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      notification_occurrence:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      list_limit:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      selection_rendering:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      database_invariants:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      retention:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      regression_tests:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      documentation:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      localization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      keyboard:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+    other_findings:
+      - "想定規模の件数での実測が無い"
+    issue: "C2"
+    dependencies: []
+    stage: "core"
+  - id: "core.home"
+    name: "入口画面"
+    kind: "capability"
+    state: "partial"
+    entries:
+      - "/"
+    implementation: []
+    implementation_note: "Announcement, Request, Department"
+    tests:
+      - "test/controllers/home_controller_test.rb"
+      - "test/controllers/home_request_test.rb"
+      - "test/controllers/home_unread_test.rb"
+    docs: []
+    criteria:
+      authorization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      audit_assignment:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      notification_occurrence:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      list_limit:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      selection_rendering:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      database_invariants:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      retention:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      regression_tests:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      documentation:
+        result: "unmet"
+        reason: "入口に何が出るかを読める文書が無い"
+        evidence: []
+      localization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      keyboard:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+    other_findings: []
+    issue: "C5"
+    dependencies: []
+    stage: "core"
+    suite_overlap:
+      suite_id: "suite.dashboard_layout"
+      owner: "suite"
+      note: "Core の完成条件には含めない。Suite の拡張として扱う"
+  - id: "core.announcements"
+    name: "お知らせ"
+    kind: "capability"
+    state: "partial"
+    entries:
+      - "/announcements"
+    implementation: []
+    implementation_note: "Announcement, AnnouncementDepartment, AnnouncementRead"
+    tests:
+      - "test/controllers/announcements_controller_test.rb"
+      - "test/models/announcement_test.rb"
+      - "test/models/scheduled_announcement_test.rb"
+      - "test/system/announcements_test.rb"
+    docs: []
+    criteria:
+      authorization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      audit_assignment:
+        result: "unmet"
+        reason: "作成・変更・削除が監査へ残らない"
+        evidence: []
+      notification_occurrence:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      list_limit:
+        result: "unmet"
+        reason: "一覧に上限が無い"
+        evidence: []
+      selection_rendering:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      database_invariants:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      retention:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      regression_tests:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      documentation:
+        result: "unmet"
+        reason: "操作を読める文書が無い"
+        evidence: []
+      localization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      keyboard:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+    other_findings: []
+    issue: "C2"
+    dependencies: []
+    stage: "core"
+    suite_overlap:
+      suite_id: "suite.board_posts"
+      owner: "suite"
+      note: "Core の完成条件には含めない。Suite の拡張として扱う"
+  - id: "core.events"
+    name: "予定"
+    kind: "capability"
+    state: "partial"
+    entries:
+      - "/events"
+    implementation: []
+    implementation_note: "Event, Event::Recurrence, EventDepartment, EventParticipant"
+    tests:
+      - "test/controllers/event_participants_test.rb"
+      - "test/models/event_test.rb"
+      - "test/models/recurring_event_test.rb"
+      - "test/system/events_test.rb"
+    docs: []
+    criteria:
+      authorization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      audit_assignment:
+        result: "unmet"
+        reason: "作成・変更・削除が監査へ残らない"
+        evidence: []
+      notification_occurrence:
+        result: "unmet"
+        reason: "繰り返しで作る各回が、それぞれ参加者へ通知を作る"
+        evidence: []
+      list_limit:
+        result: "unmet"
+        reason: "開始日以降を上限なく並べる"
+        evidence: []
+      selection_rendering:
+        result: "unmet"
+        reason: "参加者と公開範囲の欄が、利用者と部門を全件描く"
+        evidence: []
+      database_invariants:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      retention:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      regression_tests:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      documentation:
+        result: "unmet"
+        reason: "操作を読める文書が無い"
+        evidence: []
+      localization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      keyboard:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+    other_findings: []
+    issue: "C2"
+    dependencies: []
+    stage: "core"
+    suite_overlap:
+      suite_id: "suite.calendar_views"
+      owner: "suite"
+      note: "Core の完成条件には含めない。Suite の拡張として扱う"
+  - id: "core.resources"
+    name: "設備・備品"
+    kind: "capability"
+    state: "partial"
+    entries:
+      - "/resources"
+    implementation: []
+    implementation_note: "Resource"
+    tests:
+      - "test/controllers/resources_controller_test.rb"
+      - "test/models/resource_test.rb"
+      - "test/system/resources_test.rb"
+    docs: []
+    criteria:
+      authorization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      audit_assignment:
+        result: "unmet"
+        reason: "作成・変更が監査へ残らない"
+        evidence: []
+      notification_occurrence:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      list_limit:
+        result: "unmet"
+        reason: "一覧に上限が無い"
+        evidence: []
+      selection_rendering:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      database_invariants:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      retention:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      regression_tests:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      documentation:
+        result: "unmet"
+        reason: "操作を読める文書が無い"
+        evidence: []
+      localization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      keyboard:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+    other_findings: []
+    issue: "C2"
+    dependencies: []
+    stage: "core"
+    suite_overlap:
+      suite_id: "suite.resource_timeline"
+      owner: "suite"
+      note: "Core の完成条件には含めない。Suite の拡張として扱う"
+  - id: "core.reservations"
+    name: "設備・備品の予約"
+    kind: "capability"
+    state: "partial"
+    entries:
+      - "/reservations"
+    implementation: []
+    implementation_note: "Reservation"
+    tests:
+      - "test/controllers/reservation_change_test.rb"
+      - "test/models/reservation_test.rb"
+      - "test/system/reservations_test.rb"
+    docs:
+      - "docs/operations/administration.md"
+    criteria:
+      authorization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      audit_assignment:
+        result: "unmet"
+        reason: "作成・変更・取り消しが監査へ残らない"
+        evidence: []
+      notification_occurrence:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      list_limit:
+        result: "unmet"
+        reason: "開始日以降を上限なく並べる"
+        evidence: []
+      selection_rendering:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      database_invariants:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      retention:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      regression_tests:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      documentation:
+        result: "unmet"
+        reason: "操作を読める文書が無い"
+        evidence: []
+      localization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      keyboard:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+    other_findings:
+      - "重なりの判定が、データベースが返す文面に制約名が含まれるかどうかに依存する"
+    issue: "C3"
+    dependencies: []
+    stage: "core"
+    suite_overlap:
+      suite_id: "suite.resource_timeline"
+      owner: "suite"
+      note: "Core の完成条件には含めない。Suite の拡張として扱う"
+  - id: "core.requests"
+    name: "申請と承認"
+    kind: "capability"
+    state: "partial"
+    entries:
+      - "/requests"
+      - "/requests/:request_id/submission"
+      - "/requests/:request_id/decision"
+      - "/request_types"
+    implementation: []
+    implementation_note: "Request, RequestType, ApprovalStep, RequestApprovalStep, RequestActivity"
+    tests:
+      - "test/controllers/request_decisions_controller_test.rb"
+      - "test/models/multi_step_approval_test.rb"
+      - "test/models/request_concurrency_test.rb"
+      - "test/system/request_decisions_test.rb"
+    docs:
+      - "docs/operations/administration.md"
+    criteria:
+      authorization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      audit_assignment:
+        result: "unmet"
+        reason: "作成・変更・提出・取り下げが監査へ残らない"
+        evidence: []
+      notification_occurrence:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      list_limit:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      selection_rendering:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      database_invariants:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      retention:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      regression_tests:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      documentation:
+        result: "unmet"
+        reason: "操作を読める文書が無い"
+        evidence: []
+      localization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      keyboard:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+    other_findings:
+      - "申請の項目が題名と本文だけで、種別ごとの入力欄を持たない"
+      - "経路の種別が直列の承認だけで、全員承認、いずれか 1 人、最終決定、確認を持たない"
+    issue: "C1"
+    dependencies: []
+    stage: "core"
+    suite_overlap:
+      suite_id: "suite.request_forms"
+      owner: "suite"
+      note: "Core の完成条件には含めない。Suite の拡張として扱う"
+  - id: "core.approval_delegation"
+    name: "承認の委任"
+    kind: "capability"
+    state: "partial"
+    entries:
+      - "/approval_delegations"
+    implementation: []
+    implementation_note: "ApprovalDelegation"
+    tests:
+      - "test/controllers/approval_delegations_controller_test.rb"
+      - "test/models/approval_delegation_test.rb"
+      - "test/models/delegated_approval_test.rb"
+    docs:
+      - "docs/operations/administration.md"
+    criteria:
+      authorization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      audit_assignment:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      notification_occurrence:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      list_limit:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      selection_rendering:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      database_invariants:
+        result: "unmet"
+        reason: "期間の重なりを問い合わせで確かめており、並行して作成すると両方成立し得る"
+        evidence: []
+      retention:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      regression_tests:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      documentation:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      localization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      keyboard:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+    other_findings: []
+    issue: "C3"
+    dependencies: []
+    stage: "core"
+  - id: "core.documents"
+    name: "文書"
+    kind: "capability"
+    state: "partial"
+    entries:
+      - "/documents"
+      - "/documents/:document_id/attachments/:id"
+      - "/document_categories"
+    implementation: []
+    implementation_note: "Document, DocumentCategory, DocumentDepartment"
+    tests:
+      - "test/controllers/attachment_delivery_test.rb"
+      - "test/models/document_access_test.rb"
+      - "test/models/document_search_test.rb"
+      - "test/system/document_access_test.rb"
+    docs:
+      - "docs/operations/administration.md"
+    criteria:
+      authorization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      audit_assignment:
+        result: "unmet"
+        reason: "作成・変更・削除と、添付の取得が監査へ残らない"
+        evidence: []
+      notification_occurrence:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      list_limit:
+        result: "unmet"
+        reason: "分類の一覧に上限が無い"
+        evidence: []
+      selection_rendering:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      database_invariants:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      retention:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      regression_tests:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      documentation:
+        result: "unmet"
+        reason: "操作を読める文書が無い"
+        evidence: []
+      localization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      keyboard:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+    other_findings:
+      - "階層、版、編集の占有、ごみ箱、容量の把握を持たない"
+    issue: "C2"
+    dependencies: []
+    stage: "core"
+    suite_overlap:
+      suite_id: "suite.document_folders"
+      owner: "suite"
+      note: "Core の完成条件には含めない。Suite の拡張として扱う"
+  - id: "core.notifications"
+    name: "通知"
+    kind: "capability"
+    state: "partial"
+    entries:
+      - "/notifications"
+    implementation: []
+    implementation_note: "Notification, NotificationPreference"
+    tests:
+      - "test/models/notification_batch_delivery_test.rb"
+      - "test/models/notification_delivery_test.rb"
+      - "test/models/notification_test.rb"
+      - "test/system/notifications_test.rb"
+    docs:
+      - "docs/operations/administration.md"
+      - "docs/operations/configuration.md"
+    criteria:
+      authorization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      audit_assignment:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      notification_occurrence:
+        result: "unmet"
+        reason: "重複の判定が「宛先・対象・出来事」で、対象ごとに 1 度しか作れない （`app/models/notification.rb`）。差し戻しのあとの再提出、同じ利用者が担当する 後続の段、参加者の外し直しでは、正当な通知が作られない"
+        evidence: []
+      list_limit:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      selection_rendering:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      database_invariants:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      retention:
+        result: "unmet"
+        reason: "通知に保持の方針が無い"
+        evidence: []
+      regression_tests:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      documentation:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      localization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      keyboard:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+    other_findings:
+      - "まとめて既読にする操作が無い"
+    issue: "C4"
+    dependencies: []
+    stage: "core"
+  - id: "core.audit"
+    name: "監査記録"
+    kind: "capability"
+    state: "partial"
+    entries:
+      - "/audit_events"
+      - "/audit_events/export"
+    implementation: []
+    implementation_note: "AuditEvent, AuditEventCsv"
+    tests:
+      - "test/controllers/audit_events_export_test.rb"
+      - "test/models/audit_event_retention_test.rb"
+      - "test/models/audit_event_test.rb"
+    docs:
+      - "docs/operations/administration.md"
+      - "docs/operations/configuration.md"
+    criteria:
+      authorization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      audit_assignment:
+        result: "unmet"
+        reason: "更新の経路に対して、監査へ記録するかしないかの割り当てが網羅されていない。 お知らせ、予定、文書、文書の分類、設備、予約、申請の作成と変更と提出と 取り下げ、申請の種別、自分の設定には割り当てが無い。 運用管理は「重要な操作は監査記録として残る」と書いており、実装と一致しない"
+        evidence: []
+      notification_occurrence:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      list_limit:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      selection_rendering:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      database_invariants:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      retention:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      regression_tests:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      documentation:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      localization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      keyboard:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+    other_findings: []
+    issue: "C1"
+    dependencies: []
+    stage: "core"
+  - id: "core.public_api"
+    name: "外部接続 API"
+    kind: "capability"
+    state: "partial"
+    entries:
+      - "/api/v1/announcements"
+      - "/api/v1/events"
+      - "/api/v1/departments"
+      - "/api/v1/users"
+      - "/api_tokens"
+    implementation: []
+    implementation_note: "ApiToken, RateLimitStore, Pagination"
+    tests:
+      - "test/controllers/api/v1/api_access_test.rb"
+      - "test/controllers/api/v1/api_paging_test.rb"
+      - "test/controllers/api/v1/api_rate_limit_test.rb"
+      - "test/models/api_token_scope_test.rb"
+    docs:
+      - "docs/operations/administration.md"
+    criteria:
+      authorization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      audit_assignment:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      notification_occurrence:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      list_limit:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      selection_rendering:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      database_invariants:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      retention:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      regression_tests:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      documentation:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      localization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      keyboard:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+    other_findings:
+      - "範囲が未設定の token を全範囲の許可として扱う（`app/models/api_token.rb`）。 資源を足すと、過去に発行した token へ自動で開く"
+      - "上限の計数を web の内側に持つ（`app/models/rate_limit_store.rb`）。 配布用の構成は共有の置き場を持たず、web の数だけ上限が増える"
+      - "応答の形を版として固定した定義が無い"
+      - "読み取りだけで、書き込みの経路が無い"
+    issue: "C1"
+    dependencies: []
+    stage: "core"
+  - id: "core.webhooks"
+    name: "出来事の送信"
+    kind: "capability"
+    state: "partial"
+    entries:
+      - "/webhook_endpoints"
+    implementation: []
+    implementation_note: "WebhookEndpoint, WebhookDestination, WebhookDelivery"
+    tests:
+      - "test/jobs/deliver_webhook_job_test.rb"
+      - "test/models/webhook_destination_test.rb"
+      - "test/models/webhook_publishing_test.rb"
+    docs:
+      - "docs/operations/administration.md"
+      - "docs/operations/configuration.md"
+    criteria:
+      authorization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      audit_assignment:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      notification_occurrence:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      list_limit:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      selection_rendering:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      database_invariants:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      retention:
+        result: "unmet"
+        reason: "送信の記録に保持の方針が無い"
+        evidence: []
+      regression_tests:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      documentation:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      localization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      keyboard:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+    other_findings:
+      - "出来事の一覧に予定の招待があるが、外部へ送る経路が見当たらない"
+      - "出来事ごとの形の定義と、その版が無い"
+    issue: "C4"
+    dependencies: []
+    stage: "core"
+  - id: "core.localization"
+    name: "表示言語"
+    kind: "capability"
+    state: "partial"
+    entries:
+      - "/locale"
+    implementation:
+      - "app/controllers/concerns/localizable.rb"
+    implementation_note: "Localizable（app/controllers/concerns/localizable.rb）"
+    tests:
+      - "test/configuration/locale_symmetry_test.rb"
+      - "test/controllers/locale_negotiation_test.rb"
+      - "test/system/locale_switching_test.rb"
+    docs:
+      - "docs/development/conventions.md"
+    criteria:
+      authorization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      audit_assignment:
+        result: "unmet"
+        reason: "表示言語の変更が監査へ残らない"
+        evidence: []
+      notification_occurrence:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      list_limit:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      selection_rendering:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      database_invariants:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      retention:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      regression_tests:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      documentation:
+        result: "unmet"
+        reason: "利用者向けの切り替え手順が文書に無い"
+        evidence: []
+      localization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      keyboard:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+    other_findings: []
+    issue: "C1"
+    dependencies: []
+    stage: "core"
+  - id: "core.health"
+    name: "稼働確認"
+    kind: "capability"
+    state: "complete"
+    entries:
+      - "/up"
+      - "/health"
+    implementation:
+      - "app/controllers/health_controller.rb"
+    implementation_note: "app/controllers/health_controller.rb。/up は framework が持つ。 独立した model は持たない。依存先への到達可否を返すだけで、記録しない"
+    tests:
+      - "test/controllers/health_controller_test.rb"
+      - "test/system/health_test.rb"
+    docs:
+      - "docs/operations/administration.md"
+      - "docs/operations/configuration.md"
+    criteria:
+      authorization:
+        result: "met"
+        reason: "公開の入口である。監視の側が資格情報を持たずに到達できる必要が あるため認証を要さない。返すのは依存先への到達可否だけで、 組織にも利用者にも属する情報を含まない"
+        evidence: []
+      audit_assignment:
+        result: "not_applicable"
+        reason: "状態を変えない"
+        evidence: []
+      notification_occurrence:
+        result: "not_applicable"
+        reason: "通知を作らない"
+        evidence: []
+      list_limit:
+        result: "not_applicable"
+        reason: "一覧を持たない"
+        evidence: []
+      selection_rendering:
+        result: "not_applicable"
+        reason: "利用者・部門・設備を選ばせる欄を持たない"
+        evidence: []
+      database_invariants:
+        result: "not_applicable"
+        reason: "記録を持たない"
+        evidence: []
+      retention:
+        result: "not_applicable"
+        reason: "蓄積する記録を残さない"
+        evidence: []
+      regression_tests:
+        result: "met"
+        reason: "入口と応答の実装に退行のテストがある。応答の形、健全なときと 異常なときの状態符号、画面からの確認を固定している。 権限で分かれるデータ、更新、並行した操作は持たないため、 それらに対するテストは該当しない"
+        evidence: []
+      documentation:
+        result: "met"
+        reason: "設定と運用管理の両方に手順がある"
+        evidence: []
+      localization:
+        result: "not_applicable"
+        reason: "応答が機械向けの形式で、画面へ出す語句を持たない"
+        evidence: []
+      keyboard:
+        result: "not_applicable"
+        reason: "操作する画面を持たない"
+        evidence: []
+    other_findings: []
+    issue: null
+    dependencies: []
+    stage: "core"
+  - id: "core.diagnostics"
+    name: "構成とジョブの診断"
+    kind: "capability"
+    state: "partial"
+    entries:
+      - "bin/diagnose"
+      - "bin/jobs_status"
+    implementation: []
+    implementation_note: "Diagnostics"
+    tests:
+      - "test/models/diagnostics_test.rb"
+    docs:
+      - "docs/operations/administration.md"
+      - "docs/operations/configuration.md"
+    criteria:
+      authorization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      audit_assignment:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      notification_occurrence:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      list_limit:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      selection_rendering:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      database_invariants:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      retention:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      regression_tests:
+        result: "unmet"
+        reason: "コマンドとしての契約にテストが無い。判定そのものは `Diagnostics` の テストが固定しているが、`lib/tasks/diagnose.rake` の出力と、失敗があるときに 0 以外で終わる契約は確かめていない。`bin/jobs_status` は `test/configuration/persistent_queue_test.rb` が実行できることだけを見ており、 通常の表示、`--failed`、上限、誤った引数、終了状態、 ジョブの引数や送信内容を表示しないことは固定していない"
+        evidence: []
+      documentation:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      localization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      keyboard:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+    other_findings: []
+    issue: "C6"
+    dependencies: []
+    stage: "core"
+  - id: "core.operational_alerts"
+    name: "運用異常の通知"
+    kind: "capability"
+    state: "partial"
+    entries:
+      - "config/recurring.yml"
+    implementation: []
+    implementation_note: "OperationalReport, OperationsMailer"
+    tests:
+      - "test/jobs/report_operational_issues_job_test.rb"
+      - "test/models/operational_report_test.rb"
+    docs:
+      - "docs/operations/administration.md"
+      - "docs/operations/configuration.md"
+    criteria:
+      authorization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      audit_assignment:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      notification_occurrence:
+        result: "unmet"
+        reason: "送信に発生の単位が無い（`app/jobs/report_operational_issues_job.rb`）。 ジョブを再試行すると、同じ異常が改めて送られる"
+        evidence: []
+      list_limit:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      selection_rendering:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      database_invariants:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      retention:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      regression_tests:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      documentation:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      localization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      keyboard:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+    other_findings:
+      - "送った記録を残さないため、届かなかったことに運用者が気付けない"
+    issue: "C4"
+    dependencies: []
+    stage: "core"
+  - id: "core.backup_restore"
+    name: "バックアップと復元"
+    kind: "capability"
+    state: "partial"
+    entries:
+      - "bin/backup"
+      - "bin/restore"
+      - "script/production_backup"
+      - "script/production_restore"
+    implementation: []
+    implementation_note: "なし"
+    tests:
+      - "test/scripts/backup_script_test.rb"
+      - "test/scripts/production_backup_scripts_test.rb"
+      - "test/scripts/restore_script_test.rb"
+    docs:
+      - "docs/operations/backup.md"
+    criteria:
+      authorization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      audit_assignment:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      notification_occurrence:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      list_limit:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      selection_rendering:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      database_invariants:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      retention:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      regression_tests:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      documentation:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      localization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      keyboard:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+    other_findings:
+      - "改変された保存物を復元の前に拒否しない"
+      - "取得と復元に掛かる時間、停止する時間の実測が無い"
+    issue: "C6"
+    dependencies: []
+    stage: "core"
+  - id: "core.deployment"
+    name: "導入とアップグレード"
+    kind: "capability"
+    state: "partial"
+    entries:
+      - "script/seed_initial_user"
+      - "bin/setup"
+      - "compose.production.yaml"
+    implementation: []
+    implementation_note: "InitialUser"
+    tests:
+      - "test/configuration/container_startup_test.rb"
+      - "test/scripts/seed_initial_user_script_test.rb"
+      - "test/scripts/setup_script_test.rb"
+    docs:
+      - "docs/operations/installation.md"
+      - "docs/operations/upgrade.md"
+    criteria:
+      authorization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      audit_assignment:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      notification_occurrence:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      list_limit:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      selection_rendering:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      database_invariants:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      retention:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      regression_tests:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      documentation:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      localization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      keyboard:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+    other_findings:
+      - "新規の導入と、旧版からの更新を同じ commit に対して確かめた記録が無い"
+      - "戻す手順を実際に戻して確かめた記録が無い"
+    issue: "C6"
+    dependencies: []
+    stage: "core"
+cross_cutting_gates:
+  - id: "gate.accessibility"
+    name: "画面の到達性"
+    kind: "cross_cutting_gate"
+    state: "partial"
+    entries: []
+    implementation: []
+    implementation_note: "すべての画面"
+    tests:
+      - "test/browser/accessibility_audit_test.rb"
+      - "test/configuration/accessibility_check_test.rb"
+      - "test/system/accessibility_test.rb"
+    docs:
+      - "docs/development/accessibility.md"
+    criteria:
+      authorization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      audit_assignment:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      notification_occurrence:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      list_limit:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      selection_rendering:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      database_invariants:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      retention:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      regression_tests:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      documentation:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      localization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      keyboard:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+    other_findings:
+      - "狭い画面から主要機能へ到達できない。320 px と 400% 拡大での案内が無い"
+      - "実際の支援技術と実機での確認が無い"
+    issue: "C5"
+    dependencies: []
+  - id: "gate.user_documentation"
+    name: "利用者向けの操作文書"
+    kind: "cross_cutting_gate"
+    state: "planned"
+    entries: []
+    implementation: []
+    implementation_note: "画面を持つすべての機能"
+    tests: []
+    docs: []
+    criteria:
+      authorization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      audit_assignment:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      notification_occurrence:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      list_limit:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      selection_rendering:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      database_invariants:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      retention:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      regression_tests:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      documentation:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      localization:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+      keyboard:
+        result: "not_assessed"
+        reason: "評価していない"
+        evidence: []
+    other_findings:
+      - "文書そのものが無い。共通条件 9 は機能ごとに課されるため、 この gate が `complete` になるまで、画面を持つ機能はどれも `complete` にならない"
+    issue: "C5"
+    dependencies: []
+release_gates:
+  - id: "release.production_readiness"
+    kind: "release_gate"
+    required_evidence:
+      - "対象の commit"
+      - "一括検証の実行結果"
+      - "実ブラウザーを含むテストの実行結果"
+      - "静的解析と依存の脆弱性検査の結果"
+      - "新規導入と、旧版からの更新の結果"
+      - "バックアップと復元の結果"
+      - "想定規模のデータでの測定結果"
+    evaluations: []
+    issue: "C6"
+    dependencies:
+      - "C1"
+      - "C2"
+      - "C3"
+      - "C4"
+      - "C5"
