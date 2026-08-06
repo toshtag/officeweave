@@ -58,9 +58,10 @@ capabilities:
         reason: "評価していない"
         evidence: []
       database_invariants:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "`sessions` は利用者への参照を外部キーで持ち、期限の判定は行の値だけで決まる。試行の数え上げは `rate_limit_counters` の一意の索引の上で 1 文の加算として行う。"
+        evidence:
+          - "test/models/rate_limit_counter_concurrency_test.rb"
       retention:
         result: "met"
         reason: "期限を過ぎた記録は `Session.delete_expired` （`app/models/session.rb:35`）が毎時消す。"
@@ -131,8 +132,8 @@ capabilities:
         reason: "評価していない"
         evidence: []
       database_invariants:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "自分の記録を持たない。認可の結果はログインの記録として `core.authentication` が保つ。"
         evidence: []
       retention:
         result: "not_assessed"
@@ -205,8 +206,8 @@ capabilities:
         reason: "評価していない"
         evidence: []
       database_invariants:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "met"
+        reason: "メールアドレスの一意は `index_users_on_email_address` が保つ。再設定の案内は署名した値であり、記録として持たない。"
         evidence: []
       retention:
         result: "not_applicable"
@@ -269,8 +270,8 @@ capabilities:
         reason: "評価していない"
         evidence: []
       database_invariants:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "met"
+        reason: "一覧と終了の対象は `sessions` の行であり、利用者への参照を外部キーで持つ。重複を禁じる条件は無い。"
         evidence: []
       retention:
         result: "met"
@@ -333,8 +334,8 @@ capabilities:
         reason: "評価していない"
         evidence: []
       database_invariants:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "met"
+        reason: "配信設定の 1 利用者 1 出来事は `index_notification_preferences_on_user_id_and_event` が保つ。"
         evidence: []
       retention:
         result: "not_assessed"
@@ -402,9 +403,10 @@ capabilities:
         reason: "評価していない"
         evidence: []
       database_invariants:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "メールアドレスの一意は索引が保つ。最後の管理者を残す条件は複数行にまたがるため索引では書けないが、同じトランザクションのなかで組織と利用者の行を占有して確かめる。引き金で書く場合と同じ占有になる。"
+        evidence:
+          - "test/models/user_administrator_concurrency_test.rb"
       retention:
         result: "not_assessed"
         reason: "評価していない"
@@ -477,9 +479,10 @@ capabilities:
         reason: "所属を足す欄が利用者を全件描く"
         evidence: []
       database_invariants:
-        result: "unmet"
-        reason: "階層の循環をデータベース側で拒否しない"
-        evidence: []
+        result: "met"
+        reason: "組織のなかの識別子の一意は索引が保ち、階層の循環は引き金 `departments_must_not_form_a_cycle` が拒む。所属の組の一意も索引が保つ。"
+        evidence:
+          - "test/models/database_invariant_concurrency_test.rb"
       retention:
         result: "not_assessed"
         reason: "評価していない"
@@ -541,9 +544,10 @@ capabilities:
         reason: "評価していない"
         evidence: []
       database_invariants:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "取り込みは模型を通し、利用者と部門の一意はそれぞれの索引が保つ。取り込み自身の記録は持たない。"
+        evidence:
+          - "test/models/department_csv_import_test.rb"
       retention:
         result: "not_assessed"
         reason: "評価していない"
@@ -604,8 +608,8 @@ capabilities:
         reason: "評価していない"
         evidence: []
       database_invariants:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "自分の記録を持たない。並べるのは他の機能の記録である。"
         evidence: []
       retention:
         result: "not_assessed"
@@ -671,8 +675,8 @@ capabilities:
         reason: "評価していない"
         evidence: []
       database_invariants:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "met"
+        reason: "公開範囲の組と既読の組は、それぞれ `index_announcement_departments_on_pair` と `index_announcement_reads_on_pair` が保つ。"
         evidence: []
       retention:
         result: "not_assessed"
@@ -738,8 +742,8 @@ capabilities:
         reason: "参加者と公開範囲の欄が、利用者と部門を全件描く"
         evidence: []
       database_invariants:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "met"
+        reason: "公開範囲の組と参加者の組は、それぞれ `index_event_departments_on_pair` と `index_event_participants_on_event_id_and_user_id` が保つ。繰り返しは作成の時点で個々の予定へ展開するため、行をまたぐ条件を持たない。"
         evidence: []
       retention:
         result: "not_assessed"
@@ -804,8 +808,8 @@ capabilities:
         reason: "評価していない"
         evidence: []
       database_invariants:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "met"
+        reason: "組織のなかの識別子の一意は `index_resources_on_organization_id_and_code` が保つ。"
         evidence: []
       retention:
         result: "not_assessed"
@@ -871,9 +875,11 @@ capabilities:
         reason: "評価していない"
         evidence: []
       database_invariants:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "同じ設備の時間帯が重ならないことは `reservations_must_not_overlap` が保つ。判定は状態コードと制約の名前で行い、例外の文面に依存しない。"
+        evidence:
+          - "test/models/reservation_test.rb"
+          - "app/models/database_constraint.rb"
       retention:
         result: "not_assessed"
         reason: "評価していない"
@@ -946,9 +952,10 @@ capabilities:
         reason: "評価していない"
         evidence: []
       database_invariants:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "様式の識別子と、承認の段の位置の一意は索引が保つ。状態の変化は行を占有したうえで決めるため、同時の決裁でも段が 2 つ進まない。"
+        evidence:
+          - "test/models/request_concurrency_test.rb"
       retention:
         result: "not_assessed"
         reason: "評価していない"
@@ -1018,9 +1025,10 @@ capabilities:
         reason: "評価していない"
         evidence: []
       database_invariants:
-        result: "unmet"
-        reason: "期間の重なりを問い合わせで確かめており、並行して作成すると両方成立し得る"
-        evidence: []
+        result: "met"
+        reason: "同じ組への委任が期間で重ならないことは `approval_delegations_must_not_overlap` が保つ。"
+        evidence:
+          - "test/models/database_invariant_concurrency_test.rb"
       retention:
         result: "not_assessed"
         reason: "評価していない"
@@ -1084,8 +1092,8 @@ capabilities:
         reason: "評価していない"
         evidence: []
       database_invariants:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "met"
+        reason: "分類の識別子と公開範囲の組は、それぞれ `index_document_categories_on_organization_id_and_code` と `index_document_departments_on_pair` が保つ。"
         evidence: []
       retention:
         result: "not_assessed"
@@ -1154,8 +1162,8 @@ capabilities:
         reason: "評価していない"
         evidence: []
       database_invariants:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "met"
+        reason: "宛先と出来事の組で 1 件だけ作られることは `index_notifications_on_user_and_subject_event` が保つ。"
         evidence: []
       retention:
         result: "unmet"
@@ -1222,8 +1230,8 @@ capabilities:
         reason: "評価していない"
         evidence: []
       database_invariants:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "met"
+        reason: "記録は書き足すだけであり、行をまたぐ条件を持たない。組織と実行者への参照は外部キーが保つ。"
         evidence: []
       retention:
         result: "not_assessed"
@@ -1299,9 +1307,10 @@ capabilities:
         reason: "評価していない"
         evidence: []
       database_invariants:
-        result: "not_assessed"
-        reason: "評価していない"
-        evidence: []
+        result: "met"
+        reason: "token の要約の一意は `index_api_tokens_on_token_digest` が保ち、範囲は列として必ず持つ。上限の数え上げは `rate_limit_counters` の一意の索引の上で行う。"
+        evidence:
+          - "test/models/rate_limit_counter_concurrency_test.rb"
       retention:
         result: "not_assessed"
         reason: "評価していない"
@@ -1369,8 +1378,8 @@ capabilities:
         reason: "評価していない"
         evidence: []
       database_invariants:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "met"
+        reason: "送信先と送信の記録は、いずれも組織への参照を外部キーで持つ。重複を禁じる条件は無く、同じ宛先を複数登録できることは意図した振る舞いである。"
         evidence: []
       retention:
         result: "unmet"
@@ -1437,8 +1446,8 @@ capabilities:
         reason: "評価していない"
         evidence: []
       database_invariants:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "自分の記録を持たない。表示言語は利用者の列であり、`core.personal_settings` が保つ。"
         evidence: []
       retention:
         result: "not_assessed"
@@ -1567,8 +1576,8 @@ capabilities:
         reason: "評価していない"
         evidence: []
       database_invariants:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "自分の記録を持たない。読み取りだけを行う。"
         evidence: []
       retention:
         result: "not_assessed"
@@ -1630,8 +1639,8 @@ capabilities:
         reason: "評価していない"
         evidence: []
       database_invariants:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "自分の記録を持たない。知らせる材料は他の機能の記録から数える。"
         evidence: []
       retention:
         result: "not_assessed"
@@ -1697,8 +1706,8 @@ capabilities:
         reason: "評価していない"
         evidence: []
       database_invariants:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "not_applicable"
+        reason: "自分の記録を持たない。対象はデータベース全体である。"
         evidence: []
       retention:
         result: "not_assessed"
@@ -1765,8 +1774,8 @@ capabilities:
         reason: "評価していない"
         evidence: []
       database_invariants:
-        result: "not_assessed"
-        reason: "評価していない"
+        result: "met"
+        reason: "初期利用者と組織の作成は、利用者と組織の一意の索引の上で行う。二度実行しても 2 つにならない。"
         evidence: []
       retention:
         result: "not_assessed"

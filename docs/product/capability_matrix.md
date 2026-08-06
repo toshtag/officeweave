@@ -103,6 +103,9 @@ release_gate         1  release.production_readiness（定義）
 宣言する（`app/controllers/concerns/auditable.rb`）。宣言の無い入口は
 `test/configuration/audit_assignment_test.rb` が落とす。
 
+条件 6 も解消した。Core 26 件すべてを評価し、19 件が満たす、7 件が非該当
+である。判定と根拠は機械が読む一覧が持つ。
+
 そして、これを解消しても `complete` にはならない。機能ごとに、権限の
 粒度、一覧の上限、選択欄の描画量、データベースの不変条件、想定規模での実測、
 操作の文書といった別の未達が残る。機能ごとの未達は、それぞれの節に書いた。
@@ -241,7 +244,9 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 
 - 4: 一覧に上限が無い
 - 5: 所属を足す欄が利用者を全件描く
-- 6: 階層の循環をデータベース側で拒否しない
+
+条件 6 は満たす。組織のなかの識別子の一意は索引が保ち、階層の循環は
+引き金 `departments_must_not_form_a_cycle` が拒む。
 
 ### 利用者と部門の入出力
 
@@ -410,9 +415,10 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 文書  docs/operations/administration.md
 ```
 
-未達:
+未達: なし。ただし条件 1・2・3・4・5・7・8・9・10・11 は評価していない。
 
-- 6: 期間の重なりを問い合わせで確かめており、並行して作成すると両方成立し得る
+条件 6 は満たす。同じ組への委任が期間で重ならないことは、
+`approval_delegations_must_not_overlap` が保つ。
 
 ### 文書
 
