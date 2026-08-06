@@ -19,24 +19,27 @@
     <h2 id="webhook-deliveries"><%= t("webhook_endpoints.show.deliveries") %></h2>
 
     <% if @deliveries.any? %>
-      <table>
-        <thead>
-          <tr>
-            <th scope="col"><%= WebhookDelivery.human_attribute_name(:event) %></th>
-            <th scope="col"><%= WebhookDelivery.human_attribute_name(:response_status) %></th>
-            <th scope="col"><%= WebhookDelivery.human_attribute_name(:created_at) %></th>
-          </tr>
-        </thead>
-        <tbody>
-          <% @deliveries.each do |delivery| %>
+      <div class="table-scroll" tabindex="0" role="region"
+           aria-label="<%= t("shared.table.scrollable") %>">
+        <table>
+          <thead>
             <tr>
-              <td><%= t("notifications.events.#{delivery.event}", title: "") %></td>
-              <td><%= delivery.outcome %></td>
-              <td><%= l(delivery.created_at, format: :short) %></td>
+              <th scope="col"><%= WebhookDelivery.human_attribute_name(:event) %></th>
+              <th scope="col"><%= WebhookDelivery.human_attribute_name(:response_status) %></th>
+              <th scope="col"><%= WebhookDelivery.human_attribute_name(:created_at) %></th>
             </tr>
-          <% end %>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <% @deliveries.each do |delivery| %>
+              <tr>
+                <td><%= t("notifications.events.#{delivery.event}", title: "") %></td>
+                <td><%= delivery.outcome %></td>
+                <td><%= l(delivery.created_at, format: :short) %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
     <% else %>
       <p><%= t("webhook_endpoints.show.no_deliveries") %></p>
     <% end %>

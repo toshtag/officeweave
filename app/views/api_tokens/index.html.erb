@@ -43,46 +43,49 @@
 
   <% if @api_tokens.any? %>
     <div class="panel">
-      <table>
-        <thead>
-          <tr>
-            <th scope="col"><%= ApiToken.human_attribute_name(:name) %></th>
-            <th scope="col"><%= ApiToken.human_attribute_name(:last_used_at) %></th>
-            <th scope="col"><%= ApiToken.human_attribute_name(:expires_at) %></th>
-            <th scope="col"><%= ApiToken.human_attribute_name(:scopes) %></th>
-            <th scope="col"><%= t("api_tokens.index.status") %></th>
-            <th scope="col"><span class="visually-hidden"><%= t("common.actions") %></span></th>
-          </tr>
-        </thead>
-        <tbody>
-          <% @api_tokens.each do |api_token| %>
-            <tr data-api-token-id="<%= api_token.id %>">
-              <td><%= api_token.name %></td>
-              <td><%= api_token.last_used_at ? l(api_token.last_used_at, format: :short) : t("api_tokens.never_used") %></td>
-              <td><%= api_token.expires_at ? l(api_token.expires_at.to_date, format: :long) : t("api_tokens.no_expiry") %></td>
-              <td>
-                <%= api_token.scopes.map { |scope| t("api_tokens.scopes.#{scope}") }.join("、") %>
-              </td>
-              <td>
-                <% if api_token.revoked? %>
-                  <span class="status status--muted"><%= t("api_tokens.status.revoked") %></span>
-                <% elsif api_token.expired? %>
-                  <%# 失効とは分けて示す。止めたのは人か、最初に決めた条件かが違う。 %>
-                  <span class="status status--muted"><%= t("api_tokens.status.expired") %></span>
-                <% else %>
-                  <%= t("api_tokens.status.active") %>
-                <% end %>
-              </td>
-              <td>
-                <% unless api_token.revoked? %>
-                  <%= button_to t("api_tokens.revoke"), api_token_path(api_token), method: :delete,
-                                class: "button button--quiet" %>
-                <% end %>
-              </td>
+      <div class="table-scroll" tabindex="0" role="region"
+           aria-label="<%= t("shared.table.scrollable") %>">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col"><%= ApiToken.human_attribute_name(:name) %></th>
+              <th scope="col"><%= ApiToken.human_attribute_name(:last_used_at) %></th>
+              <th scope="col"><%= ApiToken.human_attribute_name(:expires_at) %></th>
+              <th scope="col"><%= ApiToken.human_attribute_name(:scopes) %></th>
+              <th scope="col"><%= t("api_tokens.index.status") %></th>
+              <th scope="col"><span class="visually-hidden"><%= t("common.actions") %></span></th>
             </tr>
-          <% end %>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <% @api_tokens.each do |api_token| %>
+              <tr data-api-token-id="<%= api_token.id %>">
+                <td><%= api_token.name %></td>
+                <td><%= api_token.last_used_at ? l(api_token.last_used_at, format: :short) : t("api_tokens.never_used") %></td>
+                <td><%= api_token.expires_at ? l(api_token.expires_at.to_date, format: :long) : t("api_tokens.no_expiry") %></td>
+                <td>
+                  <%= api_token.scopes.map { |scope| t("api_tokens.scopes.#{scope}") }.join("、") %>
+                </td>
+                <td>
+                  <% if api_token.revoked? %>
+                    <span class="status status--muted"><%= t("api_tokens.status.revoked") %></span>
+                  <% elsif api_token.expired? %>
+                    <%# 失効とは分けて示す。止めたのは人か、最初に決めた条件かが違う。 %>
+                    <span class="status status--muted"><%= t("api_tokens.status.expired") %></span>
+                  <% else %>
+                    <%= t("api_tokens.status.active") %>
+                  <% end %>
+                </td>
+                <td>
+                  <% unless api_token.revoked? %>
+                    <%= button_to t("api_tokens.revoke"), api_token_path(api_token), method: :delete,
+                                  class: "button button--quiet" %>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
     </div>
   <% end %>
 </div>

@@ -39,28 +39,31 @@
 
   <% if @audit_events.any? %>
     <div class="panel">
-      <table>
-        <thead>
-          <tr>
-            <th scope="col"><%= AuditEvent.human_attribute_name(:created_at) %></th>
-            <th scope="col"><%= AuditEvent.human_attribute_name(:action) %></th>
-            <th scope="col"><%= AuditEvent.human_attribute_name(:actor) %></th>
-            <th scope="col"><%= AuditEvent.human_attribute_name(:details) %></th>
-            <th scope="col"><%= AuditEvent.human_attribute_name(:ip_address) %></th>
-          </tr>
-        </thead>
-        <tbody>
-          <% @audit_events.each do |event| %>
+      <div class="table-scroll" tabindex="0" role="region"
+           aria-label="<%= t("shared.table.scrollable") %>">
+        <table>
+          <thead>
             <tr>
-              <td><%= l(event.created_at, format: :short) %></td>
-              <td><%= t("audit_events.actions.#{event.action}") %></td>
-              <td><%= event.actor&.name || t("audit_events.unknown_actor") %></td>
-              <td><%= event.details.map { |key, value| "#{key}: #{value}" }.join(", ") %></td>
-              <td><%= event.ip_address %></td>
+              <th scope="col"><%= AuditEvent.human_attribute_name(:created_at) %></th>
+              <th scope="col"><%= AuditEvent.human_attribute_name(:action) %></th>
+              <th scope="col"><%= AuditEvent.human_attribute_name(:actor) %></th>
+              <th scope="col"><%= AuditEvent.human_attribute_name(:details) %></th>
+              <th scope="col"><%= AuditEvent.human_attribute_name(:ip_address) %></th>
             </tr>
-          <% end %>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <% @audit_events.each do |event| %>
+              <tr>
+                <td><%= l(event.created_at, format: :short) %></td>
+                <td><%= t("audit_events.actions.#{event.action}") %></td>
+                <td><%= event.actor&.name || t("audit_events.unknown_actor") %></td>
+                <td><%= event.details.map { |key, value| "#{key}: #{value}" }.join(", ") %></td>
+                <td><%= event.ip_address %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <%= render "shared/pagination", page: @page,

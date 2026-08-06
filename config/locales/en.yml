@@ -888,6 +888,8 @@ en:
       departments_exported: Departments exported
       audit_events_exported: Audit log exported
   shared:
+    table:
+      scrollable: Table (scrollable)
     candidates:
       departments: Filter departments
       users: Filter people

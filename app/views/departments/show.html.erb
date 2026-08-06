@@ -19,32 +19,35 @@
     <h2><%= t("departments.show.members") %></h2>
 
     <% if @memberships.any? %>
-      <table>
-        <thead>
-          <tr>
-            <th scope="col"><%= User.human_attribute_name(:name) %></th>
-            <th scope="col"><%= User.human_attribute_name(:email_address) %></th>
-            <th scope="col"><%= Membership.human_attribute_name(:primary) %></th>
-            <th scope="col"><span class="visually-hidden"><%= t("common.actions") %></span></th>
-          </tr>
-        </thead>
-        <tbody>
-          <% @memberships.each do |membership| %>
+      <div class="table-scroll" tabindex="0" role="region"
+           aria-label="<%= t("shared.table.scrollable") %>">
+        <table>
+          <thead>
             <tr>
-              <td><%= membership.user.name %></td>
-              <td><%= membership.user.email_address %></td>
-              <td><%= membership.primary? ? t("common.yes") : t("common.no") %></td>
-              <td>
-                <% if administrator? %>
-                  <%= button_to t("memberships.remove"),
-                                department_membership_path(@department, membership),
-                                method: :delete, class: "button button--quiet" %>
-                <% end %>
-              </td>
+              <th scope="col"><%= User.human_attribute_name(:name) %></th>
+              <th scope="col"><%= User.human_attribute_name(:email_address) %></th>
+              <th scope="col"><%= Membership.human_attribute_name(:primary) %></th>
+              <th scope="col"><span class="visually-hidden"><%= t("common.actions") %></span></th>
             </tr>
-          <% end %>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <% @memberships.each do |membership| %>
+              <tr>
+                <td><%= membership.user.name %></td>
+                <td><%= membership.user.email_address %></td>
+                <td><%= membership.primary? ? t("common.yes") : t("common.no") %></td>
+                <td>
+                  <% if administrator? %>
+                    <%= button_to t("memberships.remove"),
+                                  department_membership_path(@department, membership),
+                                  method: :delete, class: "button button--quiet" %>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
     <% else %>
       <p><%= t("departments.show.no_members") %></p>
     <% end %>

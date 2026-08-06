@@ -18,38 +18,41 @@
 
   <% if @webhook_endpoints.any? %>
     <div class="panel">
-      <table>
-        <thead>
-          <tr>
-            <th scope="col"><%= WebhookEndpoint.human_attribute_name(:name) %></th>
-            <th scope="col"><%= WebhookEndpoint.human_attribute_name(:url) %></th>
-            <th scope="col"><%= t("webhook_endpoints.index.status") %></th>
-            <th scope="col"><span class="visually-hidden"><%= t("common.actions") %></span></th>
-          </tr>
-        </thead>
-        <tbody>
-          <% @webhook_endpoints.each do |endpoint| %>
+      <div class="table-scroll" tabindex="0" role="region"
+           aria-label="<%= t("shared.table.scrollable") %>">
+        <table>
+          <thead>
             <tr>
-              <td><%= link_to endpoint.name, endpoint %></td>
-              <td><%= endpoint.url %></td>
-              <td>
-                <% if endpoint.active? %>
-                  <%= t("webhook_endpoints.status.active") %>
-                <% else %>
-                  <span class="status status--muted"><%= t("webhook_endpoints.status.inactive") %></span>
-                <% end %>
-              </td>
-              <td class="table__actions">
-                <%= button_to endpoint.active? ? t("webhook_endpoints.disable") : t("webhook_endpoints.enable"),
-                              endpoint, method: :patch,
-                              params: { webhook_endpoint: { active: !endpoint.active? } },
-                              class: "button button--quiet" %>
-                <%= button_to t("common.destroy"), endpoint, method: :delete, class: "button button--quiet" %>
-              </td>
+              <th scope="col"><%= WebhookEndpoint.human_attribute_name(:name) %></th>
+              <th scope="col"><%= WebhookEndpoint.human_attribute_name(:url) %></th>
+              <th scope="col"><%= t("webhook_endpoints.index.status") %></th>
+              <th scope="col"><span class="visually-hidden"><%= t("common.actions") %></span></th>
             </tr>
-          <% end %>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <% @webhook_endpoints.each do |endpoint| %>
+              <tr>
+                <td><%= link_to endpoint.name, endpoint %></td>
+                <td><%= endpoint.url %></td>
+                <td>
+                  <% if endpoint.active? %>
+                    <%= t("webhook_endpoints.status.active") %>
+                  <% else %>
+                    <span class="status status--muted"><%= t("webhook_endpoints.status.inactive") %></span>
+                  <% end %>
+                </td>
+                <td class="table__actions">
+                  <%= button_to endpoint.active? ? t("webhook_endpoints.disable") : t("webhook_endpoints.enable"),
+                                endpoint, method: :patch,
+                                params: { webhook_endpoint: { active: !endpoint.active? } },
+                                class: "button button--quiet" %>
+                  <%= button_to t("common.destroy"), endpoint, method: :delete, class: "button button--quiet" %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
     </div>
   <% end %>
 </div>

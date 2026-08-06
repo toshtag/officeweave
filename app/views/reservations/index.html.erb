@@ -27,39 +27,42 @@
 
   <% if @reservations.any? %>
     <div class="panel">
-      <table>
-        <thead>
-          <tr>
-            <th scope="col"><%= Reservation.human_attribute_name(:resource) %></th>
-            <th scope="col"><%= Reservation.human_attribute_name(:starts_at) %></th>
-            <th scope="col"><%= Reservation.human_attribute_name(:ends_at) %></th>
-            <th scope="col"><%= Reservation.human_attribute_name(:purpose) %></th>
-            <th scope="col"><%= Reservation.human_attribute_name(:reserver) %></th>
-            <th scope="col"><span class="visually-hidden"><%= t("common.actions") %></span></th>
-          </tr>
-        </thead>
-        <tbody>
-          <% @reservations.each do |reservation| %>
+      <div class="table-scroll" tabindex="0" role="region"
+           aria-label="<%= t("shared.table.scrollable") %>">
+        <table>
+          <thead>
             <tr>
-              <td><%= reservation.resource.name %></td>
-              <td><%= l(reservation.starts_at, format: :short) %></td>
-              <td><%= l(reservation.ends_at, format: :short) %></td>
-              <td><%= reservation.purpose %></td>
-              <td><%= reservation.reserver.name %></td>
-              <td>
-                <% if reservation.modifiable_by?(Current.user) %>
-                  <%= link_to t("common.edit"), edit_reservation_path(reservation),
-                              class: "button button--quiet" %>
-                <% end %>
-                <% if reservation.modifiable_by?(Current.user) %>
-                  <%= button_to t("reservations.cancel"), reservation, method: :delete,
-                                class: "button button--quiet" %>
-                <% end %>
-              </td>
+              <th scope="col"><%= Reservation.human_attribute_name(:resource) %></th>
+              <th scope="col"><%= Reservation.human_attribute_name(:starts_at) %></th>
+              <th scope="col"><%= Reservation.human_attribute_name(:ends_at) %></th>
+              <th scope="col"><%= Reservation.human_attribute_name(:purpose) %></th>
+              <th scope="col"><%= Reservation.human_attribute_name(:reserver) %></th>
+              <th scope="col"><span class="visually-hidden"><%= t("common.actions") %></span></th>
             </tr>
-          <% end %>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <% @reservations.each do |reservation| %>
+              <tr>
+                <td><%= reservation.resource.name %></td>
+                <td><%= l(reservation.starts_at, format: :short) %></td>
+                <td><%= l(reservation.ends_at, format: :short) %></td>
+                <td><%= reservation.purpose %></td>
+                <td><%= reservation.reserver.name %></td>
+                <td>
+                  <% if reservation.modifiable_by?(Current.user) %>
+                    <%= link_to t("common.edit"), edit_reservation_path(reservation),
+                                class: "button button--quiet" %>
+                  <% end %>
+                  <% if reservation.modifiable_by?(Current.user) %>
+                    <%= button_to t("reservations.cancel"), reservation, method: :delete,
+                                  class: "button button--quiet" %>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
     </div>
   <% else %>
     <p><%= t("reservations.index.empty") %></p>
