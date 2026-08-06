@@ -1,6 +1,9 @@
 # 組織内の部門。上位部門を持てる。
 class Department < ApplicationRecord
   belongs_to :organization
+  # 循環を拒む引き金の名前。判定はこの名前と状態コードで行う。
+  CYCLE_CONSTRAINT = "departments_must_not_form_a_cycle".freeze
+
   belongs_to :parent, class_name: "Department", optional: true
 
   has_many :children, class_name: "Department", foreign_key: :parent_id, dependent: :restrict_with_error
@@ -71,6 +74,25 @@ class Department < ApplicationRecord
 
   def display_path
     (ancestors + [ self ]).map(&:name).join(" / ")
+  end
+
+  # データベースの引き金に触れた場合も、画面へ理由を返せるようにする。
+  #
+  # 触れるのは、模型の確認を抜けた同時の書き込みだけである。
+  # 画面から見える結果は、確認で弾かれた場合と同じにする。
+  def save_with_cycle_check
+    DatabaseConstraint.retrying_deadlock { save }
+  rescue ActiveRecord::StatementInvalid => error
+    raise unless DatabaseConstraint.check_violation?(error, constraint: CYCLE_CONSTRAINT)
+
+    errors.add(:parent, :cyclic)
+    false
+  end
+
+  def update_with_cycle_check(attributes)
+    assign_attributes(attributes)
+
+    save_with_cycle_check
   end
 
   private

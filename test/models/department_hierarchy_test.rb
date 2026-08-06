@@ -42,13 +42,27 @@ class DepartmentHierarchyTest < ActiveSupport::TestCase
     assert_equal [ "営業部 / 営業部 東日本課", "総務部" ], departments.map(&:display_path)
   end
 
-  # 検証で拒んでいるが、既存の記録が循環していた場合に終わらないことは避ける。
-  test "上位が循環していても組み立てが終わる" do
+  # 循環はデータベース側の引き金が拒むため、記録として作れない。
+  # それでも、たどる処理そのものが終わることは確かめておく。読み込んだ並びが
+  # 何らかの理由で循環していた場合に、画面の組み立てが返らなくなるのを避ける。
+  test "上位が循環していてもたどる処理が終わる" do
     parent = departments(:sales)
     child = departments(:sales_east)
-    Department.where(id: parent.id).update_all(parent_id: child.id)
+    # 保存はしない。データベースは循環を受け付けない。
+    parent.parent_id = child.id
 
-    assert_equal [ child, parent ], Department.with_ancestors([ child.reload ]).first.ancestors
+    assert_equal [ child, parent ], Department.trace_ancestors(child) { |node| node == child ? parent : child }
+  end
+
+  test "循環する階層は記録として作れない" do
+    parent = departments(:sales)
+    child = departments(:sales_east)
+
+    error = assert_raises(ActiveRecord::StatementInvalid) do
+      Department.where(id: parent.id).update_all(parent_id: child.id)
+    end
+
+    assert DatabaseConstraint.check_violation?(error, constraint: Department::CYCLE_CONSTRAINT)
   end
 
   private
