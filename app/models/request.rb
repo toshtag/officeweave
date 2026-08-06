@@ -23,7 +23,17 @@ class Request < ApplicationRecord
   has_many :request_approval_steps, -> { ordered }, dependent: :destroy, inverse_of: :request
   has_many :notifications, as: :subject, dependent: :destroy
 
+  # 決裁の要求が、どの時点の申請に対して作られたのかを見分ける値。
+  #
+  # 状態、待っている段、提出、内容のいずれかが変わるたびに作り直す。
+  # 順序は持たせない。持たせると、占有していない経路（内容の編集）から
+  # 同じ値を 2 つ作り得る。
+  DECISION_STATE_ATTRIBUTES = %w[status current_step_position submitted_at title body].freeze
+
+  before_validation :renew_decision_state_nonce, if: :decision_state_changing?
+
   validates :title, presence: true, length: { maximum: 200 }
+  validates :decision_state_nonce, presence: true
   validates :body, length: { maximum: 10_000 }
   validates :status, inclusion: { in: STATUSES }
   belongs_to_same_organization :applicant, :request_type
@@ -236,36 +246,42 @@ class Request < ApplicationRecord
     request_activities.create!(actor: actor, action: "created")
   end
 
-  # 承認と差し戻しを任されている利用者かどうか。
-  # 自分の申請は自分で承認できない。
+  # 決裁の立場と、その根拠。
   #
-  # 現在の状態は見ない。状態は競合で変わり得るため、
-  # 実際に処理できるかどうかは行を占有した change_status だけが決める。
-  def decision_authorized_for?(user)
-    # 立場の判定は、この 1 か所で完結させる。制御部の参照範囲に頼ると、
-    # 画面を通らない経路から呼んだときに、その分の判定が抜ける。
-    return false unless user.active?
-    return false unless user.organization_id == organization_id
-    return false if applicant_id == user.id
+  # 立場の判定と代理元の解決を別々に行わない。分けると、そのあいだに委任が
+  # 変わった場合に、委任で通したのに代理元が残らない、という食い違いが起きる。
+  DecisionAuthorization = Data.define(:actor, :on_behalf_of, :source)
+
+  # 承認と差し戻しを任されているかどうかを解き、根拠ごと返す。
+  # 任されていない場合は nil を返す。
+  #
+  # 現在の状態は見ない。状態は競合で変わり得るため、実際に処理できるかどうかは
+  # 行を占有した決裁だけが決める。
+  #
+  # 立場の判定は、この 1 か所で完結させる。制御部の参照範囲に頼ると、
+  # 画面を通らない経路から呼んだときに、その分の判定が抜ける。
+  def decision_authorization_for(user)
+    return nil if user.nil?
+    return nil unless user.active?
+    return nil unless user.organization_id == organization_id
+    return nil if applicant_id == user.id
 
     step = current_step
 
     # 段が無い場合は、種別の担当（管理者）へ委ねる。
-    return user.administrator? if step.nil?
-    return true if step.approvable_by?(user)
+    return authorization(user, source: :administrator) if step.nil? && user.administrator?
+    return nil if step.nil?
+    return authorization(user, source: :responsible) if step.approvable_by?(user)
 
     # 委任を受けている相手が担当なら、代わりに決裁できる。
-    delegators_of(user).any? { |delegator| step.approvable_by?(delegator) }
+    delegator = delegators_of(user).detect { |candidate| step.approvable_by?(candidate) }
+    return nil if delegator.nil?
+
+    authorization(user, on_behalf_of: delegator, source: :delegated)
   end
 
-  # その決裁が誰の代わりであるか。自分が担当であれば nil。
-  #
-  # 記録へ残すためだけに使う。担当そのものは移らない。
-  def delegated_approver_for(user)
-    step = current_step
-    return nil if step.nil? || step.approvable_by?(user)
-
-    delegators_of(user).detect { |delegator| step.approvable_by?(delegator) }
+  def decision_authorized_for?(user)
+    decision_authorization_for(user).present?
   end
 
   # 決裁の操作を画面へ出してよいかどうか。
@@ -274,6 +290,18 @@ class Request < ApplicationRecord
   end
 
   private
+    def authorization(user, on_behalf_of: nil, source:)
+      DecisionAuthorization.new(actor: user, on_behalf_of: on_behalf_of, source: source)
+    end
+
+    def decision_state_changing?
+      new_record? || DECISION_STATE_ATTRIBUTES.any? { |name| will_save_change_to_attribute?(name) }
+    end
+
+    def renew_decision_state_nonce
+      self.decision_state_nonce = SecureRandom.hex(16)
+    end
+
     # その利用者が代わりに決裁できる相手。
     def delegators_of(user)
       organization.users.where(id: ApprovalDelegation.delegators_for(user)).to_a

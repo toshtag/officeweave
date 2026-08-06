@@ -71,28 +71,39 @@ class RequestDecision
     def decide
       step = @request.current_step
       return :stale unless step && step.position == @expected_step_position
-      # 立場は、占有して読み直した段に対して確かめる。
-      return :unauthorized unless @request.decision_authorized_for?(@actor)
+
+      # 立場は、占有して読み直した段と、読み直した利用者に対して確かめる。
+      #
+      # 呼び出しのときに読んだ利用者をそのまま使わない。読んでから決裁するまでの
+      # あいだに、利用を止められたり立場が変わったりする。手元の写しは古いまま
+      # 有効に見える。行を占有して、いまの利用者を取り直す。
+      #
+      # 立場と代理元は 1 回で解く。別々に解くと、そのあいだに委任が変わった
+      # 場合に、委任で通したのに代理元が残らない、という食い違いが起きる。
+      @authorization = @request.decision_authorization_for(locked_actor)
+      return :unauthorized if @authorization.nil?
+
       # 位置が合うだけでは足りない。位置は同じ値へ戻り得るため、要求を作った
-      # 時点の申請の版まで照らす。
-      return :stale unless RequestDecisionToken.matches?(@state_token, request: @request, actor: @actor)
+      # 時点の申請そのものまで照らす。
+      return :stale unless RequestDecisionToken.matches?(@state_token, request: @request,
+                                                         actor: @authorization.actor)
       return :invalid_transition unless @request.status == "pending"
 
-      # 代理元も、段を動かす前に解く。動かしたあとに解くと、
-      # 次の段の担当を代理元として残すことになる。
-      on_behalf_of = @request.delegated_approver_for(@actor)
-
-      @decision == :approve ? approve(step, on_behalf_of) : return_to_applicant(step, on_behalf_of)
+      @decision == :approve ? approve(step) : return_to_applicant(step)
     end
 
-    def approve(step, on_behalf_of)
+    # 決裁するのは、占有して取り直した利用者である。
+    # 記録もすべてこの利用者で残す。判定と記録で別の写しを使わない。
+    def actor = @authorization.actor
+
+    def locked_actor
+      @request.organization.users.lock.find_by(id: @actor.id)
+    end
+
+    def approve(step)
       following = @request.next_step
 
-      if following
-        advance_to(following, step, on_behalf_of)
-      else
-        conclude(step, on_behalf_of)
-      end
+      following ? advance_to(following, step) : conclude(step)
 
       :success
     end
@@ -102,28 +113,27 @@ class RequestDecision
     # 承認済みへ至らない承認も、誰がいつどの段を通したのかを残す。
     # 監査の種別も承認とする。状態から組み立てると、承認待ちのまま進んだ
     # ことが、そのまま許可されていない種別になる。
-    def advance_to(following, step, on_behalf_of)
+    def advance_to(following, step)
       approvers = @request.approvers(following)
 
       @request.update!(current_step_position: following.position)
-      record(step: step, action: "approved", audit: "request_approved", on_behalf_of: on_behalf_of)
+      record(step: step, action: "approved", audit: "request_approved")
 
       @announce = -> { Notification.deliver_to_all(users: approvers, subject: @request, event: "request_submitted") }
     end
 
     # 最後の段の承認。ここで承認済みとする。
-    def conclude(step, on_behalf_of)
+    def conclude(step)
       @request.update!(status: "approved", decided_at: Time.current)
-      record(step: step, action: "approved", audit: "request_approved", on_behalf_of: on_behalf_of)
+      record(step: step, action: "approved", audit: "request_approved")
 
       announce_to_applicant("request_approved")
     end
 
-    def return_to_applicant(step, on_behalf_of)
+    def return_to_applicant(step)
       @request.update!(status: "returned", decided_at: Time.current)
       # 差し戻しは、その段を通していない。段への印は残さない。
-      record(step: step, action: "returned", audit: "request_returned",
-             on_behalf_of: on_behalf_of, approve_step: false)
+      record(step: step, action: "returned", audit: "request_returned", approve_step: false)
 
       announce_to_applicant("request_returned")
 
@@ -133,18 +143,18 @@ class RequestDecision
     # 段の承認、履歴、監査を、状態の変更と同じ占有のなかで残す。
     #
     # 写した経路が無い申請では、段への印を残す先が無い。その場合は何もしない。
-    def record(step:, action:, audit:, on_behalf_of:, approve_step: true)
-      step.record_approval!(actor: @actor) if approve_step && step.is_a?(RequestApprovalStep)
+    def record(step:, action:, audit:, approve_step: true)
+      step.record_approval!(actor: actor) if approve_step && step.is_a?(RequestApprovalStep)
 
       @request.request_activities.create!(
-        actor: @actor, action: action, comment: @comment,
-        step_position: step.position, on_behalf_of: on_behalf_of
+        actor: actor, action: action, comment: @comment,
+        step_position: step.position, on_behalf_of: @authorization.on_behalf_of
       )
 
       # 監査へ残すのは、何が起きたかを追える最小限とする。
       # 本文とコメントは入れない。決裁の理由は履歴が持つ。
       AuditEvent.record(
-        organization: @request.organization, actor: @actor, action: audit,
+        organization: @request.organization, actor: actor, action: audit,
         target: @request, details: { title: @request.title }, ip_address: @ip_address
       )
     end
