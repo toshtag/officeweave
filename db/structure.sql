@@ -763,7 +763,8 @@ CREATE TABLE public.notifications (
     event character varying NOT NULL,
     read_at timestamp(6) without time zone,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    occurrence character varying DEFAULT ''::character varying NOT NULL
 );
 
 
@@ -784,6 +785,38 @@ CREATE SEQUENCE public.notifications_id_seq
 --
 
 ALTER SEQUENCE public.notifications_id_seq OWNED BY public.notifications.id;
+
+
+--
+-- Name: operational_alerts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.operational_alerts (
+    id bigint NOT NULL,
+    occurrence character varying NOT NULL,
+    sent_at timestamp(6) without time zone NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: operational_alerts_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.operational_alerts_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: operational_alerts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.operational_alerts_id_seq OWNED BY public.operational_alerts.id;
 
 
 --
@@ -1365,6 +1398,13 @@ ALTER TABLE ONLY public.notifications ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
+-- Name: operational_alerts id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.operational_alerts ALTER COLUMN id SET DEFAULT nextval('public.operational_alerts_id_seq'::regclass);
+
+
+--
 -- Name: organizations id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1622,6 +1662,14 @@ ALTER TABLE ONLY public.notification_preferences
 
 ALTER TABLE ONLY public.notifications
     ADD CONSTRAINT notifications_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: operational_alerts operational_alerts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.operational_alerts
+    ADD CONSTRAINT operational_alerts_pkey PRIMARY KEY (id);
 
 
 --
@@ -2199,10 +2247,10 @@ CREATE INDEX index_notifications_on_unread_user_id ON public.notifications USING
 
 
 --
--- Name: index_notifications_on_user_and_subject_event; Type: INDEX; Schema: public; Owner: -
+-- Name: index_notifications_on_user_and_subject_event_occurrence; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX index_notifications_on_user_and_subject_event ON public.notifications USING btree (user_id, subject_type, subject_id, event);
+CREATE UNIQUE INDEX index_notifications_on_user_and_subject_event_occurrence ON public.notifications USING btree (user_id, subject_type, subject_id, event, occurrence);
 
 
 --
@@ -2217,6 +2265,20 @@ CREATE INDEX index_notifications_on_user_id ON public.notifications USING btree 
 --
 
 CREATE INDEX index_notifications_on_user_id_and_created_at ON public.notifications USING btree (user_id, created_at);
+
+
+--
+-- Name: index_operational_alerts_on_occurrence; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_operational_alerts_on_occurrence ON public.operational_alerts USING btree (occurrence);
+
+
+--
+-- Name: index_operational_alerts_on_sent_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_operational_alerts_on_sent_at ON public.operational_alerts USING btree (sent_at);
 
 
 --
@@ -2939,6 +3001,8 @@ ALTER TABLE ONLY public.announcement_departments
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260806080000'),
+('20260806070000'),
 ('20260806060000'),
 ('20260806050000'),
 ('20260806040000'),
