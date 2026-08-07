@@ -50,7 +50,7 @@ class KeyboardOperabilityTest < ActiveSupport::TestCase
     layout = Rails.root.join("app/views/layouts/application.html.erb").read
 
     assert_includes layout, "skip-link"
-    assert_includes layout, '#main'
+    assert_includes layout, "#main"
   end
 
   test "画面へスクリプトを配信しない" do

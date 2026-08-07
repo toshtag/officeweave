@@ -166,7 +166,8 @@ class CompletionRegistryTest < ActiveSupport::TestCase
   # 新しい機能を Core へ足したときにも、評価を伴わなければ落ちる。
   test "Core に未評価が 1 件も無い" do
     unassessed = core.flat_map do |capability|
-      capability.fetch("criteria").filter_map { |name, judgement| "#{capability["id"]}/#{name}" if judgement["result"] == "not_assessed" }
+      capability.fetch("criteria").filter_map { |name, judgement|
+ "#{capability["id"]}/#{name}" if judgement["result"] == "not_assessed" }
     end
 
     assert_empty unassessed
@@ -174,7 +175,8 @@ class CompletionRegistryTest < ActiveSupport::TestCase
 
   test "Core に未達が 1 件も無い" do
     unmet = core.flat_map do |capability|
-      capability.fetch("criteria").filter_map { |name, judgement| "#{capability["id"]}/#{name}" if judgement["result"] == "unmet" }
+      capability.fetch("criteria").filter_map { |name, judgement|
+ "#{capability["id"]}/#{name}" if judgement["result"] == "unmet" }
     end
 
     assert_empty unmet
