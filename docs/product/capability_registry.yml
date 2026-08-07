@@ -1418,6 +1418,7 @@ capabilities:
     implementation: []
     implementation_note: "WebhookEndpoint, WebhookDestination, WebhookDelivery"
     tests:
+      - "test/controllers/webhook_endpoints_controller_test.rb"
       - "test/jobs/deliver_webhook_job_test.rb"
       - "test/models/webhook_destination_test.rb"
       - "test/models/webhook_publishing_test.rb"
