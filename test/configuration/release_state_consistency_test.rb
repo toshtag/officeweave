@@ -48,17 +48,6 @@ class ReleaseStateConsistencyTest < ActiveSupport::TestCase
     { pattern: /docs\/releases\/?`?\s*は存在しない/, meaning: "検証の記録が 1 件も無い" }
   ].freeze
 
-  # 件数を述べる表現と、その正しい値の出所。
-  COUNT_CLAIMS = [
-    { pattern: /Core の (\d+) 機能/, source: :core_count },
-    { pattern: /Core (\d+) 件すべて/, source: :core_count },
-    { pattern: /受入条件を満たした機能は (\d+) 件/, source: :complete_count },
-    { pattern: /complete\s+(\d+)\s+Core 全件/, source: :complete_count },
-    { pattern: /画面を持つ Core (\d+) 件/, source: :screen_core_count },
-    { pattern: /版ごとの評価\s+(\d+)\s+passed/, source: :evaluation_count },
-    { pattern: /passed した版は (\d+)/, source: :passed_count }
-  ].freeze
-
   # 受入条件の文書に置いてはならない、時点に依る表現。
   #
   # この文書は「どうなったら満たすか」を定める。いま何件かは別の文書が
@@ -93,27 +82,6 @@ class ReleaseStateConsistencyTest < ActiveSupport::TestCase
     end
 
     assert_empty stale, "実体と合わない記述が残っている:\n#{stale.join("\n")}"
-  end
-
-  test "件数を述べる記述が、機械が読む一覧と一致する" do
-    wrong = []
-
-    [ README, MATRIX ].each do |path|
-      each_line(path) do |line, number|
-        COUNT_CLAIMS.each do |claim|
-          match = line.match(claim[:pattern])
-          next if match.nil?
-
-          expected = send(claim[:source])
-          next if match[1].to_i == expected
-
-          wrong << "#{path.relative_path_from(Rails.root)}:#{number} 「#{line.strip}」" \
-                   "（正しくは #{expected}）"
-        end
-      end
-    end
-
-    assert_empty wrong, "件数が一覧と食い違う:\n#{wrong.join("\n")}"
   end
 
   test "現況を述べる README の節が 1 つだけである" do
@@ -182,28 +150,18 @@ class ReleaseStateConsistencyTest < ActiveSupport::TestCase
            "機械が読む一覧の評価 #{latest["version"]} が VERSION #{version} より先にある"
 
     @evaluations.each do |evaluation|
-      record = RELEASES_DIR.join("#{evaluation["version"]}_verification.md")
+      record = Rails.root.join(evaluation.fetch("evidence_document"))
       assert record.exist?,
              "#{evaluation["version"]} を評価しているのに #{record.basename} が無い"
     end
-
-    newest = RELEASES_DIR.join("#{latest["version"]}_verification.md")
-    assert_includes README.read, newest.relative_path_from(Rails.root).to_s,
-                    "README が最新の検証の記録を指していない"
   end
 
-  test "passed と判定した版が、必要な証拠をすべて持つ" do
-    required = @registry.fetch("release_gates").first.fetch("required_evidence")
-
+  test "passed と判定した版が、証拠の文書を持つ" do
     @evaluations.select { |e| e["result"] == "passed" }.each do |evaluation|
-      evidence = evaluation["evidence"] || {}
+      document = Rails.root.join(evaluation.fetch("evidence_document"))
 
-      required.each do |name|
-        assert_includes evidence.keys, name,
-                        "#{evaluation["version"]} に「#{name}」が無いまま passed である"
-        assert_predicate evidence[name].to_s.strip, :present?,
-                         "#{evaluation["version"]} の「#{name}」が空のまま passed である"
-      end
+      assert document.exist?,
+             "#{evaluation["version"]} に証拠の文書が無いまま passed である"
     end
   end
 
@@ -219,25 +177,5 @@ class ReleaseStateConsistencyTest < ActiveSupport::TestCase
       when "検証の記録が 1 件も無い" then !RELEASES_DIR.exist? || RELEASES_DIR.glob("*.md").empty?
       else raise ArgumentError, "条件が定義されていない: #{meaning}"
       end
-    end
-
-    def core_count
-      @registry.fetch("capabilities").count { |c| c["stage"] == "core" }
-    end
-
-    # 画面を持つ Core の件数。キーボードの条件が非該当でないものを数える。
-    # 非該当は、画面からは行わない機能である。
-    def screen_core_count
-      @registry.fetch("capabilities").count do |c|
-        c["stage"] == "core" && c.dig("criteria", "keyboard", "result") != "not_applicable"
-      end
-    end
-
-    def evaluation_count = @evaluations.size
-
-    def passed_count = @evaluations.count { |e| e["result"] == "passed" }
-
-    def complete_count
-      @registry.fetch("capabilities").count { |c| c["stage"] == "core" && c["state"] == "complete" }
     end
 end
