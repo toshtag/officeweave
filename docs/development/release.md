@@ -180,7 +180,7 @@ docker run --rm --entrypoint sh <イメージ名> -c 'ls config/master.key .env'
 ### 版数の更新
 
 ```bash
-echo "0.2.0" > VERSION
+echo "<版数>" > VERSION
 ```
 
 ### 部品表の取得
@@ -198,14 +198,47 @@ docker compose exec -T web bin/rails officeweave:sbom > officeweave-sbom.json
 30 日分が残る。公開の直前に手元で作れない事情がある場合は、そちらから
 その版の実行結果を取得する。
 
+`VERSION` は唯一の出所である。ここへ書いた値が、変更履歴の見出し、
+機械が読む一覧の評価、検証の記録のファイル名と一致している必要がある。
+一致は `test/configuration/release_state_consistency_test.rb` が確かめる。
+
+### 実測した木と、公開する木
+
+版ごとの評価は commit を 1 つ指す。tag はふつう、その後ろの commit を指す。
+公開の作業そのもの（変更履歴、版数、検証の記録、機能到達度の更新）が、
+実測を終えたあとに入るためである。
+
+同じ commit であることは求めない。求めると、記録を 1 行足すたびに実測を
+やり直すことになり、実測しない理由になる。
+
+代わりに、差が記録だけであることを求める。
+
+```text
+実測のあとに変わってよい道
+  VERSION
+  CHANGELOG.md
+  README.md
+  docs/
+```
+
+これ以外が 1 つでも変わっていれば、公開する木は実測していない木である。
+`test/` も許さない。テストが変わった木は、そのテストを通していない。
+
+```bash
+script/check_release_source
+```
+
+引数なしで、機械が読む一覧の最新の評価と、その版の tag（無ければ `HEAD`）を
+比べる。この検査は `verify.yml` でも走るため、公開の前に PR で落ちる。
+
 ### 記録
 
 ```bash
-git commit -am "chore: 0.2.0 を公開する"
+git commit -am "chore: <版数> を公開する"
 ```
 
 ```bash
-git tag -a v0.2.0 -m "0.2.0"
+git tag -a v<版数> -m "<版数>"
 ```
 
 ```bash
@@ -219,6 +252,7 @@ git push origin main --tags
 制限として残っている項目が記載されている
 設定項目が増えた場合、.env.example と設定の文書へ反映されている
 部品表を書き出し、公開する版へ添えている
+script/check_release_source が通っている
 移行が必要な変更がある場合、アップグレードの手順へ注意点を追記している
 2 節の確認をすべて通している
 ```
