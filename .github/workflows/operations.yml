@@ -361,9 +361,10 @@ jobs:
           archive="$(ls -1 backups/officeweave-*.tar.gz | head -1)"
           test -f "${archive}"
           tar --list --gzip --file="${archive}" | head
-          # 未処理のジョブを含む形式であることを確かめる。
+          # 未処理のジョブと、中身の要約を含む形式であることを確かめる。
           tar --list --gzip --file="${archive}" | grep -qx "./queue_database.sql"
-          tar --extract --gzip --to-stdout --file="${archive}" ./metadata.txt | grep -qx "format_version=2"
+          tar --list --gzip --file="${archive}" | grep -qx "./checksums.txt"
+          tar --extract --gzip --to-stdout --file="${archive}" ./metadata.txt | grep -qx "format_version=3"
 
       - name: web を作り直しても書庫が残ることを確かめる
         run: |
