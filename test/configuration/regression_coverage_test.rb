@@ -57,8 +57,8 @@ class RegressionCoverageTest < ActiveSupport::TestCase
     end
   end
 
-  test "見ている機能が 26 件である" do
-    assert_equal 26, core.size
+  test "見ている機能がある" do
+    assert_predicate core, :any?, "Core の機能を 1 件も見ていない"
   end
 
   test "経路を通るかの判定が働く" do

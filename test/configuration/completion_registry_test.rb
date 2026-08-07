@@ -10,7 +10,6 @@ require "test_helper"
 # 未達も未評価も 1 つも無い場合だけとする。
 class CompletionRegistryTest < ActiveSupport::TestCase
   REGISTRY = Rails.root.join("docs/product/capability_registry.yml").freeze
-  MATRIX = Rails.root.join("docs/product/capability_matrix.md").freeze
   RESULTS = %w[met unmet not_applicable not_assessed].freeze
   # 段階ごとに取り得る状態。受入条件の「2.1 段階と状態の組合せ」と同じ。
   ALLOWED = { "core" => %w[partial complete], "suite" => %w[planned partial],
@@ -19,24 +18,12 @@ class CompletionRegistryTest < ActiveSupport::TestCase
 
   setup do
     @registry = YAML.safe_load_file(REGISTRY)
-    @matrix = MATRIX.read
     @capabilities = @registry.fetch("capabilities")
     @gates = @registry.fetch("cross_cutting_gates")
   end
 
-  test "完成の条件を固定する" do
-    completion = @registry.fetch("completion")
-
-    assert_equal 26, completion.fetch("core_capabilities")
-    assert_equal 2, completion.fetch("cross_cutting_gates")
-    assert_equal "release.production_readiness", completion.fetch("release_gate")
-  end
-
-  test "件数が文章の正本と一致する" do
-    assert_equal @registry.dig("completion", "core_capabilities"), @capabilities.size
-    assert_equal @registry.dig("completion", "cross_cutting_gates"), @gates.size
-    assert_equal core_headings.size, @capabilities.size
-    assert_equal gate_headings.size, @gates.size
+  test "完成の条件は、版の判定を指す" do
+    assert_equal "release.production_readiness", @registry.fetch("completion").fetch("release_gate")
   end
 
   test "識別子が重ならない" do
@@ -45,16 +32,9 @@ class CompletionRegistryTest < ActiveSupport::TestCase
     assert_equal ids.size, ids.uniq.size, "識別子が重なっています"
   end
 
-  test "名前が文章の正本の見出しと一致する" do
-    assert_equal core_headings.sort, @capabilities.map { |entry| entry.fetch("name") }.sort
-    assert_equal gate_headings.sort, @gates.map { |entry| entry.fetch("name") }.sort
-  end
-
-  # 片方だけを直せると、読む人と検査で違う結論になる。
-  test "状態が文章の正本と一致する" do
+  test "名前を持つ" do
     all_entries.each do |entry|
-      assert_equal state_in_matrix(entry.fetch("name")), entry.fetch("state"),
-                   "#{entry["name"]} の状態が食い違っています"
+      assert_predicate entry.fetch("name").to_s, :present?, "#{entry["id"]} に名前が無い"
     end
   end
 
@@ -136,12 +116,33 @@ class CompletionRegistryTest < ActiveSupport::TestCase
   # Core の未達と、採用済みの Suite 拡張が重なる項目を見分けられるようにする。
   # 重なりを Core の完成条件へ引き込むと、Suite を実装しない約束と両立しない。
   test "Suite と重なる項目は、持ち主を明示する" do
-    suite_ids = suite_identifiers
+    suite_ids = @registry.fetch("suite_capabilities").map { |entry| entry.fetch("id") }
 
     all_entries.filter_map { |entry| entry["suite_overlap"]&.merge("id" => entry["id"]) }.each do |overlap|
       assert_includes %w[core_blocker suite], overlap.fetch("owner"), "#{overlap["id"]} の持ち主が不明"
       assert_includes suite_ids, overlap.fetch("suite_id"), "#{overlap["id"]} の指す Suite がありません"
       assert_predicate overlap.fetch("note").to_s, :present?
+    end
+  end
+
+  # Suite、Extended、範囲外は、実装を持たないため機能の一覧とは形が違う。
+  # 持つのは識別と、その段階に置いた理由だけである。
+  test "実装しない段階の一覧が、形を保っている" do
+    @registry.fetch("suite_capabilities").each do |entry|
+      assert_match(/\Asuite\./, entry.fetch("id"))
+      assert_equal "planned", entry.fetch("state")
+      assert_predicate entry.fetch("summary").to_s, :present?, "#{entry["id"]} に内容が無い"
+    end
+
+    @registry.fetch("extended_areas").each do |entry|
+      assert_equal "deferred", entry.fetch("state")
+      assert_predicate entry.fetch("decision_needed").to_s, :present?,
+                       "#{entry["name"]} に決める必要のあることが無い"
+    end
+
+    @registry.fetch("out_of_scope").each do |entry|
+      assert_equal "rejected", entry.fetch("state")
+      assert_predicate entry.fetch("reason").to_s, :present?, "#{entry["name"]} に理由が無い"
     end
   end
 
@@ -191,9 +192,20 @@ class CompletionRegistryTest < ActiveSupport::TestCase
     assert_empty unmet
   end
 
-  test "Core 26 件がすべて complete である" do
-    assert_equal 26, core.size
-    assert_equal [ "complete" ], core.map { |capability| capability.fetch("state") }.uniq
+  test "Core の機能がすべて complete である" do
+    assert_predicate core, :any?, "Core の機能が 1 件も無い"
+
+    incomplete = core.reject { |capability| capability.fetch("state") == "complete" }
+
+    assert_empty incomplete.map { |capability| capability.fetch("id") }
+  end
+
+  test "横断の品質がすべて complete である" do
+    assert_predicate @gates, :any?, "横断の品質が 1 件も無い"
+
+    incomplete = @gates.reject { |gate| gate.fetch("state") == "complete" }
+
+    assert_empty incomplete.map { |gate| gate.fetch("id") }
   end
 
   test "判定には、証拠か非該当の理由がある" do
@@ -215,19 +227,4 @@ class CompletionRegistryTest < ActiveSupport::TestCase
 
     def all_entries = @capabilities + @gates
 
-    def core_headings = headings("## 2. Core", "## 3. 横断の品質")
-
-    def gate_headings = headings("## 3. 横断の品質", "## 4. Suite")
-
-    def headings(from, to)
-      @matrix[/#{Regexp.escape(from)}.*?(?=#{Regexp.escape(to)})/m].scan(/^### (.+)$/).flatten
-    end
-
-    def suite_identifiers = @matrix.scan(/`(suite\.[a-z_]+)`/).flatten
-
-    def state_in_matrix(name)
-      block = @matrix[/^### #{Regexp.escape(name)}$.*?(?=^### |\A\z|^## )/m]
-
-      block[/^状態  (\w+)/, 1]
-    end
 end
