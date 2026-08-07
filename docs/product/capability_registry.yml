@@ -2087,94 +2087,26 @@ cross_cutting_gates:
       - "test/system/accessibility_test.rb"
     docs:
       - "docs/development/accessibility.md"
-    criteria:
-      authorization:
-        result: "not_applicable"
-        reason: "画面の到達性そのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「320 px と 400% 拡大で主要な機能へ到達できる」「キーボードだけで主要な操作が完了する」「自動で判定できる指摘が無い」の 3 つとし、いずれも検査で確かめる。"
+    checks:
+      narrow_screen:
+        criterion: "320 px の幅と 400% の拡大で、主要な機能へ到達できる"
+        result: "met"
+        reason: "横へ動かす箱を持たせ、はみ出す表も画面の中で読める。"
         evidence:
           - "test/browser/narrow_screen_test.rb"
-          - "test/browser/accessibility_audit_test.rb"
-          - "test/browser/main_flows_test.rb"
-          - "test/system/accessibility_test.rb"
-      audit_assignment:
-        result: "not_applicable"
-        reason: "画面の到達性そのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「320 px と 400% 拡大で主要な機能へ到達できる」「キーボードだけで主要な操作が完了する」「自動で判定できる指摘が無い」の 3 つとし、いずれも検査で確かめる。"
+      keyboard_completion:
+        criterion: "キーボードだけで、主要な操作が完了する"
+        result: "met"
+        reason: "画面を持つ Core ごとに主要な操作を定め、到達ではなく完遂まで確かめる。"
         evidence:
-          - "test/browser/narrow_screen_test.rb"
-          - "test/browser/accessibility_audit_test.rb"
-          - "test/browser/main_flows_test.rb"
-          - "test/system/accessibility_test.rb"
-      notification_occurrence:
-        result: "not_applicable"
-        reason: "画面の到達性そのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「320 px と 400% 拡大で主要な機能へ到達できる」「キーボードだけで主要な操作が完了する」「自動で判定できる指摘が無い」の 3 つとし、いずれも検査で確かめる。"
+          - "test/browser/keyboard_flows_test.rb"
+          - "test/configuration/keyboard_flow_coverage_test.rb"
+      automated_audit:
+        criterion: "自動で判定できる指摘が無い"
+        result: "met"
+        reason: "実ブラウザーで全画面を走査し、指摘が 1 件でもあれば落とす。"
         evidence:
-          - "test/browser/narrow_screen_test.rb"
           - "test/browser/accessibility_audit_test.rb"
-          - "test/browser/main_flows_test.rb"
-          - "test/system/accessibility_test.rb"
-      list_limit:
-        result: "not_applicable"
-        reason: "画面の到達性そのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「320 px と 400% 拡大で主要な機能へ到達できる」「キーボードだけで主要な操作が完了する」「自動で判定できる指摘が無い」の 3 つとし、いずれも検査で確かめる。"
-        evidence:
-          - "test/browser/narrow_screen_test.rb"
-          - "test/browser/accessibility_audit_test.rb"
-          - "test/browser/main_flows_test.rb"
-          - "test/system/accessibility_test.rb"
-      selection_rendering:
-        result: "not_applicable"
-        reason: "画面の到達性そのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「320 px と 400% 拡大で主要な機能へ到達できる」「キーボードだけで主要な操作が完了する」「自動で判定できる指摘が無い」の 3 つとし、いずれも検査で確かめる。"
-        evidence:
-          - "test/browser/narrow_screen_test.rb"
-          - "test/browser/accessibility_audit_test.rb"
-          - "test/browser/main_flows_test.rb"
-          - "test/system/accessibility_test.rb"
-      database_invariants:
-        result: "not_applicable"
-        reason: "画面の到達性そのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「320 px と 400% 拡大で主要な機能へ到達できる」「キーボードだけで主要な操作が完了する」「自動で判定できる指摘が無い」の 3 つとし、いずれも検査で確かめる。"
-        evidence:
-          - "test/browser/narrow_screen_test.rb"
-          - "test/browser/accessibility_audit_test.rb"
-          - "test/browser/main_flows_test.rb"
-          - "test/system/accessibility_test.rb"
-      retention:
-        result: "not_applicable"
-        reason: "画面の到達性そのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「320 px と 400% 拡大で主要な機能へ到達できる」「キーボードだけで主要な操作が完了する」「自動で判定できる指摘が無い」の 3 つとし、いずれも検査で確かめる。"
-        evidence:
-          - "test/browser/narrow_screen_test.rb"
-          - "test/browser/accessibility_audit_test.rb"
-          - "test/browser/main_flows_test.rb"
-          - "test/system/accessibility_test.rb"
-      regression_tests:
-        result: "not_applicable"
-        reason: "画面の到達性そのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「320 px と 400% 拡大で主要な機能へ到達できる」「キーボードだけで主要な操作が完了する」「自動で判定できる指摘が無い」の 3 つとし、いずれも検査で確かめる。"
-        evidence:
-          - "test/browser/narrow_screen_test.rb"
-          - "test/browser/accessibility_audit_test.rb"
-          - "test/browser/main_flows_test.rb"
-          - "test/system/accessibility_test.rb"
-      documentation:
-        result: "not_applicable"
-        reason: "画面の到達性そのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「320 px と 400% 拡大で主要な機能へ到達できる」「キーボードだけで主要な操作が完了する」「自動で判定できる指摘が無い」の 3 つとし、いずれも検査で確かめる。"
-        evidence:
-          - "test/browser/narrow_screen_test.rb"
-          - "test/browser/accessibility_audit_test.rb"
-          - "test/browser/main_flows_test.rb"
-          - "test/system/accessibility_test.rb"
-      localization:
-        result: "not_applicable"
-        reason: "画面の到達性そのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「320 px と 400% 拡大で主要な機能へ到達できる」「キーボードだけで主要な操作が完了する」「自動で判定できる指摘が無い」の 3 つとし、いずれも検査で確かめる。"
-        evidence:
-          - "test/browser/narrow_screen_test.rb"
-          - "test/browser/accessibility_audit_test.rb"
-          - "test/browser/main_flows_test.rb"
-          - "test/system/accessibility_test.rb"
-      keyboard:
-        result: "not_applicable"
-        reason: "画面の到達性そのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「320 px と 400% 拡大で主要な機能へ到達できる」「キーボードだけで主要な操作が完了する」「自動で判定できる指摘が無い」の 3 つとし、いずれも検査で確かめる。"
-        evidence:
-          - "test/browser/narrow_screen_test.rb"
-          - "test/browser/accessibility_audit_test.rb"
-          - "test/browser/main_flows_test.rb"
           - "test/system/accessibility_test.rb"
     other_findings:
       - "実際の支援技術と実機での確認が無い。自動で判定できるのは基準の一部であり、読み上げの順序と文言の分かりやすさは人が確かめる"
@@ -2191,70 +2123,11 @@ cross_cutting_gates:
       - "test/configuration/usage_documentation_test.rb"
     docs:
       - "docs/usage/index.md"
-    criteria:
-      authorization:
-        result: "not_applicable"
-        reason: "操作の手引きそのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「画面を持つ Core すべてに、該当する役割の手順がある」とし、機械が読む一覧との突き合わせで確かめる。"
-        evidence:
-          - "test/configuration/usage_documentation_test.rb"
-          - "docs/usage/index.md"
-      audit_assignment:
-        result: "not_applicable"
-        reason: "操作の手引きそのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「画面を持つ Core すべてに、該当する役割の手順がある」とし、機械が読む一覧との突き合わせで確かめる。"
-        evidence:
-          - "test/configuration/usage_documentation_test.rb"
-          - "docs/usage/index.md"
-      notification_occurrence:
-        result: "not_applicable"
-        reason: "操作の手引きそのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「画面を持つ Core すべてに、該当する役割の手順がある」とし、機械が読む一覧との突き合わせで確かめる。"
-        evidence:
-          - "test/configuration/usage_documentation_test.rb"
-          - "docs/usage/index.md"
-      list_limit:
-        result: "not_applicable"
-        reason: "操作の手引きそのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「画面を持つ Core すべてに、該当する役割の手順がある」とし、機械が読む一覧との突き合わせで確かめる。"
-        evidence:
-          - "test/configuration/usage_documentation_test.rb"
-          - "docs/usage/index.md"
-      selection_rendering:
-        result: "not_applicable"
-        reason: "操作の手引きそのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「画面を持つ Core すべてに、該当する役割の手順がある」とし、機械が読む一覧との突き合わせで確かめる。"
-        evidence:
-          - "test/configuration/usage_documentation_test.rb"
-          - "docs/usage/index.md"
-      database_invariants:
-        result: "not_applicable"
-        reason: "操作の手引きそのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「画面を持つ Core すべてに、該当する役割の手順がある」とし、機械が読む一覧との突き合わせで確かめる。"
-        evidence:
-          - "test/configuration/usage_documentation_test.rb"
-          - "docs/usage/index.md"
-      retention:
-        result: "not_applicable"
-        reason: "操作の手引きそのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「画面を持つ Core すべてに、該当する役割の手順がある」とし、機械が読む一覧との突き合わせで確かめる。"
-        evidence:
-          - "test/configuration/usage_documentation_test.rb"
-          - "docs/usage/index.md"
-      regression_tests:
-        result: "not_applicable"
-        reason: "操作の手引きそのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「画面を持つ Core すべてに、該当する役割の手順がある」とし、機械が読む一覧との突き合わせで確かめる。"
-        evidence:
-          - "test/configuration/usage_documentation_test.rb"
-          - "docs/usage/index.md"
-      documentation:
-        result: "not_applicable"
-        reason: "操作の手引きそのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「画面を持つ Core すべてに、該当する役割の手順がある」とし、機械が読む一覧との突き合わせで確かめる。"
-        evidence:
-          - "test/configuration/usage_documentation_test.rb"
-          - "docs/usage/index.md"
-      localization:
-        result: "not_applicable"
-        reason: "操作の手引きそのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「画面を持つ Core すべてに、該当する役割の手順がある」とし、機械が読む一覧との突き合わせで確かめる。"
-        evidence:
-          - "test/configuration/usage_documentation_test.rb"
-          - "docs/usage/index.md"
-      keyboard:
-        result: "not_applicable"
-        reason: "操作の手引きそのものを見る品質であり、機能ごとの 11 条件は問えない。条件は「画面を持つ Core すべてに、該当する役割の手順がある」とし、機械が読む一覧との突き合わせで確かめる。"
+    checks:
+      role_coverage:
+        criterion: "画面を持つ Core すべてに、該当する役割の手順がある"
+        result: "met"
+        reason: "手引きと機械が読む一覧を突き合わせ、書き忘れを落とす。"
         evidence:
           - "test/configuration/usage_documentation_test.rb"
           - "docs/usage/index.md"
