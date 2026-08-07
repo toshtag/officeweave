@@ -5,8 +5,8 @@
 ## 現在の状態
 
 Core の 26 機能は、[受入条件](docs/product/acceptance_criteria.md) をすべて満たしています。
-版 0.3.0 を本番準備済みと判定しました。判定の根拠は
-[0.3.0 の検証](docs/releases/0.3.0_verification.md) にあります。
+版 0.3.1 を本番準備済みと判定しました。判定の根拠は
+[0.3.1 の検証](docs/releases/0.3.1_verification.md) にあります。
 
 互換性はまだ保証しません。Suite と Extended の機能は実装していません。
 
@@ -207,7 +207,7 @@ docker compose up -d --build
 - [製品ビジョン](docs/vision.md) — 解決したい問題、製品範囲、非目標
 - [製品範囲](docs/product/product_scope.md) — 機能をどの段階へ置くかの決め方
 - [受入条件](docs/product/acceptance_criteria.md) — 到達度と本番準備の判定条件
-- [0.3.0 の検証](docs/releases/0.3.0_verification.md) — 版ごとの判定に使った実測の記録
+- [0.3.1 の検証](docs/releases/0.3.1_verification.md) — 版ごとの判定に使った実測の記録
 - [機能到達度](docs/product/capability_matrix.md) — 機能ごとの段階と、いまの到達度
 - [決定記録](docs/decisions) — 製品の方向を決めた判断とその理由
 - [ライセンス方針](docs/licensing.md) — ライセンスの選定理由と名称の利用範囲
