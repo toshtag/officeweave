@@ -151,12 +151,21 @@ class CompletionRegistryTest < ActiveSupport::TestCase
     end
   end
 
-  test "版の判定は識別子と必要な証拠を持ち、まだ評価していない" do
+  test "版の判定は識別子と必要な証拠を持つ" do
     gate = @registry.fetch("release_gates").sole
 
     assert_equal "release.production_readiness", gate.fetch("id")
     assert_predicate gate.fetch("required_evidence"), :any?
-    assert_empty gate.fetch("evaluations"), "版ごとの評価は、記録ができてから足す"
+  end
+
+  # 評価の形と、書ける条件は release_gate_test.rb が持つ。
+  # ここでは、評価を持つ版に検証の記録があることだけを見る。
+  test "評価した版には、検証の記録がある" do
+    @registry.fetch("release_gates").sole.fetch("evaluations").each do |evaluation|
+      path = "docs/releases/#{evaluation.fetch("version")}_verification.md"
+
+      assert File.exist?(Rails.root.join(path)), "#{path} がありません"
+    end
   end
 
 
