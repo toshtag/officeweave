@@ -14,7 +14,11 @@ class ReleaseGateTest < ActiveSupport::TestCase
   RESULTS = %w[passed failed].freeze
 
   # 評価が必ず持つ項目。
-  REQUIRED_KEYS = %w[version commit result evaluated_on evidence].freeze
+  #
+  # 実測の値そのものは持たない。持つと、記録と一覧の 2 か所で同じ数字を
+  # 保つことになり、片方だけが古くなる。正本は検証の記録の文書とし、
+  # 一覧はそれを指すだけにする。
+  REQUIRED_KEYS = %w[version commit result evaluated_on evidence_document].freeze
 
   def gate = REGISTRY.fetch("release_gates").sole
 
@@ -41,29 +45,27 @@ class ReleaseGateTest < ActiveSupport::TestCase
     end
   end
 
-  test "評価は、必要な証拠をすべて持つ" do
-    required = gate.fetch("required_evidence")
-
-    # 決めた例は証拠を持たない。揃っていないことを見分けられる。
-    assert_not_equal required.sort, SAMPLE.fetch("evidence").keys.sort
-
+  test "証拠の文書が、その版の記録を指す" do
     evaluations.each do |evaluation|
-      assert_equal required.sort, evaluation.fetch("evidence").keys.sort,
-                   "#{evaluation["version"]} の証拠が揃っていない"
+      assert_equal "docs/releases/#{evaluation.fetch("version")}_verification.md",
+                   evaluation.fetch("evidence_document"),
+                   "#{evaluation["version"]} の証拠の文書が、その版の記録ではない"
     end
   end
 
-  test "証拠に、実行できなかった項目を残さない" do
-    # 未実施を成功として数えない。空欄と「未実施」は、どちらも証拠ではない。
-    assert_not blank_or_unfinished?("")
-    assert_not blank_or_unfinished?("   ")
-    assert_not blank_or_unfinished?("未実施")
-    assert blank_or_unfinished?("bin/verify exit 0")
+  # 未実施を成功として数えない。
+  #
+  # 何をどれだけ測ったかは記録の文書が持つ。ここで見るのは、その記録が
+  # 「実行できなかった項目は無い」と述べていることだけとする。数値を
+  # 一覧へ写して突き合わせると、写した側が必ず古くなる。
+  test "passed の版の記録に、実行できなかった項目が残っていない" do
+    assert_not finished?("## 実行できなかった項目\n\nbin/verify を実行できなかった。\n")
+    assert finished?("## 実行できなかった項目\n\n無し。\n")
 
-    evaluations.each do |evaluation|
-      evaluation.fetch("evidence").each do |name, value|
-        assert blank_or_unfinished?(value), "#{evaluation["version"]} の「#{name}」が証拠になっていない"
-      end
+    passed.each do |evaluation|
+      body = Rails.root.join(evaluation.fetch("evidence_document")).read
+
+      assert finished?(body), "#{evaluation["version"]} の記録に、実行できなかった項目が残っている"
     end
   end
 
@@ -72,7 +74,7 @@ class ReleaseGateTest < ActiveSupport::TestCase
   # live の記録へ同じ規則を当てる。
   SAMPLE = {
     "version" => "0.0.1", "commit" => "0" * 40, "result" => "passed",
-    "evaluated_on" => "2026-08-06", "evidence" => {}
+    "evaluated_on" => "2026-08-06", "evidence_document" => "docs/releases/0.0.1_verification.md"
   }.freeze
 
   test "Core が揃っていなければ passed にできない" do
@@ -121,10 +123,10 @@ class ReleaseGateTest < ActiveSupport::TestCase
 
   test "passed の版には、検証の記録がある" do
     # 決めた例の版には記録が無い。無いことを見分けられる。
-    assert_not File.exist?(Rails.root.join("docs/releases/#{SAMPLE.fetch("version")}_verification.md"))
+    assert_not File.exist?(Rails.root.join(SAMPLE.fetch("evidence_document")))
 
     passed.each do |evaluation|
-      path = Rails.root.join("docs/releases/#{evaluation.fetch("version")}_verification.md")
+      path = Rails.root.join(evaluation.fetch("evidence_document"))
 
       assert File.exist?(path), "#{evaluation["version"]} の検証の記録がありません"
     end
@@ -152,9 +154,9 @@ class ReleaseGateTest < ActiveSupport::TestCase
 
     def incomplete_core = core.reject { |c| c.fetch("state") == "complete" }
 
-    # 証拠として受け付けられる値か。
-    def blank_or_unfinished?(value)
-      value.to_s.strip.present? && value.to_s.exclude?("未実施")
+    # 記録が「実行できなかった項目は無い」と述べているか。
+    def finished?(body)
+      body[/## 実行できなかった項目\s*\n+(.+)/, 1].to_s.strip.start_with?("無し")
     end
 
     def passed = evaluations.select { |evaluation| evaluation["result"] == "passed" }

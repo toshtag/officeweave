@@ -163,7 +163,7 @@ class CompletionRegistryTest < ActiveSupport::TestCase
   # ここでは、評価を持つ版に検証の記録があることだけを見る。
   test "評価した版には、検証の記録がある" do
     @registry.fetch("release_gates").sole.fetch("evaluations").each do |evaluation|
-      path = "docs/releases/#{evaluation.fetch("version")}_verification.md"
+      path = evaluation.fetch("evidence_document")
 
       assert File.exist?(Rails.root.join(path)), "#{path} がありません"
     end
@@ -226,5 +226,4 @@ class CompletionRegistryTest < ActiveSupport::TestCase
     def core = @capabilities.select { |capability| capability["stage"] == "core" }
 
     def all_entries = @capabilities + @gates
-
 end

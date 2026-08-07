@@ -1,18 +1,15 @@
-# OfficeWeave 機能到達度（機械が読む正本）
+# OfficeWeave 機能到達度（正本）
 #
-# 文章の正本は docs/product/capability_matrix.md である。この一覧は同じ内容を
-# 機械が読める形で持ち、件数・識別子・状態・入口・証拠・条件の判定を検査へかける。
-# 両方を人が別々に直すと必ず食い違うため、test/configuration/completion_registry_test.rb
-# が突き合わせる。
+# 段階、状態、入口、実装、検証、文書、条件の判定は、すべてここが持つ。
+# 読み方は docs/product/capability_matrix.md にある。同じ内容を散文でも持つと、
+# 片方だけを直した変更が必ず出る。
 #
 # 条件の判定は met / unmet / not_applicable / not_assessed の 4 つとする。
 # partial の機能では、確かめていない条件を not_assessed のまま残す。満たしている
 # ことにしない。complete にできるのは、unmet と not_assessed が 1 つも無い場合だけ。
 completion:
-  core_capabilities: 26
-  cross_cutting_gates: 2
   release_gate: "release.production_readiness"
-  definition: "Core 26 件が complete、横断の品質 2 件が complete、版ごとの評価が passed であること"
+  definition: "stage が core の機能がすべて complete、横断の品質がすべて complete、版ごとの評価が passed であること"
 capabilities:
   - id: "core.authentication"
     name: "ログインとセッション"
@@ -2280,38 +2277,17 @@ release_gates:
         commit: "59be7b279106d62f7070852dceb7b7a1ee24b126"
         result: "passed"
         evaluated_on: "2026-08-07"
-        evidence:
-          対象の commit: "59be7b279106d62f7070852dceb7b7a1ee24b126"
-          一括検証の実行結果: "bin/verify exit 0（2105 runs, 9467 assertions, 0 failures, 0 errors）6 分 36 秒"
-          実ブラウザーを含むテストの実行結果: "bin/rails test:browser exit 0（24 runs, 161 assertions, 0 failures）45 秒。まとめ実行での結果であり、個別実行で代えていない"
-          静的解析と依存の脆弱性検査の結果: "brakeman No warnings found、bundler-audit No vulnerabilities found、script/scan_container_image exit 0（修正版のある指摘 0 件）"
-          新規導入と、旧版からの更新の結果: "新規導入 44 秒で 3 つとも healthy、bin/diagnose exit 0。v0.2.0 からの更新 62 秒、記録は 1 件も失われず移行の版は 20260806080000。戻す手順 132 秒で旧版へ復帰"
-          バックアップと復元の結果: "取得 18 秒（2.1 MB、format_version=3）、復元 5 秒（停止 8 秒）。改変した書庫は exit 1 で拒み、既存のデータへ触れない"
-          想定規模のデータでの測定結果: "規模 400（主要な記録が 1 万件）で 20 画面すべてが 200。応答 9〜95 ms、本文 5〜34 KB、問い合わせ 5〜10 件"
+        evidence_document: "docs/releases/0.3.0_verification.md"
       - version: "0.3.1"
         commit: "ad2b1e49b591beecfc97a02df6ead2e703f63825"
         result: "passed"
         evaluated_on: "2026-08-07"
-        evidence:
-          対象の commit: "ad2b1e49b591beecfc97a02df6ead2e703f63825"
-          一括検証の実行結果: "bin/verify exit 0（2141 runs, 9738 assertions, 0 failures, 0 errors）2 分 37 秒。script/check_compose_isolation と script/check_release_source も exit 0"
-          実ブラウザーを含むテストの実行結果: "bin/rails test:browser exit 0（45 runs, 221 assertions, 0 failures）2 分 8 秒。まとめ実行での結果であり、個別実行で代えていない"
-          静的解析と依存の脆弱性検査の結果: "brakeman No warnings found、bundler-audit No vulnerabilities found、script/scan_container_image exit 0（修正版のある指摘 0 件）"
-          新規導入と、旧版からの更新の結果: "新規導入は .env.example の複製から 1 回の up で exit 0。45 秒で組み上がり 59 秒で 3 つとも healthy、bin/diagnose exit 0。v0.2.0 からの更新 40 秒、記録は 1 件も失われず移行の版は 20260806080000。戻す手順は復元 18 秒で旧版へ復帰"
-          バックアップと復元の結果: "取得 17 秒（2.0 MB、format_version=3）、復元 25 秒。改変した書庫は exit 1 で拒み、既存のデータへ触れない"
-          想定規模のデータでの測定結果: "規模 400（主要な記録が 1 万件）で 20 画面すべてが 200。応答 11〜169 ms、本文 5〜34 KB、問い合わせ 5〜14 件。同時 10 での 1600 要求もすべて 200"
+        evidence_document: "docs/releases/0.3.1_verification.md"
       - version: "0.3.2"
         commit: "9ed3ac7edcb851717df59d420dfdaf1866c81b6a"
         result: "passed"
         evaluated_on: "2026-08-07"
-        evidence:
-          対象の commit: "9ed3ac7edcb851717df59d420dfdaf1866c81b6a（この木の VERSION は 0.3.2。版数は実測の前に決めた）"
-          一括検証の実行結果: "bin/verify exit 0（2144 runs, 9796 assertions, 0 failures, 0 errors）5 分 41 秒。script/check_compose_isolation と script/check_release_source も exit 0"
-          実ブラウザーを含むテストの実行結果: "bin/rails test:browser exit 0（45 runs, 221 assertions, 0 failures）8 分 0 秒。まとめ実行での結果であり、個別実行で代えていない"
-          静的解析と依存の脆弱性検査の結果: "brakeman No warnings found、bundler-audit No vulnerabilities found、script/scan_container_image exit 0（修正版のある指摘 0 件）"
-          新規導入と、旧版からの更新の結果: "新規導入は .env.example の複製から 1 回の up で exit 0、bin/diagnose exit 0。配布 image の VERSION と実行時の版数はいずれも 0.3.2 で、README と CHANGELOG は image に入らない。v0.2.0 からの更新 16 秒、記録は 1 件も失われず移行の版は 20260806080000。戻す手順は合計 38 秒で旧版へ復帰"
-          バックアップと復元の結果: "取得 23 秒（2.3 MB、format_version=3、application_version=0.3.2）、復元 34 秒。改変した書庫は exit 1 で拒み、既存のデータへ触れない"
-          想定規模のデータでの測定結果: "規模 400（主要な記録が 1 万件）で 20 画面すべてが 200。応答 15〜238 ms、本文 5〜34 KB、問い合わせ 5〜14 件。同時 10 での 1600 要求もすべて 200"
+        evidence_document: "docs/releases/0.3.2_verification.md"
 
     issue: "C6"
     dependencies:
