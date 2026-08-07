@@ -189,8 +189,9 @@ docker compose -f compose.production.yaml up -d --build
 実行が受け持ち、`web` と `worker` はその完了を待ってから起動する。準備が
 長引いても、待つ側は待ち切る。
 
-まっさらな状態から、db・web・worker がすべて healthy になるまでの実測は
-27 秒である（組み立て済みのイメージ、開発用の端末）。
+まっさらな状態から、db・web・worker がすべて healthy になるまで待つ。
+かかる時間は端末とイメージの有無で変わる。版ごとの実測は
+[版ごとの検証](../releases/) にある。
 
 開発や試用では、開発用の構成を使う。
 
