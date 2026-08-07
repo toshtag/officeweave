@@ -85,7 +85,7 @@ capability          54
 cross_cutting_gate   2  complete 2
 
 release_gate         1  release.production_readiness（定義）
-  版ごとの評価       2  passed した版は 2
+  版ごとの評価       3  passed した版は 3
 ```
 
 段階は Core・Suite・Extended の 3 つである。範囲外は第 4 の段階ではない。

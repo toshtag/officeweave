@@ -13,10 +13,18 @@
 class ReleaseSource
   # 実測のあとに変わってよい道。
   #
-  # いずれも読み物と版数であり、動作にも組み立てにも入らない。
-  # 機能到達度の一覧（docs/product/capability_registry.yml）も、
-  # 判定の記録を書き足す先としてここに入る。
-  RECORDABLE = [ "VERSION", "CHANGELOG.md", "README.md", "docs/" ].freeze
+  # いずれも読み物であり、動作にも組み立てにも入らない。配布する image の
+  # 組み立て文脈からも外してある（.dockerignore）。外していないと、読み物を
+  # 直しただけで image が変わる。
+  #
+  # 機能到達度の一覧（docs/product/capability_registry.yml）も、判定の記録を
+  # 書き足す先としてここに入る。
+  #
+  # VERSION は入れない。読み物ではないためである。実行時に読まれ
+  # （config/initializers/version.rb）、部品表と書庫の metadata に入り、
+  # 配布する image へ焼き込まれる。実測のあとに変えると、測った木と配る木で
+  # 版数が違う。版数は実測の前に決める。
+  RECORDABLE = [ "CHANGELOG.md", "README.md", "docs/" ].freeze
 
   attr_reader :tested, :released, :changed_paths
 

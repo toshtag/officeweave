@@ -29,14 +29,20 @@ end
 tested, released = ARGV[0], ARGV[1]
 
 if tested.nil?
+  version = File.read(File.join(ROOT, "VERSION")).strip
   registry = YAML.load_file(REGISTRY)
   evaluations = registry.fetch("release_gates", []).flat_map { |gate| gate["evaluations"] || [] }
-  latest = evaluations.last
 
-  abort_with "版ごとの評価が 1 件も無い" if latest.nil?
+  # 見るのは、いま出そうとしている版の評価だけとする。過去の版の評価を
+  # いまの木と比べても、比べているものが違う。
+  current = evaluations.find { |evaluation| evaluation["version"] == version }
 
-  version = latest.fetch("version")
-  tested = latest["commit"]
+  if current.nil?
+    puts "版 #{version} の評価はまだ無い（実測の前）"
+    exit 0
+  end
+
+  tested = current["commit"]
 
   abort_with "#{version} の評価が commit を持たない" if tested.to_s.empty?
 

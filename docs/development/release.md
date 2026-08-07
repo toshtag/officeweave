@@ -179,6 +179,8 @@ docker run --rm --entrypoint sh <イメージ名> -c 'ls config/master.key .env'
 
 ### 版数の更新
 
+**2 節の確認より先に行う。** 測ってから上げると、測った木と配る木で版数が違う。
+
 ```bash
 echo "<版数>" > VERSION
 ```
@@ -215,14 +217,28 @@ docker compose exec -T web bin/rails officeweave:sbom > officeweave-sbom.json
 
 ```text
 実測のあとに変わってよい道
-  VERSION
   CHANGELOG.md
   README.md
   docs/
 ```
 
+いずれも読み物であり、`.dockerignore` で配布する image からも外してある。
+外していないと、記録を書き足しただけで image が変わる。
+
 これ以外が 1 つでも変わっていれば、公開する木は実測していない木である。
 `test/` も許さない。テストが変わった木は、そのテストを通していない。
+
+`VERSION` も許さない。読み物ではないためである。
+
+```text
+config/initializers/version.rb   実行時に読み、OfficeWeave::VERSION になる
+bin/rails officeweave:sbom       書き出す部品表の版数に入る
+bin/backup                       書庫の metadata の application_version に入る
+Dockerfile.production            配布する image へ焼き込まれる
+```
+
+だから版数は実測の前に決める。2 節の確認へ入る前に `VERSION` を更新し、
+その木を測る。測ってから版数を上げると、測った木と配る木で版数が違う。
 
 ```bash
 script/check_release_source
