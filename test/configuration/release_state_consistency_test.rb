@@ -174,12 +174,21 @@ class ReleaseStateConsistencyTest < ActiveSupport::TestCase
 
     latest = @evaluations.last
     assert_not_nil latest, "版ごとの評価が無い"
-    assert_equal version, latest["version"], "機械が読む一覧の最新の評価が VERSION と違う"
 
-    record = RELEASES_DIR.join("#{version}_verification.md")
-    assert record.exist?, "#{record.relative_path_from(Rails.root)} が無い"
+    # 版数が評価より先に進むのは、実測の途中だけである。版数を実測の前に
+    # 決めるため、実測を終えて記録を書くまでのあいだ、評価はひとつ前の版に
+    # なる。逆は無い。まだ VERSION が指していない版を評価済みにはできない。
+    assert Gem::Version.new(latest["version"]) <= Gem::Version.new(version),
+           "機械が読む一覧の評価 #{latest["version"]} が VERSION #{version} より先にある"
 
-    assert_includes README.read, record.relative_path_from(Rails.root).to_s,
+    @evaluations.each do |evaluation|
+      record = RELEASES_DIR.join("#{evaluation["version"]}_verification.md")
+      assert record.exist?,
+             "#{evaluation["version"]} を評価しているのに #{record.basename} が無い"
+    end
+
+    newest = RELEASES_DIR.join("#{latest["version"]}_verification.md")
+    assert_includes README.read, newest.relative_path_from(Rails.root).to_s,
                     "README が最新の検証の記録を指していない"
   end
 
