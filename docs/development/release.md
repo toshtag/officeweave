@@ -180,7 +180,7 @@ docker run --rm --entrypoint sh <イメージ名> -c 'ls config/master.key .env'
 ### 版数の更新
 
 ```bash
-echo "0.2.0" > VERSION
+echo "<版数>" > VERSION
 ```
 
 ### 部品表の取得
@@ -201,11 +201,11 @@ docker compose exec -T web bin/rails officeweave:sbom > officeweave-sbom.json
 ### 記録
 
 ```bash
-git commit -am "chore: 0.2.0 を公開する"
+git commit -am "chore: <版数> を公開する"
 ```
 
 ```bash
-git tag -a v0.2.0 -m "0.2.0"
+git tag -a v<版数> -m "<版数>"
 ```
 
 ```bash
@@ -219,6 +219,7 @@ git push origin main --tags
 制限として残っている項目が記載されている
 設定項目が増えた場合、.env.example と設定の文書へ反映されている
 部品表を書き出し、公開する版へ添えている
+script/check_release_source が通っている
 移行が必要な変更がある場合、アップグレードの手順へ注意点を追記している
 2 節の確認をすべて通している
 ```
