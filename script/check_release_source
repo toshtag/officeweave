@@ -1,0 +1,65 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# 検証した木と、公開する木の対応を確かめる。
+#
+# 版ごとの評価が指す commit と、その版の tag が指す commit を比べる。
+# 差があってよいのは記録だけである。規則そのものは ReleaseSource が持つ。
+#
+#   script/check_release_source                 最新の評価と、その版の tag
+#   script/check_release_source <検証> <公開>    指定した 2 つ
+
+require "yaml"
+require "open3"
+require_relative "../app/models/release_source"
+
+ROOT = File.expand_path("..", __dir__)
+REGISTRY = File.join(ROOT, "docs/product/capability_registry.yml")
+
+def git(*args)
+  out, status = Open3.capture2("git", "-C", ROOT, *args)
+  status.success? ? out.strip : nil
+end
+
+def abort_with(message)
+  warn "NG #{message}"
+  exit 1
+end
+
+tested, released = ARGV[0], ARGV[1]
+
+if tested.nil?
+  registry = YAML.load_file(REGISTRY)
+  evaluations = registry.fetch("release_gates", []).flat_map { |gate| gate["evaluations"] || [] }
+  latest = evaluations.last
+
+  abort_with "版ごとの評価が 1 件も無い" if latest.nil?
+
+  version = latest.fetch("version")
+  tested = latest["commit"]
+
+  abort_with "#{version} の評価が commit を持たない" if tested.to_s.empty?
+
+  # tag がまだ無い時期は、これから公開する木として HEAD を見る。
+  # 公開の前に落とせなければ、確かめる意味が無い。
+  released = git("rev-parse", "--verify", "--quiet", "v#{version}^{commit}") || git("rev-parse", "HEAD")
+  puts "版 #{version}"
+end
+
+tested_commit = git("rev-parse", "--verify", "--quiet", "#{tested}^{commit}")
+released_commit = git("rev-parse", "--verify", "--quiet", "#{released}^{commit}")
+
+abort_with "検証した commit を解決できない: #{tested}" if tested_commit.nil?
+abort_with "公開する commit を解決できない: #{released}" if released_commit.nil?
+
+changed = git("diff", "--name-only", tested_commit, released_commit).to_s.lines.map(&:strip)
+
+source = ReleaseSource.new(tested: tested_commit, released: released_commit, changed_paths: changed)
+
+unless source.valid?
+  source.problems.each { |problem| warn "NG #{problem}" }
+  warn "   実測をやり直すか、公開する木を実測した木へ揃える"
+  exit 1
+end
+
+puts "OK #{source.summary}"
