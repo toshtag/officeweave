@@ -63,6 +63,8 @@ x-application-environment: &application_environment
   AUTHENTICATION_PROVIDER: ${AUTHENTICATION_PROVIDER-internal}
   WEBHOOK_PRIVATE_DESTINATION_ALLOWLIST: ${WEBHOOK_PRIVATE_DESTINATION_ALLOWLIST:-}
   FORCE_SSL: ${FORCE_SSL:-true}
+  # 準備は prepare が一度きりで行う。web の起動処理では行わない。
+  DATABASE_PREPARED_ELSEWHERE: "1"
   # ホストから web コンテナへ公開するポート。
   # メール本文の公開 URL へは使わない。逆プロキシの背後では、
   # 利用者が接続するポートと一致しない。公開 URL は APPLICATION_PORT で指定する。
@@ -88,6 +90,30 @@ services:
       # 後ろに web と worker が続くため、この待ちは 3 段ぶん積み上がる。
       start_period: 30s
       start_interval: 1s
+
+  # データベースの準備。
+  #
+  # 移行を web の起動処理の中で行うと、準備の途中は 3000 番へ何も応えない。
+  # 稼働確認はそれを「応えない」としか見られず、移行が長引いた分だけ失敗が
+  # 積み上がって unhealthy になる。web を待つ worker は、そこで起動を諦める。
+  #
+  # 準備を一度きりの実行として切り出す。完了を待つ依存には、稼働確認のような
+  # 打ち切りが無い。移行がどれだけ長引いても、待つ側は待ち切る。
+  #
+  # web と worker の両方がこれを待つ。同時に移行を実行して競合させない。
+  prepare:
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+    image: *application_image
+    command: bin/rails db:prepare
+    environment:
+      <<: *application_environment
+      # ここが準備そのものである。起動処理の分岐は通らないが、明示する。
+      DATABASE_PREPARED_ELSEWHERE: "0"
+    depends_on:
+      db:
+        condition: service_healthy
 
   web:
     build:
@@ -123,11 +149,16 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      prepare:
+        condition: service_completed_successfully
 
   # メールと Webhook の送信を実際に行う。
   #
   # 画面を提供しないため、ホストへポートを公開しない。
-  # データベースの準備は web が行う。同時に移行を実行して競合させない。
+  #
+  # web ではなく準備の完了を待つ。worker に要るのは「移行が済んでいること」
+  # であり、「web が応えていること」ではない。web の稼働確認を待たせると、
+  # 準備が長引いた回だけ worker が起動しない。
   worker:
     build:
       context: .
@@ -150,8 +181,10 @@ services:
       start_period: 30s
       start_interval: 1s
     depends_on:
-      web:
+      db:
         condition: service_healthy
+      prepare:
+        condition: service_completed_successfully
 
 volumes:
   # 開発用（compose.yaml）は、project 名にある語をキーから外して短くした。
