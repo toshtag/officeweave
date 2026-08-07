@@ -4,10 +4,11 @@
 
 ## 現在の状態
 
-Core の領域には、利用者・管理者・運用者が使う入口と、その基礎の実装があります。
-ただし [受入条件](docs/product/acceptance_criteria.md) を満たした機能は一部で、
-既知の未達と不具合が残ります。本番準備済みと判定した版はありません。
-互換性もまだ保証しません。
+Core の 26 機能は、[受入条件](docs/product/acceptance_criteria.md) をすべて満たしています。
+版 0.3.0 を本番準備済みと判定しました。判定の根拠は
+[0.3.0 の検証](docs/releases/0.3.0_verification.md) にあります。
+
+互換性はまだ保証しません。Suite と Extended の機能は実装していません。
 
 「入口と基礎の実装がある」ことと「実装済み」を分けて扱います。
 このリポジトリで「実装済み」と書くのは、受入条件を満たした機能だけです。
@@ -206,6 +207,7 @@ docker compose up -d --build
 - [製品ビジョン](docs/vision.md) — 解決したい問題、製品範囲、非目標
 - [製品範囲](docs/product/product_scope.md) — 機能をどの段階へ置くかの決め方
 - [受入条件](docs/product/acceptance_criteria.md) — 到達度と本番準備の判定条件
+- [0.3.0 の検証](docs/releases/0.3.0_verification.md) — 本番準備済みと判定した根拠
 - [機能到達度](docs/product/capability_matrix.md) — 機能ごとの段階と、いまの到達度
 - [決定記録](docs/decisions) — 製品の方向を決めた判断とその理由
 - [ライセンス方針](docs/licensing.md) — ライセンスの選定理由と名称の利用範囲
