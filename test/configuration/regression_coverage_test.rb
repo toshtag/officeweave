@@ -63,9 +63,9 @@ class RegressionCoverageTest < ActiveSupport::TestCase
 
   test "経路を通るかの判定が働く" do
     # 検査そのものが働くことを、決めた文で確かめる。
-    assert covered?("/announcements", 'get announcements_url')
-    assert covered?("/requests/:request_id/decision", 'post request_decision_url(request)')
-    assert_not covered?("/announcements", 'get documents_url')
+    assert covered?("/announcements", "get announcements_url")
+    assert covered?("/requests/:request_id/decision", "post request_decision_url(request)")
+    assert_not covered?("/announcements", "get documents_url")
   end
 
   private
@@ -76,6 +76,9 @@ class RegressionCoverageTest < ActiveSupport::TestCase
     def covered?(route, sources)
       name = route.delete_prefix("/").split("/").first.to_s.tr("-", "_")
 
-      sources.include?(route) || (name.present? && sources.match?(/\b#{Regexp.escape(name.singularize)}\w*_(?:url|path)\b/))
+      return true if sources.include?(route)
+      return false if name.blank?
+
+      sources.match?(/\b#{Regexp.escape(name.singularize)}\w*_(?:url|path)\b/)
     end
 end
