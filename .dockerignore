@@ -25,6 +25,14 @@ public/assets/
 scan_report/
 load_report/
 
+# 読み物。実行時にも組み立てにも使わない。
+#
+# 外しておかないと、判定の記録を書き足しただけで image が変わる。実測した木と
+# 配る木の対応（ReleaseSource）は、この 3 つが image に入らないことを前提に、
+# 実測のあとの変更を許している。
+README.md
+CHANGELOG.md
+
 # 開発と検証にだけ使うもの
 test/
 docs/
