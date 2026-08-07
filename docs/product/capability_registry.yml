@@ -49,11 +49,11 @@ capabilities:
         evidence: []
       list_limit:
         result: "not_applicable"
-        reason: "蓄積する一覧を持たない。条件 4 は問えない。"
+        reason: "蓄積する一覧を持たない。"
         evidence: []
       selection_rendering:
         result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。条件 5 は問えない。"
+        reason: "利用者・部門・設備を選ばせる欄を持たない。"
         evidence: []
       database_invariants:
         result: "met"
@@ -131,11 +131,11 @@ capabilities:
         evidence: []
       list_limit:
         result: "not_applicable"
-        reason: "蓄積する一覧を持たない。条件 4 は問えない。"
+        reason: "蓄積する一覧を持たない。"
         evidence: []
       selection_rendering:
         result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。条件 5 は問えない。"
+        reason: "利用者・部門・設備を選ばせる欄を持たない。"
         evidence: []
       database_invariants:
         result: "not_applicable"
@@ -212,11 +212,11 @@ capabilities:
         evidence: []
       list_limit:
         result: "not_applicable"
-        reason: "蓄積する一覧を持たない。条件 4 は問えない。"
+        reason: "蓄積する一覧を持たない。"
         evidence: []
       selection_rendering:
         result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。条件 5 は問えない。"
+        reason: "利用者・部門・設備を選ばせる欄を持たない。"
         evidence: []
       database_invariants:
         result: "met"
@@ -363,11 +363,11 @@ capabilities:
         evidence: []
       list_limit:
         result: "not_applicable"
-        reason: "蓄積する一覧を持たない。条件 4 は問えない。"
+        reason: "蓄積する一覧を持たない。"
         evidence: []
       selection_rendering:
         result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。条件 5 は問えない。"
+        reason: "利用者・部門・設備を選ばせる欄を持たない。"
         evidence: []
       database_invariants:
         result: "met"
@@ -446,7 +446,7 @@ capabilities:
           - "test/configuration/list_and_selection_test.rb"
       selection_rendering:
         result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。条件 5 は問えない。"
+        reason: "利用者・部門・設備を選ばせる欄を持たない。"
         evidence: []
       database_invariants:
         result: "met"
@@ -671,7 +671,7 @@ capabilities:
           - "test/configuration/authentication_coverage_test.rb"
       audit_assignment:
         result: "not_applicable"
-        reason: "状態を変える入口を持たない。条件 2 は問えない。"
+        reason: "状態を変える入口を持たない。"
         evidence: []
       notification_occurrence:
         result: "not_applicable"
@@ -1252,7 +1252,7 @@ capabilities:
           - "test/configuration/authentication_coverage_test.rb"
       audit_assignment:
         result: "met"
-        reason: "業務の内容そのものであり、作成者と更新時刻を記録自身が持つため、記録しないことを理由とともに宣言する。添付の取得は参照であり、条件 2 に問えない。"
+        reason: "業務の内容そのものであり、作成者と更新時刻を記録自身が持つため、記録しないことを理由とともに宣言する。添付の取得は参照であり、状態を変えない。"
         evidence:
           - "test/configuration/audit_assignment_test.rb"
       notification_occurrence:
@@ -1353,7 +1353,7 @@ capabilities:
           - "test/configuration/list_and_selection_test.rb"
       selection_rendering:
         result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。条件 5 は問えない。"
+        reason: "利用者・部門・設備を選ばせる欄を持たない。"
         evidence: []
       database_invariants:
         result: "met"
@@ -1434,7 +1434,7 @@ capabilities:
           - "test/configuration/list_and_selection_test.rb"
       selection_rendering:
         result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。条件 5 は問えない。"
+        reason: "利用者・部門・設備を選ばせる欄を持たない。"
         evidence: []
       database_invariants:
         result: "met"
@@ -1521,7 +1521,7 @@ capabilities:
           - "test/configuration/list_and_selection_test.rb"
       selection_rendering:
         result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。条件 5 は問えない。"
+        reason: "利用者・部門・設備を選ばせる欄を持たない。"
         evidence: []
       database_invariants:
         result: "met"
@@ -1606,7 +1606,7 @@ capabilities:
           - "test/configuration/list_and_selection_test.rb"
       selection_rendering:
         result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。条件 5 は問えない。"
+        reason: "利用者・部門・設備を選ばせる欄を持たない。"
         evidence: []
       database_invariants:
         result: "met"
@@ -1679,11 +1679,11 @@ capabilities:
         evidence: []
       list_limit:
         result: "not_applicable"
-        reason: "蓄積する一覧を持たない。条件 4 は問えない。"
+        reason: "蓄積する一覧を持たない。"
         evidence: []
       selection_rendering:
         result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。条件 5 は問えない。"
+        reason: "利用者・部門・設備を選ばせる欄を持たない。"
         evidence: []
       database_invariants:
         result: "not_applicable"
@@ -1812,7 +1812,7 @@ capabilities:
           - "docs/operations/administration.md"
       audit_assignment:
         result: "not_applicable"
-        reason: "状態を変える入口を持たない。条件 2 は問えない。"
+        reason: "状態を変える入口を持たない。"
         evidence: []
       notification_occurrence:
         result: "not_applicable"
@@ -1820,11 +1820,11 @@ capabilities:
         evidence: []
       list_limit:
         result: "not_applicable"
-        reason: "蓄積する一覧を持たない。条件 4 は問えない。"
+        reason: "蓄積する一覧を持たない。"
         evidence: []
       selection_rendering:
         result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。条件 5 は問えない。"
+        reason: "利用者・部門・設備を選ばせる欄を持たない。"
         evidence: []
       database_invariants:
         result: "not_applicable"
@@ -1847,11 +1847,11 @@ capabilities:
           - "docs/operations/administration.md"
       localization:
         result: "not_applicable"
-        reason: "画面を持たない。表示する語句を持たないため、条件 10 は問えない。"
+        reason: "画面を持たない。表示する語句を持たない。"
         evidence: []
       keyboard:
         result: "not_applicable"
-        reason: "画面を持たない。キーボードで操作する対象が無いため、条件 11 は問えない。"
+        reason: "画面を持たない。キーボードで操作する対象が無い。"
         evidence: []
     other_findings: []
     issue: "C6"
@@ -1879,7 +1879,7 @@ capabilities:
           - "docs/operations/administration.md"
       audit_assignment:
         result: "not_applicable"
-        reason: "状態を変える入口を持たない。条件 2 は問えない。"
+        reason: "状態を変える入口を持たない。"
         evidence: []
       notification_occurrence:
         result: "met"
@@ -1889,11 +1889,11 @@ capabilities:
           - "test/jobs/report_operational_issues_job_test.rb"
       list_limit:
         result: "not_applicable"
-        reason: "蓄積する一覧を持たない。条件 4 は問えない。"
+        reason: "蓄積する一覧を持たない。"
         evidence: []
       selection_rendering:
         result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。条件 5 は問えない。"
+        reason: "利用者・部門・設備を選ばせる欄を持たない。"
         evidence: []
       database_invariants:
         result: "not_applicable"
@@ -1916,11 +1916,11 @@ capabilities:
           - "docs/operations/administration.md"
       localization:
         result: "not_applicable"
-        reason: "画面を持たない。表示する語句を持たないため、条件 10 は問えない。"
+        reason: "画面を持たない。表示する語句を持たない。"
         evidence: []
       keyboard:
         result: "not_applicable"
-        reason: "画面を持たない。キーボードで操作する対象が無いため、条件 11 は問えない。"
+        reason: "画面を持たない。キーボードで操作する対象が無い。"
         evidence: []
     other_findings: []
     issue: "C4"
@@ -1951,7 +1951,7 @@ capabilities:
           - "docs/operations/administration.md"
       audit_assignment:
         result: "not_applicable"
-        reason: "状態を変える入口を持たない。条件 2 は問えない。"
+        reason: "状態を変える入口を持たない。"
         evidence: []
       notification_occurrence:
         result: "not_applicable"
@@ -1959,11 +1959,11 @@ capabilities:
         evidence: []
       list_limit:
         result: "not_applicable"
-        reason: "蓄積する一覧を持たない。条件 4 は問えない。"
+        reason: "蓄積する一覧を持たない。"
         evidence: []
       selection_rendering:
         result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。条件 5 は問えない。"
+        reason: "利用者・部門・設備を選ばせる欄を持たない。"
         evidence: []
       database_invariants:
         result: "not_applicable"
@@ -1985,11 +1985,11 @@ capabilities:
           - "docs/operations/backup.md"
       localization:
         result: "not_applicable"
-        reason: "画面を持たない。表示する語句を持たないため、条件 10 は問えない。"
+        reason: "画面を持たない。表示する語句を持たない。"
         evidence: []
       keyboard:
         result: "not_applicable"
-        reason: "画面を持たない。キーボードで操作する対象が無いため、条件 11 は問えない。"
+        reason: "画面を持たない。キーボードで操作する対象が無い。"
         evidence: []
     other_findings:
       - "改変された保存物を復元の前に拒否しない"
@@ -2022,7 +2022,7 @@ capabilities:
           - "docs/operations/administration.md"
       audit_assignment:
         result: "not_applicable"
-        reason: "状態を変える入口を持たない。条件 2 は問えない。"
+        reason: "状態を変える入口を持たない。"
         evidence: []
       notification_occurrence:
         result: "not_applicable"
@@ -2030,11 +2030,11 @@ capabilities:
         evidence: []
       list_limit:
         result: "not_applicable"
-        reason: "蓄積する一覧を持たない。条件 4 は問えない。"
+        reason: "蓄積する一覧を持たない。"
         evidence: []
       selection_rendering:
         result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。条件 5 は問えない。"
+        reason: "利用者・部門・設備を選ばせる欄を持たない。"
         evidence: []
       database_invariants:
         result: "met"
@@ -2058,11 +2058,11 @@ capabilities:
           - "docs/operations/upgrade.md"
       localization:
         result: "not_applicable"
-        reason: "画面を持たない。表示する語句を持たないため、条件 10 は問えない。"
+        reason: "画面を持たない。表示する語句を持たない。"
         evidence: []
       keyboard:
         result: "not_applicable"
-        reason: "画面を持たない。キーボードで操作する対象が無いため、条件 11 は問えない。"
+        reason: "画面を持たない。キーボードで操作する対象が無い。"
         evidence: []
     other_findings:
       - "新規の導入と、旧版からの更新を同じ commit に対して確かめた記録が無い"
