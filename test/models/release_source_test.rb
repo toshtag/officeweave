@@ -15,8 +15,8 @@ class ReleaseSourceTest < ActiveSupport::TestCase
 
   test "記録だけが変わっているなら通す" do
     source = ReleaseSource.new(tested: "abc1234", released: "def5678",
-                               changed_paths: [ "VERSION", "CHANGELOG.md", "README.md",
-                                                "docs/releases/0.3.1_verification.md",
+                               changed_paths: [ "CHANGELOG.md", "README.md",
+                                                "docs/releases/0.3.2_verification.md",
                                                 "docs/product/capability_registry.yml" ])
 
     assert_not source.same_tree?
@@ -26,7 +26,7 @@ class ReleaseSourceTest < ActiveSupport::TestCase
 
   test "動くものが変わっていれば止める" do
     source = ReleaseSource.new(tested: "abc1234", released: "def5678",
-                               changed_paths: [ "VERSION", "app/models/user.rb" ])
+                               changed_paths: [ "README.md", "app/models/user.rb" ])
 
     assert_not source.valid?
     assert_equal [ "app/models/user.rb" ], source.unexpected
@@ -54,16 +54,46 @@ class ReleaseSourceTest < ActiveSupport::TestCase
 
   test "許す道と、名前が似ているだけの道を区別する" do
     source = ReleaseSource.new(tested: "abc1234", released: "def5678",
-                               changed_paths: [ "docs_generator.rb", "VERSION.rb", "README.md.bak" ])
+                               changed_paths: [ "docs_generator.rb", "VERSION", "README.md.bak" ])
 
-    assert_equal [ "README.md.bak", "VERSION.rb", "docs_generator.rb" ], source.unexpected.sort
+    assert_equal [ "README.md.bak", "VERSION", "docs_generator.rb" ], source.unexpected.sort
   end
 
   test "変わったものを一つ残らず挙げる" do
     source = ReleaseSource.new(tested: "abc1234", released: "def5678",
-                               changed_paths: [ "docs/x.md", "app/a.rb", "lib/b.rb", "VERSION" ])
+                               changed_paths: [ "docs/x.md", "app/a.rb", "lib/b.rb", "CHANGELOG.md" ])
 
     assert_equal [ "app/a.rb", "lib/b.rb" ], source.unexpected.sort
+  end
+
+  test "版数の変更を止める" do
+    source = ReleaseSource.new(tested: "abc1234", released: "def5678",
+                               changed_paths: [ "VERSION" ])
+
+    assert_not source.valid?,
+               "VERSION は読み物ではない。実行時に読まれ、配布する image へ焼き込まれる"
+    assert_equal [ "VERSION" ], source.unexpected
+  end
+
+  test "記録として許す道が、実行時にも組み立てにも入らない" do
+    ignored = Rails.root.join(".dockerignore").readlines.map(&:strip)
+
+    ReleaseSource::RECORDABLE.each do |path|
+      assert_includes ignored, path,
+                      "#{path} が配布する image の組み立て文脈に残っている。" \
+                      "実測のあとに変えると image が変わる"
+    end
+  end
+
+  test "版数が実行時と配布物で使われている" do
+    initializer = Rails.root.join("config/initializers/version.rb").read
+
+    assert_match(/Rails\.root\.join\("VERSION"\)/, initializer,
+                 "版数は実行時に VERSION から読まれる")
+    assert_match(/OfficeWeave::VERSION/, Rails.root.join("app/models/sbom.rb").read,
+                 "版数は部品表へ入る")
+    assert_match(/< VERSION/, Rails.root.join("bin/backup").read,
+                 "版数は書庫の metadata（application_version）へ入る")
   end
 
   test "commit を指していなければ止める" do
