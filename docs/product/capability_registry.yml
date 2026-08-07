@@ -89,10 +89,12 @@ capabilities:
           - "test/configuration/locale_symmetry_test.rb"
       keyboard:
         result: "met"
-        reason: "操作の手段は押せる要素と form だけで組み立てられており、押せない要素へ操作を載せる形は検査が落とす。主要な流れは実ブラウザーが確かめる。"
+        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
         evidence:
+          - "docs/product/keyboard_flows.yml"
+          - "test/browser/keyboard_flows_test.rb"
+          - "test/configuration/keyboard_flow_coverage_test.rb"
           - "test/configuration/keyboard_operability_test.rb"
-          - "test/browser/narrow_screen_test.rb"
     other_findings: []
     issue: "C1"
     dependencies: []
@@ -166,10 +168,12 @@ capabilities:
           - "test/configuration/locale_symmetry_test.rb"
       keyboard:
         result: "met"
-        reason: "操作の手段は押せる要素と form だけで組み立てられており、押せない要素へ操作を載せる形は検査が落とす。主要な流れは実ブラウザーが確かめる。"
+        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
         evidence:
+          - "docs/product/keyboard_flows.yml"
+          - "test/browser/keyboard_flows_test.rb"
+          - "test/configuration/keyboard_flow_coverage_test.rb"
           - "test/configuration/keyboard_operability_test.rb"
-          - "test/browser/narrow_screen_test.rb"
     other_findings:
       - "実際の認証基盤へ接続した状態での確認が無い"
     issue: "C1"
@@ -245,10 +249,12 @@ capabilities:
           - "test/configuration/locale_symmetry_test.rb"
       keyboard:
         result: "met"
-        reason: "操作の手段は押せる要素と form だけで組み立てられており、押せない要素へ操作を載せる形は検査が落とす。主要な流れは実ブラウザーが確かめる。"
+        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
         evidence:
+          - "docs/product/keyboard_flows.yml"
+          - "test/browser/keyboard_flows_test.rb"
+          - "test/configuration/keyboard_flow_coverage_test.rb"
           - "test/configuration/keyboard_operability_test.rb"
-          - "test/browser/narrow_screen_test.rb"
     other_findings: []
     issue: "C1"
     dependencies: []
@@ -319,10 +325,12 @@ capabilities:
           - "test/configuration/locale_symmetry_test.rb"
       keyboard:
         result: "met"
-        reason: "操作の手段は押せる要素と form だけで組み立てられており、押せない要素へ操作を載せる形は検査が落とす。主要な流れは実ブラウザーが確かめる。"
+        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
         evidence:
+          - "docs/product/keyboard_flows.yml"
+          - "test/browser/keyboard_flows_test.rb"
+          - "test/configuration/keyboard_flow_coverage_test.rb"
           - "test/configuration/keyboard_operability_test.rb"
-          - "test/browser/narrow_screen_test.rb"
     other_findings: []
     issue: "C2"
     dependencies: []
@@ -391,10 +399,12 @@ capabilities:
           - "test/configuration/locale_symmetry_test.rb"
       keyboard:
         result: "met"
-        reason: "操作の手段は押せる要素と form だけで組み立てられており、押せない要素へ操作を載せる形は検査が落とす。主要な流れは実ブラウザーが確かめる。"
+        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
         evidence:
+          - "docs/product/keyboard_flows.yml"
+          - "test/browser/keyboard_flows_test.rb"
+          - "test/configuration/keyboard_flow_coverage_test.rb"
           - "test/configuration/keyboard_operability_test.rb"
-          - "test/browser/narrow_screen_test.rb"
     other_findings: []
     issue: "C1"
     dependencies: []
@@ -470,10 +480,12 @@ capabilities:
           - "test/configuration/locale_symmetry_test.rb"
       keyboard:
         result: "met"
-        reason: "操作の手段は押せる要素と form だけで組み立てられており、押せない要素へ操作を載せる形は検査が落とす。主要な流れは実ブラウザーが確かめる。"
+        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
         evidence:
+          - "docs/product/keyboard_flows.yml"
+          - "test/browser/keyboard_flows_test.rb"
+          - "test/configuration/keyboard_flow_coverage_test.rb"
           - "test/configuration/keyboard_operability_test.rb"
-          - "test/browser/narrow_screen_test.rb"
     other_findings:
       - "権限が管理者と一般利用者の 2 段階しかなく、機能ごとの利用可否を持たない"
       - "組織そのものの情報を画面から変更できない"
@@ -553,10 +565,12 @@ capabilities:
           - "test/configuration/locale_symmetry_test.rb"
       keyboard:
         result: "met"
-        reason: "操作の手段は押せる要素と form だけで組み立てられており、押せない要素へ操作を載せる形は検査が落とす。主要な流れは実ブラウザーが確かめる。"
+        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
         evidence:
+          - "docs/product/keyboard_flows.yml"
+          - "test/browser/keyboard_flows_test.rb"
+          - "test/configuration/keyboard_flow_coverage_test.rb"
           - "test/configuration/keyboard_operability_test.rb"
-          - "test/browser/narrow_screen_test.rb"
     other_findings: []
     issue: "C2"
     dependencies: []
@@ -627,10 +641,12 @@ capabilities:
           - "test/configuration/locale_symmetry_test.rb"
       keyboard:
         result: "met"
-        reason: "操作の手段は押せる要素と form だけで組み立てられており、押せない要素へ操作を載せる形は検査が落とす。主要な流れは実ブラウザーが確かめる。"
+        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
         evidence:
+          - "docs/product/keyboard_flows.yml"
+          - "test/browser/keyboard_flows_test.rb"
+          - "test/configuration/keyboard_flow_coverage_test.rb"
           - "test/configuration/keyboard_operability_test.rb"
-          - "test/browser/narrow_screen_test.rb"
     other_findings:
       - "想定規模の件数での実測が無い"
     issue: "C2"
@@ -699,10 +715,12 @@ capabilities:
           - "test/configuration/locale_symmetry_test.rb"
       keyboard:
         result: "met"
-        reason: "操作の手段は押せる要素と form だけで組み立てられており、押せない要素へ操作を載せる形は検査が落とす。主要な流れは実ブラウザーが確かめる。"
+        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
         evidence:
+          - "docs/product/keyboard_flows.yml"
+          - "test/browser/keyboard_flows_test.rb"
+          - "test/configuration/keyboard_flow_coverage_test.rb"
           - "test/configuration/keyboard_operability_test.rb"
-          - "test/browser/narrow_screen_test.rb"
     other_findings: []
     issue: "C5"
     dependencies: []
@@ -779,10 +797,12 @@ capabilities:
           - "test/configuration/locale_symmetry_test.rb"
       keyboard:
         result: "met"
-        reason: "操作の手段は押せる要素と form だけで組み立てられており、押せない要素へ操作を載せる形は検査が落とす。主要な流れは実ブラウザーが確かめる。"
+        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
         evidence:
+          - "docs/product/keyboard_flows.yml"
+          - "test/browser/keyboard_flows_test.rb"
+          - "test/configuration/keyboard_flow_coverage_test.rb"
           - "test/configuration/keyboard_operability_test.rb"
-          - "test/browser/narrow_screen_test.rb"
     other_findings: []
     issue: "C2"
     dependencies: []
@@ -861,10 +881,12 @@ capabilities:
           - "test/configuration/locale_symmetry_test.rb"
       keyboard:
         result: "met"
-        reason: "操作の手段は押せる要素と form だけで組み立てられており、押せない要素へ操作を載せる形は検査が落とす。主要な流れは実ブラウザーが確かめる。"
+        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
         evidence:
+          - "docs/product/keyboard_flows.yml"
+          - "test/browser/keyboard_flows_test.rb"
+          - "test/configuration/keyboard_flow_coverage_test.rb"
           - "test/configuration/keyboard_operability_test.rb"
-          - "test/browser/narrow_screen_test.rb"
     other_findings: []
     issue: "C2"
     dependencies: []
@@ -939,10 +961,12 @@ capabilities:
           - "test/configuration/locale_symmetry_test.rb"
       keyboard:
         result: "met"
-        reason: "操作の手段は押せる要素と form だけで組み立てられており、押せない要素へ操作を載せる形は検査が落とす。主要な流れは実ブラウザーが確かめる。"
+        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
         evidence:
+          - "docs/product/keyboard_flows.yml"
+          - "test/browser/keyboard_flows_test.rb"
+          - "test/configuration/keyboard_flow_coverage_test.rb"
           - "test/configuration/keyboard_operability_test.rb"
-          - "test/browser/narrow_screen_test.rb"
     other_findings: []
     issue: "C2"
     dependencies: []
@@ -1020,10 +1044,12 @@ capabilities:
           - "test/configuration/locale_symmetry_test.rb"
       keyboard:
         result: "met"
-        reason: "操作の手段は押せる要素と form だけで組み立てられており、押せない要素へ操作を載せる形は検査が落とす。主要な流れは実ブラウザーが確かめる。"
+        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
         evidence:
+          - "docs/product/keyboard_flows.yml"
+          - "test/browser/keyboard_flows_test.rb"
+          - "test/configuration/keyboard_flow_coverage_test.rb"
           - "test/configuration/keyboard_operability_test.rb"
-          - "test/browser/narrow_screen_test.rb"
     other_findings:
       - "重なりの判定が、データベースが返す文面に制約名が含まれるかどうかに依存する"
     issue: "C3"
@@ -1109,10 +1135,12 @@ capabilities:
           - "test/configuration/locale_symmetry_test.rb"
       keyboard:
         result: "met"
-        reason: "操作の手段は押せる要素と form だけで組み立てられており、押せない要素へ操作を載せる形は検査が落とす。主要な流れは実ブラウザーが確かめる。"
+        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
         evidence:
+          - "docs/product/keyboard_flows.yml"
+          - "test/browser/keyboard_flows_test.rb"
+          - "test/configuration/keyboard_flow_coverage_test.rb"
           - "test/configuration/keyboard_operability_test.rb"
-          - "test/browser/narrow_screen_test.rb"
     other_findings:
       - "申請の項目が題名と本文だけで、種別ごとの入力欄を持たない"
       - "経路の種別が直列の承認だけで、全員承認、いずれか 1 人、最終決定、確認を持たない"
@@ -1191,10 +1219,12 @@ capabilities:
           - "test/configuration/locale_symmetry_test.rb"
       keyboard:
         result: "met"
-        reason: "操作の手段は押せる要素と form だけで組み立てられており、押せない要素へ操作を載せる形は検査が落とす。主要な流れは実ブラウザーが確かめる。"
+        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
         evidence:
+          - "docs/product/keyboard_flows.yml"
+          - "test/browser/keyboard_flows_test.rb"
+          - "test/configuration/keyboard_flow_coverage_test.rb"
           - "test/configuration/keyboard_operability_test.rb"
-          - "test/browser/narrow_screen_test.rb"
     other_findings: []
     issue: "C3"
     dependencies: []
@@ -1269,10 +1299,12 @@ capabilities:
           - "test/configuration/locale_symmetry_test.rb"
       keyboard:
         result: "met"
-        reason: "操作の手段は押せる要素と form だけで組み立てられており、押せない要素へ操作を載せる形は検査が落とす。主要な流れは実ブラウザーが確かめる。"
+        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
         evidence:
+          - "docs/product/keyboard_flows.yml"
+          - "test/browser/keyboard_flows_test.rb"
+          - "test/configuration/keyboard_flow_coverage_test.rb"
           - "test/configuration/keyboard_operability_test.rb"
-          - "test/browser/narrow_screen_test.rb"
     other_findings:
       - "階層、版、編集の占有、ごみ箱、容量の把握を持たない"
     issue: "C2"
@@ -1355,10 +1387,12 @@ capabilities:
           - "test/configuration/locale_symmetry_test.rb"
       keyboard:
         result: "met"
-        reason: "操作の手段は押せる要素と form だけで組み立てられており、押せない要素へ操作を載せる形は検査が落とす。主要な流れは実ブラウザーが確かめる。"
+        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
         evidence:
+          - "docs/product/keyboard_flows.yml"
+          - "test/browser/keyboard_flows_test.rb"
+          - "test/configuration/keyboard_flow_coverage_test.rb"
           - "test/configuration/keyboard_operability_test.rb"
-          - "test/browser/narrow_screen_test.rb"
     other_findings:
       - "まとめて既読にする操作が無い"
     issue: "C4"
@@ -1436,10 +1470,12 @@ capabilities:
           - "test/configuration/locale_symmetry_test.rb"
       keyboard:
         result: "met"
-        reason: "操作の手段は押せる要素と form だけで組み立てられており、押せない要素へ操作を載せる形は検査が落とす。主要な流れは実ブラウザーが確かめる。"
+        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
         evidence:
+          - "docs/product/keyboard_flows.yml"
+          - "test/browser/keyboard_flows_test.rb"
+          - "test/configuration/keyboard_flow_coverage_test.rb"
           - "test/configuration/keyboard_operability_test.rb"
-          - "test/browser/narrow_screen_test.rb"
     other_findings: []
     issue: "C1"
     dependencies: []
@@ -1521,10 +1557,12 @@ capabilities:
           - "test/configuration/locale_symmetry_test.rb"
       keyboard:
         result: "met"
-        reason: "操作の手段は押せる要素と form だけで組み立てられており、押せない要素へ操作を載せる形は検査が落とす。主要な流れは実ブラウザーが確かめる。"
+        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
         evidence:
+          - "docs/product/keyboard_flows.yml"
+          - "test/browser/keyboard_flows_test.rb"
+          - "test/configuration/keyboard_flow_coverage_test.rb"
           - "test/configuration/keyboard_operability_test.rb"
-          - "test/browser/narrow_screen_test.rb"
     other_findings:
       - "応答の形を版として固定した定義が無い"
       - "読み取りだけで、書き込みの経路が無い"
@@ -1601,10 +1639,12 @@ capabilities:
           - "test/configuration/locale_symmetry_test.rb"
       keyboard:
         result: "met"
-        reason: "操作の手段は押せる要素と form だけで組み立てられており、押せない要素へ操作を載せる形は検査が落とす。主要な流れは実ブラウザーが確かめる。"
+        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
         evidence:
+          - "docs/product/keyboard_flows.yml"
+          - "test/browser/keyboard_flows_test.rb"
+          - "test/configuration/keyboard_flow_coverage_test.rb"
           - "test/configuration/keyboard_operability_test.rb"
-          - "test/browser/narrow_screen_test.rb"
     other_findings: []
     issue: "C4"
     dependencies: []
@@ -1675,10 +1715,12 @@ capabilities:
           - "test/configuration/locale_symmetry_test.rb"
       keyboard:
         result: "met"
-        reason: "操作の手段は押せる要素と form だけで組み立てられており、押せない要素へ操作を載せる形は検査が落とす。主要な流れは実ブラウザーが確かめる。"
+        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
         evidence:
+          - "docs/product/keyboard_flows.yml"
+          - "test/browser/keyboard_flows_test.rb"
+          - "test/configuration/keyboard_flow_coverage_test.rb"
           - "test/configuration/keyboard_operability_test.rb"
-          - "test/browser/narrow_screen_test.rb"
     other_findings: []
     issue: "C1"
     dependencies: []
@@ -2041,8 +2083,10 @@ cross_cutting_gates:
     implementation_note: "すべての画面"
     tests:
       - "test/browser/accessibility_audit_test.rb"
+      - "test/browser/keyboard_flows_test.rb"
       - "test/browser/narrow_screen_test.rb"
       - "test/configuration/accessibility_check_test.rb"
+      - "test/configuration/keyboard_flow_coverage_test.rb"
       - "test/system/accessibility_test.rb"
     docs:
       - "docs/development/accessibility.md"
