@@ -67,7 +67,7 @@ docker compose exec web bin/rails officeweave:demo_data
 起動後、`http://127.0.0.1:3210` を開きます。
 データベースの作成と移行は初回起動時に自動で実行されます。
 
-起動するのは 3 つです。
+起動するのは次のとおりです。
 
 ```text
 db      PostgreSQL。業務データと未処理のジョブを別のデータベースへ保持します
