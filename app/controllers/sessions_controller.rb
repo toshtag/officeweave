@@ -1,7 +1,8 @@
 class SessionsController < ApplicationController
   records_audit :create, :destroy
 
-  allow_unauthenticated_access only: %i[new create]
+  allow_unauthenticated_access only: %i[new create],
+                               reason: "ログインの入口である。失敗の文面は利用者の有無で変えない"
 
   # 総当たりによる推測を抑える。
   # 数え上げは web の外（RateLimitStore）で共有する。web ごとに数えると、

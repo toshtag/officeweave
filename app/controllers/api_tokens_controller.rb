@@ -8,7 +8,8 @@ class ApiTokensController < ApplicationController
   before_action :set_api_token, only: %i[destroy]
 
   def index
-    @api_tokens = Current.user.api_tokens.recent_first
+    @page = Pagination.new(Current.user.api_tokens.recent_first, page: params[:page])
+    @api_tokens = @page.records
     @api_token = Current.user.api_tokens.new
   end
 
@@ -33,7 +34,8 @@ class ApiTokensController < ApplicationController
       return redirect_to api_tokens_path, notice: t("api_tokens.created")
     end
 
-    @api_tokens = Current.user.api_tokens.recent_first
+    @page = Pagination.new(Current.user.api_tokens.recent_first, page: params[:page])
+    @api_tokens = @page.records
     render :index, status: :unprocessable_content
   end
 

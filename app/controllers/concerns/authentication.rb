@@ -7,8 +7,34 @@ module Authentication
   end
 
   class_methods do
-    def allow_unauthenticated_access(**options)
+    # 認証を要さない入口。公開する理由を必ず書く。
+    #
+    # 既定は認証を要する。開く側だけが宣言する形にすると、開いた入口の数は
+    # 少なく保てるが、なぜ開いているのかは宣言からは読めない。理由を書かせる
+    # ことで、次に読む人が判断をやり直せる。
+    #
+    # 返してよい情報も理由へ書く。認証を要さない入口は、誰でも到達できる。
+    def allow_unauthenticated_access(reason:, **options)
+      raise ArgumentError, "認証を要さない理由を書く" if reason.to_s.strip.empty?
+
+      unauthenticated_access[:reason] = reason
+      unauthenticated_access[:only] = Array(options[:only]).map(&:to_s).presence
+
       skip_before_action :require_authentication, **options
+    end
+
+    # 開いている入口とその理由。宣言が無ければ空を返す。
+    def unauthenticated_access
+      @unauthenticated_access ||= {}
+    end
+
+    # その動作が認証を要さないか。要する場合は nil を返す。
+    def unauthenticated_reason(action)
+      return nil if unauthenticated_access.empty?
+
+      only = unauthenticated_access[:only]
+
+      unauthenticated_access[:reason] if only.nil? || only.include?(action.to_s)
     end
   end
 

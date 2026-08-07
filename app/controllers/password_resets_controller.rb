@@ -8,7 +8,7 @@
 class PasswordResetsController < ApplicationController
   records_audit :create, :update
 
-  allow_unauthenticated_access
+  allow_unauthenticated_access reason: "パスワードを思い出せない利用者のための経路である。応答は利用者の有無で変えず、送ったかどうかも返さない"
   before_action :require_internal_credentials
 
   # 総当たりと、宛先へ大量に送りつけることを抑える。

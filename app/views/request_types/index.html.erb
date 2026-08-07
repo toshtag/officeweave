@@ -61,4 +61,6 @@
   <% else %>
     <p><%= t("request_types.index.empty") %></p>
   <% end %>
+
+  <%= render "shared/pagination", page: @page, parameters: {} %>
 </div>

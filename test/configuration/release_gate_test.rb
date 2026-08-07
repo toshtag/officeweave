@@ -76,10 +76,12 @@ class ReleaseGateTest < ActiveSupport::TestCase
   }.freeze
 
   test "Core が揃っていなければ passed にできない" do
-    assert_not ReleaseReadiness.new(REGISTRY).allows_passed?,
-               "complete でない Core があるのに、passed を許している"
+    partial = REGISTRY.merge(
+      "capabilities" => core.each_with_index.map { |c, index| index.zero? ? c.merge("state" => "partial") : c }
+    )
 
-    assert_empty incomplete_core.map { |c| c["id"] } if passed.any?
+    assert_not ReleaseReadiness.new(partial).allows_passed?,
+               "complete でない Core があるのに、passed を許している"
   end
 
   test "揃っていれば passed を許す" do
@@ -102,11 +104,19 @@ class ReleaseGateTest < ActiveSupport::TestCase
 
   test "揃っていない状態で passed を書いた記録を落とす" do
     written = REGISTRY.merge(
+      "capabilities" => core.each_with_index.map { |c, index| index.zero? ? c.merge("state" => "partial") : c },
       "release_gates" => [ gate.merge("evaluations" => [ SAMPLE ]) ]
     )
 
     assert_not ReleaseReadiness.new(written).valid?
     assert_includes ReleaseReadiness.new(written).problems.join, "complete でない"
+  end
+
+  # 揃っている状態では、書いた記録をそのまま受け付ける。
+  test "揃っている状態で passed を書いた記録は落とさない" do
+    written = REGISTRY.merge("release_gates" => [ gate.merge("evaluations" => [ SAMPLE ]) ])
+
+    assert_predicate ReleaseReadiness.new(written), :valid?
   end
 
   test "passed の版には、検証の記録がある" do

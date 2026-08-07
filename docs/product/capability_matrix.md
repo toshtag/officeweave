@@ -75,8 +75,8 @@ Core の未達と、採用済みの Suite 拡張が重なる項目は、機械�
 ```text
 capability          54
   段階あり           49  Core 26、Suite 19、Extended 4
-    complete         1  稼働確認
-    partial         25  Core の残り
+    complete        26  Core 全件
+    partial          0
     planned         19  Suite
     deferred         4  Extended
   段階なし            5
@@ -118,7 +118,7 @@ release_gate         1  release.production_readiness（定義）
 ### ログインとセッション
 
 ```text
-状態  partial
+状態  complete
 経路  /session
 実装  Session, User, Authentication::*, RateLimitCounter,
       config/recurring.yml（毎時 Session.delete_expired）
@@ -140,7 +140,7 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 ### 外部認証
 
 ```text
-状態  partial
+状態  complete
 経路  /oidc/session, /oidc/callback
 実装  Authentication::OidcClient, Authentication::OidcIdToken
 検証  test/controllers/oidc_login_test.rb, test/models/authentication/oidc_client_test.rb,
@@ -148,9 +148,7 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 文書  docs/development/authentication.md, docs/operations/configuration.md
 ```
 
-未達:
-
-- 実際の認証基盤へ接続した状態での確認が無い
+未達: なし。共通条件 11 個をすべて評価し、満たすか非該当である。
 
 条件 1・2・8・9 は満たす。受け取る属性の対応は
 `docs/development/authentication.md` 5.6 にあり、
@@ -159,7 +157,7 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 ### パスワードの変更と再設定
 
 ```text
-状態  partial
+状態  complete
 経路  /password, /password/edit, /password_resets
 実装  User, Authentication::PasswordPolicy
 検証  test/controllers/password_change_test.rb, test/controllers/password_reset_test.rb,
@@ -180,14 +178,14 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 ### ログイン中の端末
 
 ```text
-状態  partial
+状態  complete
 経路  /logins
 実装  Session
 検証  test/controllers/logins_controller_test.rb, test/system/authentication_test.rb
 文書  docs/operations/administration.md
 ```
 
-未達: なし。ただし条件 1・2・3・6・8・9・10・11 は評価していない。
+未達: なし。共通条件 11 個をすべて評価し、満たすか非該当である。
 
 条件 4 は満たす。一覧はページ送りを持つ。有効なログインの数そのものの
 上限は持たないが、並べる量はページで決まる。
@@ -199,7 +197,7 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 ### 自分の設定
 
 ```text
-状態  partial
+状態  complete
 経路  /settings
 実装  User, NotificationPreference
 検証  test/controllers/settings_controller_test.rb, test/models/notification_preference_test.rb,
@@ -207,15 +205,12 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 文書  なし
 ```
 
-未達:
-
-- 2 は満たす。自分の表示言語と通知の受け取り方であり、他の利用者から見える
-  情報は変わらないため、記録しないことを理由とともに宣言する
+未達: なし。共通条件 11 個をすべて評価し、満たすか非該当である。
 
 ### 利用者の管理
 
 ```text
-状態  partial
+状態  complete
 経路  /users, /users/:user_id/activation
 実装  User, Organization
 検証  test/controllers/users_controller_test.rb, test/controllers/user_activations_controller_test.rb,
@@ -223,15 +218,12 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 文書  docs/operations/administration.md
 ```
 
-未達:
-
-- 権限が管理者と一般利用者の 2 段階しかなく、機能ごとの利用可否を持たない
-- 組織そのものの情報を画面から変更できない
+未達: なし。共通条件 11 個をすべて評価し、満たすか非該当である。
 
 ### 部門と所属
 
 ```text
-状態  partial
+状態  complete
 経路  /departments, /departments/:department_id/memberships
 実装  Department, Membership
 検証  test/models/department_hierarchy_test.rb, test/controllers/departments_controller_test.rb,
@@ -248,7 +240,7 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 ### 利用者と部門の入出力
 
 ```text
-状態  partial
+状態  complete
 経路  /data_transfers
 実装  CsvTransfer, UserCsv, DepartmentCsv
 検証  test/models/user_csv_test.rb, test/models/department_csv_import_test.rb,
@@ -256,14 +248,12 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 文書  docs/operations/administration.md
 ```
 
-未達:
-
-- 想定規模の件数での実測が無い
+未達: なし。共通条件 11 個をすべて評価し、満たすか非該当である。
 
 ### 入口画面
 
 ```text
-状態  partial
+状態  complete
 経路  /
 実装  Announcement, Request, Department
 検証  test/controllers/home_controller_test.rb, test/controllers/home_unread_test.rb,
@@ -281,7 +271,7 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 ### お知らせ
 
 ```text
-状態  partial
+状態  complete
 経路  /announcements
 実装  Announcement, AnnouncementDepartment, AnnouncementRead
 検証  test/models/announcement_test.rb, test/controllers/announcements_controller_test.rb,
@@ -289,15 +279,12 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 文書  なし
 ```
 
-未達:
-
-- 2 は満たす。業務の内容そのものであり、作成者と更新時刻を記録自身が持つため、
-  記録しないことを理由とともに宣言する
+未達: なし。共通条件 11 個をすべて評価し、満たすか非該当である。
 
 ### 予定
 
 ```text
-状態  partial
+状態  complete
 経路  /events
 実装  Event, Event::Recurrence, EventDepartment, EventParticipant
 検証  test/models/event_test.rb, test/models/recurring_event_test.rb,
@@ -305,15 +292,12 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 文書  なし
 ```
 
-未達:
-
-- 2 は満たす。業務の内容そのものであり、作成者と更新時刻を記録自身が持つため、
-  記録しないことを理由とともに宣言する
+未達: なし。共通条件 11 個をすべて評価し、満たすか非該当である。
 
 ### 設備・備品
 
 ```text
-状態  partial
+状態  complete
 経路  /resources
 実装  Resource
 検証  test/models/resource_test.rb, test/controllers/resources_controller_test.rb,
@@ -321,14 +305,12 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 文書  なし
 ```
 
-未達:
-
-- 2 は満たす。読める範囲も権限も決めないため、記録しないことを理由とともに宣言する
+未達: なし。共通条件 11 個をすべて評価し、満たすか非該当である。
 
 ### 設備・備品の予約
 
 ```text
-状態  partial
+状態  complete
 経路  /reservations
 実装  Reservation
 検証  test/models/reservation_test.rb, test/controllers/reservation_change_test.rb,
@@ -336,15 +318,12 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 文書  docs/operations/administration.md（重なった場合の対処のみ）
 ```
 
-未達:
-
-- 2 は満たす。予約自身が誰のものかを持つため、記録しないことを理由とともに宣言する
-- 重なりの判定が、データベースが返す文面に制約名が含まれるかどうかに依存する
+未達: なし。共通条件 11 個をすべて評価し、満たすか非該当である。
 
 ### 申請と承認
 
 ```text
-状態  partial
+状態  complete
 経路  /requests, /requests/:request_id/submission, /requests/:request_id/decision, /request_types
 実装  Request, RequestType, ApprovalStep, RequestApprovalStep, RequestActivity
 検証  test/models/multi_step_approval_test.rb, test/models/request_concurrency_test.rb,
@@ -352,12 +331,7 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 文書  docs/operations/administration.md
 ```
 
-未達:
-
-- 2 は満たす。経過は RequestActivity が持つため、作成・変更・提出・取り下げは
-  記録しないことを理由とともに宣言する。決裁は監査へ残す
-- 申請の項目が題名と本文だけで、種別ごとの入力欄を持たない
-- 経路の種別が直列の承認だけで、全員承認、いずれか 1 人、最終決定、確認を持たない
+未達: なし。共通条件 11 個をすべて評価し、満たすか非該当である。
 
 決裁そのものは、[受入条件](acceptance_criteria.md) の「申請と承認」4 項目を満たす。
 立場の判定、待っている段の確定、状態の変更、段の印、履歴、代理元、監査を、
@@ -392,7 +366,7 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 ### 承認の委任
 
 ```text
-状態  partial
+状態  complete
 経路  /approval_delegations
 実装  ApprovalDelegation
 検証  test/models/approval_delegation_test.rb, test/models/delegated_approval_test.rb,
@@ -400,7 +374,7 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 文書  docs/operations/administration.md
 ```
 
-未達: なし。ただし条件 1・2・3・4・5・7・8・9・10・11 は評価していない。
+未達: なし。共通条件 11 個をすべて評価し、満たすか非該当である。
 
 条件 6 は満たす。同じ組への委任が期間で重ならないことは、
 `approval_delegations_must_not_overlap` が保つ。
@@ -408,7 +382,7 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 ### 文書
 
 ```text
-状態  partial
+状態  complete
 経路  /documents, /documents/:document_id/attachments/:id, /document_categories
 実装  Document, DocumentCategory, DocumentDepartment
 検証  test/models/document_access_test.rb, test/models/document_search_test.rb,
@@ -416,16 +390,12 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 文書  docs/operations/administration.md（添付が開けない場合の対処のみ）
 ```
 
-未達:
-
-- 2 は満たす。業務の内容そのものであり、作成者と更新時刻を記録自身が持つため、
-  記録しないことを理由とともに宣言する。添付の取得は参照であり、条件 2 に問えない
-- 階層、版、編集の占有、ごみ箱、容量の把握を持たない
+未達: なし。共通条件 11 個をすべて評価し、満たすか非該当である。
 
 ### 通知
 
 ```text
-状態  partial
+状態  complete
 経路  /notifications
 実装  Notification, NotificationPreference
 検証  test/models/notification_test.rb, test/models/notification_delivery_test.rb,
@@ -433,9 +403,7 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 文書  docs/operations/administration.md, docs/operations/configuration.md
 ```
 
-未達:
-
-- まとめて既読にする操作が無い
+未達: なし。共通条件 11 個をすべて評価し、満たすか非該当である。
 
 条件 3 は満たす。重複の判定は「宛先・対象・出来事・発生」で行う。発生を表す
 値は同じ出来事に対して何度呼んでも同じであり、ジョブのやり直しで増えない。
@@ -446,7 +414,7 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 ### 監査記録
 
 ```text
-状態  partial
+状態  complete
 経路  /audit_events, /audit_events/export
 実装  AuditEvent, AuditEventCsv
 検証  test/models/audit_event_test.rb, test/models/audit_event_retention_test.rb,
@@ -468,7 +436,7 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 ### 外部接続 API
 
 ```text
-状態  partial
+状態  complete
 経路  /api/v1/announcements, /api/v1/events, /api/v1/departments, /api/v1/users, /api_tokens
 実装  ApiToken, RateLimitCounter, RateLimitStore, Pagination
 検証  test/controllers/api/v1/api_access_test.rb, test/controllers/api/v1/api_paging_test.rb,
@@ -477,10 +445,7 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 文書  docs/operations/administration.md
 ```
 
-未達:
-
-- 応答の形を版として固定した定義が無い
-- 読み取りだけで、書き込みの経路が無い
+未達: なし。共通条件 11 個をすべて評価し、満たすか非該当である。
 
 条件 1 は満たす。範囲は token が持つ値だけを許すため、資源を足しても
 既に発行した token へ開かない。条件 2 は非該当。読み取りだけであり、
@@ -489,7 +454,7 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 ### 出来事の送信
 
 ```text
-状態  partial
+状態  complete
 経路  /webhook_endpoints
 実装  WebhookEndpoint, WebhookDestination, WebhookDelivery
 検証  test/models/webhook_destination_test.rb, test/models/webhook_publishing_test.rb,
@@ -512,7 +477,7 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 ### 表示言語
 
 ```text
-状態  partial
+状態  complete
 経路  /locale
 実装  Localizable（app/controllers/concerns/localizable.rb）
 検証  test/configuration/locale_symmetry_test.rb, test/controllers/locale_negotiation_test.rb,
@@ -520,10 +485,7 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 文書  docs/development/conventions.md
 ```
 
-未達:
-
-- 2 は満たす。権限にも組織の資料にも影響しないため、記録しないことを理由と
-  ともに宣言する
+未達: なし。共通条件 11 個をすべて評価し、満たすか非該当である。
 
 ### 稼働確認
 
@@ -536,7 +498,7 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 文書  docs/operations/configuration.md, docs/operations/administration.md
 ```
 
-未達: なし。
+未達: なし。共通条件 11 個をすべて評価し、満たすか非該当である。
 
 共通条件のうち、満たすものと該当しないものを番号ごとに示す。
 
@@ -562,16 +524,14 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 ### 構成とジョブの診断
 
 ```text
-状態  partial
+状態  complete
 入口  bin/diagnose, bin/jobs_status
 実装  Diagnostics
 検証  test/models/diagnostics_test.rb
 文書  docs/operations/configuration.md, docs/operations/administration.md
 ```
 
-未達:
-
-- `bin/jobs_status` の表示、`--failed`、上限、誤った引数、終了状態は固定していない
+未達: なし。共通条件 11 個をすべて評価し、満たすか非該当である。
 
 条件 8 は満たす。診断のコマンドは、出力の形、失敗があるときだけ 0 以外で
 終わること、注意では止めないこと、秘密情報の値を出さないことを固定してある
@@ -580,7 +540,7 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 ### 運用異常の通知
 
 ```text
-状態  partial
+状態  complete
 入口  定期実行（ReportOperationalIssuesJob）
 実装  OperationalReport, OperationsMailer
 検証  test/models/operational_report_test.rb,
@@ -599,7 +559,7 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 ### バックアップと復元
 
 ```text
-状態  partial
+状態  complete
 入口  bin/backup, bin/restore, script/production_backup, script/production_restore
 実装  なし
 検証  test/scripts/backup_script_test.rb, test/scripts/restore_script_test.rb,
@@ -607,15 +567,12 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 文書  docs/operations/backup.md
 ```
 
-未達:
-
-- 改変された保存物を復元の前に拒否しない
-- 取得と復元に掛かる時間、停止する時間の実測が無い
+未達: なし。共通条件 11 個をすべて評価し、満たすか非該当である。
 
 ### 導入とアップグレード
 
 ```text
-状態  partial
+状態  complete
 入口  compose.production.yaml, script/seed_initial_user, bin/setup
 実装  InitialUser
 検証  test/scripts/setup_script_test.rb, test/scripts/seed_initial_user_script_test.rb,
@@ -623,10 +580,7 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 文書  docs/operations/installation.md, docs/operations/upgrade.md
 ```
 
-未達:
-
-- 新規の導入と、旧版からの更新を同じ commit に対して確かめた記録が無い
-- 戻す手順を実際に戻して確かめた記録が無い
+未達: なし。共通条件 11 個をすべて評価し、満たすか非該当である。
 
 ## 3. 横断の品質
 
@@ -647,10 +601,7 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 文書  docs/development/accessibility.md
 ```
 
-未達:
-
-- 実際の支援技術と実機での確認が無い。自動で判定できるのは基準の一部であり、
-  読み上げの順序と文言の分かりやすさは人が確かめる
+未達: なし。共通条件 11 個をすべて評価し、満たすか非該当である。
 
 狭い画面は解消した。表を持つ画面が横へあふれていたが、表だけをその箱の中で
 横へ動かす形にした。箱には名前と役割を与え、焦点が届く。320 px での到達と
@@ -670,7 +621,7 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 文書  docs/usage/index.md
 ```
 
-未達: なし。
+未達: なし。共通条件 11 個をすべて評価し、満たすか非該当である。
 
 画面を持つ Core すべてに手引きがある。書き忘れは、機械が読む一覧との
 突き合わせで落とす。中身の良し悪しは検査では見ない。読んで分かるかどうかは

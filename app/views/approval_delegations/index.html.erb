@@ -13,7 +13,7 @@
 
       <%# 自分自身は選べない。委任にならない。 %>
       <%= form.field :delegate_id, :collection_select,
-                     current_organization.users.active.where.not(id: Current.user.id).ordered,
+                     @delegate_candidates.records,
                      :id, :name, { include_blank: true }, required: true %>
       <%= form.field :starts_on, :date_field, required: true %>
       <%= form.field :ends_on, :date_field, hint: t("approval_delegations.new.ends_on_hint") %>
@@ -60,4 +60,6 @@
       </div>
     </div>
   <% end %>
+
+  <%= render "shared/pagination", page: @page, parameters: {} %>
 </div>

@@ -159,7 +159,51 @@ class CompletionRegistryTest < ActiveSupport::TestCase
     assert_empty gate.fetch("evaluations"), "版ごとの評価は、記録ができてから足す"
   end
 
+
+  # ここまで来た状態を、後戻りできないようにする。
+  #
+  # 未評価が 1 件でも戻れば、その機能は完成条件を満たさない。件数で縛ることで、
+  # 新しい機能を Core へ足したときにも、評価を伴わなければ落ちる。
+  test "Core に未評価が 1 件も無い" do
+    unassessed = core.flat_map do |capability|
+      capability.fetch("criteria").filter_map { |name, judgement|
+ "#{capability["id"]}/#{name}" if judgement["result"] == "not_assessed" }
+    end
+
+    assert_empty unassessed
+  end
+
+  test "Core に未達が 1 件も無い" do
+    unmet = core.flat_map do |capability|
+      capability.fetch("criteria").filter_map { |name, judgement|
+ "#{capability["id"]}/#{name}" if judgement["result"] == "unmet" }
+    end
+
+    assert_empty unmet
+  end
+
+  test "Core 26 件がすべて complete である" do
+    assert_equal 26, core.size
+    assert_equal [ "complete" ], core.map { |capability| capability.fetch("state") }.uniq
+  end
+
+  test "判定には、証拠か非該当の理由がある" do
+    # 満たすと書きながら証拠が無い状態を落とす。
+    missing = core.flat_map do |capability|
+      capability.fetch("criteria").filter_map do |name, judgement|
+        next if judgement.fetch("reason").to_s.strip.present? &&
+                (judgement["result"] != "met" || judgement.fetch("evidence").any?)
+
+        "#{capability["id"]}/#{name}"
+      end
+    end
+
+    assert_empty missing
+  end
+
   private
+    def core = @capabilities.select { |capability| capability["stage"] == "core" }
+
     def all_entries = @capabilities + @gates
 
     def core_headings = headings("## 2. Core", "## 3. 横断の品質")
