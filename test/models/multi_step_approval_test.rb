@@ -25,7 +25,7 @@ class MultiStepApprovalTest < ActiveSupport::TestCase
 
     assert_equal "pending", @request.status
     assert_equal @first.position, @request.current_step_position
-    # 待っている段は、提出のときに写した経路の段として返る（R3-T3）。
+    # 待っている段は、提出のときに写した経路の段として返る。
     assert_equal @first.position, @request.current_step.position
     assert_equal @first.approver_department, @request.current_step.approver_department
   end
@@ -144,7 +144,7 @@ class MultiStepApprovalTest < ActiveSupport::TestCase
     @request.submit(actor: users(:hanako))
     @second.destroy!
 
-    # 提出のときに写した経路（R3-T3）で進む。2 段目は写した経路に残っている。
+    # 提出のときに写した経路で進む。2 段目は写した経路に残っている。
     assert @request.approve(actor: users(:approver))
     assert_equal "pending", @request.reload.status
     assert_equal @second.position, @request.current_step_position

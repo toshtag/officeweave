@@ -40,7 +40,7 @@ docker compose exec web bin/rubocop --autocorrect
 基盤から取り込んだものである。自分で書いたコードを、指摘されたという理由で
 外さない。`.rubocop.yml` へ足すときは、その理由をそこへ書く。
 
-### 現時点で導入していないもの
+### 導入していないもの
 
 ERB と CSS の書式検査は導入していない。
 
