@@ -423,7 +423,7 @@ uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
 補助は `test/test_helpers/query_count_test_helper.rb` に置く。
 一覧ごとの確認は `test/controllers/list_query_count_test.rb` と、
-R8 で個別に足した各一覧のテストが持つ。
+一覧ごとのコントローラーのテストが持つ。
 
 ### 数え方で取りこぼすもの
 

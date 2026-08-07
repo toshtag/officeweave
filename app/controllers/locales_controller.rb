@@ -1,7 +1,8 @@
 # 表示言語の切り替えを受け付ける。
 #
-# 選択は session に保持する。
-# 利用者ごとの設定として保存する方法は、利用者情報を扱う P4 で判断する。
+# 選択は session に保持する。ログインしていない相手にも切り替えさせるため、
+# 利用者の行へは書かない。ログイン後に持ち越したい場合は、自分の設定
+# （`User#locale`）が受け持つ。
 class LocalesController < ApplicationController
   records_no_audit :update,
                    reason: "表示言語の切り替えであり、権限にも組織の資料にも影響しない"
