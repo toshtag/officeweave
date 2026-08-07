@@ -39,9 +39,15 @@ jobs:
     steps:
       - name: ソースを取得する
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # 検証した commit と公開する commit を比べるため、履歴と tag を要る。
+          fetch-depth: 0
 
       - name: 分離の条件を検査する
         run: script/check_compose_isolation
+
+      - name: 実測した木と公開する木の対応を検査する
+        run: script/check_release_source
 
   checks:
     name: 書式とセキュリティ
