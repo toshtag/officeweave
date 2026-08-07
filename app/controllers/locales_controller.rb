@@ -7,7 +7,7 @@ class LocalesController < ApplicationController
                    reason: "表示言語の切り替えであり、権限にも組織の資料にも影響しない"
 
   # ログイン画面でも言語を切り替えられるようにする。
-  allow_unauthenticated_access
+  allow_unauthenticated_access reason: "ログインの画面でも表示する言語を選べるようにする。変えるのはその端末の表示だけで、他の利用者にも記録にも影響しない"
 
   def update
     session[:locale] = requested_locale if requested_locale

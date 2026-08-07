@@ -8,7 +8,7 @@
 # 監視側が資格情報を持たずに到達できる必要がある。
 class HealthController < ApplicationController
   # 監視側が資格情報を持たずに到達できる必要がある。
-  allow_unauthenticated_access
+  allow_unauthenticated_access reason: "稼働の確認は、認証の仕組みが動かない状態でも応答する必要がある。返すのは稼働しているかどうかだけで、組織の情報は含めない"
 
   def show
     checks = {

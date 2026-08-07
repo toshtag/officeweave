@@ -8,7 +8,7 @@
 class OidcSessionsController < ApplicationController
   records_audit :create
 
-  allow_unauthenticated_access
+  allow_unauthenticated_access reason: "認可サーバーとのやり取りは、ログインが成立する前に起きる。利用者は自動で作らず、この製品へ登録済みの相手だけがログインできる"
   before_action :require_oidc
 
   # 認可を開始する。
