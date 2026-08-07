@@ -1,4 +1,5 @@
 require "browser_test_case"
+require "timeout"
 require_relative "../test_helpers/local_certificate_test_helper"
 require_relative "../test_helpers/local_http_server_test_helper"
 require_relative "../test_helpers/oidc_provider_test_helper"
@@ -15,6 +16,9 @@ class KeyboardFlowsTest < BrowserTestCase
   include KeyboardNavigationTestHelper
   include LocalHttpServerTestHelper
   include OidcProviderTestHelper
+
+  # 記録へ現れるまで待つ上限。退行を停止ではなく失敗として受け取る。
+  LOG_WAIT = 10
 
   test "キーボードだけでログインする" do
     visit new_session_path
@@ -34,15 +38,15 @@ class KeyboardFlowsTest < BrowserTestCase
     # 返ったことである。焦点が当たっただけでは足りない。
     with_local_oidc_provider do
       visit new_session_path
-      before = oidc_authorization_starts
+      mark = log_position
 
       tab_to(text: I18n.t("sessions.oidc.submit"))
       # button は Space でも Enter でも押せる。ここは Space を送る。
       toggle_focused
 
       # 端末は局所の発行者の名前を解決できないため、認可先の画面は開かない。
-      # 成立したことは、認可先への転送が返ったことで見る。
-      assert_equal before + 1, oidc_authorization_starts, "認可の開始が成立していない"
+      # 成立したことは、この操作のあとに認可先への転送が返ったことで見る。
+      assert redirected_to_authorization?(mark), "認可の開始が成立していない"
     end
   end
 
@@ -343,13 +347,34 @@ class KeyboardFlowsTest < BrowserTestCase
       end
     end
 
-    # 認可の開始が成立した回数。
+    # 認可先への転送が返ったか。
     #
-    # 端末は局所の発行者の名前を解決できないため、認可先の画面は開かない。
-    # 成立したことは、認可先への転送が返ったことで見る。
-    def oidc_authorization_starts
-      Rails.root.join("log/test.log").read.scan(%r{Redirected to #{Regexp.escape(@provider.issuer)}/authorize}).size
+    # 記録への書き込みは、端末が要求を終えたあとになることがある。
+    # 現れるまで上限つきで待つ。待たないと、書き込みの速さで結果が変わる。
+    def redirected_to_authorization?(mark)
+      pattern = %r{Redirected to #{Regexp.escape(@provider.issuer)}/authorize}
+
+      Timeout.timeout(LOG_WAIT) do
+        sleep(0.1) until pattern.match?(log_since(mark))
+        true
+      end
+    rescue Timeout::Error
+      false
     end
+
+    # 記録のいまの位置。ここから後だけを読むことで、他の検査が書いた分と
+    # 混ざらないようにする。全体を数えると、並行して走る検査の書き込みで
+    # 数が動く。
+    def log_position = log_path.size
+
+    def log_since(mark)
+      log_path.open("rb") do |file|
+        file.seek(mark)
+        file.read.to_s.force_encoding(Encoding::UTF_8)
+      end
+    end
+
+    def log_path = Rails.root.join("log/test.log")
 
     # 書き出しが実行された回数。書き出しは記録へ残る。
     def exported_count = AuditEvent.with_action("users_exported").count
