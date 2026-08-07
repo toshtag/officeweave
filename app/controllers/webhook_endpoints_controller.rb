@@ -8,7 +8,8 @@ class WebhookEndpointsController < ApplicationController
   before_action :set_webhook_endpoint, only: %i[show update destroy]
 
   def index
-    @webhook_endpoints = current_organization.webhook_endpoints.ordered
+    @page = Pagination.new(current_organization.webhook_endpoints.ordered, page: params[:page])
+    @webhook_endpoints = @page.records
     @webhook_endpoint = current_organization.webhook_endpoints.new
   end
 
@@ -24,7 +25,8 @@ class WebhookEndpointsController < ApplicationController
                                                      details: { url: @webhook_endpoint.url })
       redirect_to webhook_endpoints_path, notice: t("webhook_endpoints.created")
     else
-      @webhook_endpoints = current_organization.webhook_endpoints.ordered
+      @page = Pagination.new(current_organization.webhook_endpoints.ordered, page: params[:page])
+      @webhook_endpoints = @page.records
       render :index, status: :unprocessable_content
     end
   end

@@ -7,8 +7,10 @@ class RequestTypesController < ApplicationController
   before_action :set_request_type, only: %i[edit update]
 
   def index
-    @request_types = current_organization.request_types.ordered
-                                         .includes(approval_steps: :approver_department).to_a
+    @page = Pagination.new(current_organization.request_types.ordered
+                                              .includes(approval_steps: :approver_department),
+                           page: params[:page])
+    @request_types = @page.records
 
     # 承認部門の階層を先に読む。行ごとに display_path を呼ぶと、
     # 件数と階層の深さの積だけ問い合わせが出る。

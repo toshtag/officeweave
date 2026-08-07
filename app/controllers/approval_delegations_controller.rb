@@ -8,8 +8,15 @@ class ApprovalDelegationsController < ApplicationController
   records_audit :create, :destroy
 
   def index
-    @delegations = Current.user.approval_delegations_as_delegator.recent_first.includes(:delegate)
+    @page = Pagination.new(Current.user.approval_delegations_as_delegator.recent_first.includes(:delegate),
+                           page: params[:page])
+    @delegations = @page.records
     @delegation = Current.user.approval_delegations_as_delegator.new(starts_on: Date.current)
+    # 委任先の候補は上限を置く。全件描くと、描く量が組織の人数に比例する。
+    @delegate_candidates = Candidates.new(
+      current_organization.users.active.where.not(id: Current.user.id).ordered,
+      query: params[:delegate_query], selected_ids: [ @delegation.delegate_id ]
+    )
   end
 
   def create
@@ -21,7 +28,13 @@ class ApprovalDelegationsController < ApplicationController
                                                        details: { delegate: @delegation.delegate.name })
       redirect_to approval_delegations_path, notice: t("approval_delegations.created")
     else
-      @delegations = Current.user.approval_delegations_as_delegator.recent_first.includes(:delegate)
+      @page = Pagination.new(Current.user.approval_delegations_as_delegator.recent_first.includes(:delegate),
+                             page: params[:page])
+      @delegations = @page.records
+      @delegate_candidates = Candidates.new(
+        current_organization.users.active.where.not(id: Current.user.id).ordered,
+        query: params[:delegate_query], selected_ids: [ @delegation.delegate_id ]
+      )
       render :index, status: :unprocessable_content
     end
   end
