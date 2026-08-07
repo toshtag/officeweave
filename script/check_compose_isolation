@@ -215,13 +215,21 @@ check_worker() {
     report ng "${label}の web と worker でジョブ用データベースが違う（web ${web_queue} / worker ${worker_queue}）"
   fi
 
-  local depends
-  depends="$(query "$document" services.worker.depends_on.web.condition | tr -d '"')"
+  # worker が移行の済んだデータベースを待つこと。
+  #
+  # 待つ相手は構成によって違う。準備を切り出した構成ではその完了を待ち、
+  # 起動処理の中で準備する構成では web の稼働を待つ。どちらでもよいが、
+  # 待たずに起動してはならない。移行の前にジョブを実行することになる。
+  local waits_for_prepare waits_for_web
+  waits_for_prepare="$(query "$document" services.worker.depends_on.prepare.condition | tr -d '"')"
+  waits_for_web="$(query "$document" services.worker.depends_on.web.condition | tr -d '"')"
 
-  if [ "$depends" = "service_healthy" ]; then
+  if [ "$waits_for_prepare" = "service_completed_successfully" ]; then
+    report ok "${label}の worker は準備の完了を待って起動する"
+  elif [ "$waits_for_web" = "service_healthy" ]; then
     report ok "${label}の worker は web の稼働を待って起動する"
   else
-    report ng "${label}の worker が web の稼働を待っていない（${depends}）"
+    report ng "${label}の worker が準備の完了も web の稼働も待っていない（準備 ${waits_for_prepare} / web ${waits_for_web}）"
   fi
 
   local threads connections

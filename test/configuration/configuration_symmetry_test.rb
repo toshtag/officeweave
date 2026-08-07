@@ -19,6 +19,14 @@ class ConfigurationSymmetryTest < ActiveSupport::TestCase
 
   APPLICATION_SERVICES = %w[web worker].freeze
 
+  # 配布用にだけ置くと決めた service。
+  #
+  # 理由を添える。添えられないものは、開発用への足し忘れである。
+  PRODUCTION_ONLY_SERVICES = {
+    "prepare" => "データベースの準備を一度きりの実行として切り出す。" \
+                 "開発用は起動処理の中で準備し、待つ側も web を待たない"
+  }.freeze
+
   # 開発用にだけ渡すと決めた変数。
   #
   # 空にしておく。埋める場合は、なぜ配布先では要らないのかを添える。
@@ -27,10 +35,17 @@ class ConfigurationSymmetryTest < ActiveSupport::TestCase
 
   test "開発用と配布用が同じ service を持つ" do
     development = DEVELOPMENT.fetch("services").keys.sort
-    production = PRODUCTION.fetch("services").keys.sort
+    production = (PRODUCTION.fetch("services").keys - PRODUCTION_ONLY_SERVICES.keys).sort
 
     assert_equal development, production,
       "service が片方にしかない（開発 #{development} / 配布 #{production}）"
+  end
+
+  test "配布用にだけある service は、理由を持つ" do
+    extra = PRODUCTION.fetch("services").keys - DEVELOPMENT.fetch("services").keys
+
+    assert_equal PRODUCTION_ONLY_SERVICES.keys.sort, extra.sort, "理由を添える"
+    PRODUCTION_ONLY_SERVICES.each_value { |reason| assert_operator reason.length, :>=, 20 }
   end
 
   test "開発用が渡す変数は、すべて配布用にも渡る" do
