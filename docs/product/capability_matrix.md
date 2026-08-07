@@ -86,7 +86,20 @@ issue          担当したキャンペーン
 dependencies   先に済んでいる必要のあるもの
 ```
 
-`cross_cutting_gate` も同じ形を持つ。`stage` だけを持たない。
+`cross_cutting_gate` は別の形を持つ。`stage` と `criteria` を持たず、
+代わりに `checks` を持つ。
+
+```yaml
+checks
+  <名前>
+    criterion  その品質が見る条件
+    result     met / unmet / not_assessed
+    reason     そう判定した理由
+    evidence   確かめている検査またはテスト
+```
+
+Core に共通の条件を横断の品質にも持たせない。持たせると、条件を 1 つ
+増やすたびに、その品質に関係の無い判定を書き足すことになる。
 
 ## 6. 条件ごとの判定
 
@@ -100,9 +113,8 @@ not_applicable  その機能には該当しない
 not_assessed    まだ評価していない
 ```
 
-`complete` は、条件がすべて `met` か `not_applicable` であり、
-`other_findings` が空であることを求める。`not_assessed` が 1 つでも
-残っていれば `complete` にできない。この関係は
+`complete` は、`unmet` と `not_assessed` が 1 つも無いことを求める。
+横断の品質も同じで、見るのは自分の `checks` である。この関係は
 `test/configuration/completion_registry_test.rb` が確かめる。
 
 `partial` の判定は、そのとき実測またはコードの確認から判明したものである。

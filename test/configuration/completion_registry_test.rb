@@ -1,13 +1,15 @@
 require "test_helper"
 
-# 機能到達度の、文章の正本と機械が読む正本が食い違わないことを確かめる。
+# 機能到達度の一覧が、形と規則を保っていることを確かめる。
 #
-# 2 つ持つのは、判定の理由を人が読む必要があるからである。片方だけを直せる
-# 状態にしておくと、必ず食い違う。件数、識別子、状態、入口、証拠、条件の
-# 判定を、ここで突き合わせる。
+# 一覧はこの製品の到達度の正本である。書けてしまう形が広いほど、判定は
+# 都合のよい方へ寄る。complete と言えるのは、未達も未評価も 1 つも無い
+# 場合だけとする。
 #
-# 現在値を都合よく complete へ変えられないようにもする。complete と言えるのは、
-# 未達も未評価も 1 つも無い場合だけとする。
+# 機能（capability）と横断の品質（cross_cutting_gate）は別の形を持つ。
+# 機能は Core に共通の条件で判定し、横断の品質は自分が見る条件で判定する。
+# 共通の条件を横断の品質にも持たせると、条件を 1 つ増やすたびに、その品質に
+# 関係の無い判定を 2 か所へ書き足すことになる。
 class CompletionRegistryTest < ActiveSupport::TestCase
   REGISTRY = Rails.root.join("docs/product/capability_registry.yml").freeze
   RESULTS = %w[met unmet not_applicable not_assessed].freeze
@@ -15,6 +17,9 @@ class CompletionRegistryTest < ActiveSupport::TestCase
   ALLOWED = { "core" => %w[partial complete], "suite" => %w[planned partial],
               "extended" => %w[deferred], nil => %w[rejected] }.freeze
   GATE_STATES = %w[planned partial complete].freeze
+  # 横断の品質の判定。該当しないという判定は持たない。自分が見ると決めた
+  # 条件だけを並べるため、該当しないものはそもそも並ばない。
+  GATE_RESULTS = %w[met unmet not_assessed].freeze
 
   setup do
     @registry = YAML.safe_load_file(REGISTRY)
@@ -76,7 +81,7 @@ class CompletionRegistryTest < ActiveSupport::TestCase
   # 条件ごとの証拠も、実在するものだけを挙げる。挙げただけで確かめられない
   # 経路が残ると、判定の根拠をたどれない。
   test "条件の判定に挙げた証拠が実際にある" do
-    all_entries.each do |entry|
+    @capabilities.each do |entry|
       entry.fetch("criteria").each do |name, judgement|
         judgement.fetch("evidence").each do |path|
           assert File.exist?(Rails.root.join(path)), "#{entry["id"]} の条件 #{name}: #{path} がありません"
@@ -86,7 +91,7 @@ class CompletionRegistryTest < ActiveSupport::TestCase
   end
 
   test "条件の判定が 4 つの値のいずれかである" do
-    all_entries.each do |entry|
+    @capabilities.each do |entry|
       entry.fetch("criteria").each do |key, judgement|
         assert_includes RESULTS, judgement.fetch("result"), "#{entry["id"]} の #{key}"
         assert_predicate judgement.fetch("reason").to_s, :present?, "#{entry["id"]} の #{key} に理由が無い"
@@ -97,19 +102,36 @@ class CompletionRegistryTest < ActiveSupport::TestCase
   # complete を都合よく付けられないようにする。
   test "complete には未達も未評価も無い" do
     all_entries.select { |entry| entry.fetch("state") == "complete" }.each do |entry|
-      unresolved = entry.fetch("criteria").select { |_, judgement|
- %w[unmet not_assessed].include?(judgement["result"]) }
-
-      assert_empty unresolved.keys, "#{entry["id"]} は complete にできません"
+      assert_empty unresolved(entry), "#{entry["id"]} は complete にできません"
     end
   end
 
   test "complete でない機能には、未達か未評価が残っている" do
     all_entries.reject { |entry| entry.fetch("state") == "complete" }.each do |entry|
-      unresolved = entry.fetch("criteria").count { |_, judgement| %w[unmet not_assessed].include?(judgement["result"]) }
-
-      assert_operator unresolved + entry.fetch("other_findings").size, :>, 0,
+      assert_operator unresolved(entry).size + entry.fetch("other_findings").size, :>, 0,
                       "#{entry["id"]} は残りが無いのに complete ではありません"
+    end
+  end
+
+  # 横断の品質は、Core に共通の条件を持たない。自分が見る条件を持つ。
+  test "横断の品質が、自分の見る条件を持つ" do
+    @gates.each do |gate|
+      assert_not gate.key?("criteria"),
+                 "#{gate["id"]} が Core の共通条件を持っている"
+
+      checks = gate.fetch("checks")
+
+      assert_predicate checks, :any?, "#{gate["id"]} に見る条件が無い"
+
+      checks.each do |name, check|
+        assert_predicate check.fetch("criterion").to_s, :present?, "#{gate["id"]}/#{name} に条件が無い"
+        assert_includes GATE_RESULTS, check.fetch("result"), "#{gate["id"]}/#{name} の判定が形式外"
+        assert_predicate check.fetch("reason").to_s, :present?, "#{gate["id"]}/#{name} に理由が無い"
+
+        check.fetch("evidence").each do |path|
+          assert Rails.root.join(path).exist?, "#{gate["id"]}/#{name} の証拠 #{path} がありません"
+        end
+      end
     end
   end
 
@@ -226,4 +248,11 @@ class CompletionRegistryTest < ActiveSupport::TestCase
     def core = @capabilities.select { |capability| capability["stage"] == "core" }
 
     def all_entries = @capabilities + @gates
+
+    # 残っている未達と未評価。機能は共通の条件、横断の品質は自分の条件で見る。
+    def unresolved(entry)
+      judgements = entry["criteria"]&.values || entry.fetch("checks").values
+
+      judgements.select { |judgement| %w[unmet not_assessed].include?(judgement["result"]) }
+    end
 end
