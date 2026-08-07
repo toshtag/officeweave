@@ -596,16 +596,24 @@ web の数に依存しない（`app/models/rate_limit_counter.rb`）。
 対象  すべての画面
 条件  320 CSS px と 400% 拡大で主要機能へ到達し、キーボードだけで操作を完了できる。
       支援技術で読み上げたときに、現在地と操作の結果が伝わる
-検査  test/browser/narrow_screen_test.rb, test/browser/accessibility_audit_test.rb,
-      test/system/accessibility_test.rb, test/configuration/accessibility_check_test.rb
+検査  test/browser/keyboard_flows_test.rb, test/browser/narrow_screen_test.rb,
+      test/browser/accessibility_audit_test.rb, test/system/accessibility_test.rb,
+      test/configuration/keyboard_flow_coverage_test.rb,
+      test/configuration/accessibility_check_test.rb
 文書  docs/development/accessibility.md
 ```
 
 未達: なし。共通条件 11 個をすべて評価し、満たすか非該当である。
 
 狭い画面は解消した。表を持つ画面が横へあふれていたが、表だけをその箱の中で
-横へ動かす形にした。箱には名前と役割を与え、焦点が届く。320 px での到達と
-キーボードだけでの操作は `test/browser/narrow_screen_test.rb` が固定する。
+横へ動かす形にした。箱には名前と役割を与え、焦点が届く。320 px での到達は
+`test/browser/narrow_screen_test.rb` が固定する。
+
+キーボードだけでの操作は、画面を持つ Core 21 件それぞれの主要な操作を
+`test/browser/keyboard_flows_test.rb` が完遂する。使うのは Tab、Shift+Tab、
+Enter、Space、文字の入力だけであり、要素を直接指して押す呼び出しは使わない。
+対象の一覧は `docs/product/keyboard_flows.yml` が持ち、対応の漏れは
+`test/configuration/keyboard_flow_coverage_test.rb` が落とす。
 
 `complete` の判定は、この gate が持つ 3 つの条件に対して行う。機能ごとの
 11 条件は、特定の機能に属さないこの品質には問えない。

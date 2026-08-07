@@ -91,3 +91,23 @@ JavaScript を無効にしても操作が完了するか
 実際の比率は `test/browser/accessibility_audit_test.rb` が画面の中で判定する。
 計算した値を本書へ書かない。書いた値は色を変えたときに追随せず、
 満たしていない状態を満たしていると示し続ける。
+
+## キーボードだけでの操作
+
+画面を持つ Core それぞれの主要な操作を、キーボードだけで完遂する検査を持つ。
+
+```text
+対象の一覧   docs/product/keyboard_flows.yml
+検査        test/browser/keyboard_flows_test.rb
+対応の網羅   test/configuration/keyboard_flow_coverage_test.rb
+```
+
+使うのは Tab、Shift+Tab、Enter、Space、文字の入力だけとする。`click_link` や
+`fill_in` のように要素を名前で直接指す呼び出しは使わない。それらは「押せたか」
+を見るが「到達できたか」を見ない。到達できない要素でも通ってしまう。
+
+Enter は `:return` を送る。`:enter` は数値キーパッド側であり、押せる要素の
+既定の動作を起こさないことがある。
+
+移動そのもの（Tab）は画面全体へ送る。焦点のある要素へ送ると、ファイルを選ぶ
+欄では「Tab」という名前のファイルを探しに行く。
