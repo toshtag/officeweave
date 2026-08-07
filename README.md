@@ -207,7 +207,7 @@ docker compose up -d --build
 - [製品ビジョン](docs/vision.md) — 解決したい問題、製品範囲、非目標
 - [製品範囲](docs/product/product_scope.md) — 機能をどの段階へ置くかの決め方
 - [受入条件](docs/product/acceptance_criteria.md) — 到達度と本番準備の判定条件
-- [0.3.0 の検証](docs/releases/0.3.0_verification.md) — 本番準備済みと判定した根拠
+- [0.3.0 の検証](docs/releases/0.3.0_verification.md) — 版ごとの判定に使った実測の記録
 - [機能到達度](docs/product/capability_matrix.md) — 機能ごとの段階と、いまの到達度
 - [決定記録](docs/decisions) — 製品の方向を決めた判断とその理由
 - [ライセンス方針](docs/licensing.md) — ライセンスの選定理由と名称の利用範囲
@@ -225,14 +225,10 @@ Copyright (C) 2026 OfficeWeave contributors
 自組織での導入、運用、改変に制限はありません。
 改変版を第三者へ提供する場合は、対応するソースコードの提供が必要です。
 
-## 開発状況
+## 開発の進め方
 
-Core の 26 機能には、入口とその基礎の実装があります。一方、
-[受入条件](docs/product/acceptance_criteria.md) を満たした機能は 1 件です。
-残りは未達の項目を持ち、申請の多段承認には既知の不具合があります。
-内訳は [機能到達度](docs/product/capability_matrix.md) にあります。
-
-互換性の保証はまだ行いません。
+到達度と版の判定は「[現在の状態](#現在の状態)」が持ちます。この節では扱いません。
+2 か所へ書くと、片方だけが更新されて食い違います。
 
 今後の作業と既知の不具合は [Issues](https://github.com/toshtag/OfficeWeave/issues) で
 管理します。実際に何をどう変えたかは PR と `git log` から辿れます。
