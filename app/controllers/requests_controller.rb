@@ -1,5 +1,7 @@
 # 申請の作成、提出、取り下げ。
-# 承認と差し戻しは P7-T2 で扱う。
+#
+# 承認と差し戻しは RequestDecisionsController が持つ。決裁は申請の所有者では
+# なく承認者の操作であり、認可の判定も監査の扱いも違う。
 class RequestsController < ApplicationController
   records_no_audit :create, :update,
                    reason: "申請の経過は RequestActivity が持つ。監査へ写すと、題名と本文が監査の詳細へ流れる"

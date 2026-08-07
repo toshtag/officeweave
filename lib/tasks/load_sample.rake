@@ -3,8 +3,8 @@
 # 空のデータベースへ要求を投げても、応答の速さは分からない。測る前に、
 # 測るに足る量を積む。
 #
-# 規模は LOAD_SAMPLE_SCALE で指定する。利用者の数であり、1 人あたり 25 件の
-# 記録を積む。
+# 規模は LOAD_SAMPLE_SCALE で指定する。利用者の数であり、1 人あたり
+# `LoadSample::PER_USER` 件の記録を積む。
 #
 #   docker compose -f compose.production.yaml exec web \
 #     env LOAD_SAMPLE_SCALE=20 bin/rails officeweave:load_sample

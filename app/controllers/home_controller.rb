@@ -10,7 +10,7 @@ class HomeController < ApplicationController
     @announcements = visible.recent_first.limit(RECENT_ANNOUNCEMENT_COUNT).to_a
 
     # 未読の判定は、画面へ並べる分だけで足りる。参照できる未読を全件取り出すと、
-    # 5 件の表示のために蓄積した全件を読むことになる。読まない利用者ほど重くなる。
+    # 表示する数件のために蓄積した全件を読むことになる。読まない利用者ほど重くなる。
     unread = visible.unread_for(Current.user)
     @unread_ids = unread.where(id: @announcements.map(&:id)).pluck(:id).to_set
 

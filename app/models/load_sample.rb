@@ -27,9 +27,9 @@ class LoadSample
 
   # 1 人あたりに積む記録の数。
   #
-  # 一覧の 1 ページは 25 件である。1 ページに収まる量では、読み込む量の違いが
-  # 応答に現れない。
-  PER_USER = 25
+  # 一覧の 1 ページ分（`Pagination::DEFAULT_PER_PAGE`）にそろえる。1 ページに
+  # 収まる量では、読み込む量の違いが応答に現れない。
+  PER_USER = Pagination::DEFAULT_PER_PAGE
 
   attr_reader :scale
 

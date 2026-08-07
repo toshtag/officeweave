@@ -54,7 +54,8 @@ OfficeWeave は、組織構造と権限をひとつの基盤に置いたうえ�
 各機能の深さは、その一巡が成立する最小限から始める。
 
 ここから先をどの順で広げるかの決め方は [製品範囲](product/product_scope.md) が持つ。
-機能ごとに、いまどこまで届いているかは [機能到達度](product/capability_matrix.md) にある。
+機能ごとに、いまどこまで届いているかは [機能到達度の一覧](product/capability_registry.yml) にある。
+読み方は [機能到達度](product/capability_matrix.md) にある。
 
 ## 長期的な拡張範囲
 
@@ -108,4 +109,5 @@ OfficeWeave は、組織構造と権限をひとつの基盤に置いたうえ�
 メールの送受信と、利用者が定義を作る業務アプリ基盤は後者であり、
 非目標ではなく [製品範囲](product/product_scope.md) の Extended が持つ。
 
-ここに挙げた領域は、[機能到達度](product/capability_matrix.md) では `rejected` として並ぶ。
+ここに挙げた領域は、[機能到達度の一覧](product/capability_registry.yml) の
+`out_of_scope` として並ぶ。
