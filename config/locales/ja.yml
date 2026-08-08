@@ -2,7 +2,7 @@ ja:
   application:
     name: OfficeWeave
     skip_to_content: 本文へ移動
-    footer_note: OfficeWeave — 組織向けコラボレーション基盤
+    footer_note: OfficeWeave — 社内向けポータル
 
   locale_switcher:
     label: 表示言語

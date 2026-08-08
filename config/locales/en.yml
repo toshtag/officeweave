@@ -2,7 +2,7 @@ en:
   application:
     name: OfficeWeave
     skip_to_content: Skip to main content
-    footer_note: OfficeWeave — a collaboration platform for organizations
+    footer_note: OfficeWeave — a self-hosted intranet portal
 
   locale_switcher:
     label: Language

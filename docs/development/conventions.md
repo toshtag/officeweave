@@ -12,8 +12,8 @@
 | ルートディレクトリ名   | `officeweave`                                        |
 | コンテナイメージ名    | `officeweave`                                        |
 | 製品表示名        | `OfficeWeave`                                        |
-| 日本語での一般説明    | 組織向けコラボレーション基盤                                       |
-| 英語での一般説明     | Self-hosted collaboration platform for organizations |
+| 日本語での一般説明    | 社内向けポータル                                             |
+| 英語での一般説明     | Self-hosted intranet portal                          |
 
 技術識別子には、ハイフン、アンダースコア、空白などの区切り記号を挿入しない。
 大文字を含む表記は、利用者の目に触れる製品表示名としてのみ使用する。
