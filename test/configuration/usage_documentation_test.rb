@@ -9,7 +9,7 @@ require "test_helper"
 # 中身の良し悪しは見ない。見られるのは、その機能を扱う節が実在することまでで
 # ある。読んで分かるかどうかは、人が読んで判断する。
 class UsageDocumentationTest < ActiveSupport::TestCase
-  REGISTRY = YAML.load_file(Rails.root.join("docs/product/capability_registry.yml")).freeze
+  REGISTRY = CapabilityRegistryTestHelper.registry.freeze
 
   # 手引きの置き場所。
   USAGE = "docs/usage".freeze

@@ -11,7 +11,6 @@ require "test_helper"
 # 共通の条件を横断の品質にも持たせると、条件を 1 つ増やすたびに、その品質に
 # 関係の無い判定を 2 か所へ書き足すことになる。
 class CompletionRegistryTest < ActiveSupport::TestCase
-  REGISTRY = Rails.root.join("docs/product/capability_registry.yml").freeze
   RESULTS = %w[met unmet not_applicable not_assessed].freeze
   # 段階ごとに取り得る状態。受入条件の「2.1 段階と状態の組合せ」と同じ。
   ALLOWED = { "core" => %w[partial complete], "suite" => %w[planned partial],
@@ -22,13 +21,64 @@ class CompletionRegistryTest < ActiveSupport::TestCase
   GATE_RESULTS = %w[met unmet not_assessed].freeze
 
   setup do
-    @registry = YAML.safe_load_file(REGISTRY)
+    @raw = CapabilityRegistryTestHelper.raw_registry
+    @registry = CapabilityRegistryTestHelper.registry
     @capabilities = @registry.fetch("capabilities")
     @gates = @registry.fetch("cross_cutting_gates")
   end
 
   test "完成の条件は、版の判定を指す" do
     assert_equal "release.production_readiness", @registry.fetch("completion").fetch("release_gate")
+  end
+
+  # 判定の型そのものを確かめる。解いた後だけを見ると、型が壊れていても
+  # 解けなかった側が気付かないまま通り得る。
+  test "判定の型が、指せる形を保っている" do
+    profiles = @raw.fetch("criterion_profiles")
+
+    assert_predicate profiles, :any?, "判定の型が 1 つも無い"
+
+    names = @capabilities.first.fetch("criteria").keys
+
+    profiles.each do |id, profile|
+      assert_not profile.key?("profile"), "#{id} が別の型を指している。型は型を参照しない"
+      assert_includes names, profile.fetch("criterion"), "#{id} の条件 #{profile["criterion"]} が共通条件に無い"
+      assert_includes RESULTS, profile.fetch("result"), "#{id} の判定が形式外"
+      assert_predicate profile.fetch("reason").to_s, :present?, "#{id} に理由が無い"
+
+      profile.fetch("evidence").each do |path|
+        assert Rails.root.join(path).exist?, "#{id} の証拠 #{path} がありません"
+      end
+    end
+  end
+
+  test "指した型が、その条件のものである" do
+    profiles = @raw.fetch("criterion_profiles")
+
+    @raw.fetch("capabilities").each do |capability|
+      capability.fetch("criteria").each do |name, judgement|
+        id = judgement["profile"]
+
+        next if id.nil?
+
+        assert_equal [ "profile" ], judgement.keys,
+                     "#{capability["id"]}/#{name} が型と判定を同時に持っている"
+        assert_includes profiles.keys, id, "#{capability["id"]}/#{name} の指す型がありません"
+        assert_equal name, profiles.fetch(id).fetch("criterion"),
+                     "#{capability["id"]}/#{name} が別の条件の型を指している"
+      end
+    end
+  end
+
+  # 条件の名前は、型を指す場合でも機能の側に並べる。省ける形にすると、
+  # 共通の条件を 1 つ増やしたときに、まだ評価していない機能が見えなくなる。
+  test "すべての機能が、共通の条件をすべて並べている" do
+    names = @capabilities.first.fetch("criteria").keys
+
+    @raw.fetch("capabilities").each do |capability|
+      assert_equal names, capability.fetch("criteria").keys,
+                   "#{capability["id"]} の条件の並びが揃っていない"
+    end
   end
 
   test "識別子が重ならない" do

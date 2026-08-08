@@ -8,7 +8,7 @@ require "test_helper"
 #
 # 対応そのものをここで固定する。定義の漏れも、対応する検査の欠けも落とす。
 class KeyboardFlowCoverageTest < ActiveSupport::TestCase
-  REGISTRY = YAML.safe_load_file(Rails.root.join("docs/product/capability_registry.yml")).freeze
+  REGISTRY = CapabilityRegistryTestHelper.registry.freeze
   FLOWS = YAML.safe_load_file(Rails.root.join("docs/product/keyboard_flows.yml")).fetch("flows").freeze
   SUITE = Rails.root.join("test/browser/keyboard_flows_test.rb").read.freeze
 

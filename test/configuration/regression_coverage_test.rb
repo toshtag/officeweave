@@ -9,7 +9,7 @@ require "test_helper"
 # 形だけになっていないこと、つまり挙げたテストがその機能の入口を実際に
 # 通っていることである。
 class RegressionCoverageTest < ActiveSupport::TestCase
-  REGISTRY = YAML.load_file(Rails.root.join("docs/product/capability_registry.yml")).freeze
+  REGISTRY = CapabilityRegistryTestHelper.registry.freeze
 
   # 画面を持たない入口。経路ではなくコマンドや設定で示す。
   NON_ROUTE = %r{\A(bin/|script/|config/|compose)}
