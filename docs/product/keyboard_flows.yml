@@ -1,6 +1,6 @@
 # 画面を持つ Core ごとの、主要な操作。
 #
-# 受入条件 11「主要な操作がキーボードだけで完了する」の対象を定義する。
+# 共通条件 `keyboard`「主要な操作がキーボードだけで完了する」の対象を定義する。
 # ここへ挙げた操作は、test/browser/keyboard_flows_test.rb が
 # Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。
 #

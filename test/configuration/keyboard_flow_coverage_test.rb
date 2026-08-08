@@ -2,9 +2,9 @@ require "test_helper"
 
 # 主要な操作と、画面を持つ Core の対応。
 #
-# 受入条件 11 は「主要な操作がキーボードだけで完了する」ことを求める。
+# 共通条件 `keyboard` は「主要な操作がキーボードだけで完了する」ことを求める。
 # 画面を持つ機能に主要な操作が定義されていなければ、その機能について
-# 条件 11 は確かめられていない。
+# この条件は確かめられていない。
 #
 # 対応そのものをここで固定する。定義の漏れも、対応する検査の欠けも落とす。
 class KeyboardFlowCoverageTest < ActiveSupport::TestCase
@@ -67,7 +67,7 @@ class KeyboardFlowCoverageTest < ActiveSupport::TestCase
     end
   end
 
-  test "画面を持たない Core は、条件 11 を非該当としている" do
+  test "画面を持たない Core は、keyboard を非該当としている" do
     (core - screen_capabilities).each do |capability|
       assert_equal "not_applicable", capability.fetch("criteria").fetch("keyboard").fetch("result"),
                    capability["id"]
