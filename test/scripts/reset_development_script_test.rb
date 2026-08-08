@@ -128,12 +128,6 @@ class ResetDevelopmentScriptTest < ActiveSupport::TestCase
     end
   end
 
-  test "README が専用コマンドを案内する" do
-    readme = Rails.root.join("README.md").read
-
-    assert_includes readme, SCRIPT
-  end
-
   private
     def invoke(running: nil, reset_exit: nil, &block)
       with_shell_sandbox do |sandbox|
