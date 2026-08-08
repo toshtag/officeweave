@@ -113,8 +113,9 @@ docker compose exec -T web bin/rails officeweave:sbom > officeweave-sbom.json
 
 実行環境の情報や設定の値は含めない。部品表は組織の外へ渡ることがある。
 
-継続的インテグレーションでは毎回書き出し、成果物として残す。
 公開する版へ添える手順は [リリース手順](../maintainers/release.md) に定義する。
+自動実行での書き出しと保存は
+[継続的インテグレーションの構成](../maintainers/continuous_integration.md#成果物) にある。
 
 ## 4. 配布するイメージの脆弱性検査
 
@@ -160,20 +161,17 @@ script/scan_container_image
 修正版が出ていない指摘では失敗させない。自分たちで解消できない状態で検証が
 止まり続ける。ただし報告へは残す。失敗させないことと、見せないことは別である。
 
-報告は `scan_report/` へ書き出し、継続的インテグレーションでは成果物として
-30 日残す。リポジトリへは含めない。実行のたびに変わるものを追跡すると、
-差分が読めなくなる。
+報告は `scan_report/` へ書き出す。リポジトリへは含めない。実行のたびに
+変わるものを追跡すると、差分が読めなくなる。
 
 ### 検査器の版
 
-検査器は commit ではなく image の digest で固定する。
+検査器は commit ではなく image の digest で固定する。値は
+`script/scan_container_image` が持つ。
 
-```text
-aquasec/trivy:0.72.0@sha256:cffe3f5161a47a6823fbd23d985795b3ed72a4c806da4c4df16266c02accdd6f
-```
-
-中身が後から変わると、同じ commit を検査しても結果が変わる。
-更新は手作業とし、[外部の動作の参照](#外部の動作の参照) と同じ扱いにする。
+中身が後から変わると、同じ commit を検査しても結果が変わる。更新の段取りは
+[継続的インテグレーションの構成](../maintainers/continuous_integration.md#外部の動作の参照)
+にある。
 
 ホストの Docker の socket は渡さない。渡すと、検査器がホストの Docker を
 操作できる。検査するだけなら、書き出した内容を読ませれば足りる。
@@ -240,8 +238,9 @@ docker compose exec -e TEST_SHARD=1/3 web bin/rails test:except_browser
 と、その組み立ての詳細は
 [継続的インテグレーションの構成](../maintainers/continuous_integration.md) にある。
 
-寄稿者が知る必要があるのは、手元で `bin/verify` が通れば自動実行も通る、
-ということだけである。
+寄稿者が知る必要があるのは、まず手元で `bin/verify` を通すことである。
+自動実行はこれに加えて、構成の分離、実測した木との対応、配布物の書き出し
+といった、コンテナの中からは実行できない検査も走らせる。
 
 ### 実行する場面
 
@@ -303,8 +302,6 @@ script/measure_load
 200 以外が混ざっていれば測定は成立しない。混ざったままの値は意味を持たない。
 
 報告は `load_report/` へ書き出す。リポジトリへは含めない。
-継続的インテグレーションでは、配布用の構成を起こしている仕事の中で測り、
-成果物として 30 日残す。
 
 起動している構成と積んだデータが前提になるため、一括検証へは入れない。
 
@@ -330,9 +327,10 @@ docker compose -f compose.yaml -f compose.browser.yaml exec web bin/rails test:b
 開発用のイメージへは入れない。イメージの大きさと組み立て時間が増え、
 検証の実行環境も利用者の環境から離れる。
 
-版は image の digest で固定する。中身が後から変わると、同じ commit を検証しても
-結果が変わる。更新は手作業とし、[外部の動作の参照](#外部の動作の参照) と
-同じ扱いにする。
+版は image の digest で固定する（`compose.browser.yaml`）。中身が後から
+変わると、同じ commit を検証しても結果が変わる。更新の段取りは
+[継続的インテグレーションの構成](../maintainers/continuous_integration.md#外部の動作の参照)
+にある。
 
 ### 一括検証から外している理由
 
@@ -341,7 +339,7 @@ docker compose -f compose.yaml -f compose.browser.yaml exec web bin/rails test:b
 
 外した層は、継続的インテグレーションの独立した仕事「実ブラウザー」で必ず
 実行する。外していることを黙って済ませない。
-失敗した場合は、そのときの画面を成果物として 30 日残す。
+失敗した場合は、そのときの画面を残す。
 
 ### アクセシビリティの自動検査
 
