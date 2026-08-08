@@ -173,7 +173,8 @@ aquasec/trivy:0.72.0@sha256:cffe3f5161a47a6823fbd23d985795b3ed72a4c806da4c4df162
 ```
 
 中身が後から変わると、同じ commit を検査しても結果が変わる。
-更新は手作業とし、[外部の動作の参照](#外部の動作の参照) と同じ扱いにする。
+更新は手作業とし、[外部の動作の参照](../maintainers/continuous_integration.md#外部の動作の参照)
+と同じ扱いにする。
 
 ホストの Docker の socket は渡さない。渡すと、検査器がホストの Docker を
 操作できる。検査するだけなら、書き出した内容を読ませれば足りる。
@@ -240,8 +241,9 @@ docker compose exec -e TEST_SHARD=1/3 web bin/rails test:except_browser
 と、その組み立ての詳細は
 [継続的インテグレーションの構成](../maintainers/continuous_integration.md) にある。
 
-寄稿者が知る必要があるのは、手元で `bin/verify` が通れば自動実行も通る、
-ということだけである。
+寄稿者が知る必要があるのは、まず手元で `bin/verify` を通すことである。
+自動実行はこれに加えて、構成の分離、実測した木との対応、配布物の書き出し
+といった、コンテナの中からは実行できない検査も走らせる。
 
 ### 実行する場面
 
@@ -331,7 +333,8 @@ docker compose -f compose.yaml -f compose.browser.yaml exec web bin/rails test:b
 検証の実行環境も利用者の環境から離れる。
 
 版は image の digest で固定する。中身が後から変わると、同じ commit を検証しても
-結果が変わる。更新は手作業とし、[外部の動作の参照](#外部の動作の参照) と
+結果が変わる。更新は手作業とし、
+[外部の動作の参照](../maintainers/continuous_integration.md#外部の動作の参照) と
 同じ扱いにする。
 
 ### 一括検証から外している理由
