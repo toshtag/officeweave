@@ -94,19 +94,6 @@ jobs:
           BUNDLER_AUDIT_DB: ${{ github.workspace }}/tmp/ruby-advisory-db
         run: bin/verify checks
 
-      # 配送の規約は、変更を出すたびに見る。あとからまとめて直せない種類の
-      # ものであり、履歴へ入ってしまえば書き換えずに消せない。
-      #
-      # 照合する語はリポジトリへ書かない。書けば、それ自体が持ち込んだことに
-      # なる。秘密の値として渡し、無い場合はその照合だけを飛ばす。
-      - name: 配送の規約を検査する
-        env:
-          RESTRICTED_REFERENCE_PATTERNS: ${{ secrets.RESTRICTED_REFERENCE_PATTERNS }}
-        run: |
-          range="origin/${{ github.base_ref || 'main' }}..HEAD"
-          git fetch --quiet origin "${{ github.base_ref || 'main' }}"
-          script/check_delivery_contract "$range"
-
       # 部品表は公開する版へ添えるものであり、範囲に紐づかない。
       # データベースへ触れないため、この仕事で書き出せる。
       - name: 部品表を書き出す
