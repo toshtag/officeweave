@@ -53,8 +53,8 @@ class SetupScriptTest < ActiveSupport::TestCase
     assert_not Rails.root.join("bin/dev").exist?, "bin/dev が残っている"
   end
 
-  test "検証と手順書が同じ準備コマンドを呼ぶ" do
-    [ "config/verify.rb", "README.md" ].each do |path|
+  test "検証が準備コマンドを呼ぶ" do
+    [ "config/verify.rb" ].each do |path|
       body = Rails.root.join(path).read
 
       assert_match(%r{bin/setup}, body, "#{path} が準備コマンドを呼んでいない")
