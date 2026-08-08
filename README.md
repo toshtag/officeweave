@@ -62,7 +62,7 @@ docker compose exec web bin/rails officeweave:demo_data
 docker compose down
 ```
 
-自組織へ本番として導入する手順は [導入手順](docs/operations/installation.md) に
+自組織へ本番として導入する手順は [導入と運用](docs/operations/index.md) に
 あります。上の手順は開発と試用のためのものです。
 
 ## バージョン
@@ -78,9 +78,7 @@ docker compose down
 | 目的            | 参照                                                     |
 | ------------- | ------------------------------------------------------ |
 | 画面の使い方        | [操作の手引き](docs/usage/index.md)                          |
-| 自組織への導入と運用    | [導入手順](docs/operations/installation.md)                 |
-| 設定できる項目       | [設定](docs/operations/configuration.md)                  |
-| バックアップと復元     | [バックアップと復元](docs/operations/backup.md)                 |
+| 自組織への導入と運用    | [導入と運用](docs/operations/index.md)                       |
 | 修正を送りたい       | [貢献について](CONTRIBUTING.md)                               |
 | 脆弱性を見つけた      | [SECURITY.md](SECURITY.md)                             |
 | 何を作ろうとしているのか  | [製品ビジョン](docs/vision.md)                                |

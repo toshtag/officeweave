@@ -1,6 +1,8 @@
 # OfficeWeave 導入手順
 
-本書は、自組織の環境へ OfficeWeave を導入する手順を定義する。
+自組織の環境へ OfficeWeave を導入する手順です。
+設定値を調べる場合は [設定](configuration.md)、やりたいことから探す場合は
+[導入と運用](index.md) を参照してください。
 
 ## 1. 必要なもの
 
