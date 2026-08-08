@@ -44,6 +44,15 @@ docker compose exec web bin/verify tests
 docker compose -f compose.yaml -f compose.browser.yaml exec web bin/rails test:browser
 ```
 
+## 開発環境を作り直す
+
+開発用のデータベースの内容は失われます。取り消せません。配布用の構成は
+対象になりません。
+
+```bash
+script/reset_development
+```
+
 ## お願いしたいこと
 
 - 不具合の修正には、できれば回帰テストを添えてください。修正を外すと落ちる
