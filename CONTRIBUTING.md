@@ -73,6 +73,9 @@ script/reset_development
 | テストの層と実行方法       | [テスト方針](docs/development/testing.md)                   |
 | 画面が満たすべき最低要件     | [アクセシビリティ方針](docs/development/accessibility.md)        |
 
+このリポジトリの既存のコメントとテスト名は日本語です。合わせていただけると
+読み手が揃いますが、必須ではありません。
+
 ## 脆弱性を見つけた場合
 
 Issue ではなく [SECURITY.md](SECURITY.md) の手順で連絡してください。
