@@ -116,8 +116,19 @@ capabilities:
     entries:
       - "/session"
     implementation:
+      - "app/controllers/sessions_controller.rb"
+      - "app/models/authentication/internal_provider.rb"
+      - "app/models/authentication/local_path.rb"
+      - "app/models/authentication/oidc.rb"
+      - "app/models/authentication/oidc/client.rb"
+      - "app/models/authentication/oidc/id_token.rb"
+      - "app/models/authentication/oidc_provider.rb"
+      - "app/models/authentication/password_policy.rb"
+      - "app/models/authentication/provider_registry.rb"
+      - "app/models/rate_limit_counter.rb"
+      - "app/models/session.rb"
+      - "app/models/user.rb"
       - "config/recurring.yml"
-    implementation_note: "Session, User, Authentication::*, RateLimitCounter, config/recurring.yml（毎時 Session.delete_expired）"
     tests:
       - "test/configuration/persistent_queue_test.rb"
       - "test/controllers/session_activity_test.rb"
@@ -185,8 +196,12 @@ capabilities:
     entries:
       - "/oidc/session"
       - "/oidc/callback"
-    implementation: []
-    implementation_note: "Authentication::OidcClient, Authentication::OidcIdToken"
+    implementation:
+      - "app/controllers/oidc_sessions_controller.rb"
+      - "app/models/authentication/oidc.rb"
+      - "app/models/authentication/oidc/client.rb"
+      - "app/models/authentication/oidc/id_token.rb"
+      - "app/models/authentication/oidc_provider.rb"
     tests:
       - "test/controllers/oidc_login_test.rb"
       - "test/models/authentication/oidc_client_test.rb"
@@ -250,8 +265,11 @@ capabilities:
       - "/password"
       - "/password/edit"
       - "/password_resets"
-    implementation: []
-    implementation_note: "User, Authentication::PasswordPolicy"
+    implementation:
+      - "app/controllers/password_resets_controller.rb"
+      - "app/controllers/passwords_controller.rb"
+      - "app/models/authentication/password_policy.rb"
+      - "app/models/user.rb"
     tests:
       - "test/controllers/password_change_test.rb"
       - "test/controllers/password_reset_test.rb"
@@ -312,8 +330,9 @@ capabilities:
     state: "complete"
     entries:
       - "/logins"
-    implementation: []
-    implementation_note: "Session"
+    implementation:
+      - "app/controllers/logins_controller.rb"
+      - "app/models/session.rb"
     tests:
       - "test/controllers/logins_controller_test.rb"
       - "test/system/authentication_test.rb"
@@ -365,8 +384,10 @@ capabilities:
     state: "complete"
     entries:
       - "/settings"
-    implementation: []
-    implementation_note: "User, NotificationPreference"
+    implementation:
+      - "app/controllers/settings_controller.rb"
+      - "app/models/notification_preference.rb"
+      - "app/models/user.rb"
     tests:
       - "test/controllers/settings_controller_test.rb"
       - "test/models/notification_preference_test.rb"
@@ -424,8 +445,11 @@ capabilities:
     entries:
       - "/users"
       - "/users/:user_id/activation"
-    implementation: []
-    implementation_note: "User, Organization"
+    implementation:
+      - "app/controllers/user_activations_controller.rb"
+      - "app/controllers/users_controller.rb"
+      - "app/models/organization.rb"
+      - "app/models/user.rb"
     tests:
       - "test/controllers/user_activations_controller_test.rb"
       - "test/controllers/users_controller_test.rb"
@@ -494,8 +518,11 @@ capabilities:
     entries:
       - "/departments"
       - "/departments/:department_id/memberships"
-    implementation: []
-    implementation_note: "Department, Membership"
+    implementation:
+      - "app/controllers/departments_controller.rb"
+      - "app/controllers/memberships_controller.rb"
+      - "app/models/department.rb"
+      - "app/models/membership.rb"
     tests:
       - "test/controllers/departments_controller_test.rb"
       - "test/controllers/memberships_controller_test.rb"
@@ -549,8 +576,11 @@ capabilities:
     state: "complete"
     entries:
       - "/data_transfers"
-    implementation: []
-    implementation_note: "CsvTransfer, UserCsv, DepartmentCsv"
+    implementation:
+      - "app/controllers/data_transfers_controller.rb"
+      - "app/models/csv_transfer.rb"
+      - "app/models/department_csv.rb"
+      - "app/models/user_csv.rb"
     tests:
       - "test/controllers/data_transfers_controller_test.rb"
       - "test/models/department_csv_import_test.rb"
@@ -603,8 +633,10 @@ capabilities:
     state: "complete"
     entries:
       - "/"
-    implementation: []
-    implementation_note: "Announcement, Request, Department"
+    implementation:
+      - "app/models/announcement.rb"
+      - "app/models/department.rb"
+      - "app/models/request.rb"
     tests:
       - "test/controllers/home_controller_test.rb"
       - "test/controllers/home_request_test.rb"
@@ -656,8 +688,11 @@ capabilities:
     state: "complete"
     entries:
       - "/announcements"
-    implementation: []
-    implementation_note: "Announcement, AnnouncementDepartment, AnnouncementRead"
+    implementation:
+      - "app/controllers/announcements_controller.rb"
+      - "app/models/announcement.rb"
+      - "app/models/announcement_department.rb"
+      - "app/models/announcement_read.rb"
     tests:
       - "test/controllers/announcements_controller_test.rb"
       - "test/models/announcement_test.rb"
@@ -722,8 +757,12 @@ capabilities:
     state: "complete"
     entries:
       - "/events"
-    implementation: []
-    implementation_note: "Event, Event::Recurrence, EventDepartment, EventParticipant"
+    implementation:
+      - "app/controllers/events_controller.rb"
+      - "app/models/event.rb"
+      - "app/models/event/recurrence.rb"
+      - "app/models/event_department.rb"
+      - "app/models/event_participant.rb"
     tests:
       - "test/controllers/event_participants_test.rb"
       - "test/models/event_test.rb"
@@ -788,8 +827,9 @@ capabilities:
     state: "complete"
     entries:
       - "/resources"
-    implementation: []
-    implementation_note: "Resource"
+    implementation:
+      - "app/controllers/resources_controller.rb"
+      - "app/models/resource.rb"
     tests:
       - "test/controllers/resources_controller_test.rb"
       - "test/models/resource_test.rb"
@@ -848,8 +888,9 @@ capabilities:
     state: "complete"
     entries:
       - "/reservations"
-    implementation: []
-    implementation_note: "Reservation"
+    implementation:
+      - "app/controllers/reservations_controller.rb"
+      - "app/models/reservation.rb"
     tests:
       - "test/controllers/reservation_change_test.rb"
       - "test/models/reservation_test.rb"
@@ -915,8 +956,16 @@ capabilities:
       - "/requests/:request_id/submission"
       - "/requests/:request_id/decision"
       - "/request_types"
-    implementation: []
-    implementation_note: "Request, RequestType, ApprovalStep, RequestApprovalStep, RequestActivity"
+    implementation:
+      - "app/controllers/request_decisions_controller.rb"
+      - "app/controllers/request_submissions_controller.rb"
+      - "app/controllers/request_types_controller.rb"
+      - "app/controllers/requests_controller.rb"
+      - "app/models/approval_step.rb"
+      - "app/models/request.rb"
+      - "app/models/request_activity.rb"
+      - "app/models/request_approval_step.rb"
+      - "app/models/request_type.rb"
     tests:
       - "test/controllers/request_decisions_controller_test.rb"
       - "test/models/multi_step_approval_test.rb"
@@ -989,8 +1038,9 @@ capabilities:
     state: "complete"
     entries:
       - "/approval_delegations"
-    implementation: []
-    implementation_note: "ApprovalDelegation"
+    implementation:
+      - "app/controllers/approval_delegations_controller.rb"
+      - "app/models/approval_delegation.rb"
     tests:
       - "test/controllers/approval_delegations_controller_test.rb"
       - "test/models/approval_delegation_test.rb"
@@ -1043,8 +1093,13 @@ capabilities:
       - "/documents"
       - "/documents/:document_id/attachments/:id"
       - "/document_categories"
-    implementation: []
-    implementation_note: "Document, DocumentCategory, DocumentDepartment"
+    implementation:
+      - "app/controllers/document_attachments_controller.rb"
+      - "app/controllers/document_categories_controller.rb"
+      - "app/controllers/documents_controller.rb"
+      - "app/models/document.rb"
+      - "app/models/document_category.rb"
+      - "app/models/document_department.rb"
     tests:
       - "test/controllers/attachment_delivery_test.rb"
       - "test/models/document_access_test.rb"
@@ -1106,8 +1161,10 @@ capabilities:
     state: "complete"
     entries:
       - "/notifications"
-    implementation: []
-    implementation_note: "Notification, NotificationPreference"
+    implementation:
+      - "app/controllers/notifications_controller.rb"
+      - "app/models/notification.rb"
+      - "app/models/notification_preference.rb"
     tests:
       - "test/models/notification_batch_delivery_test.rb"
       - "test/models/notification_delivery_test.rb"
@@ -1167,8 +1224,10 @@ capabilities:
     entries:
       - "/audit_events"
       - "/audit_events/export"
-    implementation: []
-    implementation_note: "AuditEvent, AuditEventCsv"
+    implementation:
+      - "app/controllers/audit_events_controller.rb"
+      - "app/models/audit_event.rb"
+      - "app/models/audit_event_csv.rb"
     tests:
       - "test/controllers/audit_events_export_test.rb"
       - "test/models/audit_event_retention_test.rb"
@@ -1235,8 +1294,16 @@ capabilities:
       - "/api/v1/departments"
       - "/api/v1/users"
       - "/api_tokens"
-    implementation: []
-    implementation_note: "ApiToken, RateLimitCounter, RateLimitStore, Pagination"
+    implementation:
+      - "app/controllers/api/v1/announcements_controller.rb"
+      - "app/controllers/api/v1/departments_controller.rb"
+      - "app/controllers/api/v1/events_controller.rb"
+      - "app/controllers/api/v1/users_controller.rb"
+      - "app/controllers/api_tokens_controller.rb"
+      - "app/models/api_token.rb"
+      - "app/models/pagination.rb"
+      - "app/models/rate_limit_counter.rb"
+      - "app/models/rate_limit_store.rb"
     tests:
       - "test/controllers/api/v1/api_access_test.rb"
       - "test/controllers/api/v1/api_paging_test.rb"
@@ -1303,8 +1370,11 @@ capabilities:
     state: "complete"
     entries:
       - "/webhook_endpoints"
-    implementation: []
-    implementation_note: "WebhookEndpoint, WebhookDestination, WebhookDelivery"
+    implementation:
+      - "app/controllers/webhook_endpoints_controller.rb"
+      - "app/models/webhook_delivery.rb"
+      - "app/models/webhook_destination.rb"
+      - "app/models/webhook_endpoint.rb"
     tests:
       - "test/controllers/webhook_endpoints_controller_test.rb"
       - "test/jobs/deliver_webhook_job_test.rb"
@@ -1361,7 +1431,7 @@ capabilities:
       - "/locale"
     implementation:
       - "app/controllers/concerns/localizable.rb"
-    implementation_note: "Localizable（app/controllers/concerns/localizable.rb）"
+      - "app/controllers/locales_controller.rb"
     tests:
       - "test/configuration/locale_symmetry_test.rb"
       - "test/controllers/locale_negotiation_test.rb"
@@ -1420,7 +1490,7 @@ capabilities:
       - "/health"
     implementation:
       - "app/controllers/health_controller.rb"
-    implementation_note: "app/controllers/health_controller.rb。/up は framework が持つ。 独立した model は持たない。依存先への到達可否を返すだけで、記録しない"
+    implementation_note: "`/up` は framework が持つ。到達可否を返すだけで、独立した実装を持たない"
     tests:
       - "test/controllers/health_controller_test.rb"
       - "test/system/health_test.rb"
@@ -1486,8 +1556,10 @@ capabilities:
     entries:
       - "bin/diagnose"
       - "bin/jobs_status"
-    implementation: []
-    implementation_note: "Diagnostics"
+    implementation:
+      - "app/models/diagnostics.rb"
+      - "app/models/diagnostics_output.rb"
+      - "bin/diagnose"
     tests:
       - "test/models/diagnostics_test.rb"
     docs:
@@ -1537,8 +1609,9 @@ capabilities:
     state: "complete"
     entries:
       - "config/recurring.yml"
-    implementation: []
-    implementation_note: "OperationalReport, OperationsMailer"
+    implementation:
+      - "app/mailers/operations_mailer.rb"
+      - "app/models/operational_report.rb"
     tests:
       - "test/jobs/report_operational_issues_job_test.rb"
       - "test/models/operational_report_test.rb"
@@ -1593,8 +1666,12 @@ capabilities:
       - "bin/restore"
       - "script/production_backup"
       - "script/production_restore"
-    implementation: []
-    implementation_note: "なし"
+    implementation:
+      - "bin/backup"
+      - "bin/restore"
+      - "script/lib/archive_cipher.sh"
+      - "script/production_backup"
+      - "script/production_restore"
     tests:
       - "test/scripts/backup_script_test.rb"
       - "test/scripts/production_backup_scripts_test.rb"
@@ -1645,8 +1722,10 @@ capabilities:
       - "script/seed_initial_user"
       - "bin/setup"
       - "compose.production.yaml"
-    implementation: []
-    implementation_note: "InitialUser"
+    implementation:
+      - "app/models/initial_user.rb"
+      - "bin/docker-entrypoint"
+      - "script/seed_initial_user"
     tests:
       - "test/configuration/container_startup_test.rb"
       - "test/scripts/seed_initial_user_script_test.rb"
@@ -1697,7 +1776,6 @@ cross_cutting_gates:
     state: "complete"
     entries: []
     implementation: []
-    implementation_note: "すべての画面"
     tests:
       - "test/browser/accessibility_audit_test.rb"
       - "test/browser/keyboard_flows_test.rb"
@@ -1738,7 +1816,6 @@ cross_cutting_gates:
     state: "complete"
     entries: []
     implementation: []
-    implementation_note: "画面を持つすべての機能"
     tests:
       - "test/configuration/usage_documentation_test.rb"
     docs:

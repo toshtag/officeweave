@@ -77,7 +77,8 @@ name           名前
 state          上の 5 つのいずれか
 stage          上の 4 つのいずれか（範囲外は持たない）
 entries        画面と API の入口。持たない機能は運用の入口や定期実行
-implementation その機能を成立させる実装の位置。model に限らない
+implementation その機能を成立させる実装の位置。controller / model / job /
+               concern / script など、実在する path だけを挙げる
 tests          その機能の退行を止めるテスト
 docs           操作の手順を読める文書
 criteria        共通条件ごとの判定
