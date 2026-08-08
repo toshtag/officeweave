@@ -74,7 +74,7 @@ Compose を呼び出すコマンドには必ず `-f compose.production.yaml` を
 外部の認証方式へ切り替えている場合、変更の経路は出さない。
 パスワードはこの製品の外にあり、変えられるものが無い。
 
-OIDC を使う場合の手順は [認証方式の差し替え](../development/authentication.md) にある。
+OIDC を使う場合の手順は [設定 — OIDC](configuration.md#oidc) にあります。
 利用者は自動で作られない。認可サーバーで認証できる相手でも、
 この製品へ登録するまではログインできない。
 

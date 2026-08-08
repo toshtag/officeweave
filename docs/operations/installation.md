@@ -238,13 +238,13 @@ docker compose -f compose.production.yaml exec -T web bin/jobs_status
 | 実行利用者       | 管理者                  | 専用の利用者                        |
 | 依存          | 開発と検証の分も含む           | 実行に必要な分のみ                     |
 | 暗号化された通信    | 必須にしない               | 既定で必須（`FORCE_SSL` で切り替え）      |
-| project 名     | `officeweave`        | `officeweave_production`      |
-| イメージ        | `officeweave:development`（project 名から作る） | `officeweave:production` |
-| データボリューム     | `officeweave_db_data`   | `officeweave_production_production_db_data` `officeweave_production_production_storage_data` |
-| ジョブ用データベース   | `officeweave_development_queue` | `officeweave_production_queue` |
 
-web と worker は 1 つのイメージを共有する。同じコードを同じ依存で動かすため、
-分けても中身が同じものが 2 つできるだけで、組み立ても 2 回走る。
+2 つはデータも分かれています。project 名、イメージ、データボリューム、ジョブ用
+データベースがそれぞれ別で、片方で `down -v` を実行しても、もう片方のデータは
+残ります。
+
+web と worker は 1 つのイメージを共有します。同じコードを同じ依存で動かすため、
+分けても中身が同じものが 2 つできるだけです。
 
 ## 5. 最初の利用者の作成
 
@@ -290,67 +290,19 @@ docker compose -f compose.production.yaml exec web bin/rails officeweave:demo_da
 
 実運用を始める前に、投入した組織ごと削除する。
 
-## 8. 運用環境での追加の作業
+## 8. 次に確認すること
 
-### 到達経路
+導入はここまでで完了です。運用に入る前に、次を読んでください。
 
-このリポジトリには、暗号化された通信を終端する仕組みを含めていない。
-組織の環境にある逆プロキシの背後へ置き、そこで終端する。
+| やること              | 参照                                               |
+| ----------------- | ------------------------------------------------ |
+| 利用者が接続できるようにする    | [設定 — ホスト名の制限](configuration.md#ホスト名の制限)         |
+| バックアップを設定する       | [バックアップと復元](backup.md)                           |
+| 動いているかを確かめる       | [監視](monitoring.md)                              |
+| 通知の送信を確かめる        | [監視 — 送信の状況](monitoring.md#送信の状況)                |
+| 新しい版へ入れ替える        | [アップグレード](upgrade.md)                            |
 
-公開先は `WEB_BIND_ADDRESS` と `WEB_PORT` で変更できる。
-既定は `127.0.0.1:3210` である。
-
-### バックアップ
-
-```bash
-script/production_backup
-```
-
-書庫はホストの `backups/` へ作られる。取得のあいだ `web` は停止し、画面は使えない。
-
-復元は次による。
-
-```bash
-script/production_restore backups/<書庫>
-```
-
-詳しくは [バックアップと復元](backup.md) を参照する。
-取得しているだけでは復元できることの確認にならない。復元まで一度試す。
-
-### 送信の状況
-
-やり直しを尽くした失敗は消さずに残る。定期的に確認する。
-
-```bash
-docker compose -f compose.production.yaml exec -T web bin/jobs_status --failed
-```
-
-やり直しの回数と間隔、失敗の扱いは
-[設定](configuration.md#ジョブの実行) にある。日々の確認は
-[運用管理](administration.md) を参照する。
-
-### Webhook の送信先
-
-Webhook は既定で、組織の外にある宛先だけへ送信する。
-閉じたネットワーク内の宛先へ送る必要がある場合だけ、`.env` へ次を設定する。
-防御を弱める設定であるため、必要な origin だけを挙げる。
-
-```text
-WEBHOOK_PRIVATE_DESTINATION_ALLOWLIST=http://hooks.internal.example
-```
-
-送信できる宛先の条件と、書式が不正な場合の扱いは
-[設定](configuration.md#webhook-の送信先) にある。
-
-設定したら診断で確認する。
-
-```bash
-docker compose -f compose.production.yaml exec web bin/diagnose
-```
-
-### 更新
-
-[アップグレード](upgrade.md) の手順に従う。
+やりたいことから探す場合は [導入と運用](index.md) にあります。
 
 ## 9. 停止と削除
 
