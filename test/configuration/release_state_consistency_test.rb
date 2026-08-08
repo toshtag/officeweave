@@ -16,7 +16,7 @@ require "yaml"
 class ReleaseStateConsistencyTest < ActiveSupport::TestCase
   MATRIX = Rails.root.join("docs/product/capability_matrix.md")
   CRITERIA = Rails.root.join("docs/product/acceptance_criteria.md")
-  RELEASE = Rails.root.join("docs/development/release.md")
+  RELEASE = Rails.root.join("docs/maintainers/release.md")
   REGISTRY = Rails.root.join("docs/product/capability_registry.yml")
   RELEASES_DIR = Rails.root.join("docs/releases")
 

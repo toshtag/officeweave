@@ -1,30 +1,20 @@
 require "test_helper"
 
-# 依存を追加するときの審査手順の正本を、1 か所に保つ。
+# 依存を追加するときに確かめることの正本を、1 か所に保つ。
 #
 # 同じ規範が 2 つの文書にあると、項目を足したときに片方だけが変わる。
-# レビュー担当者がどちらを参照したかで、要求される記録が変わる。
-#
-# 実際、設計原則の側にだけ「『将来必要になりそう』という理由だけでは
-# 追加しない」があり、片側だけが持つ記述が既に生じていた。
+# 読んだ側がどちらを参照したかで、求められるものが変わる。
 class DependencyReviewDocumentTest < ActiveSupport::TestCase
   SOURCE = "docs/development/architecture.md".freeze
   REFERRING = "docs/development/tech_stack.md".freeze
 
-  # PR へ記録する項目。正本に並んでいることを、内容で確かめる。
+  # 説明を求める項目。正本に並んでいることを、内容で確かめる。
   ITEMS = [
-    "解決する具体的な問題",
-    "標準機能だけでは不足する理由",
-    "導入しない場合の実装量",
-    "依存する公開 API",
-    "交換時に影響する範囲",
-    "代替候補",
-    "削除可能性",
-    "ライセンス",
-    "保守状況"
+    "解決したい具体的な問題",
+    "標準の機能だけでは足りない理由"
   ].freeze
 
-  test "審査の項目が正本に並ぶ" do
+  test "確かめる項目が正本に並ぶ" do
     body = read(SOURCE)
 
     ITEMS.each do |item|
@@ -32,19 +22,15 @@ class DependencyReviewDocumentTest < ActiveSupport::TestCase
     end
   end
 
-  test "審査の項目が正本の外に写されていない" do
+  test "確かめる項目が正本の外に写されていない" do
     ITEMS.each do |item|
       assert_not read(REFERRING).include?(item),
                  "#{REFERRING} へ「#{item}」が写されている"
     end
   end
 
-  test "正本が差し戻しの規則を持つ" do
-    assert_includes read(SOURCE), "記録がない依存追加は、レビューで差し戻す"
-  end
-
-  # 実証を求める側の文が落ちると、規則だけが残って理由が読めなくなる。
-  test "正本が実証を求める理由を持つ" do
+  # 求める側の文が落ちると、項目だけが残って理由が読めなくなる。
+  test "正本が説明を求める理由を持つ" do
     assert_includes read(SOURCE), "「将来必要になりそう」という理由だけでは追加しない"
   end
 

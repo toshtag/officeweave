@@ -65,12 +65,12 @@ docker compose down
 自組織へ本番として導入する手順は [導入手順](docs/operations/installation.md) に
 あります。上の手順は開発と試用のためのものです。
 
-## いまの完成度
+## バージョン
 
-現在の版は [VERSION](VERSION) にあります。その版を本番準備済みと判定した
-根拠は [版ごとの検証](docs/releases/) にあります。
+現在のバージョンは [VERSION](VERSION) にあります。
+変更点は [変更履歴](CHANGELOG.md) にあります。
 
-版どうしの互換性はまだ保証しません。過去の版から入れ替える場合は
+版どうしの互換性はまだ保証しません。以前の版から入れ替える場合は
 [アップグレード](docs/operations/upgrade.md) を参照してください。
 
 ## ドキュメント
@@ -85,7 +85,6 @@ docker compose down
 | 脆弱性を見つけた      | [SECURITY.md](SECURITY.md)                             |
 | 何を作ろうとしているのか  | [製品ビジョン](docs/vision.md)                                |
 
-版ごとの変更点は [変更履歴](CHANGELOG.md) にあります。
 いずれの文書も日本語を正本とします。
 
 ## ライセンス
