@@ -54,6 +54,23 @@ docker compose -f compose.yaml -f compose.browser.yaml exec web bin/rails test:b
 script/reset_development
 ```
 
+## 開発環境でバックアップを試す
+
+コンテナ内で直接実行できます。ソースコードをホストと共有しているため、
+`backups/` へ書き出せばホスト側にも残ります。
+
+```bash
+docker compose exec web bin/backup
+```
+
+```bash
+docker compose exec -e FORCE=1 web bin/restore backups/<書庫>
+```
+
+コンテナ内の `bin/backup` と `bin/restore` は暗号化を扱いません。書庫を作る側と
+保管する側を分けており、暗号化するのは保管する側だけです。配布用の構成での
+手順は [バックアップと復元](docs/operations/backup.md) にあります。
+
 ## お願いしたいこと
 
 - 不具合の修正には、できれば回帰テストを添えてください。修正を外すと落ちる

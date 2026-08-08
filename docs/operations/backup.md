@@ -388,23 +388,7 @@ FORCE=1 script/production_restore <別の書庫>
 config/master.key
 ```
 
-## 6. 開発環境での取得と復元
-
-開発環境では、コンテナ内で直接実行してよい。ソースコードをホストと共有しているため、
-`backups/` へ書き出せばホスト側にも残る。
-
-```bash
-docker compose exec web bin/backup
-```
-
-```bash
-docker compose exec -e FORCE=1 web bin/restore backups/<書庫>
-```
-
-コンテナ内の `bin/backup` と `bin/restore` は暗号化を扱わない。
-書庫を作る側と保管する側を分けており、暗号化するのは保管する側だけとする。
-
-## 7. 扱っていないこと
+## 6. 扱っていないこと
 
 次は扱わない。
 
