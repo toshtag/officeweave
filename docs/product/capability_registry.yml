@@ -1776,6 +1776,7 @@ cross_cutting_gates:
     state: "complete"
     entries: []
     implementation: []
+    implementation_note: "すべての画面。特定の実装ではなく、画面の集合そのものを見る"
     tests:
       - "test/browser/accessibility_audit_test.rb"
       - "test/browser/keyboard_flows_test.rb"
@@ -1816,6 +1817,7 @@ cross_cutting_gates:
     state: "complete"
     entries: []
     implementation: []
+    implementation_note: "画面を持つすべての機能。特定の実装ではなく、手引きの網羅を見る"
     tests:
       - "test/configuration/usage_documentation_test.rb"
     docs:
