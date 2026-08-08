@@ -1,10 +1,18 @@
 require "test_helper"
 
-# 文書どうしの link が、実在する先を指していることを確かめる。
+# 文書の link が、実在する先を指していることを確かめる。
 #
-# 見出しまで見る。file だけを見る検査では、文書を分けたときに壊れた
-# `#見出し` を素通りさせる。実際に素通りした。文書を移したあと、
-# 移す前の見出しを指す link が 2 本残っていた。
+# 3 つの形すべてを見る。
+#
+#   別の文書                  [名前](path.md)
+#   別の文書の見出し            [名前](path.md#見出し)
+#   同じ文書の見出し            [名前](#見出し)
+#
+# file だけを見る検査は、文書を分けたときに壊れた見出しへの link を素通り
+# させる。実際に素通りした。移す前の見出しを指す link が 2 本残っていた。
+#
+# 同じ文書の見出しも外さない。外すと、節を改名しただけで自分自身への
+# link が壊り、この検査は通ってしまう。
 class DocumentLinkTest < ActiveSupport::TestCase
   DOCUMENTS = %w[README.md CONTRIBUTING.md SECURITY.md CHANGELOG.md].freeze
   DIRECTORIES = %w[docs].freeze
@@ -43,12 +51,13 @@ class DocumentLinkTest < ActiveSupport::TestCase
 
       documents.each do |source|
         source.read.scan(LINK).flatten.each do |href|
-          next if href.start_with?("http", "mailto:", "#")
+          next if href.start_with?("http", "mailto:")
 
           target, anchor = href.split("#", 2)
+          # 同じ文書の見出しへ向く link。対象の file は自分自身である。
+          path = target.empty? ? source : source.dirname.join(target).cleanpath
 
-          yield source.relative_path_from(Rails.root), href,
-                source.dirname.join(target).cleanpath, anchor&.then { |a| decode(a) }
+          yield source.relative_path_from(Rails.root), href, path, anchor&.then { |a| decode(a) }
         end
       end
     end
