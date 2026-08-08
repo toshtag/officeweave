@@ -10,6 +10,104 @@
 completion:
   release_gate: "release.production_readiness"
   definition: "stage が core の機能がすべて complete、横断の品質がすべて complete、版ごとの評価が passed であること"
+# 判定の型。
+#
+# 同じ判定を持つ機能が 3 件以上あるものを、ここへ 1 つだけ書く。同じ文面を
+# 機能の数だけ写すと、言い回しを 1 つ直すのに何十か所も直すことになる。
+#
+# 機能の側は条件の名前を必ず並べる。並べたうえで、判定が型と同じ場合だけ
+# profile を指す。名前を省ける形にすると、共通の条件を 1 つ増やしたときに、
+# まだ評価していない機能が既定の判定で埋まり、未評価が見えなくなる。
+#
+# 型は型を参照しない。参照できる形にすると、たどった先が見えなくなる。
+criterion_profiles:
+  audit_assignment.declared:
+    criterion: "audit_assignment"
+    result: "met"
+    reason: "状態を変える入口はすべて、記録する・しないのどちらかを宣言する。"
+    evidence:
+      - "test/configuration/audit_assignment_test.rb"
+  audit_assignment.no_state_change:
+    criterion: "audit_assignment"
+    result: "not_applicable"
+    reason: "状態を変える入口を持たない。"
+    evidence: []
+  authorization.default_authenticated:
+    criterion: "authorization"
+    result: "met"
+    reason: "参照と更新の入口は既定で認証を要し、開く入口だけが理由とともに宣言する。組織は認証した利用者から決まり、要求の値からは決まらない。"
+    evidence:
+      - "test/configuration/authentication_coverage_test.rb"
+  authorization.operator_only:
+    criterion: "authorization"
+    result: "met"
+    reason: "画面の入口を持たない。実行できるのは、配布先の環境へ入れる運用者だけである。"
+    evidence:
+      - "docs/operations/administration.md"
+  keyboard.no_screen:
+    criterion: "keyboard"
+    result: "not_applicable"
+    reason: "画面を持たない。キーボードで操作する対象が無い。"
+    evidence: []
+  keyboard.screen_operations:
+    criterion: "keyboard"
+    result: "met"
+    reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
+    evidence:
+      - "docs/product/keyboard_flows.yml"
+      - "test/browser/keyboard_flows_test.rb"
+      - "test/configuration/keyboard_flow_coverage_test.rb"
+      - "test/configuration/keyboard_operability_test.rb"
+  list_limit.no_growing_list:
+    criterion: "list_limit"
+    result: "not_applicable"
+    reason: "蓄積する一覧を持たない。"
+    evidence: []
+  list_limit.paged_or_windowed:
+    criterion: "list_limit"
+    result: "met"
+    reason: "一覧はページ送りか期間の指定を持つ。上限を通らない一覧は検査が落とす。"
+    evidence:
+      - "test/configuration/list_and_selection_test.rb"
+  localization.locale_files:
+    criterion: "localization"
+    result: "met"
+    reason: "画面へ語句を直接書かず、ロケールファイルを経由する。2 つの言語の鍵がそろうことは別の検査が保証する。"
+    evidence:
+      - "test/configuration/locale_symmetry_test.rb"
+      - "test/configuration/user_facing_text_test.rb"
+  localization.no_screen:
+    criterion: "localization"
+    result: "not_applicable"
+    reason: "画面を持たない。表示する語句を持たない。"
+    evidence: []
+  notification_occurrence.no_events:
+    criterion: "notification_occurrence"
+    result: "not_applicable"
+    reason: "通知を伴う出来事を持たない。"
+    evidence: []
+  regression_tests.entry_coverage:
+    criterion: "regression_tests"
+    result: "met"
+    reason: "入口を通るテストを挙げてある。挙げただけで入口を開かない状態は検査が落とす。"
+    evidence:
+      - "test/configuration/regression_coverage_test.rb"
+  retention.human_added:
+    criterion: "retention"
+    result: "not_applicable"
+    reason: "人の判断で足す記録であり、時間で増え続けない。"
+    evidence: []
+  retention.no_own_records:
+    criterion: "retention"
+    result: "not_applicable"
+    reason: "自分の記録を持たない。"
+    evidence: []
+  selection_rendering.no_pickers:
+    criterion: "selection_rendering"
+    result: "not_applicable"
+    reason: "利用者・部門・設備を選ばせる欄を持たない。"
+    evidence: []
+
 capabilities:
   - id: "core.authentication"
     name: "ログインとセッション"
@@ -18,8 +116,19 @@ capabilities:
     entries:
       - "/session"
     implementation:
+      - "app/controllers/sessions_controller.rb"
+      - "app/models/authentication/internal_provider.rb"
+      - "app/models/authentication/local_path.rb"
+      - "app/models/authentication/oidc.rb"
+      - "app/models/authentication/oidc/client.rb"
+      - "app/models/authentication/oidc/id_token.rb"
+      - "app/models/authentication/oidc_provider.rb"
+      - "app/models/authentication/password_policy.rb"
+      - "app/models/authentication/provider_registry.rb"
+      - "app/models/rate_limit_counter.rb"
+      - "app/models/session.rb"
+      - "app/models/user.rb"
       - "config/recurring.yml"
-    implementation_note: "Session, User, Authentication::*, RateLimitCounter, config/recurring.yml（毎時 Session.delete_expired）"
     tests:
       - "test/configuration/persistent_queue_test.rb"
       - "test/controllers/session_activity_test.rb"
@@ -44,17 +153,11 @@ capabilities:
           - "test/configuration/audit_assignment_test.rb"
           - "test/controllers/sessions_controller_test.rb"
       notification_occurrence:
-        result: "not_applicable"
-        reason: "通知を伴う出来事を持たない。"
-        evidence: []
+        profile: "notification_occurrence.no_events"
       list_limit:
-        result: "not_applicable"
-        reason: "蓄積する一覧を持たない。"
-        evidence: []
+        profile: "list_limit.no_growing_list"
       selection_rendering:
-        result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。"
-        evidence: []
+        profile: "selection_rendering.no_pickers"
       database_invariants:
         result: "met"
         reason: "`sessions` は利用者への参照を外部キーで持ち、期限の判定は行の値だけで決まる。試行の数え上げは `rate_limit_counters` の一意の索引の上で 1 文の加算として行う。"
@@ -79,19 +182,9 @@ capabilities:
         evidence:
           - "docs/usage/getting_started.md"
       localization:
-        result: "met"
-        reason: "画面へ語句を直接書かず、ロケールファイルを経由する。2 つの言語の鍵がそろうことは別の検査が保証する。"
-        evidence:
-          - "test/configuration/user_facing_text_test.rb"
-          - "test/configuration/locale_symmetry_test.rb"
+        profile: "localization.locale_files"
       keyboard:
-        result: "met"
-        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
-        evidence:
-          - "docs/product/keyboard_flows.yml"
-          - "test/browser/keyboard_flows_test.rb"
-          - "test/configuration/keyboard_flow_coverage_test.rb"
-          - "test/configuration/keyboard_operability_test.rb"
+        profile: "keyboard.screen_operations"
     other_findings: []
     issue: "C1"
     dependencies: []
@@ -103,8 +196,12 @@ capabilities:
     entries:
       - "/oidc/session"
       - "/oidc/callback"
-    implementation: []
-    implementation_note: "Authentication::OidcClient, Authentication::OidcIdToken"
+    implementation:
+      - "app/controllers/oidc_sessions_controller.rb"
+      - "app/models/authentication/oidc.rb"
+      - "app/models/authentication/oidc/client.rb"
+      - "app/models/authentication/oidc/id_token.rb"
+      - "app/models/authentication/oidc_provider.rb"
     tests:
       - "test/controllers/oidc_login_test.rb"
       - "test/models/authentication/oidc_client_test.rb"
@@ -126,17 +223,11 @@ capabilities:
         evidence:
           - "test/configuration/audit_assignment_test.rb"
       notification_occurrence:
-        result: "not_applicable"
-        reason: "通知を伴う出来事を持たない。"
-        evidence: []
+        profile: "notification_occurrence.no_events"
       list_limit:
-        result: "not_applicable"
-        reason: "蓄積する一覧を持たない。"
-        evidence: []
+        profile: "list_limit.no_growing_list"
       selection_rendering:
-        result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。"
-        evidence: []
+        profile: "selection_rendering.no_pickers"
       database_invariants:
         result: "not_applicable"
         reason: "自分の記録を持たない。認可の結果はログインの記録として `core.authentication` が保つ。"
@@ -158,19 +249,9 @@ capabilities:
           - "docs/usage/getting_started.md"
           - "docs/development/authentication.md"
       localization:
-        result: "met"
-        reason: "画面へ語句を直接書かず、ロケールファイルを経由する。2 つの言語の鍵がそろうことは別の検査が保証する。"
-        evidence:
-          - "test/configuration/user_facing_text_test.rb"
-          - "test/configuration/locale_symmetry_test.rb"
+        profile: "localization.locale_files"
       keyboard:
-        result: "met"
-        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
-        evidence:
-          - "docs/product/keyboard_flows.yml"
-          - "test/browser/keyboard_flows_test.rb"
-          - "test/configuration/keyboard_flow_coverage_test.rb"
-          - "test/configuration/keyboard_operability_test.rb"
+        profile: "keyboard.screen_operations"
     other_findings:
       - "実際の認証基盤へ接続した状態での確認が無い"
     issue: "C1"
@@ -184,8 +265,11 @@ capabilities:
       - "/password"
       - "/password/edit"
       - "/password_resets"
-    implementation: []
-    implementation_note: "User, Authentication::PasswordPolicy"
+    implementation:
+      - "app/controllers/password_resets_controller.rb"
+      - "app/controllers/passwords_controller.rb"
+      - "app/models/authentication/password_policy.rb"
+      - "app/models/user.rb"
     tests:
       - "test/controllers/password_change_test.rb"
       - "test/controllers/password_reset_test.rb"
@@ -207,17 +291,11 @@ capabilities:
         evidence:
           - "test/configuration/audit_assignment_test.rb"
       notification_occurrence:
-        result: "not_applicable"
-        reason: "通知を伴う出来事を持たない。"
-        evidence: []
+        profile: "notification_occurrence.no_events"
       list_limit:
-        result: "not_applicable"
-        reason: "蓄積する一覧を持たない。"
-        evidence: []
+        profile: "list_limit.no_growing_list"
       selection_rendering:
-        result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。"
-        evidence: []
+        profile: "selection_rendering.no_pickers"
       database_invariants:
         result: "met"
         reason: "メールアドレスの一意は `index_users_on_email_address` が保つ。再設定の案内は署名した値であり、記録として持たない。"
@@ -239,19 +317,9 @@ capabilities:
         evidence:
           - "docs/usage/getting_started.md"
       localization:
-        result: "met"
-        reason: "画面へ語句を直接書かず、ロケールファイルを経由する。2 つの言語の鍵がそろうことは別の検査が保証する。"
-        evidence:
-          - "test/configuration/user_facing_text_test.rb"
-          - "test/configuration/locale_symmetry_test.rb"
+        profile: "localization.locale_files"
       keyboard:
-        result: "met"
-        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
-        evidence:
-          - "docs/product/keyboard_flows.yml"
-          - "test/browser/keyboard_flows_test.rb"
-          - "test/configuration/keyboard_flow_coverage_test.rb"
-          - "test/configuration/keyboard_operability_test.rb"
+        profile: "keyboard.screen_operations"
     other_findings: []
     issue: "C1"
     dependencies: []
@@ -262,8 +330,9 @@ capabilities:
     state: "complete"
     entries:
       - "/logins"
-    implementation: []
-    implementation_note: "Session"
+    implementation:
+      - "app/controllers/logins_controller.rb"
+      - "app/models/session.rb"
     tests:
       - "test/controllers/logins_controller_test.rb"
       - "test/system/authentication_test.rb"
@@ -272,28 +341,18 @@ capabilities:
       - "docs/usage/getting_started.md"
     criteria:
       authorization:
-        result: "met"
-        reason: "参照と更新の入口は既定で認証を要し、開く入口だけが理由とともに宣言する。組織は認証した利用者から決まり、要求の値からは決まらない。"
-        evidence:
-          - "test/configuration/authentication_coverage_test.rb"
+        profile: "authorization.default_authenticated"
       audit_assignment:
-        result: "met"
-        reason: "状態を変える入口はすべて、記録する・しないのどちらかを宣言する。"
-        evidence:
-          - "test/configuration/audit_assignment_test.rb"
+        profile: "audit_assignment.declared"
       notification_occurrence:
-        result: "not_applicable"
-        reason: "通知を伴う出来事を持たない。"
-        evidence: []
+        profile: "notification_occurrence.no_events"
       list_limit:
         result: "met"
         reason: "ログイン中の端末はページ送りを持つ。"
         evidence:
           - "test/controllers/list_query_count_test.rb"
       selection_rendering:
-        result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。"
-        evidence: []
+        profile: "selection_rendering.no_pickers"
       database_invariants:
         result: "met"
         reason: "一覧と終了の対象は `sessions` の行であり、利用者への参照を外部キーで持つ。重複を禁じる条件は無い。"
@@ -305,29 +364,16 @@ capabilities:
         evidence:
           - "test/configuration/persistent_queue_test.rb"
       regression_tests:
-        result: "met"
-        reason: "入口を通るテストを挙げてある。挙げただけで入口を開かない状態は検査が落とす。"
-        evidence:
-          - "test/configuration/regression_coverage_test.rb"
+        profile: "regression_tests.entry_coverage"
       documentation:
         result: "met"
         reason: "端末の一覧と終わらせ方、いま使っている端末を対象に含めない理由を書いた。"
         evidence:
           - "docs/usage/getting_started.md"
       localization:
-        result: "met"
-        reason: "画面へ語句を直接書かず、ロケールファイルを経由する。2 つの言語の鍵がそろうことは別の検査が保証する。"
-        evidence:
-          - "test/configuration/user_facing_text_test.rb"
-          - "test/configuration/locale_symmetry_test.rb"
+        profile: "localization.locale_files"
       keyboard:
-        result: "met"
-        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
-        evidence:
-          - "docs/product/keyboard_flows.yml"
-          - "test/browser/keyboard_flows_test.rb"
-          - "test/configuration/keyboard_flow_coverage_test.rb"
-          - "test/configuration/keyboard_operability_test.rb"
+        profile: "keyboard.screen_operations"
     other_findings: []
     issue: "C2"
     dependencies: []
@@ -338,8 +384,10 @@ capabilities:
     state: "complete"
     entries:
       - "/settings"
-    implementation: []
-    implementation_note: "User, NotificationPreference"
+    implementation:
+      - "app/controllers/settings_controller.rb"
+      - "app/models/notification_preference.rb"
+      - "app/models/user.rb"
     tests:
       - "test/controllers/settings_controller_test.rb"
       - "test/models/notification_preference_test.rb"
@@ -358,17 +406,11 @@ capabilities:
         evidence:
           - "test/configuration/audit_assignment_test.rb"
       notification_occurrence:
-        result: "not_applicable"
-        reason: "通知を伴う出来事を持たない。"
-        evidence: []
+        profile: "notification_occurrence.no_events"
       list_limit:
-        result: "not_applicable"
-        reason: "蓄積する一覧を持たない。"
-        evidence: []
+        profile: "list_limit.no_growing_list"
       selection_rendering:
-        result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。"
-        evidence: []
+        profile: "selection_rendering.no_pickers"
       database_invariants:
         result: "met"
         reason: "配信設定の 1 利用者 1 出来事は `index_notification_preferences_on_user_id_and_event` が保つ。"
@@ -389,19 +431,9 @@ capabilities:
         evidence:
           - "docs/usage/getting_started.md"
       localization:
-        result: "met"
-        reason: "画面へ語句を直接書かず、ロケールファイルを経由する。2 つの言語の鍵がそろうことは別の検査が保証する。"
-        evidence:
-          - "test/configuration/user_facing_text_test.rb"
-          - "test/configuration/locale_symmetry_test.rb"
+        profile: "localization.locale_files"
       keyboard:
-        result: "met"
-        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
-        evidence:
-          - "docs/product/keyboard_flows.yml"
-          - "test/browser/keyboard_flows_test.rb"
-          - "test/configuration/keyboard_flow_coverage_test.rb"
-          - "test/configuration/keyboard_operability_test.rb"
+        profile: "keyboard.screen_operations"
     other_findings: []
     issue: "C1"
     dependencies: []
@@ -413,8 +445,11 @@ capabilities:
     entries:
       - "/users"
       - "/users/:user_id/activation"
-    implementation: []
-    implementation_note: "User, Organization"
+    implementation:
+      - "app/controllers/user_activations_controller.rb"
+      - "app/controllers/users_controller.rb"
+      - "app/models/organization.rb"
+      - "app/models/user.rb"
     tests:
       - "test/controllers/user_activations_controller_test.rb"
       - "test/controllers/users_controller_test.rb"
@@ -436,18 +471,11 @@ capabilities:
         evidence:
           - "test/configuration/audit_assignment_test.rb"
       notification_occurrence:
-        result: "not_applicable"
-        reason: "通知を伴う出来事を持たない。"
-        evidence: []
+        profile: "notification_occurrence.no_events"
       list_limit:
-        result: "met"
-        reason: "一覧はページ送りか期間の指定を持つ。上限を通らない一覧は検査が落とす。"
-        evidence:
-          - "test/configuration/list_and_selection_test.rb"
+        profile: "list_limit.paged_or_windowed"
       selection_rendering:
-        result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。"
-        evidence: []
+        profile: "selection_rendering.no_pickers"
       database_invariants:
         result: "met"
         reason: "メールアドレスの一意は索引が保つ。最後の管理者を残す条件は複数行にまたがるため索引では書けないが、同じトランザクションのなかで組織と利用者の行を占有して確かめる。引き金で書く場合と同じ占有になる。"
@@ -470,19 +498,9 @@ capabilities:
         evidence:
           - "docs/usage/organization.md"
       localization:
-        result: "met"
-        reason: "画面へ語句を直接書かず、ロケールファイルを経由する。2 つの言語の鍵がそろうことは別の検査が保証する。"
-        evidence:
-          - "test/configuration/user_facing_text_test.rb"
-          - "test/configuration/locale_symmetry_test.rb"
+        profile: "localization.locale_files"
       keyboard:
-        result: "met"
-        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
-        evidence:
-          - "docs/product/keyboard_flows.yml"
-          - "test/browser/keyboard_flows_test.rb"
-          - "test/configuration/keyboard_flow_coverage_test.rb"
-          - "test/configuration/keyboard_operability_test.rb"
+        profile: "keyboard.screen_operations"
     other_findings:
       - "権限が管理者と一般利用者の 2 段階しかなく、機能ごとの利用可否を持たない"
       - "組織そのものの情報を画面から変更できない"
@@ -500,8 +518,11 @@ capabilities:
     entries:
       - "/departments"
       - "/departments/:department_id/memberships"
-    implementation: []
-    implementation_note: "Department, Membership"
+    implementation:
+      - "app/controllers/departments_controller.rb"
+      - "app/controllers/memberships_controller.rb"
+      - "app/models/department.rb"
+      - "app/models/membership.rb"
     tests:
       - "test/controllers/departments_controller_test.rb"
       - "test/controllers/memberships_controller_test.rb"
@@ -512,19 +533,11 @@ capabilities:
       - "docs/usage/organization.md"
     criteria:
       authorization:
-        result: "met"
-        reason: "参照と更新の入口は既定で認証を要し、開く入口だけが理由とともに宣言する。組織は認証した利用者から決まり、要求の値からは決まらない。"
-        evidence:
-          - "test/configuration/authentication_coverage_test.rb"
+        profile: "authorization.default_authenticated"
       audit_assignment:
-        result: "met"
-        reason: "状態を変える入口はすべて、記録する・しないのどちらかを宣言する。"
-        evidence:
-          - "test/configuration/audit_assignment_test.rb"
+        profile: "audit_assignment.declared"
       notification_occurrence:
-        result: "not_applicable"
-        reason: "通知を伴う出来事を持たない。"
-        evidence: []
+        profile: "notification_occurrence.no_events"
       list_limit:
         result: "met"
         reason: "部門の一覧はページ送りを持つ。階層の表示も 1 ページ分だけへ広げる。"
@@ -541,33 +554,18 @@ capabilities:
         evidence:
           - "test/models/database_invariant_concurrency_test.rb"
       retention:
-        result: "not_applicable"
-        reason: "人の判断で足す記録であり、時間で増え続けない。"
-        evidence: []
+        profile: "retention.human_added"
       regression_tests:
-        result: "met"
-        reason: "入口を通るテストを挙げてある。挙げただけで入口を開かない状態は検査が落とす。"
-        evidence:
-          - "test/configuration/regression_coverage_test.rb"
+        profile: "regression_tests.entry_coverage"
       documentation:
         result: "met"
         reason: "階層の作り方、循環を作れないこと、所属の足し方を書いた。"
         evidence:
           - "docs/usage/organization.md"
       localization:
-        result: "met"
-        reason: "画面へ語句を直接書かず、ロケールファイルを経由する。2 つの言語の鍵がそろうことは別の検査が保証する。"
-        evidence:
-          - "test/configuration/user_facing_text_test.rb"
-          - "test/configuration/locale_symmetry_test.rb"
+        profile: "localization.locale_files"
       keyboard:
-        result: "met"
-        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
-        evidence:
-          - "docs/product/keyboard_flows.yml"
-          - "test/browser/keyboard_flows_test.rb"
-          - "test/configuration/keyboard_flow_coverage_test.rb"
-          - "test/configuration/keyboard_operability_test.rb"
+        profile: "keyboard.screen_operations"
     other_findings: []
     issue: "C2"
     dependencies: []
@@ -578,8 +576,11 @@ capabilities:
     state: "complete"
     entries:
       - "/data_transfers"
-    implementation: []
-    implementation_note: "CsvTransfer, UserCsv, DepartmentCsv"
+    implementation:
+      - "app/controllers/data_transfers_controller.rb"
+      - "app/models/csv_transfer.rb"
+      - "app/models/department_csv.rb"
+      - "app/models/user_csv.rb"
     tests:
       - "test/controllers/data_transfers_controller_test.rb"
       - "test/models/department_csv_import_test.rb"
@@ -590,27 +591,17 @@ capabilities:
       - "docs/usage/organization.md"
     criteria:
       authorization:
-        result: "met"
-        reason: "参照と更新の入口は既定で認証を要し、開く入口だけが理由とともに宣言する。組織は認証した利用者から決まり、要求の値からは決まらない。"
-        evidence:
-          - "test/configuration/authentication_coverage_test.rb"
+        profile: "authorization.default_authenticated"
       audit_assignment:
-        result: "met"
-        reason: "状態を変える入口はすべて、記録する・しないのどちらかを宣言する。"
-        evidence:
-          - "test/configuration/audit_assignment_test.rb"
+        profile: "audit_assignment.declared"
       notification_occurrence:
-        result: "not_applicable"
-        reason: "通知を伴う出来事を持たない。"
-        evidence: []
+        profile: "notification_occurrence.no_events"
       list_limit:
         result: "not_applicable"
         reason: "一覧を持たない。取り込みと書き出しの画面だけである。"
         evidence: []
       selection_rendering:
-        result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。"
-        evidence: []
+        profile: "selection_rendering.no_pickers"
       database_invariants:
         result: "met"
         reason: "取り込みは模型を通し、利用者と部門の一意はそれぞれの索引が保つ。取り込み自身の記録は持たない。"
@@ -621,29 +612,16 @@ capabilities:
         reason: "取り込みと書き出し自身の記録を持たない。実行の記録は監査が持つ。"
         evidence: []
       regression_tests:
-        result: "met"
-        reason: "入口を通るテストを挙げてある。挙げただけで入口を開かない状態は検査が落とす。"
-        evidence:
-          - "test/configuration/regression_coverage_test.rb"
+        profile: "regression_tests.entry_coverage"
       documentation:
         result: "met"
         reason: "取り込みが 1 度でまとめて確定すること、書き出しの範囲を書いた。"
         evidence:
           - "docs/usage/organization.md"
       localization:
-        result: "met"
-        reason: "画面へ語句を直接書かず、ロケールファイルを経由する。2 つの言語の鍵がそろうことは別の検査が保証する。"
-        evidence:
-          - "test/configuration/user_facing_text_test.rb"
-          - "test/configuration/locale_symmetry_test.rb"
+        profile: "localization.locale_files"
       keyboard:
-        result: "met"
-        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
-        evidence:
-          - "docs/product/keyboard_flows.yml"
-          - "test/browser/keyboard_flows_test.rb"
-          - "test/configuration/keyboard_flow_coverage_test.rb"
-          - "test/configuration/keyboard_operability_test.rb"
+        profile: "keyboard.screen_operations"
     other_findings:
       - "想定規模の件数での実測が無い"
     issue: "C2"
@@ -655,8 +633,10 @@ capabilities:
     state: "complete"
     entries:
       - "/"
-    implementation: []
-    implementation_note: "Announcement, Request, Department"
+    implementation:
+      - "app/models/announcement.rb"
+      - "app/models/department.rb"
+      - "app/models/request.rb"
     tests:
       - "test/controllers/home_controller_test.rb"
       - "test/controllers/home_request_test.rb"
@@ -665,59 +645,35 @@ capabilities:
       - "docs/usage/getting_started.md"
     criteria:
       authorization:
-        result: "met"
-        reason: "参照と更新の入口は既定で認証を要し、開く入口だけが理由とともに宣言する。組織は認証した利用者から決まり、要求の値からは決まらない。"
-        evidence:
-          - "test/configuration/authentication_coverage_test.rb"
+        profile: "authorization.default_authenticated"
       audit_assignment:
-        result: "not_applicable"
-        reason: "状態を変える入口を持たない。"
-        evidence: []
+        profile: "audit_assignment.no_state_change"
       notification_occurrence:
-        result: "not_applicable"
-        reason: "通知を伴う出来事を持たない。"
-        evidence: []
+        profile: "notification_occurrence.no_events"
       list_limit:
         result: "met"
         reason: "並べるのはいずれも件数の上限を持つ抜粋であり、全件は各機能の一覧が扱う。"
         evidence:
           - "test/controllers/home_request_test.rb"
       selection_rendering:
-        result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。"
-        evidence: []
+        profile: "selection_rendering.no_pickers"
       database_invariants:
         result: "not_applicable"
         reason: "自分の記録を持たない。並べるのは他の機能の記録である。"
         evidence: []
       retention:
-        result: "not_applicable"
-        reason: "自分の記録を持たない。"
-        evidence: []
+        profile: "retention.no_own_records"
       regression_tests:
-        result: "met"
-        reason: "入口を通るテストを挙げてある。挙げただけで入口を開かない状態は検査が落とす。"
-        evidence:
-          - "test/configuration/regression_coverage_test.rb"
+        profile: "regression_tests.entry_coverage"
       documentation:
         result: "met"
         reason: "入口に並ぶ 4 つと、抜粋だけを並べることを書いた。"
         evidence:
           - "docs/usage/getting_started.md"
       localization:
-        result: "met"
-        reason: "画面へ語句を直接書かず、ロケールファイルを経由する。2 つの言語の鍵がそろうことは別の検査が保証する。"
-        evidence:
-          - "test/configuration/user_facing_text_test.rb"
-          - "test/configuration/locale_symmetry_test.rb"
+        profile: "localization.locale_files"
       keyboard:
-        result: "met"
-        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
-        evidence:
-          - "docs/product/keyboard_flows.yml"
-          - "test/browser/keyboard_flows_test.rb"
-          - "test/configuration/keyboard_flow_coverage_test.rb"
-          - "test/configuration/keyboard_operability_test.rb"
+        profile: "keyboard.screen_operations"
     other_findings: []
     issue: "C5"
     dependencies: []
@@ -732,8 +688,11 @@ capabilities:
     state: "complete"
     entries:
       - "/announcements"
-    implementation: []
-    implementation_note: "Announcement, AnnouncementDepartment, AnnouncementRead"
+    implementation:
+      - "app/controllers/announcements_controller.rb"
+      - "app/models/announcement.rb"
+      - "app/models/announcement_department.rb"
+      - "app/models/announcement_read.rb"
     tests:
       - "test/controllers/announcements_controller_test.rb"
       - "test/models/announcement_test.rb"
@@ -743,10 +702,7 @@ capabilities:
       - "docs/usage/announcements_and_documents.md"
     criteria:
       authorization:
-        result: "met"
-        reason: "参照と更新の入口は既定で認証を要し、開く入口だけが理由とともに宣言する。組織は認証した利用者から決まり、要求の値からは決まらない。"
-        evidence:
-          - "test/configuration/authentication_coverage_test.rb"
+        profile: "authorization.default_authenticated"
       audit_assignment:
         result: "met"
         reason: "業務の内容そのものであり、作成者と更新時刻を記録自身が持つため、記録しないことを理由とともに宣言する。"
@@ -777,29 +733,16 @@ capabilities:
         reason: "人の判断で足す記録であり、時間で増え続けない。既読は 1 つのお知らせと利用者につき 1 件までである。"
         evidence: []
       regression_tests:
-        result: "met"
-        reason: "入口を通るテストを挙げてある。挙げただけで入口を開かない状態は検査が落とす。"
-        evidence:
-          - "test/configuration/regression_coverage_test.rb"
+        profile: "regression_tests.entry_coverage"
       documentation:
         result: "met"
         reason: "読む側と書く側の手順、公開範囲、公開待ちと下書きの違いを書いた。"
         evidence:
           - "docs/usage/announcements_and_documents.md"
       localization:
-        result: "met"
-        reason: "画面へ語句を直接書かず、ロケールファイルを経由する。2 つの言語の鍵がそろうことは別の検査が保証する。"
-        evidence:
-          - "test/configuration/user_facing_text_test.rb"
-          - "test/configuration/locale_symmetry_test.rb"
+        profile: "localization.locale_files"
       keyboard:
-        result: "met"
-        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
-        evidence:
-          - "docs/product/keyboard_flows.yml"
-          - "test/browser/keyboard_flows_test.rb"
-          - "test/configuration/keyboard_flow_coverage_test.rb"
-          - "test/configuration/keyboard_operability_test.rb"
+        profile: "keyboard.screen_operations"
     other_findings: []
     issue: "C2"
     dependencies: []
@@ -814,8 +757,12 @@ capabilities:
     state: "complete"
     entries:
       - "/events"
-    implementation: []
-    implementation_note: "Event, Event::Recurrence, EventDepartment, EventParticipant"
+    implementation:
+      - "app/controllers/events_controller.rb"
+      - "app/models/event.rb"
+      - "app/models/event/recurrence.rb"
+      - "app/models/event_department.rb"
+      - "app/models/event_participant.rb"
     tests:
       - "test/controllers/event_participants_test.rb"
       - "test/models/event_test.rb"
@@ -825,10 +772,7 @@ capabilities:
       - "docs/usage/events_and_reservations.md"
     criteria:
       authorization:
-        result: "met"
-        reason: "参照と更新の入口は既定で認証を要し、開く入口だけが理由とともに宣言する。組織は認証した利用者から決まり、要求の値からは決まらない。"
-        evidence:
-          - "test/configuration/authentication_coverage_test.rb"
+        profile: "authorization.default_authenticated"
       audit_assignment:
         result: "met"
         reason: "業務の内容そのものであり、作成者と更新時刻を記録自身が持つため、記録しないことを理由とともに宣言する。"
@@ -857,33 +801,18 @@ capabilities:
         evidence:
           - "db/structure.sql"
       retention:
-        result: "not_applicable"
-        reason: "人の判断で足す記録であり、時間で増え続けない。"
-        evidence: []
+        profile: "retention.human_added"
       regression_tests:
-        result: "met"
-        reason: "入口を通るテストを挙げてある。挙げただけで入口を開かない状態は検査が落とす。"
-        evidence:
-          - "test/configuration/regression_coverage_test.rb"
+        profile: "regression_tests.entry_coverage"
       documentation:
         result: "met"
         reason: "期間の指定、公開範囲、参加者の指名、繰り返しの扱いを書いた。"
         evidence:
           - "docs/usage/events_and_reservations.md"
       localization:
-        result: "met"
-        reason: "画面へ語句を直接書かず、ロケールファイルを経由する。2 つの言語の鍵がそろうことは別の検査が保証する。"
-        evidence:
-          - "test/configuration/user_facing_text_test.rb"
-          - "test/configuration/locale_symmetry_test.rb"
+        profile: "localization.locale_files"
       keyboard:
-        result: "met"
-        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
-        evidence:
-          - "docs/product/keyboard_flows.yml"
-          - "test/browser/keyboard_flows_test.rb"
-          - "test/configuration/keyboard_flow_coverage_test.rb"
-          - "test/configuration/keyboard_operability_test.rb"
+        profile: "keyboard.screen_operations"
     other_findings: []
     issue: "C2"
     dependencies: []
@@ -898,8 +827,9 @@ capabilities:
     state: "complete"
     entries:
       - "/resources"
-    implementation: []
-    implementation_note: "Resource"
+    implementation:
+      - "app/controllers/resources_controller.rb"
+      - "app/models/resource.rb"
     tests:
       - "test/controllers/resources_controller_test.rb"
       - "test/models/resource_test.rb"
@@ -908,19 +838,14 @@ capabilities:
       - "docs/usage/events_and_reservations.md"
     criteria:
       authorization:
-        result: "met"
-        reason: "参照と更新の入口は既定で認証を要し、開く入口だけが理由とともに宣言する。組織は認証した利用者から決まり、要求の値からは決まらない。"
-        evidence:
-          - "test/configuration/authentication_coverage_test.rb"
+        profile: "authorization.default_authenticated"
       audit_assignment:
         result: "met"
         reason: "読める範囲も権限も決めないため、記録しないことを理由とともに宣言する。"
         evidence:
           - "test/configuration/audit_assignment_test.rb"
       notification_occurrence:
-        result: "not_applicable"
-        reason: "通知を伴う出来事を持たない。"
-        evidence: []
+        profile: "notification_occurrence.no_events"
       list_limit:
         result: "met"
         reason: "設備・備品の一覧はページ送りを持つ。"
@@ -937,33 +862,18 @@ capabilities:
         evidence:
           - "db/structure.sql"
       retention:
-        result: "not_applicable"
-        reason: "人の判断で足す記録であり、時間で増え続けない。"
-        evidence: []
+        profile: "retention.human_added"
       regression_tests:
-        result: "met"
-        reason: "入口を通るテストを挙げてある。挙げただけで入口を開かない状態は検査が落とす。"
-        evidence:
-          - "test/configuration/regression_coverage_test.rb"
+        profile: "regression_tests.entry_coverage"
       documentation:
         result: "met"
         reason: "一覧の見方と、予約を受け付けない設定の効果を書いた。"
         evidence:
           - "docs/usage/events_and_reservations.md"
       localization:
-        result: "met"
-        reason: "画面へ語句を直接書かず、ロケールファイルを経由する。2 つの言語の鍵がそろうことは別の検査が保証する。"
-        evidence:
-          - "test/configuration/user_facing_text_test.rb"
-          - "test/configuration/locale_symmetry_test.rb"
+        profile: "localization.locale_files"
       keyboard:
-        result: "met"
-        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
-        evidence:
-          - "docs/product/keyboard_flows.yml"
-          - "test/browser/keyboard_flows_test.rb"
-          - "test/configuration/keyboard_flow_coverage_test.rb"
-          - "test/configuration/keyboard_operability_test.rb"
+        profile: "keyboard.screen_operations"
     other_findings: []
     issue: "C2"
     dependencies: []
@@ -978,8 +888,9 @@ capabilities:
     state: "complete"
     entries:
       - "/reservations"
-    implementation: []
-    implementation_note: "Reservation"
+    implementation:
+      - "app/controllers/reservations_controller.rb"
+      - "app/models/reservation.rb"
     tests:
       - "test/controllers/reservation_change_test.rb"
       - "test/models/reservation_test.rb"
@@ -989,19 +900,14 @@ capabilities:
       - "docs/usage/events_and_reservations.md"
     criteria:
       authorization:
-        result: "met"
-        reason: "参照と更新の入口は既定で認証を要し、開く入口だけが理由とともに宣言する。組織は認証した利用者から決まり、要求の値からは決まらない。"
-        evidence:
-          - "test/configuration/authentication_coverage_test.rb"
+        profile: "authorization.default_authenticated"
       audit_assignment:
         result: "met"
         reason: "予約自身が誰のものかを持つため、記録しないことを理由とともに宣言する。"
         evidence:
           - "test/configuration/audit_assignment_test.rb"
       notification_occurrence:
-        result: "not_applicable"
-        reason: "通知を伴う出来事を持たない。"
-        evidence: []
+        profile: "notification_occurrence.no_events"
       list_limit:
         result: "met"
         reason: "指定できる期間を持ち、期間の長さにも上限がある。期間の内側でもページ送りを持つ。"
@@ -1020,33 +926,18 @@ capabilities:
           - "test/models/reservation_test.rb"
           - "app/models/database_constraint.rb"
       retention:
-        result: "not_applicable"
-        reason: "人の判断で足す記録であり、時間で増え続けない。"
-        evidence: []
+        profile: "retention.human_added"
       regression_tests:
-        result: "met"
-        reason: "入口を通るテストを挙げてある。挙げただけで入口を開かない状態は検査が落とす。"
-        evidence:
-          - "test/configuration/regression_coverage_test.rb"
+        profile: "regression_tests.entry_coverage"
       documentation:
         result: "met"
         reason: "予約の手順、重なりの扱い、直せる範囲を書いた。"
         evidence:
           - "docs/usage/events_and_reservations.md"
       localization:
-        result: "met"
-        reason: "画面へ語句を直接書かず、ロケールファイルを経由する。2 つの言語の鍵がそろうことは別の検査が保証する。"
-        evidence:
-          - "test/configuration/user_facing_text_test.rb"
-          - "test/configuration/locale_symmetry_test.rb"
+        profile: "localization.locale_files"
       keyboard:
-        result: "met"
-        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
-        evidence:
-          - "docs/product/keyboard_flows.yml"
-          - "test/browser/keyboard_flows_test.rb"
-          - "test/configuration/keyboard_flow_coverage_test.rb"
-          - "test/configuration/keyboard_operability_test.rb"
+        profile: "keyboard.screen_operations"
     other_findings:
       - "重なりの判定が、データベースが返す文面に制約名が含まれるかどうかに依存する"
     issue: "C3"
@@ -1065,8 +956,16 @@ capabilities:
       - "/requests/:request_id/submission"
       - "/requests/:request_id/decision"
       - "/request_types"
-    implementation: []
-    implementation_note: "Request, RequestType, ApprovalStep, RequestApprovalStep, RequestActivity"
+    implementation:
+      - "app/controllers/request_decisions_controller.rb"
+      - "app/controllers/request_submissions_controller.rb"
+      - "app/controllers/request_types_controller.rb"
+      - "app/controllers/requests_controller.rb"
+      - "app/models/approval_step.rb"
+      - "app/models/request.rb"
+      - "app/models/request_activity.rb"
+      - "app/models/request_approval_step.rb"
+      - "app/models/request_type.rb"
     tests:
       - "test/controllers/request_decisions_controller_test.rb"
       - "test/models/multi_step_approval_test.rb"
@@ -1094,10 +993,7 @@ capabilities:
           - "test/models/request_notification_test.rb"
           - "test/models/notification_occurrence_test.rb"
       list_limit:
-        result: "met"
-        reason: "一覧はページ送りか期間の指定を持つ。上限を通らない一覧は検査が落とす。"
-        evidence:
-          - "test/configuration/list_and_selection_test.rb"
+        profile: "list_limit.paged_or_windowed"
       selection_rendering:
         result: "met"
         reason: "承認の経路で部門を選ぶ欄は上限を置き、絞り込みで残りへ到達できる。"
@@ -1109,9 +1005,7 @@ capabilities:
         evidence:
           - "test/models/request_concurrency_test.rb"
       retention:
-        result: "not_applicable"
-        reason: "人の判断で足す記録であり、時間で増え続けない。"
-        evidence: []
+        profile: "retention.human_added"
       regression_tests:
         result: "met"
         reason: "権限、段の進み方、競合、委任の届く範囲にテストがある。"
@@ -1125,19 +1019,9 @@ capabilities:
         evidence:
           - "docs/usage/requests.md"
       localization:
-        result: "met"
-        reason: "画面へ語句を直接書かず、ロケールファイルを経由する。2 つの言語の鍵がそろうことは別の検査が保証する。"
-        evidence:
-          - "test/configuration/user_facing_text_test.rb"
-          - "test/configuration/locale_symmetry_test.rb"
+        profile: "localization.locale_files"
       keyboard:
-        result: "met"
-        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
-        evidence:
-          - "docs/product/keyboard_flows.yml"
-          - "test/browser/keyboard_flows_test.rb"
-          - "test/configuration/keyboard_flow_coverage_test.rb"
-          - "test/configuration/keyboard_operability_test.rb"
+        profile: "keyboard.screen_operations"
     other_findings:
       - "申請の項目が題名と本文だけで、種別ごとの入力欄を持たない"
       - "経路の種別が直列の承認だけで、全員承認、いずれか 1 人、最終決定、確認を持たない"
@@ -1154,8 +1038,9 @@ capabilities:
     state: "complete"
     entries:
       - "/approval_delegations"
-    implementation: []
-    implementation_note: "ApprovalDelegation"
+    implementation:
+      - "app/controllers/approval_delegations_controller.rb"
+      - "app/models/approval_delegation.rb"
     tests:
       - "test/controllers/approval_delegations_controller_test.rb"
       - "test/models/approval_delegation_test.rb"
@@ -1165,24 +1050,13 @@ capabilities:
       - "docs/usage/requests.md"
     criteria:
       authorization:
-        result: "met"
-        reason: "参照と更新の入口は既定で認証を要し、開く入口だけが理由とともに宣言する。組織は認証した利用者から決まり、要求の値からは決まらない。"
-        evidence:
-          - "test/configuration/authentication_coverage_test.rb"
+        profile: "authorization.default_authenticated"
       audit_assignment:
-        result: "met"
-        reason: "状態を変える入口はすべて、記録する・しないのどちらかを宣言する。"
-        evidence:
-          - "test/configuration/audit_assignment_test.rb"
+        profile: "audit_assignment.declared"
       notification_occurrence:
-        result: "not_applicable"
-        reason: "通知を伴う出来事を持たない。"
-        evidence: []
+        profile: "notification_occurrence.no_events"
       list_limit:
-        result: "met"
-        reason: "一覧はページ送りか期間の指定を持つ。上限を通らない一覧は検査が落とす。"
-        evidence:
-          - "test/configuration/list_and_selection_test.rb"
+        profile: "list_limit.paged_or_windowed"
       selection_rendering:
         result: "met"
         reason: "利用者・部門・設備を選ばせる欄は上限を置き、絞り込みで残りへ到達できる。"
@@ -1195,33 +1069,18 @@ capabilities:
         evidence:
           - "test/models/database_invariant_concurrency_test.rb"
       retention:
-        result: "not_applicable"
-        reason: "人の判断で足す記録であり、時間で増え続けない。"
-        evidence: []
+        profile: "retention.human_added"
       regression_tests:
-        result: "met"
-        reason: "入口を通るテストを挙げてある。挙げただけで入口を開かない状態は検査が落とす。"
-        evidence:
-          - "test/configuration/regression_coverage_test.rb"
+        profile: "regression_tests.entry_coverage"
       documentation:
         result: "met"
         reason: "委任の作り方、期間の扱い、担当が移らないこと、無効化との関係を書いた。"
         evidence:
           - "docs/usage/requests.md"
       localization:
-        result: "met"
-        reason: "画面へ語句を直接書かず、ロケールファイルを経由する。2 つの言語の鍵がそろうことは別の検査が保証する。"
-        evidence:
-          - "test/configuration/user_facing_text_test.rb"
-          - "test/configuration/locale_symmetry_test.rb"
+        profile: "localization.locale_files"
       keyboard:
-        result: "met"
-        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
-        evidence:
-          - "docs/product/keyboard_flows.yml"
-          - "test/browser/keyboard_flows_test.rb"
-          - "test/configuration/keyboard_flow_coverage_test.rb"
-          - "test/configuration/keyboard_operability_test.rb"
+        profile: "keyboard.screen_operations"
     other_findings: []
     issue: "C3"
     dependencies: []
@@ -1234,8 +1093,13 @@ capabilities:
       - "/documents"
       - "/documents/:document_id/attachments/:id"
       - "/document_categories"
-    implementation: []
-    implementation_note: "Document, DocumentCategory, DocumentDepartment"
+    implementation:
+      - "app/controllers/document_attachments_controller.rb"
+      - "app/controllers/document_categories_controller.rb"
+      - "app/controllers/documents_controller.rb"
+      - "app/models/document.rb"
+      - "app/models/document_category.rb"
+      - "app/models/document_department.rb"
     tests:
       - "test/controllers/attachment_delivery_test.rb"
       - "test/models/document_access_test.rb"
@@ -1246,19 +1110,14 @@ capabilities:
       - "docs/usage/announcements_and_documents.md"
     criteria:
       authorization:
-        result: "met"
-        reason: "参照と更新の入口は既定で認証を要し、開く入口だけが理由とともに宣言する。組織は認証した利用者から決まり、要求の値からは決まらない。"
-        evidence:
-          - "test/configuration/authentication_coverage_test.rb"
+        profile: "authorization.default_authenticated"
       audit_assignment:
         result: "met"
         reason: "業務の内容そのものであり、作成者と更新時刻を記録自身が持つため、記録しないことを理由とともに宣言する。添付の取得は参照であり、状態を変えない。"
         evidence:
           - "test/configuration/audit_assignment_test.rb"
       notification_occurrence:
-        result: "not_applicable"
-        reason: "通知を伴う出来事を持たない。"
-        evidence: []
+        profile: "notification_occurrence.no_events"
       list_limit:
         result: "met"
         reason: "文書の一覧はページ送りを持ち、分類の一覧もページ送りを持つ。"
@@ -1275,33 +1134,18 @@ capabilities:
         evidence:
           - "db/structure.sql"
       retention:
-        result: "not_applicable"
-        reason: "人の判断で足す記録であり、時間で増え続けない。"
-        evidence: []
+        profile: "retention.human_added"
       regression_tests:
-        result: "met"
-        reason: "入口を通るテストを挙げてある。挙げただけで入口を開かない状態は検査が落とす。"
-        evidence:
-          - "test/configuration/regression_coverage_test.rb"
+        profile: "regression_tests.entry_coverage"
       documentation:
         result: "met"
         reason: "読む側と書く側の手順、添付の扱い、分類が読める範囲を決めないことを書いた。"
         evidence:
           - "docs/usage/announcements_and_documents.md"
       localization:
-        result: "met"
-        reason: "画面へ語句を直接書かず、ロケールファイルを経由する。2 つの言語の鍵がそろうことは別の検査が保証する。"
-        evidence:
-          - "test/configuration/user_facing_text_test.rb"
-          - "test/configuration/locale_symmetry_test.rb"
+        profile: "localization.locale_files"
       keyboard:
-        result: "met"
-        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
-        evidence:
-          - "docs/product/keyboard_flows.yml"
-          - "test/browser/keyboard_flows_test.rb"
-          - "test/configuration/keyboard_flow_coverage_test.rb"
-          - "test/configuration/keyboard_operability_test.rb"
+        profile: "keyboard.screen_operations"
     other_findings:
       - "階層、版、編集の占有、ごみ箱、容量の把握を持たない"
     issue: "C2"
@@ -1317,8 +1161,10 @@ capabilities:
     state: "complete"
     entries:
       - "/notifications"
-    implementation: []
-    implementation_note: "Notification, NotificationPreference"
+    implementation:
+      - "app/controllers/notifications_controller.rb"
+      - "app/models/notification.rb"
+      - "app/models/notification_preference.rb"
     tests:
       - "test/models/notification_batch_delivery_test.rb"
       - "test/models/notification_delivery_test.rb"
@@ -1330,15 +1176,9 @@ capabilities:
       - "docs/usage/getting_started.md"
     criteria:
       authorization:
-        result: "met"
-        reason: "参照と更新の入口は既定で認証を要し、開く入口だけが理由とともに宣言する。組織は認証した利用者から決まり、要求の値からは決まらない。"
-        evidence:
-          - "test/configuration/authentication_coverage_test.rb"
+        profile: "authorization.default_authenticated"
       audit_assignment:
-        result: "met"
-        reason: "状態を変える入口はすべて、記録する・しないのどちらかを宣言する。"
-        evidence:
-          - "test/configuration/audit_assignment_test.rb"
+        profile: "audit_assignment.declared"
       notification_occurrence:
         result: "met"
         reason: "宛先と発生の組で 1 件だけ作られる。発生を表す値は同じ出来事に対して何度呼んでも同じであり、ジョブのやり直しで増えない。画面の通知 1 件につきメールを 1 通だけ積む。"
@@ -1347,14 +1187,9 @@ capabilities:
           - "test/models/notification_mail_correspondence_test.rb"
           - "test/models/request_notification_test.rb"
       list_limit:
-        result: "met"
-        reason: "一覧はページ送りか期間の指定を持つ。上限を通らない一覧は検査が落とす。"
-        evidence:
-          - "test/configuration/list_and_selection_test.rb"
+        profile: "list_limit.paged_or_windowed"
       selection_rendering:
-        result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。"
-        evidence: []
+        profile: "selection_rendering.no_pickers"
       database_invariants:
         result: "met"
         reason: "宛先と出来事の組で 1 件だけ作られることは `index_notifications_on_user_and_subject_event` が保つ。"
@@ -1367,29 +1202,16 @@ capabilities:
         evidence:
           - "test/models/record_retention_test.rb"
       regression_tests:
-        result: "met"
-        reason: "入口を通るテストを挙げてある。挙げただけで入口を開かない状態は検査が落とす。"
-        evidence:
-          - "test/configuration/regression_coverage_test.rb"
+        profile: "regression_tests.entry_coverage"
       documentation:
         result: "met"
         reason: "並び方、二重に作られない単位、再提出や複数の段では別の通知になることを書いた。"
         evidence:
           - "docs/usage/getting_started.md"
       localization:
-        result: "met"
-        reason: "画面へ語句を直接書かず、ロケールファイルを経由する。2 つの言語の鍵がそろうことは別の検査が保証する。"
-        evidence:
-          - "test/configuration/user_facing_text_test.rb"
-          - "test/configuration/locale_symmetry_test.rb"
+        profile: "localization.locale_files"
       keyboard:
-        result: "met"
-        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
-        evidence:
-          - "docs/product/keyboard_flows.yml"
-          - "test/browser/keyboard_flows_test.rb"
-          - "test/configuration/keyboard_flow_coverage_test.rb"
-          - "test/configuration/keyboard_operability_test.rb"
+        profile: "keyboard.screen_operations"
     other_findings:
       - "まとめて既読にする操作が無い"
     issue: "C4"
@@ -1402,8 +1224,10 @@ capabilities:
     entries:
       - "/audit_events"
       - "/audit_events/export"
-    implementation: []
-    implementation_note: "AuditEvent, AuditEventCsv"
+    implementation:
+      - "app/controllers/audit_events_controller.rb"
+      - "app/models/audit_event.rb"
+      - "app/models/audit_event_csv.rb"
     tests:
       - "test/controllers/audit_events_export_test.rb"
       - "test/models/audit_event_retention_test.rb"
@@ -1424,18 +1248,11 @@ capabilities:
         evidence:
           - "test/configuration/audit_assignment_test.rb"
       notification_occurrence:
-        result: "not_applicable"
-        reason: "通知を伴う出来事を持たない。"
-        evidence: []
+        profile: "notification_occurrence.no_events"
       list_limit:
-        result: "met"
-        reason: "一覧はページ送りか期間の指定を持つ。上限を通らない一覧は検査が落とす。"
-        evidence:
-          - "test/configuration/list_and_selection_test.rb"
+        profile: "list_limit.paged_or_windowed"
       selection_rendering:
-        result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。"
-        evidence: []
+        profile: "selection_rendering.no_pickers"
       database_invariants:
         result: "met"
         reason: "記録は書き足すだけであり、行をまたぐ条件を持たない。組織と実行者への参照は外部キーが保つ。"
@@ -1460,19 +1277,9 @@ capabilities:
         evidence:
           - "docs/usage/organization.md"
       localization:
-        result: "met"
-        reason: "画面へ語句を直接書かず、ロケールファイルを経由する。2 つの言語の鍵がそろうことは別の検査が保証する。"
-        evidence:
-          - "test/configuration/user_facing_text_test.rb"
-          - "test/configuration/locale_symmetry_test.rb"
+        profile: "localization.locale_files"
       keyboard:
-        result: "met"
-        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
-        evidence:
-          - "docs/product/keyboard_flows.yml"
-          - "test/browser/keyboard_flows_test.rb"
-          - "test/configuration/keyboard_flow_coverage_test.rb"
-          - "test/configuration/keyboard_operability_test.rb"
+        profile: "keyboard.screen_operations"
     other_findings: []
     issue: "C1"
     dependencies: []
@@ -1487,8 +1294,16 @@ capabilities:
       - "/api/v1/departments"
       - "/api/v1/users"
       - "/api_tokens"
-    implementation: []
-    implementation_note: "ApiToken, RateLimitCounter, RateLimitStore, Pagination"
+    implementation:
+      - "app/controllers/api/v1/announcements_controller.rb"
+      - "app/controllers/api/v1/departments_controller.rb"
+      - "app/controllers/api/v1/events_controller.rb"
+      - "app/controllers/api/v1/users_controller.rb"
+      - "app/controllers/api_tokens_controller.rb"
+      - "app/models/api_token.rb"
+      - "app/models/pagination.rb"
+      - "app/models/rate_limit_counter.rb"
+      - "app/models/rate_limit_store.rb"
     tests:
       - "test/controllers/api/v1/api_access_test.rb"
       - "test/controllers/api/v1/api_paging_test.rb"
@@ -1511,18 +1326,11 @@ capabilities:
         reason: "読み取りだけであり、状態を変える入口を持たない。token の発行と失効は `core.user_administration` の画面側が記録する。"
         evidence: []
       notification_occurrence:
-        result: "not_applicable"
-        reason: "通知を伴う出来事を持たない。"
-        evidence: []
+        profile: "notification_occurrence.no_events"
       list_limit:
-        result: "met"
-        reason: "一覧はページ送りか期間の指定を持つ。上限を通らない一覧は検査が落とす。"
-        evidence:
-          - "test/configuration/list_and_selection_test.rb"
+        profile: "list_limit.paged_or_windowed"
       selection_rendering:
-        result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。"
-        evidence: []
+        profile: "selection_rendering.no_pickers"
       database_invariants:
         result: "met"
         reason: "token の要約の一意は `index_api_tokens_on_token_digest` が保ち、範囲は列として必ず持つ。上限の数え上げは `rate_limit_counters` の一意の索引の上で行う。"
@@ -1547,19 +1355,9 @@ capabilities:
         evidence:
           - "docs/usage/organization.md"
       localization:
-        result: "met"
-        reason: "画面へ語句を直接書かず、ロケールファイルを経由する。2 つの言語の鍵がそろうことは別の検査が保証する。"
-        evidence:
-          - "test/configuration/user_facing_text_test.rb"
-          - "test/configuration/locale_symmetry_test.rb"
+        profile: "localization.locale_files"
       keyboard:
-        result: "met"
-        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
-        evidence:
-          - "docs/product/keyboard_flows.yml"
-          - "test/browser/keyboard_flows_test.rb"
-          - "test/configuration/keyboard_flow_coverage_test.rb"
-          - "test/configuration/keyboard_operability_test.rb"
+        profile: "keyboard.screen_operations"
     other_findings:
       - "応答の形を版として固定した定義が無い"
       - "読み取りだけで、書き込みの経路が無い"
@@ -1572,8 +1370,11 @@ capabilities:
     state: "complete"
     entries:
       - "/webhook_endpoints"
-    implementation: []
-    implementation_note: "WebhookEndpoint, WebhookDestination, WebhookDelivery"
+    implementation:
+      - "app/controllers/webhook_endpoints_controller.rb"
+      - "app/models/webhook_delivery.rb"
+      - "app/models/webhook_destination.rb"
+      - "app/models/webhook_endpoint.rb"
     tests:
       - "test/controllers/webhook_endpoints_controller_test.rb"
       - "test/jobs/deliver_webhook_job_test.rb"
@@ -1585,29 +1386,18 @@ capabilities:
       - "docs/usage/organization.md"
     criteria:
       authorization:
-        result: "met"
-        reason: "参照と更新の入口は既定で認証を要し、開く入口だけが理由とともに宣言する。組織は認証した利用者から決まり、要求の値からは決まらない。"
-        evidence:
-          - "test/configuration/authentication_coverage_test.rb"
+        profile: "authorization.default_authenticated"
       audit_assignment:
-        result: "met"
-        reason: "状態を変える入口はすべて、記録する・しないのどちらかを宣言する。"
-        evidence:
-          - "test/configuration/audit_assignment_test.rb"
+        profile: "audit_assignment.declared"
       notification_occurrence:
         result: "met"
         reason: "組織につき 1 回だけ積む。本文に出来事と発生の単位を入れるため、受け取る側が二度届いた分を捨てられる。配送は at-least-once とする。"
         evidence:
           - "test/models/webhook_payload_contract_test.rb"
       list_limit:
-        result: "met"
-        reason: "一覧はページ送りか期間の指定を持つ。上限を通らない一覧は検査が落とす。"
-        evidence:
-          - "test/configuration/list_and_selection_test.rb"
+        profile: "list_limit.paged_or_windowed"
       selection_rendering:
-        result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。"
-        evidence: []
+        profile: "selection_rendering.no_pickers"
       database_invariants:
         result: "met"
         reason: "送信先と送信の記録は、いずれも組織への参照を外部キーで持つ。重複を禁じる条件は無く、同じ宛先を複数登録できることは意図した振る舞いである。"
@@ -1619,29 +1409,16 @@ capabilities:
         evidence:
           - "test/models/record_retention_test.rb"
       regression_tests:
-        result: "met"
-        reason: "入口を通るテストを挙げてある。挙げただけで入口を開かない状態は検査が落とす。"
-        evidence:
-          - "test/configuration/regression_coverage_test.rb"
+        profile: "regression_tests.entry_coverage"
       documentation:
         result: "met"
         reason: "登録の手順、送信の記録の見方、配送が at-least-once であることを書いた。"
         evidence:
           - "docs/usage/organization.md"
       localization:
-        result: "met"
-        reason: "画面へ語句を直接書かず、ロケールファイルを経由する。2 つの言語の鍵がそろうことは別の検査が保証する。"
-        evidence:
-          - "test/configuration/user_facing_text_test.rb"
-          - "test/configuration/locale_symmetry_test.rb"
+        profile: "localization.locale_files"
       keyboard:
-        result: "met"
-        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
-        evidence:
-          - "docs/product/keyboard_flows.yml"
-          - "test/browser/keyboard_flows_test.rb"
-          - "test/configuration/keyboard_flow_coverage_test.rb"
-          - "test/configuration/keyboard_operability_test.rb"
+        profile: "keyboard.screen_operations"
     other_findings: []
     issue: "C4"
     dependencies: []
@@ -1654,7 +1431,7 @@ capabilities:
       - "/locale"
     implementation:
       - "app/controllers/concerns/localizable.rb"
-    implementation_note: "Localizable（app/controllers/concerns/localizable.rb）"
+      - "app/controllers/locales_controller.rb"
     tests:
       - "test/configuration/locale_symmetry_test.rb"
       - "test/controllers/locale_negotiation_test.rb"
@@ -1674,25 +1451,17 @@ capabilities:
         evidence:
           - "test/configuration/audit_assignment_test.rb"
       notification_occurrence:
-        result: "not_applicable"
-        reason: "通知を伴う出来事を持たない。"
-        evidence: []
+        profile: "notification_occurrence.no_events"
       list_limit:
-        result: "not_applicable"
-        reason: "蓄積する一覧を持たない。"
-        evidence: []
+        profile: "list_limit.no_growing_list"
       selection_rendering:
-        result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。"
-        evidence: []
+        profile: "selection_rendering.no_pickers"
       database_invariants:
         result: "not_applicable"
         reason: "自分の記録を持たない。表示言語は利用者の列であり、`core.personal_settings` が保つ。"
         evidence: []
       retention:
-        result: "not_applicable"
-        reason: "自分の記録を持たない。"
-        evidence: []
+        profile: "retention.no_own_records"
       regression_tests:
         result: "met"
         reason: "決め方の順、対応しない言語の落とし方、2 つの言語の鍵がそろうことにテストがある。"
@@ -1705,19 +1474,9 @@ capabilities:
         evidence:
           - "docs/usage/getting_started.md"
       localization:
-        result: "met"
-        reason: "画面へ語句を直接書かず、ロケールファイルを経由する。2 つの言語の鍵がそろうことは別の検査が保証する。"
-        evidence:
-          - "test/configuration/user_facing_text_test.rb"
-          - "test/configuration/locale_symmetry_test.rb"
+        profile: "localization.locale_files"
       keyboard:
-        result: "met"
-        reason: "主要な操作を、Tab / Shift+Tab / Enter / Space / 文字の入力だけで完遂する。要素を直接指して押す呼び出しは使わない。押せない要素へ操作を載せる形は、静的な検査が補助として落とす。"
-        evidence:
-          - "docs/product/keyboard_flows.yml"
-          - "test/browser/keyboard_flows_test.rb"
-          - "test/configuration/keyboard_flow_coverage_test.rb"
-          - "test/configuration/keyboard_operability_test.rb"
+        profile: "keyboard.screen_operations"
     other_findings: []
     issue: "C1"
     dependencies: []
@@ -1731,7 +1490,7 @@ capabilities:
       - "/health"
     implementation:
       - "app/controllers/health_controller.rb"
-    implementation_note: "app/controllers/health_controller.rb。/up は framework が持つ。 独立した model は持たない。依存先への到達可否を返すだけで、記録しない"
+    implementation_note: "`/up` は framework が持つ。到達可否を返すだけで、独立した実装を持たない"
     tests:
       - "test/controllers/health_controller_test.rb"
       - "test/system/health_test.rb"
@@ -1797,8 +1556,10 @@ capabilities:
     entries:
       - "bin/diagnose"
       - "bin/jobs_status"
-    implementation: []
-    implementation_note: "Diagnostics"
+    implementation:
+      - "app/models/diagnostics.rb"
+      - "app/models/diagnostics_output.rb"
+      - "bin/diagnose"
     tests:
       - "test/models/diagnostics_test.rb"
     docs:
@@ -1806,26 +1567,15 @@ capabilities:
       - "docs/operations/configuration.md"
     criteria:
       authorization:
-        result: "met"
-        reason: "画面の入口を持たない。実行できるのは、配布先の環境へ入れる運用者だけである。"
-        evidence:
-          - "docs/operations/administration.md"
+        profile: "authorization.operator_only"
       audit_assignment:
-        result: "not_applicable"
-        reason: "状態を変える入口を持たない。"
-        evidence: []
+        profile: "audit_assignment.no_state_change"
       notification_occurrence:
-        result: "not_applicable"
-        reason: "通知を伴う出来事を持たない。"
-        evidence: []
+        profile: "notification_occurrence.no_events"
       list_limit:
-        result: "not_applicable"
-        reason: "蓄積する一覧を持たない。"
-        evidence: []
+        profile: "list_limit.no_growing_list"
       selection_rendering:
-        result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。"
-        evidence: []
+        profile: "selection_rendering.no_pickers"
       database_invariants:
         result: "not_applicable"
         reason: "自分の記録を持たない。読み取りだけを行う。"
@@ -1846,13 +1596,9 @@ capabilities:
         evidence:
           - "docs/operations/administration.md"
       localization:
-        result: "not_applicable"
-        reason: "画面を持たない。表示する語句を持たない。"
-        evidence: []
+        profile: "localization.no_screen"
       keyboard:
-        result: "not_applicable"
-        reason: "画面を持たない。キーボードで操作する対象が無い。"
-        evidence: []
+        profile: "keyboard.no_screen"
     other_findings: []
     issue: "C6"
     dependencies: []
@@ -1863,8 +1609,9 @@ capabilities:
     state: "complete"
     entries:
       - "config/recurring.yml"
-    implementation: []
-    implementation_note: "OperationalReport, OperationsMailer"
+    implementation:
+      - "app/mailers/operations_mailer.rb"
+      - "app/models/operational_report.rb"
     tests:
       - "test/jobs/report_operational_issues_job_test.rb"
       - "test/models/operational_report_test.rb"
@@ -1873,14 +1620,9 @@ capabilities:
       - "docs/operations/configuration.md"
     criteria:
       authorization:
-        result: "met"
-        reason: "画面の入口を持たない。実行できるのは、配布先の環境へ入れる運用者だけである。"
-        evidence:
-          - "docs/operations/administration.md"
+        profile: "authorization.operator_only"
       audit_assignment:
-        result: "not_applicable"
-        reason: "状態を変える入口を持たない。"
-        evidence: []
+        profile: "audit_assignment.no_state_change"
       notification_occurrence:
         result: "met"
         reason: "異常の名前と状態の組を発生とし、記録の作成そのもので判断する。同じ異常が続くあいだは送り直さず、一定の間隔を過ぎたときだけ知らせ直す。"
@@ -1888,13 +1630,9 @@ capabilities:
           - "test/models/operational_alert_test.rb"
           - "test/jobs/report_operational_issues_job_test.rb"
       list_limit:
-        result: "not_applicable"
-        reason: "蓄積する一覧を持たない。"
-        evidence: []
+        profile: "list_limit.no_growing_list"
       selection_rendering:
-        result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。"
-        evidence: []
+        profile: "selection_rendering.no_pickers"
       database_invariants:
         result: "not_applicable"
         reason: "自分の記録を持たない。知らせる材料は他の機能の記録から数える。"
@@ -1905,23 +1643,16 @@ capabilities:
         evidence:
           - "test/models/record_retention_test.rb"
       regression_tests:
-        result: "met"
-        reason: "入口を通るテストを挙げてある。挙げただけで入口を開かない状態は検査が落とす。"
-        evidence:
-          - "test/configuration/regression_coverage_test.rb"
+        profile: "regression_tests.entry_coverage"
       documentation:
         result: "met"
         reason: "知らせる条件、届く文面、知らせ直す間隔が運用の文書にある。"
         evidence:
           - "docs/operations/administration.md"
       localization:
-        result: "not_applicable"
-        reason: "画面を持たない。表示する語句を持たない。"
-        evidence: []
+        profile: "localization.no_screen"
       keyboard:
-        result: "not_applicable"
-        reason: "画面を持たない。キーボードで操作する対象が無い。"
-        evidence: []
+        profile: "keyboard.no_screen"
     other_findings: []
     issue: "C4"
     dependencies: []
@@ -1935,8 +1666,12 @@ capabilities:
       - "bin/restore"
       - "script/production_backup"
       - "script/production_restore"
-    implementation: []
-    implementation_note: "なし"
+    implementation:
+      - "bin/backup"
+      - "bin/restore"
+      - "script/lib/archive_cipher.sh"
+      - "script/production_backup"
+      - "script/production_restore"
     tests:
       - "test/scripts/backup_script_test.rb"
       - "test/scripts/production_backup_scripts_test.rb"
@@ -1945,26 +1680,15 @@ capabilities:
       - "docs/operations/backup.md"
     criteria:
       authorization:
-        result: "met"
-        reason: "画面の入口を持たない。実行できるのは、配布先の環境へ入れる運用者だけである。"
-        evidence:
-          - "docs/operations/administration.md"
+        profile: "authorization.operator_only"
       audit_assignment:
-        result: "not_applicable"
-        reason: "状態を変える入口を持たない。"
-        evidence: []
+        profile: "audit_assignment.no_state_change"
       notification_occurrence:
-        result: "not_applicable"
-        reason: "通知を伴う出来事を持たない。"
-        evidence: []
+        profile: "notification_occurrence.no_events"
       list_limit:
-        result: "not_applicable"
-        reason: "蓄積する一覧を持たない。"
-        evidence: []
+        profile: "list_limit.no_growing_list"
       selection_rendering:
-        result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。"
-        evidence: []
+        profile: "selection_rendering.no_pickers"
       database_invariants:
         result: "not_applicable"
         reason: "自分の記録を持たない。対象はデータベース全体である。"
@@ -1974,23 +1698,16 @@ capabilities:
         reason: "自分の記録を持たない。対象はデータベース全体である。"
         evidence: []
       regression_tests:
-        result: "met"
-        reason: "入口を通るテストを挙げてある。挙げただけで入口を開かない状態は検査が落とす。"
-        evidence:
-          - "test/configuration/regression_coverage_test.rb"
+        profile: "regression_tests.entry_coverage"
       documentation:
         result: "met"
         reason: "取得と復元の手順が専用の文書にある。"
         evidence:
           - "docs/operations/backup.md"
       localization:
-        result: "not_applicable"
-        reason: "画面を持たない。表示する語句を持たない。"
-        evidence: []
+        profile: "localization.no_screen"
       keyboard:
-        result: "not_applicable"
-        reason: "画面を持たない。キーボードで操作する対象が無い。"
-        evidence: []
+        profile: "keyboard.no_screen"
     other_findings:
       - "改変された保存物を復元の前に拒否しない"
       - "取得と復元に掛かる時間、停止する時間の実測が無い"
@@ -2005,8 +1722,10 @@ capabilities:
       - "script/seed_initial_user"
       - "bin/setup"
       - "compose.production.yaml"
-    implementation: []
-    implementation_note: "InitialUser"
+    implementation:
+      - "app/models/initial_user.rb"
+      - "bin/docker-entrypoint"
+      - "script/seed_initial_user"
     tests:
       - "test/configuration/container_startup_test.rb"
       - "test/scripts/seed_initial_user_script_test.rb"
@@ -2016,40 +1735,24 @@ capabilities:
       - "docs/operations/upgrade.md"
     criteria:
       authorization:
-        result: "met"
-        reason: "画面の入口を持たない。実行できるのは、配布先の環境へ入れる運用者だけである。"
-        evidence:
-          - "docs/operations/administration.md"
+        profile: "authorization.operator_only"
       audit_assignment:
-        result: "not_applicable"
-        reason: "状態を変える入口を持たない。"
-        evidence: []
+        profile: "audit_assignment.no_state_change"
       notification_occurrence:
-        result: "not_applicable"
-        reason: "通知を伴う出来事を持たない。"
-        evidence: []
+        profile: "notification_occurrence.no_events"
       list_limit:
-        result: "not_applicable"
-        reason: "蓄積する一覧を持たない。"
-        evidence: []
+        profile: "list_limit.no_growing_list"
       selection_rendering:
-        result: "not_applicable"
-        reason: "利用者・部門・設備を選ばせる欄を持たない。"
-        evidence: []
+        profile: "selection_rendering.no_pickers"
       database_invariants:
         result: "met"
         reason: "初期利用者と組織の作成は、利用者と組織の一意の索引の上で行う。二度実行しても 2 つにならない。"
         evidence:
           - "db/structure.sql"
       retention:
-        result: "not_applicable"
-        reason: "自分の記録を持たない。"
-        evidence: []
+        profile: "retention.no_own_records"
       regression_tests:
-        result: "met"
-        reason: "入口を通るテストを挙げてある。挙げただけで入口を開かない状態は検査が落とす。"
-        evidence:
-          - "test/configuration/regression_coverage_test.rb"
+        profile: "regression_tests.entry_coverage"
       documentation:
         result: "met"
         reason: "導入と入れ替えの手順が専用の文書にある。"
@@ -2057,13 +1760,9 @@ capabilities:
           - "docs/operations/installation.md"
           - "docs/operations/upgrade.md"
       localization:
-        result: "not_applicable"
-        reason: "画面を持たない。表示する語句を持たない。"
-        evidence: []
+        profile: "localization.no_screen"
       keyboard:
-        result: "not_applicable"
-        reason: "画面を持たない。キーボードで操作する対象が無い。"
-        evidence: []
+        profile: "keyboard.no_screen"
     other_findings:
       - "新規の導入と、旧版からの更新を同じ commit に対して確かめた記録が無い"
       - "戻す手順を実際に戻して確かめた記録が無い"
@@ -2077,7 +1776,7 @@ cross_cutting_gates:
     state: "complete"
     entries: []
     implementation: []
-    implementation_note: "すべての画面"
+    implementation_note: "すべての画面。特定の実装ではなく、画面の集合そのものを見る"
     tests:
       - "test/browser/accessibility_audit_test.rb"
       - "test/browser/keyboard_flows_test.rb"
@@ -2118,7 +1817,7 @@ cross_cutting_gates:
     state: "complete"
     entries: []
     implementation: []
-    implementation_note: "画面を持つすべての機能"
+    implementation_note: "画面を持つすべての機能。特定の実装ではなく、手引きの網羅を見る"
     tests:
       - "test/configuration/usage_documentation_test.rb"
     docs:

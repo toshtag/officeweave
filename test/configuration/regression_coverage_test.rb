@@ -2,14 +2,15 @@ require "test_helper"
 
 # 退行を止めるテストの網羅。
 #
-# 共通条件 8 は、その機能が持つ入口、実装、権限の判定、並行した操作に、
+# 共通条件 `regression_tests` は、その機能が持つ入口、実装、権限の判定、
+# 並行した操作に、
 # 退行を止めるテストがあることを求める。
 #
 # 機械が読む一覧は、機能ごとに挙げたテストを持つ。ここで見るのは、その一覧が
 # 形だけになっていないこと、つまり挙げたテストがその機能の入口を実際に
 # 通っていることである。
 class RegressionCoverageTest < ActiveSupport::TestCase
-  REGISTRY = YAML.load_file(Rails.root.join("docs/product/capability_registry.yml")).freeze
+  REGISTRY = CapabilityRegistryTestHelper.registry.freeze
 
   # 画面を持たない入口。経路ではなくコマンドや設定で示す。
   NON_ROUTE = %r{\A(bin/|script/|config/|compose)}

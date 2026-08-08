@@ -2,14 +2,15 @@ require "test_helper"
 
 # 操作の手引きの網羅。
 #
-# 画面を持つ機能には、その画面を使う役割が読める手順が要る（共通条件 9）。
+# 画面を持つ機能には、その画面を使う役割が読める手順が要る（共通条件
+# `documentation`）。
 # 文書を書いたかどうかは、書いた本人にしか分からない。機械が読む一覧の側から
 # 突き合わせ、書き忘れをここで落とす。
 #
 # 中身の良し悪しは見ない。見られるのは、その機能を扱う節が実在することまでで
 # ある。読んで分かるかどうかは、人が読んで判断する。
 class UsageDocumentationTest < ActiveSupport::TestCase
-  REGISTRY = YAML.load_file(Rails.root.join("docs/product/capability_registry.yml")).freeze
+  REGISTRY = CapabilityRegistryTestHelper.registry.freeze
 
   # 手引きの置き場所。
   USAGE = "docs/usage".freeze
@@ -61,7 +62,7 @@ class UsageDocumentationTest < ActiveSupport::TestCase
       next unless judgement["result"] == "met"
 
       assert judgement.fetch("evidence").any? { |path| path.start_with?(USAGE) },
-             "#{capability["id"]}: 条件 9 を満たすとしながら、手引きを証拠に挙げていない"
+             "#{capability["id"]}: documentation を満たすとしながら、手引きを証拠に挙げていない"
     end
   end
 

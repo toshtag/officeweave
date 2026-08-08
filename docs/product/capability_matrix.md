@@ -77,7 +77,8 @@ name           名前
 state          上の 5 つのいずれか
 stage          上の 4 つのいずれか（範囲外は持たない）
 entries        画面と API の入口。持たない機能は運用の入口や定期実行
-implementation その機能を成立させる実装の位置。model に限らない
+implementation その機能を成立させる実装の位置。controller / model / job /
+               concern / script など、実在する path だけを挙げる
 tests          その機能の退行を止めるテスト
 docs           操作の手順を読める文書
 criteria        共通条件ごとの判定
@@ -119,6 +120,23 @@ not_assessed    まだ評価していない
 
 `partial` の判定は、そのとき実測またはコードの確認から判明したものである。
 未評価の条件と、評価して満たしていた条件は、`not_assessed` で区別する。
+
+### 判定の型
+
+同じ判定を持つ機能が多い条件は、一覧が判定の型（`criterion_profiles`）を
+持つ。機能の側は条件の名前を並べたうえで、判定が型と同じ場合だけ型を指す。
+
+```yaml
+criteria:
+  keyboard:
+    profile: "keyboard.screen_operations"
+```
+
+条件の名前は、型を指す場合でも省かない。省ける形にすると、共通の条件を
+1 つ増やしたときに、まだ評価していない機能が既定の判定で埋まり、未評価が
+見えなくなる。
+
+型は型を参照しない。固有の判定は、これまでどおり機能の側へ直接書く。
 
 ## 7. 版の判定
 

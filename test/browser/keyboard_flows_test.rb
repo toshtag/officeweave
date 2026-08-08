@@ -6,7 +6,7 @@ require_relative "../test_helpers/oidc_provider_test_helper"
 
 # 主要な操作を、キーボードだけで完遂する。
 #
-# 受入条件 11 の証拠である。対象は docs/product/keyboard_flows.yml が持ち、
+# 共通条件 `keyboard` の証拠である。対象は docs/product/keyboard_flows.yml が持ち、
 # 対応の漏れは test/configuration/keyboard_flow_coverage_test.rb が落とす。
 #
 # 使うのは Tab / Shift+Tab / Enter / Space / 文字の入力だけとする。

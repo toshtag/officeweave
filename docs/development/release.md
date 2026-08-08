@@ -22,7 +22,7 @@ bin/verify
 
 .github/workflows/verify.yml（変更を出すたび）
   Compose 構成の分離
-  bin/verify（開発用の構成。範囲を 4 つへ分けて同時に実行する）
+  bin/verify（開発用の構成。範囲を分けて同時に実行する）
 
 .github/workflows/operations.yml（main へ入ったあと・週次・手動）
   配布用の構成での起動、稼働確認、想定外の Host の拒否、診断
