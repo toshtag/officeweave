@@ -1,6 +1,9 @@
 # OfficeWeave 認証方式の差し替え
 
-本書は、認証方式を外部の基盤へ差し替える手順を定義する。
+本書は、認証方式を実装して差し替える人へ向けた設計の文書である。
+
+同梱している OIDC を有効にするだけであれば、本書は要らない。設定と認可
+サーバーへの登録は [設定 — OIDC](../operations/configuration.md#oidc) にある。
 
 既定は内部認証とする。外部の認証基盤を必須にしない。
 セルフホストで、外部サービスへの接続を動作の前提にしないためである。
@@ -92,25 +95,8 @@ AUTHENTICATION_PROVIDER="okta" は登録されていません。利用可能な�
 
 ### 5.1 設定
 
-`AUTHENTICATION_PROVIDER=oidc` と、3 つの設定を指定する。
-
-```text
-AUTHENTICATION_PROVIDER=oidc
-OIDC_ISSUER=https://idp.example.com
-OIDC_CLIENT_ID=officeweave
-OIDC_CLIENT_SECRET=...
-```
-
-各変数の条件は [設定](../operations/configuration.md#oidc) にある。
-
-認可サーバーへ登録する戻り先は次のとおりである。
-
-```text
-https://<APPLICATION_HOST>/oidc/callback
-```
-
-`APPLICATION_HOST` と `APPLICATION_PROTOCOL` から組み立てる。
-逆プロキシの背後では、利用者が接続する側の名前を指定する。
+設定する値と、認可サーバーへ登録する戻り先は
+[設定 — OIDC](../operations/configuration.md#oidc) が持つ。
 
 ### 5.2 ログインの流れ
 
