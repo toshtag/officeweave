@@ -2,7 +2,8 @@ require "test_helper"
 
 # 入口の画面の未読の判定。
 #
-# 並べるお知らせは 5 件に限っている。未読かどうかの判定に、蓄積した全件を
+# 並べるお知らせは `HomeController::RECENT_ANNOUNCEMENT_COUNT` 件に限って
+# いる。未読かどうかの判定に、蓄積した全件を
 # 読み込むと、お知らせが増えるほど入口が重くなる。
 class HomeUnreadTest < ActionDispatch::IntegrationTest
   include QueryCountTestHelper
